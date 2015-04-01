@@ -1,0 +1,14 @@
+2012-03-31
+ 1. Added Gdal support for non-grass DEM formats
+ 2. v* is rescalled with maximum possible free-fall velocity
+ 3. Kinetic Energy maps are producded along with max pile height maps (attn. hazmap users)
+ 4. Minor bugfixes
+
+2009-06-16 
+ 1. Updated Paraview support to XDMF 2.0
+ 2. Changed GisApi to include large file support
+
+2003-08-14 First public release
+
+$Id: NEWS 235 2012-03-29 07:04:35Z dkumar $
+

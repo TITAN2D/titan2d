@@ -1,0 +1,15 @@
+TODO list
+
+7.  refined flag and adapted flag, remove refined flag after full conversion.
+
+Done:
+
+1.  Remove code that is not used in the model
+2.  Reorganize sources into clearly distinguishable modules
+3.  Add short description for each file
+4.  Put restructured version under CV
+5.  Include viewer with the installation
+6.  Figure out a way how to add -lmpi flag automatically in configure on computers that do not use mpi compilers
+
+$Id: TODO 224 2011-12-04 20:49:23Z dkumar $
+
