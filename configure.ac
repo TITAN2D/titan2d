@@ -24,22 +24,45 @@ AC_SYS_LARGEFILE
 ## Host specific stuff
 #===================================================================================
 AC_CANONICAL_HOST
-case $host in
-  *-*-irix*)
-    CFLAGS="$CFLAGS -woff all"
-    CXXFLAGS="$CXXFLAGS -LANG:std -woff all"
-    LDFLAGS="$LDFLAGS -LANG:std -w -lc -lC -lscs -lmpi++ "
-    CXX="CC"
-    F77="f77"
-    ;;
-  *-*-linux*)
-    dnl better remove -w
-    CFLAGS="$CFLAGS -w -g -O2"
-    CXXFLAGS="$CXXFLAGS -w -g -O2 -DMPICH_IGNORE_CXX_SEEK"
-    LDFLAGS="$LDFLAGS"
-    ;;
-esac
+#case $host in
+#  *-*-irix*)
+#    CFLAGS="$CFLAGS -woff all"
+#    CXXFLAGS="$CXXFLAGS -LANG:std -woff all"
+#    LDFLAGS="$LDFLAGS -LANG:std -w -lc -lC -lscs -lmpi++ "
+#    CXX="CC"
+#    F77="f77"
+#    ;;
+#  *-*-linux*)
+#    dnl better remove -w
+#    CFLAGS="$CFLAGS -w -g -O2"
+#    CXXFLAGS="$CXXFLAGS -w -g -O2 -DMPICH_IGNORE_CXX_SEEK"
+#    LDFLAGS="$LDFLAGS"
+#    ;;
+#esac
 
+AC_ARG_ENABLE(debug,
+AS_HELP_STRING([--enable-debug],
+               [enable debugging, default: no]),
+[case "${enableval}" in
+             yes) USE_DEBUG="$enableval" ;;
+             no)  USE_DEBUG="$enableval" ;;
+             *)   AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+esac],
+[USE_DEBUG="no"])
+
+if test $USE_DEBUG = yes ; then 
+  CFLAGS="-w -g -O0"
+  CXXFLAGS="-w -g -O0 -DMPICH_IGNORE_CXX_SEEK"
+  LDFLAGS="-w -g -O0"
+  FFLAGS="-w -g -O0"
+else
+  CFLAGS="$CFLAGS -w -O3 -mtune=native"
+  CXXFLAGS="$CXXFLAGS -w -O3 -mtune=native -DMPICH_IGNORE_CXX_SEEK"
+  LDFLAGS="$LDFLAGS"
+  FFLAGS="-w -O3 -mtune=native"
+fi
+
+AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 ## checks for libraries
 #======================================================================================
@@ -48,9 +71,9 @@ AC_CHECK_LIB([pthread],[pthread_create])
 
 # in all likelyhood pkg-module is not going to find anything,
 # this check has been included to build .rpm and .deb
-PKG_CHECK_MODULES([MPICH2], [mpich2-ch3])
-CPPFLAGS="$CPPFLAGS $MPICH2_CFLAGS"
-LDFLAGS="$LDFLAGS $MPICH2_LIBS"
+#PKG_CHECK_MODULES([MPICH2], [mpich2-ch3])
+#CPPFLAGS="$CPPFLAGS $MPICH2_CFLAGS"
+#LDFLAGS="$LDFLAGS $MPICH2_LIBS"
 
 # if MPI is installed in non-standard location
 AC_ARG_WITH([mpi-includes],[AS_HELP_STRING([--with-mpi-includes],[path to mpi headers])])
@@ -131,8 +154,8 @@ case "$with_gdal" in
         LDFLAGS="$LDFLAGS -L$with_gdal/lib"
         AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"],
                      [AC_MSG_FAILURE([couldn't find GDAL libraries])])
-        AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"],
-                     [AC_MSG_FAILURE([couldn't find GDAL headers])])
+        #AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"],
+        #             [AC_MSG_FAILURE([couldn't find GDAL headers])])
         ;;
 esac
 AC_MSG_CHECKING([for GDAL availability])

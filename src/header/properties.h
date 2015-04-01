@@ -658,10 +658,14 @@ struct OutLine{
   {
     int ix,iy;
     char filename[256];
+    char filename_bin[256];
+    double ftmp;
 
     // output max over time pile-height
     sprintf(filename,"pileheightrecord.%06d",statprops_ptr->runid);
     FILE *fp=fopen(filename,"w");
+    sprintf(filename_bin,"pileheightrecord.bin.%06d",statprops_ptr->runid);
+    FILE *fp_bin=fopen(filename_bin,"wb");
 
     fprintf(fp,"Nx=%d: X={%20.14g,%20.14g}\n"
                "Ny=%d: Y={%20.14g,%20.14g}\n"
@@ -670,12 +674,29 @@ struct OutLine{
                xminmax[1]*matprops_ptr->LENGTH_SCALE,
                Ny, yminmax[0]*matprops_ptr->LENGTH_SCALE,
                yminmax[1]*matprops_ptr->LENGTH_SCALE);
+    fwrite(&Nx, sizeof Nx, 1, fp_bin);
+    ftmp=xminmax[0]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    ftmp=xminmax[1]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    fwrite(&Ny, sizeof Ny, 1, fp_bin);
+    ftmp=yminmax[0]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    ftmp=yminmax[1]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    
     for(iy=0; iy<Ny; iy++) 
     {
       for(ix=0; ix<Nx-1; ix++) 
         fprintf(fp,"%g ",pileheight[iy][ix]*matprops_ptr->HEIGHT_SCALE);
       fprintf(fp,"%g\n",pileheight[iy][ix]*matprops_ptr->HEIGHT_SCALE);
+      for(ix=0; ix<Nx; ix++)
+      {
+        ftmp=pileheight[iy][ix]*matprops_ptr->HEIGHT_SCALE;
+        fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+      }
     }
+    fclose(fp_bin);
     fclose(fp);
 
     //output max over time kinetic energy
@@ -685,6 +706,8 @@ struct OutLine{
 
     sprintf(filename,"maxkerecord.%06d",statprops_ptr->runid);
     fp=fopen(filename, "w");
+    sprintf(filename_bin,"maxkerecord.bin.%06d",statprops_ptr->runid);
+    fp_bin=fopen(filename_bin,"wb");
 
     fprintf(fp,"Nx=%d: X={%20.14g,%20.14g}\n"
                "Ny=%d: Y={%20.14g,%20.14g}\n"
@@ -693,12 +716,29 @@ struct OutLine{
                xminmax[1]*matprops_ptr->LENGTH_SCALE,
                Ny, yminmax[0]*matprops_ptr->LENGTH_SCALE,
                yminmax[1]*matprops_ptr->LENGTH_SCALE);
+    fwrite(&Nx, sizeof Nx, 1, fp_bin);
+    ftmp=xminmax[0]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    ftmp=xminmax[1]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    fwrite(&Ny, sizeof Ny, 1, fp_bin);
+    ftmp=yminmax[0]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    ftmp=yminmax[1]*matprops_ptr->LENGTH_SCALE;
+    fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+    
     for(iy=0; iy<Ny; iy++) 
     {
       for(ix=0; ix<Nx-1; ix++) 
         fprintf(fp,"%g ",max_kinergy[iy][ix]*ENERGY_SCALE);
       fprintf(fp,"%g\n",max_kinergy[iy][ix]*ENERGY_SCALE);
+      for(ix=0; ix<Nx; ix++)
+      {
+        ftmp=max_kinergy[iy][ix]*ENERGY_SCALE;
+        fwrite(&ftmp, sizeof ftmp, 1, fp_bin);
+      }
     }
+    fclose(fp_bin);
     fclose(fp);
 
     // output cummulative kinetic-energy

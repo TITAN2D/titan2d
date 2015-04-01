@@ -8,7 +8,7 @@ noinst_LIBRARIES = libtecplot.a
 
 libtecplot_a_SOURCES = outsum.C tecplot.C grassout.C
 
-INCLUDES=-I../header/ -I../gisapi
+INCLUDES=-I$(srcdir)/../header/ -I$(srcdir)/../gisapi
 
 if BUILD_HDF5
     libtecplot_a_SOURCES += xdfm_write.C hd5calls.c
