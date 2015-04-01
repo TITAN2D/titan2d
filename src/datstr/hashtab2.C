@@ -85,7 +85,7 @@ HashTable::HashTable(double *doublekeyrangein, int size, int prime, double  XR[]
   for(i=0;i<KEYLENGTH;i++)
     doublekeyrange[i]=doublekeyrangein[i];
   
-  hashconstant=8.0*NBUCKETS/
+  hashconstant=NBUCKETS/
     (doublekeyrange[0]*doublekeyrange[1]+doublekeyrange[1]);
 
   bucket = new HashEntryPtr[NBUCKETS];
