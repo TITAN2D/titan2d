@@ -15,11 +15,11 @@ C*******************************************************************
 C* $Id: rnr.h 2 2003-08-13 19:26:11Z sorokine $
 C*/
 
-implicit none
+          implicit none
 c X will be the down-slope direction -- keep consistent with savage
 c for now, flat surface
 
-double precision half,pi
+          double precision half,pi
 
-parameter (half=0.5d0, pi=3.1415926535897931)
+          parameter (half=0.5d0, pi=3.1415926535897931)
 
