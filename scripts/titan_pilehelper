@@ -1,0 +1,30 @@
+#!/bin/sh
+#*******************************************************************
+#* Copyright (C) 2003 University at Buffalo
+#*
+#* This software can be redistributed free of charge.  See COPYING
+#* file in the top distribution directory for more details.
+#*
+#* This software is distributed in the hope that it will be useful,
+#* but WITHOUT ANY WARRANTY; without even the implied warranty of
+#* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#*
+#* Author: Alex Sorokine <sorokine@buffalo.edu>
+#* Description: Helper script to bring up GRASS display, show map, and get coordinates
+#*
+#*******************************************************************
+#* $Id: titan_pilehelper 2 2003-08-13 19:26:11Z sorokine $ 
+#*
+
+
+# check if display is running
+savemon=`d.mon -p | sed -e '/^No/d' -e 's/[^:]*: \(x[0-9]\)$/\1/'`
+tmpmon=x4
+d.mon start=$tmpmon
+d.rast $1
+d.where -1 > $2
+d.mon stop=$tmpmon
+if [ "$savemon" ]; then 
+  d.mon select=$savemon
+fi
+

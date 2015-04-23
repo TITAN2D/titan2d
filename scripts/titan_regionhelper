@@ -1,0 +1,58 @@
+#!/bin/sh
+#*******************************************************************
+#* Copyright (C) 2003 University at Buffalo
+#*
+#* This software can be redistributed free of charge.  See COPYING
+#* file in the top distribution directory for more details.
+#*
+#* This software is distributed in the hope that it will be useful,
+#* but WITHOUT ANY WARRANTY; without even the implied warranty of
+#* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#*
+#* Author: Alex Sorokine <sorokine@buffalo.edu>
+#* Description: Helper script to bring up GRASS display, show map, and get coordinates
+#*
+#*******************************************************************
+#* $Id: titan_regionhelper 2 2003-08-13 19:26:11Z sorokine $ 
+#*
+
+# usage:
+#    _regionhelper raster_name 1 region_file
+# 1 is to bring up a new monitor, anything else -- use current monitor
+# region_file file to save region
+
+rast=$1
+newmon=$2
+
+# check if display is running
+if [ "$newmon" == "1" ]; then
+    savemon=`d.mon -p | sed -e '/^No/d' -e 's/[^:]*: \(x[0-9]\)$/\1/'`
+    tmpmon=x4
+    d.mon start=$tmpmon
+    d.rast $1
+fi
+
+# save current region
+saveregion=gmfg`date +%s`
+g.region save=$saveregion
+
+# select a new region
+d.zoom
+
+# report new region
+g.region -g | sed -e '/res/d' -e 's/^\(n\|s\|w\|e\)=//' | sed -e ':a;$!N;s/\n/ /;ta;' > $3
+
+# restore initial region
+g.region region=$saveregion 
+g.remove region=$saveregion 
+
+# get rid of an old monitor
+if [ "$newmon" == "1" ]; then
+    d.mon stop=$tmpmon
+fi
+if [ "$savemon" ]; then 
+    d.mon select=$savemon
+fi
+
+
+

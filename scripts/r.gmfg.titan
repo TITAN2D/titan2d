@@ -1,0 +1,291 @@
+#!/bin/bash
+#*******************************************************************
+#* Copyright (C) 2003 University at Buffalo
+#*
+#* This software can be redistributed free of charge.  See COPYING
+#* file in the top distribution directory for more details.
+#*
+#* This software is distributed in the hope that it will be useful,
+#* but WITHOUT ANY WARRANTY; without even the implied warranty of
+#* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#*
+#* Author: Alex Sorokine <sorokine@buffalo.edu> 
+#* Description: Wrapper script for GRASS that runs TITAN2D model from gmfg
+#*
+#*******************************************************************
+#* $Id: r.gmfg.titan 2 2003-08-13 19:26:11Z sorokine $ 
+#*
+
+#
+# Based on d.rast.labels from GRASS distribution
+#
+
+if test "$GISBASE" = ""; then
+ echo "You must be in GRASS GIS to run this program." >&2
+ exit 1
+fi   
+
+# Make sure that we know about python wrapper for the moodel
+# and that it really exists
+GMFG_RUNIT=`dirname $0`/titan_gui.py
+if [ ! -r "$GMFG_RUNIT" ]  
+then
+    echo Unable to find python script, value of GMFG_RUNIT is \"$GMFG_RUNIT\"
+    exit 1
+fi
+     
+eval `g.gisenv`
+: ${GISBASE?} ${GISDBASE?} ${LOCATION_NAME?} ${MAPSET?}
+LOCATION=$GISDBASE/$LOCATION_NAME/$MAPSET
+
+cleanup()
+{ # the main purpose of cleanup is to restore the old region
+if [ -s "$saveregion" ]
+then
+    g.region name=$saveregion
+    g.remove region=$saveregion 
+    echo debug: region $saveregion restored
+    set | grep GMFG_
+fi
+}
+
+# what to do in case of user break:
+exitprocedure()
+{
+ echo "User break!"
+ cleanup
+ exit 1
+}
+
+# shell check for user break (signal list: trap -l)
+trap "exitprocedure" 2 3 9 15
+
+if [ "$1" = "-help" -o "$1" = "help" -o "$1" = "-h" ]
+then
+ echo "Description:"
+ echo "  Run TITAN2D shallow water simulation model."
+ echo ""
+ echo "Usage:"
+ echo ""
+ echo "d.gmfg.titan2D [-vsa] map=name dir=path mp=# mesh=# iang=# bang=#"
+ echo "  [length=#] maxts=# maxtime=# outts=# outfmt=tecplot,mshplot,gmfg,HDF"
+ echo "  [email=string] piles=# pileh=# pilex=# piley=# pilexe=# pileye=#"
+ echo ""
+ echo "Flags:
+  -v   Verbose mode
+  -s   Scale Simulation? - Set to 'Yes' button to scale the
+       governing equations by the pile height, a length scale and
+       a gravity scale (activated button appears as a red color).
+       The pile height scale is taken from the Pile Height input
+       value so that the maximum initial height is 1 for the
+       scaled simulation.  The gravity gets scaled to 1, otherwise
+       it is 9.80 m/s^2.
+   -a  Adapt the Grid? - adapt the grid during the simulation
+       (activated button appears as a red color).  Adapting the
+       grid should result in better simulation accuracy at a
+       reduced computational cost but can also introduce
+       instabilities into the computation.
+
+Parameters:
+
+    map    Name of the DEM
+
+    dir    Simulation directory location - The location from where the
+           job will be submitted from.  All of the information (except
+           for the GIS information) needed to run the simulation will
+           be stored in this directory.  If this specified directory
+           already exists, the directory will not be touched and no
+           job will be submitted.  
+           value: string
+
+    mp     Number of Processors - The number of processors that will be 
+           used during the simulation.  The code only allows a power
+           of 2 (ie. 2^n) amounts of processors and the amount of
+           processor must be less than or equal to 64.
+           value: number
+
+    mesh   Computational Mesh Points in Y-Direction - A uniform
+           computational grid/mesh is created by the script and the
+           grid will have this many grid points in the y-direction.
+           The amount of grid points in the x-direction is calculated
+           so that the grid has nearly the same spacing in the x and y
+           directions.  I wouldn't recommend trying more than a couple
+           hundred for this input value right now.  The larger the
+           amount of grid points, the longer the simulation will take
+           to run and the more disk space that will be needed to save
+           the results.
+           value: number
+
+    iang,bang Internal Friction Angle,Bed Friction Angle - The two
+           parameters specifying the friction.  Both angles are to be
+           input in degrees.
+           value: number
+
+    length A scale that will usually correspond to the runout length
+           of the flow.  This is only used if the simulation is
+           scaled.
+
+    maxts  A maximum amount of time steps that the simulation should
+           run.  For most simulations, this should be in the 1,000s
+           range.
+
+    maxtime The maximum amount of time that the simulation will
+           approximate.
+
+    outts  This corresponds to how often results will be saved to file
+           for later analysis.  These files can become very large and
+           the user may not need to see results for every time step
+           since some time steps may have little change in the results
+           from the previous time step.
+
+    outfmt Choose Formats (tecplot,mshplot,gmfg,HDF) - tecplotxxxx.plt
+           and mshplotxxxx.plt are tecplot files.  GMFG Viz is for
+           Pady's visualizer.  HDF is not implemented yet.  Note that
+           the user can have multiple visualization output formats
+           with each simulation run.
+
+    email  Email Address - The email address to send the notification
+           of completion for the run to.  Email will be sent to
+           <user>@buffalo.edu if not set.
+
+    piles  Number of piles (this script currently support only 1 pile,
+           model can do more)
+
+    pileh  maximum initial thickness (height), m
+
+    pilex  pile center location, x, UTM E, m
+
+    piley  pile center location, y, UTM N, m
+
+    pilexe pile x extent, m
+
+    pileye pile y extent, m
+
+"
+ exit 1
+fi
+
+gotitMAP=0;
+for i
+do
+	case $i in
+		m=*|ma=*|map=*)
+		map=`echo $i | awk -F '=' '{print $2}'` ;
+                            gotitMAP=1;
+                            eval `g.findfile element=cell file=$map` ;
+                            map="${fullname}" ;
+                            GMFG_MAP="${name}" ;
+                            if [ "$map" = "" ] ; then
+                               echo "ERROR: map raster map [`echo $i | awk -F '=' '{print $2}'`] does not exist."
+                               exit 1
+                            fi ;;
+
+		d=*|di=*|dir=*)
+                GMFG_DIR=`echo $i | awk -F '=' '{print $2}'` ;;
+
+		mp=*)
+                GMFG_MP=`echo $i | awk -F '=' '{print $2}'` ;;
+
+		me=*|mes=*|mesh=*)
+		GMFG_MESH=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		ia=*|ian=*|iang=*)
+		GMFG_IANG=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		ba=*|ban=*|bang=*)
+		GMFG_BANG=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		p=*|pi=*|pil=*|pile=*|piles=*)
+		GMFG_PILES=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		l=*|le=*|len=*|leng=*|lengt=*|length=*)
+		GMFG_LENGTH=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		maxts=*)
+		GMFG_MAXTS=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		maxti=*|maxtim=*|maxtime=*)
+		GMFG_MAXTIME=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		outt=*|outts=*)
+		GMFG_OUTTS=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		outf=*|outfm=*|outfmt=*)
+		GMFG_OUTFMT=`echo $i | awk -F '=' '{print $2}'` ;; 
+
+		e=*|em=*|ema=*|emai=*|email=*)
+		GMFG_EMAIL=`echo $i | awk -F '=' '{print $2}'` ;;
+
+                piles=*)
+		GMFG_PILES=`echo $i | awk -F '=' '{print $2}'` ;;
+
+                pileh=*)
+		GMFG_PILEH=`echo $i | awk -F '=' '{print $2}'` ;;
+
+                pilex=*) 
+		GMFG_PILEX=`echo $i | awk -F '=' '{print $2}'` ;;
+
+                piley=*) 
+		GMFG_PILEY=`echo $i | awk -F '=' '{print $2}'` ;;
+
+                pilexe=*) 
+		GMFG_PILEXE=`echo $i | awk -F '=' '{print $2}'` ;;
+
+                pileye=*)
+		GMFG_PILEYE=`echo $i | awk -F '=' '{print $2}'` ;;
+
+		-a) GMFG_ADAPT=1 ;;
+		-s) GMFG_SCALE=1 ;;
+		-v) VERBOSE=1 ;;
+		*)
+		map=`echo $i` ;
+                            gotitMAP=1;
+                            eval `g.findfile element=cell file=$map` ;
+                            map="${fullname}" ;
+                            GMFG_MAP="${name}" ;
+                            if [ "$map" = "" ] ; then
+                               echo "ERROR: Please check the parameters."
+                               exit 1
+                            fi ;;
+
+	esac
+done
+
+#query map map only when in interactive mode:
+#if [ "$gotitMAP" -eq 0 ] ; then
+# while test "$gotitMAP" -eq 0 
+#  do
+#   echo ""
+#   g.ask type=old element=cell desc=raster prompt="Enter raster map name for DEM" unixfile=/tmp/$$
+#   eval `cat /tmp/$$`
+#   rm -f /tmp/$$
+#   map="${fullname}"
+#   GMFG_MAP="${name}"
+#   echo "$map"
+#   gotitMAP=1
+#  done
+#fi
+
+# in case of skipped map map, reset gotitMAP:
+if [ "$gotitMAP" -eq 1 -a ! "$map" ]
+then
+ gotitMAP=0
+fi
+
+#if [ "$gotitMAP" -eq 1 ]
+#then
+    export GISDBASE LOCATION_NAME MAPSET GMFG_MAP GMFG_DIR GMFG_MP GMFG_MESH GMFG_IANG GMFG_BANG GMFG_PILES GMFG_SCALE GMFG_LENGTH GMFG_MAXTS GMFG_MAXTIME GMFG_OUTTS GMFG_ADAPT GMFG_OUTFMT GMFG_EMAIL GMFG_PILES GMFG_PILEH GMFG_PILEX GMFG_PILEY GMFG_PILEXE GMFG_PILEYE
+    saveregion=gmfg`date +%s`
+    g.region save=$saveregion
+    python $GMFG_RUNIT
+    g.region region=$saveregion 
+    g.remove region=$saveregion 
+    if [ -d "$GMFG_DIR" ]
+    then
+	set | grep GMFG_ > $GMFG_DIR/environ
+    fi
+    exit 0
+#else
+#    echo No topomap had been specified
+#fi
+

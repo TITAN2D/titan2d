@@ -1,0 +1,27 @@
+What is LHS? LHS stands for Latin Hypercube Sampling.  It is a constrained sampling method that can converge in far fewer samples than Monte Carlo.  It works by dividing the each random dimension into N equally probable bins.  A  sample point within each bin is randomly chosen.  Each bin is divided into 2 equally probable parts, and a sample point is generated in each of the new bins that doesn't already have one.  This refinement should be repeated until the desired level of accuracy is obtained.
+
+Titan2D now has the capability to perform LHS simulations with uncertain bed friction (either normally or uniformly distributed) or uncertain volumes (uniformly distributed).  We plan to implement our own stochastic method, PCQ (Polynomial Chaos Quadrature) for stochastic Titan2D simulations.  PCQ out-performed LHS (particularly in capturing the higher statistical moments) for stochastic burgers' equation simulation in the presence of shocks.  PCQ is not yet ready for release so we are offering LHS in the meantime.
+
+To perform a Titan2D LHS stochastic simulation follow the instructions below.
+Remember each Titan2D run in an LHS simulation run must run on a single processor (you must have entered "1" for the number of processors through the python gui "titan_gui.py".) 
+
+Step 1:  Generating the LHS sample points
+decide whether you want to perform a simulation with an uncertain/random/stochastic bed friction angle OR (not both) an uncertain/random/stochastic initial pile volume.  If you choose the former type "./lhsbed" (no quotes) and answer the questions it asks you.  If you choose the later type "./lhsvol" and answer the questions it asks you.  These will produce a file named "stat_ctl.bed" or "stat_ctl.vol" respectively.
+
+Step 2:  Starting the LHS Simulation
+A) if submitting a batch job edit the pbs script "pbslhs" don't forget to pass the proper "stat_ctl." file (generated in Step 1) to the "dist-stats.pl" script.  then type "qsub pbslhs" at the command prompt.
+B) it is also possible to run the "dist-stats.pl" script from the command line on a single computer, however, this will take quite a long time.  To launch an lhs simulation without using pbs, type "perl dist-stats.pl --ctlfile=stat_ctl.<extension>" at the command line.  The perl script auto detects the number of CPU's (on computers running linux) and performs that many runs simultaneously.
+
+Step 3:  Computing Statistics
+After the LHS simulation is completed type "./lhstitanstats" at the command line.  This will produce a file named "statout.plot" which can be used to make convergence plots.  There are 20 entries on each line, the first entry is the number of sample points used to generate the statistics on this line, the second is the estimated probability (0->1) that the flow reached the test height at the test point (which are entered through the python gui "titan_gui.py"), the rest are the mean, standard deviation, and skewness of the end state properties 
+a) volume averaged velocity
+b) maximum height
+c) x coordinate of the centroid
+d) y coordinate of the centroid
+e) x direction spread
+f) y direction spread
+The spread in each dimension is defined as the difference between the maximum and minimum coordinates at which the pile height is greater than or equal to the edge height. The edge height is set through the python gui "titan_gui.py".
+
+Step 4:  Plotting Convergence Studies of Statistics
+We have provided a perl script "plot_stats.pl" that uses gnuplot to make convergence plots from the data in "statout.plot".  Simply type perl plot_stats.pl from within the simulation directory to generate 3 ".ps" files suitable for printing on printers setup for UNIX, or viewing through programs such as ghostview or gimp.  If you prefer not to use the "plot_stats.pl" script, the data file "statout.plot" (see Step 3) is straight forward enough that you can easily use any other plotting tool, such as a spreadsheet package or matlab, that you are familiar with.
+
