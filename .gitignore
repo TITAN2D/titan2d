@@ -28,4 +28,31 @@ bin/
 .project
 .settings/
 
+#autotols generated files
 autom4te.cache
+Makefile.in
+/compile
+/config.guess
+/config.sub
+/configure
+/depcomp
+/install-sh
+/missing
+/config.h.in~
+/config.h.in
+
+#configure generated file, for thouse who like to compile in source
+Makefile
+
+#binaries
+/bin
+src/vectordatapreproc/VecDataPreproc
+src/stochastic/lhsvol
+src/stochastic/lhstitanstats
+src/stochastic/lhsbed
+src/stochastic/gentitanteststats
+src/preproc/titan_preprocess
+src/preproc/titan_materialnames
+src/main/titan
+
+
