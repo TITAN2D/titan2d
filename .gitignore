@@ -28,6 +28,4 @@ bin/
 .project
 .settings/
 
-Makefile*
-config.*
 autom4te.cache
