@@ -1,3 +1,32 @@
+Titan2D Installation
+====================================================================
+
+If you are installing titan2d from github repository you need first
+to generate all autotools scripts (i.e. configure script and others).
+Execute following in top source directory:
+aclocal;autoheader;autoconf;automake --add-missing --copy
+
+Now you need to configure the installation. Titan2D support out of 
+source compilation. Execute configure in building directory, for
+example:
+../../titan2d/configure --with-grass=<path_to_grass_installation> --without-gdal \
+--with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
+CC=mpicc CXX=mpic++ F77=mpif90
+
+Now compile it:
+make -j <number of proccesses to use>
+
+And install it:
+make install
+
+
+
+
+
+
+Below is generic configure installation
+=====================================================================
+
 Copyright 1994, 1995, 1996, 1999, 2000, 2001, 2002 Free Software
 Foundation, Inc.
 
