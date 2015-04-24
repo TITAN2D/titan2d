@@ -40,7 +40,7 @@ Makefile.in
 /missing
 /config.h.in~
 /config.h.in
-
+/aclocal.m4
 #configure generated file, for thouse who like to compile in source
 Makefile
 
