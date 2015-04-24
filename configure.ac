@@ -4,6 +4,38 @@ AC_PREREQ([2.59])
 AC_INIT(titan, 3.0.0)
 AM_INIT_AUTOMAKE
 
+## Host specific stuff
+#===================================================================================
+AC_CANONICAL_HOST
+case $host in
+  *-*-irix*)
+    CFLAGS="$CFLAGS -woff all"
+    CXXFLAGS="$CXXFLAGS -LANG:std -woff all"
+    LDFLAGS="$LDFLAGS -LANG:std -w -lc -lC -lscs -lmpi++ "
+    CXX="CC"
+    F77="f77"
+    ;;
+  *-*-linux*)
+    dnl better remove -w
+    test_CFLAGS=${CFLAGS+set}
+    if test "$test_CFLAGS" != set; then
+    	CFLAGS="-g -w -O2"
+    fi
+    
+    test_CXXFLAGS=${CXXFLAGS+set}
+    if test "$test_CXXFLAGS" != set; then
+    	CXXFLAGS="-g -w -O2"
+    fi
+    
+    CPPFLAGS="$CPPFLAGS -DMPICH_IGNORE_CXX_SEEK"
+    
+    test_LDFLAGS=${LDFLAGS+set}
+    if test "$test_LDFLAGS" != set; then
+    	LDFLAGS="-g -w -O2"
+    fi
+    ;;
+esac
+
 AC_CONFIG_SRCDIR([src/main/hpfem.C])
 AC_CONFIG_HEADER([config.h])
 AC_PREFIX_DEFAULT([${PWD}])
@@ -21,24 +53,9 @@ AC_PROG_RANLIB
 AC_F77_LIBRARY_LDFLAGS
 AC_SYS_LARGEFILE
 
-## Host specific stuff
-#===================================================================================
-AC_CANONICAL_HOST
-case $host in
-  *-*-irix*)
-    CFLAGS="$CFLAGS -woff all"
-    CXXFLAGS="$CXXFLAGS -LANG:std -woff all"
-    LDFLAGS="$LDFLAGS -LANG:std -w -lc -lC -lscs -lmpi++ "
-    CXX="CC"
-    F77="f77"
-    ;;
-  *-*-linux*)
-    dnl better remove -w
-    CFLAGS="$CFLAGS -w -g -O2"
-    CXXFLAGS="$CXXFLAGS -w -g -O2 -DMPICH_IGNORE_CXX_SEEK"
-    LDFLAGS="$LDFLAGS"
-    ;;
-esac
+
+
+
 
 
 ## checks for libraries
