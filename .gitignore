@@ -27,6 +27,7 @@ bin/
 .cproject
 .project
 .settings/
+/.pydevproject
 
 #autotols generated files
 autom4te.cache
