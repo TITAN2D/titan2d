@@ -26,14 +26,17 @@
 
 #include <fstream>
 #include <iostream>
+#include <vector>
 using namespace std;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "constant.h"
 
 struct HashEntry {
 	unsigned key[KEYLENGTH];  //key: object key word
+	uint64_t   ukey; //ukey: single 64 bit key
 	void* value;   //value: poiter to record
 	HashEntry* pre;
 	HashEntry* next;    //pre, next: objects with same entry will be stored in a two-way link
@@ -42,15 +45,16 @@ struct HashEntry {
 		int i;
 		for (i = 0; i < KEYLENGTH; i++)
 			key[i] = *(keyi + i);
+		ukey=(((uint64_t) keyi[0]) << 32) | keyi[1];
 		next = NULL;
 		pre = NULL;
 	}
 
-	HashEntry() {
+	/*HashEntry() {
 		value = NULL;
 		next = NULL;
 		pre = NULL;
-	}
+	}*/
 
 	~HashEntry() {         //keep the follower when deleting an object
 		if (next)
@@ -85,6 +89,8 @@ protected:
 	int NBUCKETS;
 	int PRIME;
 	int ENTRIES;
+	vector<uint64_t> *ukeyBucket;
+	vector<HashEntry*> *hashEntyBucket;
 
 	HashEntryPtr addElement(int entry, unsigned* key);
 	HashEntryPtr searchBucket(HashEntryPtr p, unsigned* key);

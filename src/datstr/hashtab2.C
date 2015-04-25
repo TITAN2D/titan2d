@@ -65,6 +65,8 @@ HashTable::HashTable(unsigned* min, unsigned* max, int size, int prime) {
 	 
 	 MaxMinX[1]=MaxMinY[1]=1;*/
 
+	ukeyBucket=new vector<uint64_t>[NBUCKETS];
+	hashEntyBucket=new vector<HashEntry*> [NBUCKETS];
 }
 
 HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
@@ -98,6 +100,8 @@ HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[],
 	invdxrange = 1.0 / (Xrange[1] - Xrange[0]);
 	invdyrange = 1.0 / (Yrange[1] - Yrange[0]);
 
+	ukeyBucket=new vector<uint64_t>[NBUCKETS];
+	hashEntyBucket=new vector<HashEntry*> [NBUCKETS];
 }
 
 HashTable::~HashTable()              //evacuate the table
@@ -111,25 +115,25 @@ HashTable::~HashTable()              //evacuate the table
 		}
 	}
 	delete[] bucket;
+	delete[] ukeyBucket;
+	delete[] hashEntyBucket;
 }
 
 HashEntryPtr HashTable::searchBucket(HashEntryPtr p, unsigned* keyi) {
 	int i;
-	while (p) {
-		for (i = 0; i < KEYLENGTH; i++) {
-			if (p->key[i] != *(keyi + i)) {
-				p = p->next;
-				break;                          //not found, check next element
-			} else if (i == KEYLENGTH - 1)
-				return p;                       //found, return element pointer
-		}
+	uint64_t ukey=(((uint64_t) keyi[0]) << 32) | keyi[1];
+	while(p) {
+		if(p->ukey==ukey)
+			return p;
+		p = p->next;
 	}
-	return p;
+	return NULL;
 }
 
 HashEntryPtr HashTable::addElement(int entry, unsigned key[]) {
 
 	HashEntryPtr p = new HashEntry(key);
+	int i=0;
 
 	if (*(bucket + entry)) //this place is already occupied
 	{
@@ -137,12 +141,14 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[]) {
 		while (currentPtr != 0 && (key[0] > currentPtr->key[0])) {
 			p->pre = currentPtr;
 			currentPtr = currentPtr->next;
+			i++;
 		}
 
 		if (currentPtr != 0 && key[0] == currentPtr->key[0]) {
 			while (currentPtr != 0 && (key[1] > currentPtr->key[1])) {
 				p->pre = currentPtr;
 				currentPtr = currentPtr->next;
+				i++;
 			}
 
 		}
@@ -157,26 +163,64 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[]) {
 		else
 			bucket[entry] = p;
 
+		ukeyBucket[entry].insert(ukeyBucket[entry].begin()+i,p->ukey);
+		hashEntyBucket[entry].insert(hashEntyBucket[entry].begin()+i,p);
 	}
 
 	//  p->next = *(bucket+entry);        //add the bucket to the head
-	else
+	else{
 		bucket[entry] = p;                //else eliminate it
+		ukeyBucket[entry].push_back(p->ukey);
+		hashEntyBucket[entry].push_back(p);
+	}
 
 	return p;
 }
 
+#define HASHTABLE_LOOKUP_LINSEARCH 8
 void*
 HashTable::lookup(unsigned* key) {
-
 	int entry = hash(key);
 
-	HashEntryPtr p = searchBucket(*(bucket + entry), key);
+	uint64_t ukey = (((uint64_t) key[0]) << 32) | key[1];
+	int size = ukeyBucket[entry].size();
+	uint64_t *ukeyArr = &(ukeyBucket[entry][0]);
+	int i;
 
-	if (!p)
-		return NULL;                      //if not found, return 0
+	if (size == 0)
+		return NULL;
+	if (ukey < ukeyArr[0])
+		return NULL;
+	if (ukey > ukeyArr[size - 1])
+		return NULL;
 
-	return p->value;                    //if found return a pointer  
+	if (size < HASHTABLE_LOOKUP_LINSEARCH) {
+		for (i = 0; i < size; i++) {
+			if (ukey == ukeyArr[i]) {
+				return hashEntyBucket[entry][i]->value;
+			}
+		}
+	} else {
+		int i0, i1, i2;
+		i0 = 0;
+		i1 = size / 2;
+		i2 = size - 1;
+		while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH) {
+			if (ukey > ukeyArr[i1]) {
+				i0 = i1 + 1;
+				i1 = (i0 + i2) / 2;
+			} else {
+				i2 = i1;
+				i1 = (i0 + i2) / 2;
+			}
+		}
+		for (i = i0; i <= i2; i++) {
+			if (ukey == ukeyArr[i]) {
+				return hashEntyBucket[entry][i]->value;
+			}
+		}
+	}
+	return NULL;
 }
 
 void HashTable::add(unsigned* key, void* value) {
@@ -205,9 +249,19 @@ void HashTable::remove(unsigned* key) {
 	if (*(bucket + entry) == p) {
 		*(bucket + entry) = p->next;
 		delete p;
+		ukeyBucket[entry].erase(ukeyBucket[entry].begin());
+		hashEntyBucket[entry].erase(hashEntyBucket[entry].begin());
 	}
 
 	else {
+		int i;
+		for (i = 0; i < ukeyBucket[entry].size(); ++i) {
+			if (ukeyBucket[entry][i] == p->ukey) {
+				ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
+				hashEntyBucket[entry].erase(hashEntyBucket[entry].begin() + i);
+				break;
+			}
+		}
 		if (!(p->next))
 			delete p;
 		else {
@@ -239,9 +293,19 @@ void HashTable::remove(unsigned* key, int whatflag) {
 	if (*(bucket + entry) == p) {
 		*(bucket + entry) = p->next;
 		delete p;
+		ukeyBucket[entry].erase(ukeyBucket[entry].begin());
+		hashEntyBucket[entry].erase(hashEntyBucket[entry].begin());
 	}
 
 	else {
+		int i;
+		for (i = 0; i < ukeyBucket[entry].size(); ++i) {
+			if (ukeyBucket[entry][i] == p->ukey) {
+				ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
+				hashEntyBucket[entry].erase(hashEntyBucket[entry].begin() + i);
+				break;
+			}
+		}
 		if (!(p->next))
 			delete p;
 		else {
@@ -276,9 +340,19 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
 	if (*(bucket + entry) == p) {
 		*(bucket + entry) = p->next;
 		delete p;
+		ukeyBucket[entry].erase(ukeyBucket[entry].begin());
+		hashEntyBucket[entry].erase(hashEntyBucket[entry].begin());
 	}
 
 	else {
+		int i;
+		for (i = 0; i < ukeyBucket[entry].size(); ++i) {
+			if (ukeyBucket[entry][i] == p->ukey) {
+				ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
+				hashEntyBucket[entry].erase(hashEntyBucket[entry].begin() + i);
+				break;
+			}
+		}
 		if (!(p->next))
 			delete p;
 		else {
