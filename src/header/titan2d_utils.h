@@ -25,22 +25,28 @@ public:
 		totalTime=0.0;
 		meshAdaptionTime=0.0;
 		stepTime=0.0;
+		predictorStepTime=0.0;
+		correctorStepTime=0.0;
 		resultsOutputTime=0.0;
 	}
 	~TitanTimings(){}
 	void print(){
-		printf("Titan timings:\n");
+		printf("\nTitan timings:\n");
 		printf("  Total execution time:... %.3f\n",totalTime);
 		printf("    Mesh adoption time:... %.3f (%.2f %%)\n",meshAdaptionTime,100.0*meshAdaptionTime/totalTime);
 		printf("    Step time:............ %.3f (%.2f %%)\n",stepTime,100.0*stepTime/totalTime);
+		printf("      Predictor time:..... %.3f (%.2f %%, %.2f %%)\n",predictorStepTime,100.0*predictorStepTime/stepTime,100.0*predictorStepTime/totalTime);
+		printf("      Corrector  time:..... %.3f (%.2f %%, %.2f %%)\n",correctorStepTime,100.0*correctorStepTime/stepTime,100.0*correctorStepTime/totalTime);
 		printf("    Results dump time:.... %.3f (%.2f %%)\n",resultsOutputTime,100.0*resultsOutputTime/totalTime);
-
+		printf("\n");
 	}
 
 	double totalTime;
 	double meshAdaptionTime;
 	double stepTime;
+	double predictorStepTime;
+	double correctorStepTime;
 	double resultsOutputTime;
 };
-
+extern TitanTimings titanTimings;
 #endif

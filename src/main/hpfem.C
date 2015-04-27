@@ -35,7 +35,7 @@ int REFINE_LEVEL = 3;
 
 #include "../header/titan2d_utils.h"
 
-static TitanTimings titanTimings;
+TitanTimings titanTimings;
 
 int main(int argc, char *argv[]) {
 	int i; //-- counters
@@ -379,8 +379,7 @@ int main(int argc, char *argv[]) {
 	fclose(fpperf);
 #endif
 
-	end=MPI_Wtime();
-	titanTimings.totalTime=end-start;
+	titanTimings.totalTime=MPI_Wtime()-start;
 	if (myid == 0)
 		titanTimings.print();
 
