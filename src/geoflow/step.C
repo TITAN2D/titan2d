@@ -24,6 +24,71 @@
 
 #include "../header/titan2d_utils.h"
 
+void update_elements_pointers(HashTable* El_Table, HashTable* NodeTable) {
+	int i;
+	HashEntryPtr* buck = El_Table->getbucketptr();
+	HashEntryPtr currentPtr;
+	Element* Curr_El;
+	for (i = 0; i < El_Table->get_no_of_buckets(); i++){
+		if (*(buck + i)) {
+
+			currentPtr = *(buck + i);
+			while (currentPtr) {
+				Curr_El = (Element*) (currentPtr->value);
+				if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
+					Curr_El->update_neighbors_nodes_and_elements_pointers(El_Table, NodeTable);
+				currentPtr = currentPtr->next;
+			}
+		}
+	}
+	/*int pointersUpToDate = El_Table->isSortedBucketsUpToDate();
+	int nodesPointersUpToDate = NodeTable->isSortedBucketsUpToDate();
+	int NElements = El_Table->getNumberOfSortedBuckets();
+	int Nnodes = NodeTable->getNumberOfSortedBuckets();
+	Element** ElArr = (Element**) El_Table->getSortedBuckets();
+
+	if (pointersUpToDate == 0 || nodesPointersUpToDate==0) {
+		for (i = 0; i < NElements; i++) {
+			ElArr[i]->update_neighbors_pointers(El_Table, NodeTable);
+		}
+	}*/
+	return;
+}
+int check_elements_pointers(HashTable* El_Table, HashTable* NodeTable, const char *prefix) {
+	int i;
+	int count=0;
+	HashEntryPtr* buck = El_Table->getbucketptr();
+	HashEntryPtr currentPtr;
+	Element* Curr_El;
+	for (i = 0; i < El_Table->get_no_of_buckets(); i++){
+		if (*(buck + i)) {
+
+			currentPtr = *(buck + i);
+			while (currentPtr) {
+				Curr_El = (Element*) (currentPtr->value);
+				if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
+					count+=Curr_El->check_neighbors_nodes_and_elements_pointers(El_Table, NodeTable);
+				currentPtr = currentPtr->next;
+			}
+		}
+	}
+	if(count>0)
+		printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n",prefix,count);
+	/*int i;
+	int pointersUpToDate = El_Table->isSortedBucketsUpToDate();
+	int nodesPointersUpToDate = NodeTable->isSortedBucketsUpToDate();
+	int NElements = El_Table->getNumberOfSortedBuckets();
+	int Nnodes = NodeTable->getNumberOfSortedBuckets();
+	Element** ElArr = (Element**) El_Table->getSortedBuckets();
+
+	if (pointersUpToDate == 0 || nodesPointersUpToDate==0) {
+		for (i = 0; i < NElements; i++) {
+			ElArr[i]->update_neighbors_pointers(El_Table, NodeTable);
+		}
+	}*/
+	return count;
+}
+
 void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
     TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops,
     StatProps* statprops_ptr, int* order_flag, OutLine* outline_ptr, DISCHARGE* discharge,
@@ -36,6 +101,11 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 	/* pass off proc data here (really only need state_vars for off-proc neighbors) */
 	move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
+
+	//printf("Check0\n");
+	//check_elements_pointers(El_Table, NodeTable);
+	update_elements_pointers(El_Table, NodeTable);
+	check_elements_pointers(El_Table, NodeTable,"Check1");
 
 	slopes(El_Table, NodeTable, matprops_ptr);
 
@@ -285,6 +355,8 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 
 	statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 	statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
+
+	check_elements_pointers(El_Table, NodeTable,"Check2");
 
 	return;
 }

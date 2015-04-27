@@ -135,6 +135,16 @@ public:
 	//! returns the address of the first of 8 (nodes 0-7) node keys in an array, the node keys are used to access the nodes through the node hashtable
 	unsigned* getNode();
 
+	//! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
+	Node** getNodePtr();
+
+	//!update neighbors pointers from hash table
+	void update_neighbors_nodes_and_elements_pointers(HashTable*, HashTable*);
+
+	//!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
+	int check_neighbors_nodes_and_elements_pointers(HashTable*, HashTable*);
+
+
 	//! returns the array of 8 processors for the 8 neigbors of this element
 	int* getassoc();
 
@@ -548,8 +558,14 @@ private:
 	//! this array holds the first 8 (0->7) of this element's nodes' keys, the n9th (8 out of 0->8) node is the bubble node it's key is not stored separately since it has the same key as the element, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
 	unsigned node_key[8][KEYLENGTH];
 
+	//!same as node_key but pointers, can be out-dated
+	Node* node_keyPtr[8];
+
 	//! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
 	unsigned neighbor[8][KEYLENGTH];
+
+	//!same as neighbor but pointers, can be out-dated
+	Element* neighborPtr[8];
 
 	//! the key of the father it is assigned in the refine() and unrefine_elements() functions
 	unsigned father[KEYLENGTH];
@@ -881,6 +897,43 @@ inline unsigned* Element::getNode() {
 	return &(node_key[0][0]);
 }
 
+inline Node** Element::getNodePtr(){
+	return &(node_keyPtr[0]);
+}
+
+inline void Element::update_neighbors_nodes_and_elements_pointers(HashTable* El_Table, HashTable* NodeTable)
+{
+	int i;
+	if(El_Table!=NULL){
+		for(i=0;i<8;i++){
+			neighborPtr[i]=(Element*)El_Table->lookup(&neighbor[i][0]);
+		}
+	}
+	if(NodeTable!=NULL){
+		for(i=0;i<8;i++){
+			node_keyPtr[i]=(Node*)NodeTable->lookup(&node_key[i][0]);
+		}
+	}
+	return;
+}
+inline int Element::check_neighbors_nodes_and_elements_pointers(HashTable* El_Table, HashTable* NodeTable)
+{
+	int i;
+	int count=0;
+	if(El_Table!=NULL){
+		for(i=0;i<8;i++){
+			if(neighborPtr[i]!=(Element*)El_Table->lookup(&neighbor[i][0]))
+				count++;
+		}
+	}
+	if(NodeTable!=NULL){
+		for(i=0;i<8;i++){
+			if(node_keyPtr[i]!=(Node*)NodeTable->lookup(&node_key[i][0]))
+				count++;
+		}
+	}
+	return count;
+}
 inline int Element::get_no_of_dof() {
 	return ndof;
 }
