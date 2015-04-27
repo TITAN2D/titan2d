@@ -22,10 +22,14 @@
 #include "../header/hpfem.h"
 #define APPLY_BC
 
+#include "../header/titan2d_utils.h"
+
 void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
     TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops,
     StatProps* statprops_ptr, int* order_flag, OutLine* outline_ptr, DISCHARGE* discharge,
     int adaptflag) {
+	double t_start;
+
 	/* 
 	 * PREDICTOR-CORRECTED based on Davis' Simplified Godunov Method 
 	 */
@@ -65,6 +69,7 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	/*
 	 *  predictor step
 	 */
+	t_start = MPI_Wtime();
 	int j, k, counter;
 	double tiny = GEOFLOW_TINY;
 	double flux_src_coef = 0;
@@ -160,6 +165,7 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 				currentPtr = currentPtr->next;
 			}
 		}
+	titanTimings.predictorStepTime+=MPI_Wtime()-t_start;
 	/* finished predictor step */
 
 	/* really only need to share dudx, state_vars, and kactxy */
@@ -187,7 +193,7 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 	/*
 	 * corrector step and b.c.s
 	 */
-
+	t_start = MPI_Wtime();
 	//for comparison of magnitudes of forces in slumping piles
 	double forceint = 0.0, elemforceint;
 	double forcebed = 0.0, elemforcebed;
@@ -238,6 +244,7 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 				currentPtr = currentPtr->next;
 			}
 		}
+	titanTimings.correctorStepTime+=MPI_Wtime()-t_start;
 
 	//update the orientation of the "dryline" (divides partially wetted cells
 	//into wet and dry parts solely based on which neighbors currently have 
