@@ -33,6 +33,10 @@
 
 int REFINE_LEVEL = 3;
 
+#include "../header/titan2d_utils.h"
+
+static TitanTimings titanTimings;
+
 int main(int argc, char *argv[]) {
 	int i; //-- counters
 
@@ -51,6 +55,7 @@ int main(int argc, char *argv[]) {
 	MPI_Get_processor_name(processor_name, &namelen);
 
 	double start, end;
+	double t_start,t_end;
 	start = MPI_Wtime();
 
 	/* create new MPI datastructures for class objects */
@@ -186,6 +191,7 @@ int main(int argc, char *argv[]) {
 		/*  
 		 *  mesh adaption routines 
 		 */
+		t_start=MPI_Wtime();
 		double TARGET = .05;
 		double UNREFINE_TARGET = .01;
 		int h_count = 0;
@@ -219,10 +225,14 @@ int main(int argc, char *argv[]) {
 			}
 			move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
 		}
+		titanTimings.meshAdaptionTime+=MPI_Wtime()-t_start;
 
+		t_start=MPI_Wtime();
 		step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &pileprops, &fluxprops,
 		    &statprops, &order_flag, &outline, &discharge, adaptflag);
+		titanTimings.stepTime+=MPI_Wtime()-t_start;
 
+		t_start=MPI_Wtime();
 		/*
 		 * save a restart file 
 		 */
@@ -282,6 +292,7 @@ int main(int argc, char *argv[]) {
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 #endif
+		titanTimings.resultsOutputTime+=MPI_Wtime()-t_start;
 	}
 
 	move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
@@ -367,6 +378,11 @@ int main(int argc, char *argv[]) {
 	fprintf(fpperf,"%d Finished -- used %ld elements of %ld total in %e seconds, %e\n",myid,m,ii,end-start, ii/(end-start));
 	fclose(fpperf);
 #endif
+
+	end=MPI_Wtime();
+	titanTimings.totalTime=end-start;
+	if (myid == 0)
+		titanTimings.print();
 
 	MPI_Finalize();
 	return (0);
