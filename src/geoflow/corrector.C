@@ -39,19 +39,21 @@ void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* mat
 
 	double fluxxp[3], fluxyp[3], fluxxm[3], fluxym[3];
 
-	Node* nxp = (Node*) NodeTable->lookup(EmTemp->getNode() + (xp + 4) * 2);
+	Node** nodes=EmTemp->getNodePtr();
+
+	Node* nxp = nodes[xp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xp + 4) * 2);
 	for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
 		fluxxp[ivar] = nxp->flux[ivar];
 
-	Node* nyp = (Node*) NodeTable->lookup(EmTemp->getNode() + (yp + 4) * 2);
+	Node* nyp = nodes[yp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (yp + 4) * 2);
 	for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
 		fluxyp[ivar] = nyp->flux[ivar];
 
-	Node* nxm = (Node*) NodeTable->lookup(EmTemp->getNode() + (xm + 4) * 2);
+	Node* nxm = nodes[xm+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xm + 4) * 2);
 	for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
 		fluxxm[ivar] = nxm->flux[ivar];
 
-	Node* nym = (Node*) NodeTable->lookup(EmTemp->getNode() + (ym + 4) * 2);
+	Node* nym = nodes[ym+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (ym + 4) * 2);
 	for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
 		fluxym[ivar] = nym->flux[ivar];
 
