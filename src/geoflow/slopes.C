@@ -31,18 +31,12 @@ void slopes(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr) {
 	/* mdj 2007-02 */
 	HashEntryPtr currentPtr;
 	Element* Curr_El;
-#pragma omp parallel for private(currentPtr,Curr_El)
-	for (i = 0; i < El_Table->get_no_of_buckets(); i++)
-		if (*(buck + i)) {
-			currentPtr = *(buck + i);
-			while (currentPtr) {
-				Curr_El = (Element*) (currentPtr->value);
-				if (Curr_El->get_adapted_flag() > 0) { //if this element does not belong on this processor don't involve!!!
-					Curr_El->get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
-				}
-				currentPtr = currentPtr->next;
-			}
-		}
-
+	int Nelms=El_Table->getNumberOfLocalEntries();
+	//if this element does not belong on this processor don't involve!!!
+	Element** Elms=(Element**)El_Table->getAllLocalEntriesValues();
+//#pragma omp parallel for private(currentPtr,Curr_El)
+	for (i = 0; i < Nelms; i++){
+		Elms[i]->get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
+	}
 	return;
 }

@@ -105,8 +105,10 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	//printf("Check0\n");
 	//check_elements_pointers(El_Table, NodeTable);
 	update_elements_pointers(El_Table, NodeTable);
-	check_elements_pointers(El_Table, NodeTable,"Check1");
+	//check_elements_pointers(El_Table, NodeTable,"Check1");
 
+	El_Table->updateAllEntries();
+	El_Table->updateAllLocalEntries();
 	slopes(El_Table, NodeTable, matprops_ptr);
 
 	// get coefficients, eigenvalues, hmax and calculate the time step 
@@ -357,7 +359,8 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 	statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 
 	check_elements_pointers(El_Table, NodeTable,"Check2");
-
+	El_Table->ckeckAllEntriesPointers("Check2hash");
+	El_Table->ckeckAllLocalEntriesPointers("Check2hashLoc");
 	return;
 }
 
