@@ -62,6 +62,9 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
     StatProps* statprops_ptr, int* order_flag, OutLine* outline_ptr, DISCHARGE* discharge,
     int adaptflag);
 
+//! set neighboring elements and nodes pointers in elements
+void update_elements_pointers(HashTable* El_Table, HashTable* NodeTable);
+
 //! this function deletes unused elements and nodes, this is called durring grid adaptation in hadpt.C
 void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid);
 //! this function is used for dynamic replacement of a GIS digital elevation map, for example, when you're running a large simulation on multiple processors about a real life scenario you're expecting to occur soon and a channel collapses.  If in the simulation the flow has not yet a gotten to the channel this could allow you to replace the DEM with another one in which the channel has collapsed and continue running the simulation without having to restart from the beginning.  while this code updates the map, the logic and external programs used to in real time decide if the map should be updated have not been fully developed, this is the damd (data manager daemon, area of research in which Dr. Matt Jones is Participating).

@@ -815,19 +815,19 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
 			break;
 	}
 	/* x direction */
-	Element *ep = (Element*) (El_Table->lookup(&neighbor[xp][0]));
-	Element *em = (Element*) (El_Table->lookup(&neighbor[xm][0]));
+	Element *ep = neighborPtr[xp];//(Element*) (El_Table->lookup(&neighbor[xp][0]));
+	Element *em = neighborPtr[xm];//(Element*) (El_Table->lookup(&neighbor[xm][0]));
 	Element *ep2 = NULL;
 	Element *em2 = NULL;
 	//check if element has 2 neighbors on either side
-	Node* ndtemp = (Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+	Node* ndtemp = node_keyPtr[xp+4];//(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
 	if (ndtemp->info == S_C_CON) {
-		ep2 = (Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
+		ep2 = neighborPtr[xp+4];//(Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
 		assert(neigh_proc[xp + 4] >= 0 && ep2);
 	}
-	ndtemp = (Node*) NodeTable->lookup(&node_key[xm + 4][0]);
+	ndtemp = node_keyPtr[xm+4];//(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
 	if (ndtemp->info == S_C_CON) {
-		em2 = (Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
+		em2 = neighborPtr[xm+4];//(Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
 		assert(neigh_proc[xm + 4] >= 0 && em2);
 	}
 
@@ -849,19 +849,19 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
 	}
 
 	/* y direction */
-	ep = (Element*) (El_Table->lookup(&neighbor[yp][0]));
-	em = (Element*) (El_Table->lookup(&neighbor[ym][0]));
+	ep = neighborPtr[yp];//(Element*) (El_Table->lookup(&neighbor[yp][0]));
+	em = neighborPtr[ym];//(Element*) (El_Table->lookup(&neighbor[ym][0]));
 	ep2 = NULL;
 	em2 = NULL;
 	//check if element has 2 neighbors on either side
-	ndtemp = (Node*) NodeTable->lookup(&node_key[yp + 4][0]);
+	ndtemp = node_keyPtr[yp+4];//(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
 	if (ndtemp->info == S_C_CON) {
-		ep2 = (Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
+		ep2 = neighborPtr[yp+4];//(Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
 		assert(neigh_proc[yp + 4] >= 0 && ep2);
 	}
-	ndtemp = (Node*) NodeTable->lookup(&node_key[ym + 4][0]);
+	ndtemp = node_keyPtr[ym+4];//(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
 	if (ndtemp->info == S_C_CON) {
-		em2 = (Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
+		em2 = neighborPtr[ym+4];//(Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
 		if (!(neigh_proc[ym + 4] >= 0 && em2)) {
 			printf("ym=%d neigh_proc[ym+4]=%d em2=%d\n", ym, neigh_proc[ym + 4], em2);
 		}

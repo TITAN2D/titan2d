@@ -102,13 +102,14 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	/* pass off proc data here (really only need state_vars for off-proc neighbors) */
 	move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
 
-	//printf("Check0\n");
-	//check_elements_pointers(El_Table, NodeTable);
-	update_elements_pointers(El_Table, NodeTable);
-	//check_elements_pointers(El_Table, NodeTable,"Check1");
+
 
 	El_Table->updateAllEntries();
 	El_Table->updateAllLocalEntries();
+	//check_elements_pointers(El_Table, NodeTable,"Check0");
+	update_elements_pointers(El_Table, NodeTable);
+	//check_elements_pointers(El_Table, NodeTable,"Check1");
+
 	int Nelms=El_Table->getNumberOfLocalEntries();
 	Element** Elms=(Element**)El_Table->getAllLocalEntriesValues();
 
