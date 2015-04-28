@@ -343,9 +343,11 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 	statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 
+#ifdef DEBUG_EXTRA_CHECKING
 	check_elements_pointers(El_Table, NodeTable,"Check2");
 	El_Table->ckeckAllEntriesPointers("Check2hash");
 	El_Table->ckeckAllLocalEntriesPointers("Check2hashLoc");
+#endif
 	return;
 }
 
