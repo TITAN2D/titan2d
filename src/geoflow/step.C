@@ -109,6 +109,9 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 	El_Table->updateAllEntries();
 	El_Table->updateAllLocalEntries();
+	int Nelms=El_Table->getNumberOfLocalEntries();
+	Element** Elms=(Element**)El_Table->getAllLocalEntriesValues();
+
 	slopes(El_Table, NodeTable, matprops_ptr);
 
 	// get coefficients, eigenvalues, hmax and calculate the time step 
@@ -151,21 +154,18 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	int IF_STOPPED;
 	double curr_time, influx[3], *d_uvec; //VxVy[2];
 	Node* nd;
-#pragma omp parallel for                                                \
-private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
-	for (i = 0; i < El_Table->get_no_of_buckets(); i++)
-		if (*(buck + i)) {
+//#pragma omp parallel for                                                \
+//private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
+	for (i = 0; i < Nelms; i++){
 
-			currentPtr = *(buck + i);
-			while (currentPtr) {
-
-				Curr_El = (Element*) (currentPtr->value);
+				Curr_El = Elms[i];
 
 				influx[3];
 				influx[0] = *(Curr_El->get_influx() + 0);
 				influx[1] = *(Curr_El->get_influx() + 1);
 				influx[2] = *(Curr_El->get_influx() + 2);
 
+				//note, now there is no check for fluxes from non-local elements
 				if (!(influx[0] >= 0.0)) {
 					printf("negative influx=%g\n", influx[0]);
 					assert(0);
@@ -179,7 +179,6 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 				 }
 				 */
 
-				if (Curr_El->get_adapted_flag() > 0) {
 
 					d_uvec = Curr_El->get_d_state_vars();
 					nd = (Node*) NodeTable->lookup(Curr_El->pass_key());
@@ -233,10 +232,8 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 							for (k = 0; k < NUM_STATE_VARS; k++)
 								*(Curr_El->get_state_vars() + k) = 0;
 #endif
-				}
-				currentPtr = currentPtr->next;
-			}
-		}
+
+	}
 	titanTimings.predictorStepTime+=MPI_Wtime()-t_start;
 	/* finished predictor step */
 
@@ -277,12 +274,8 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 	// mdj 2007-04 this loop has pretty much defeated me - there is
 	//             a dependency in the Element class that causes incorrect
 	//             results
-	for (i = 0; i < El_Table->get_no_of_buckets(); i++)
-		if (*(buck + i)) {
-			HashEntryPtr currentPtr = *(buck + i);
-			while (currentPtr) {
-				Element* Curr_El = (Element*) (currentPtr->value);
-				if (Curr_El->get_adapted_flag() > 0) { //if this is a refined element don't involve!!!
+	for (i = 0; i < Nelms; i++){
+					Curr_El = Elms[i];
 
 					double *dxy = Curr_El->get_dx();
 					void *Curr_El_out = (void *) Curr_El;
@@ -312,24 +305,15 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 							for (k = 0; k < NUM_STATE_VARS; k++)
 								*(Curr_El->get_state_vars() + k) = 0;
 #endif
-				}
-				currentPtr = currentPtr->next;
-			}
-		}
+
+	}
 	titanTimings.correctorStepTime+=MPI_Wtime()-t_start;
 
 	//update the orientation of the "dryline" (divides partially wetted cells
 	//into wet and dry parts solely based on which neighbors currently have 
 	//pileheight greater than GEOFLOW_TINY
-	for (i = 0; i < El_Table->get_no_of_buckets(); i++) {
-		HashEntryPtr currentPtr = *(buck + i);
-
-		while (currentPtr) {
-			Element* Curr_El = (Element*) (currentPtr->value);
-			currentPtr = currentPtr->next;
-			if (Curr_El->get_adapted_flag() > 0) //if this is a refined element don't involve!!!
-				Curr_El->calc_wet_dry_orient(El_Table);
-		}
+	for (i = 0; i < Nelms; i++){
+		Elms[i]->calc_wet_dry_orient(El_Table);
 	}
 
 	/* finished corrector step */
