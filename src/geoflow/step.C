@@ -158,79 +158,79 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 	for (i = 0; i < Nelms; i++){
 
-				Curr_El = Elms[i];
+		Curr_El = Elms[i];
 
-				influx[3];
-				influx[0] = *(Curr_El->get_influx() + 0);
-				influx[1] = *(Curr_El->get_influx() + 1);
-				influx[2] = *(Curr_El->get_influx() + 2);
+		influx[3];
+		influx[0] = *(Curr_El->get_influx() + 0);
+		influx[1] = *(Curr_El->get_influx() + 1);
+		influx[2] = *(Curr_El->get_influx() + 2);
 
-				//note, now there is no check for fluxes from non-local elements
-				if (!(influx[0] >= 0.0)) {
-					printf("negative influx=%g\n", influx[0]);
-					assert(0);
-				}
+		//note, now there is no check for fluxes from non-local elements
+		if (!(influx[0] >= 0.0)) {
+			printf("negative influx=%g\n", influx[0]);
+			assert(0);
+		}
 
-				/*
-				 if((timeprops_ptr->timesec()>30.0)&&
-				 (influx[0]>0.0)){
-				 printf("flux not zeroed 30 seconds\n");
-				 assert(0);
-				 }
-				 */
+		/*
+		if((timeprops_ptr->timesec()>30.0)&&
+		(influx[0]>0.0)){
+		printf("flux not zeroed 30 seconds\n");
+		assert(0);
+		}
+		*/
 
 
-					d_uvec = Curr_El->get_d_state_vars();
-					nd = (Node*) NodeTable->lookup(Curr_El->pass_key());
+		d_uvec = Curr_El->get_d_state_vars();
+		nd = (Node*) NodeTable->lookup(Curr_El->pass_key());
 
-					// -- calc contribution of flux source
-					flux_src_coef = 0;
-					curr_time = (timeprops_ptr->time) * (timeprops_ptr->TIME_SCALE);
+		// -- calc contribution of flux source
+		flux_src_coef = 0;
+		curr_time = (timeprops_ptr->time) * (timeprops_ptr->TIME_SCALE);
 
-					/*
-					 double influx[3];
+		/*
+		double influx[3];
 
-					 influx[0]=*(Curr_El->get_influx()+0);
-					 influx[1]=*(Curr_El->get_influx()+1);
-					 influx[2]=*(Curr_El->get_influx()+2);
+		influx[0]=*(Curr_El->get_influx()+0);
+		influx[1]=*(Curr_El->get_influx()+1);
+		influx[2]=*(Curr_El->get_influx()+2);
 
-					 if((timeprops_ptr->timesec()>30.0)&&
-					 (influx[0]>0.0)){
-					 printf("flux not zeroed 30 seconds\n");
-					 assert(0);
-					 }
-					 */
+		if((timeprops_ptr->timesec()>30.0)&&
+		(influx[0]>0.0)){
+		printf("flux not zeroed 30 seconds\n");
+		assert(0);
+		}
+		*/
 
-					//VxVy[2]; 
-					if (*(Curr_El->get_state_vars() + 0) > GEOFLOW_TINY) {
-						VxVy[0] = *(Curr_El->get_state_vars() + 1) / *(Curr_El->get_state_vars() + 0);
-						VxVy[1] = *(Curr_El->get_state_vars() + 2) / *(Curr_El->get_state_vars() + 0);
-					} else
-						VxVy[0] = VxVy[1] = 0.0;
+		//VxVy[2];
+		if (*(Curr_El->get_state_vars() + 0) > GEOFLOW_TINY) {
+			VxVy[0] = *(Curr_El->get_state_vars() + 1) / *(Curr_El->get_state_vars() + 0);
+			VxVy[1] = *(Curr_El->get_state_vars() + 2) / *(Curr_El->get_state_vars() + 0);
+		} else
+			VxVy[0] = VxVy[1] = 0.0;
 
 #ifdef STOPCRIT_CHANGE_SOURCE
-					IF_STOPPED=Curr_El->get_stoppedflags();
+		IF_STOPPED=Curr_El->get_stoppedflags();
 #else
-					IF_STOPPED = !(!(Curr_El->get_stoppedflags()));
+		IF_STOPPED = !(!(Curr_El->get_stoppedflags()));
 #endif
 
 #ifdef SUNOS
-					predict_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS),
-					    Curr_El->get_prev_state_vars(), &tiny, Curr_El->get_kactxy(), &dt2,
-					    Curr_El->get_gravity(), Curr_El->get_curvature(),
-					    &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
-					    Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED,
-					    influx);
+		predict_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS),
+			Curr_El->get_prev_state_vars(), &tiny, Curr_El->get_kactxy(), &dt2,
+			Curr_El->get_gravity(), Curr_El->get_curvature(),
+			&(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
+			Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED,
+			influx);
 #endif
 #ifdef IBMSP
 
 #endif
-					/* apply bc's */
+		/* apply bc's */
 #ifdef APPLY_BC
-					for (j = 0; j < 4; j++)
-						if (*(Curr_El->get_neigh_proc() + j) == INIT)   // this is a boundary!
-							for (k = 0; k < NUM_STATE_VARS; k++)
-								*(Curr_El->get_state_vars() + k) = 0;
+		for (j = 0; j < 4; j++)
+			if (*(Curr_El->get_neigh_proc() + j) == INIT)   // this is a boundary!
+				for (k = 0; k < NUM_STATE_VARS; k++)
+					*(Curr_El->get_state_vars() + k) = 0;
 #endif
 
 	}
@@ -275,35 +275,35 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	//             a dependency in the Element class that causes incorrect
 	//             results
 	for (i = 0; i < Nelms; i++){
-					Curr_El = Elms[i];
+		Curr_El = Elms[i];
 
-					double *dxy = Curr_El->get_dx();
-					void *Curr_El_out = (void *) Curr_El;
-					correct(NodeTable, El_Table, dt, matprops_ptr, fluxprops, timeprops_ptr, Curr_El_out,
-					    &elemforceint, &elemforcebed, &elemeroded, &elemdeposited);
+		double *dxy = Curr_El->get_dx();
+		void *Curr_El_out = (void *) Curr_El;
+		correct(NodeTable, El_Table, dt, matprops_ptr, fluxprops, timeprops_ptr, Curr_El_out,
+			&elemforceint, &elemforcebed, &elemeroded, &elemdeposited);
 
-					forceint += fabs(elemforceint);
-					forcebed += fabs(elemforcebed);
-					realvolume += dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
-					eroded += elemeroded;
-					deposited += elemdeposited;
-					double *coord = Curr_El->get_coord();
-					//update the record of maximum pileheight in the area covered by this element
-					double hheight = *(Curr_El->get_state_vars());
-					if (hheight > 0 && hheight < 0)
-						;
-					double *momenta = Curr_El->get_state_vars() + 1;
+		forceint += fabs(elemforceint);
+		forcebed += fabs(elemforcebed);
+		realvolume += dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
+		eroded += elemeroded;
+		deposited += elemdeposited;
+		double *coord = Curr_El->get_coord();
+		//update the record of maximum pileheight in the area covered by this element
+		double hheight = *(Curr_El->get_state_vars());
+		if (hheight > 0 && hheight < 0)
+			;
+		double *momenta = Curr_El->get_state_vars() + 1;
 
 #ifdef MAX_DEPTH_MAP
-					outline_ptr->update(coord[0] - 0.5 * dxy[0], coord[0] + 0.5 * dxy[0],
-					    coord[1] - 0.5 * dxy[1], coord[1] + 0.5 * dxy[1], hheight, momenta);
+		outline_ptr->update(coord[0] - 0.5 * dxy[0], coord[0] + 0.5 * dxy[0],
+			coord[1] - 0.5 * dxy[1], coord[1] + 0.5 * dxy[1], hheight, momenta);
 #endif
 
 #ifdef APPLY_BC
-					for (j = 0; j < 4; j++)
-						if (*(Curr_El->get_neigh_proc() + j) == INIT)   // this is a boundary!
-							for (k = 0; k < NUM_STATE_VARS; k++)
-								*(Curr_El->get_state_vars() + k) = 0;
+		for (j = 0; j < 4; j++)
+			if (*(Curr_El->get_neigh_proc() + j) == INIT)   // this is a boundary!
+				for (k = 0; k < NUM_STATE_VARS; k++)
+					*(Curr_El->get_state_vars() + k) = 0;
 #endif
 
 	}
