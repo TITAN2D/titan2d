@@ -2010,10 +2010,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 		zp = (positive_x_side + side) % 4;
 		zm = (zp + 2) % 4;
 
-		np = (Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+		np = node_keyPtr[zp+4];//(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
 
 		if (neigh_proc[zp] == -1) {
-			nm = (Node*) NodeTable->lookup(&node_key[zm + 4][0]);
+			nm = node_keyPtr[zm+4];//(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
 			*outflow += (nm->flux[0]) * dx[!side];
 
 			//outflow boundary conditions
@@ -2022,8 +2022,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 				np->refinementflux[ivar] = nm->refinementflux[ivar];
 			}
 		} else if (neigh_proc[zp] != myid) {
-			np = (Node*) NodeTable->lookup(&node_key[zp + 4][0]);
-			elm1 = (Element*) El_Table->lookup(&neighbor[zp][0]);
+			np = node_keyPtr[zp+4];//(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+			elm1 = neighborPtr[zp];//(Element*) El_Table->lookup(&neighbor[zp][0]);
 			assert(elm1);
 
 			zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
@@ -2033,7 +2033,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 			riemannflux(hfv, hfv1, np->flux);
 			riemannflux(hrfv, hrfv1, np->refinementflux);
 
-			elm2 = (Element*) El_Table->lookup(&neighbor[zp + 4][0]);
+			elm2 = neighborPtr[zp+4];//(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
 			assert(elm2);
 			zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
 			elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv2, hrfv2, this,
@@ -2042,7 +2042,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 			//note a rectangular domain ensures that neigh_proc[zm+4]!=-1
 			if (neigh_proc[zp + 4] == myid) {
 				zm2 = elm2->which_neighbor(pass_key()) % 4;
-				nm2 = (Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
+				nm2 = elm2->node_keyPtr[zm2+4];//(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
 
 				riemannflux(hfv, hfv2, nm2->flux);
 				riemannflux(hrfv, hrfv2, nm2->refinementflux);
@@ -2063,8 +2063,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
 		} else {
 
-			np = (Node*) NodeTable->lookup(&node_key[zp + 4][0]);
-			elm1 = (Element*) El_Table->lookup(&neighbor[zp][0]);
+			np = node_keyPtr[zp+4];//(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+			elm1 = neighborPtr[zp];//(Element*) El_Table->lookup(&neighbor[zp][0]);
 			assert(elm1);
 
 			zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
@@ -2115,9 +2115,9 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
 				zelmpos = elm1->which_neighbor(pass_key());
 				assert(zelmpos > -1);
-				nm1 = (Node*) NodeTable->lookup(&elm1->node_key[zelmpos % 4 + 4][0]);
+				nm1 = elm1->node_keyPtr[zelmpos%4+4];//(Node*) NodeTable->lookup(&elm1->node_key[zelmpos % 4 + 4][0]);
 
-				elm2 = (Element*) El_Table->lookup(&elm1->neighbor[(zelmpos + 4) % 8][0]);
+				elm2 = elm1->neighborPtr[(zelmpos+4)%8];//(Element*) El_Table->lookup(&elm1->neighbor[(zelmpos + 4) % 8][0]);
 				assert(elm2);
 
 				elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, elm2, dt);
@@ -2125,7 +2125,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
 				if (*(elm1->get_neigh_proc() + (zelmpos + 4) % 8) == myid) {
 					zp2 = elm2->which_neighbor(elm1->pass_key()) % 4;
-					np2 = (Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
+					np2 = elm2->node_keyPtr[zp2+4];//(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
 					riemannflux(hfv2, hfv1, np2->flux);
 					riemannflux(hrfv2, hrfv1, np2->refinementflux);
 
@@ -2171,9 +2171,9 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 				nm2 = NULL;
 
 				zelmpos = elm1->which_neighbor(pass_key()) % 4;
-				nm1 = (Node*) NodeTable->lookup(&elm1->node_key[zelmpos + 4][0]);
+				nm1 = elm1->node_keyPtr[zelmpos+4];//(Node*) NodeTable->lookup(&elm1->node_key[zelmpos + 4][0]);
 
-				elm2 = (Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
+				elm2 = neighborPtr[zp+4];//(Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
 				assert(elm2);
 
 				zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
@@ -2182,7 +2182,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
 				if (neigh_proc[zp + 4] == myid) {
 					zelmpos_2 = elm2->which_neighbor(pass_key()) % 4;
-					nm2 = (Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
+					nm2 = elm2->node_keyPtr[zelmpos_2+4];//(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
 					riemannflux(hfv, hfv2, nm2->flux);
 					riemannflux(hrfv, hrfv2, nm2->refinementflux);
 
@@ -2215,8 +2215,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 		if (neigh_proc[zm] != myid) {
 
 			if (neigh_proc[zm] == -1) {
-				np = (Node*) NodeTable->lookup(&node_key[zp + 4][0]);
-				nm = (Node*) NodeTable->lookup(&node_key[zm + 4][0]);
+				np = node_keyPtr[zp+4];//(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+				nm = node_keyPtr[zm+4];//(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
 				*outflow -= (np->flux[0]) * dx[!side];
 				//outflow boundary conditions
 				for (ivar = 0; ivar < NUM_STATE_VARS; ivar++) {
@@ -2274,8 +2274,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
 				 */
 
-				nm = (Node*) NodeTable->lookup(&node_key[zm + 4][0]);
-				elm1 = (Element*) El_Table->lookup(&neighbor[zm][0]);
+				nm = node_keyPtr[zm+4];//(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
+				elm1 = neighborPtr[zm];//(Element*) El_Table->lookup(&neighbor[zm][0]);
 				assert(elm1);
 
 				zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm1, dt);
@@ -2283,7 +2283,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 				riemannflux(hfv1, hfv, nm->flux);
 				riemannflux(hrfv1, hrfv, nm->refinementflux);
 
-				elm2 = (Element*) El_Table->lookup(&neighbor[zm + 4][0]);
+				elm2 = neighborPtr[zm+4];//(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
 				assert(elm2);
 
 				zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm2, dt);
@@ -2292,7 +2292,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 				//note a rectangular domain ensures that neigh_proc[zm+4]!=-1
 				if (neigh_proc[zm + 4] == myid) {
 					zp2 = elm2->which_neighbor(pass_key()) % 4;
-					np2 = (Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
+					np2 = elm2->node_keyPtr[zp2+4];//(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
 
 					riemannflux(hfv2, hfv, np2->flux);
 					riemannflux(hrfv2, hrfv, np2->refinementflux);
