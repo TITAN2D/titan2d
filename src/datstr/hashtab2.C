@@ -66,7 +66,7 @@ HashTable::HashTable(unsigned* min, unsigned* max, int size, int prime) {
 	 MaxMinX[1]=MaxMinY[1]=1;*/
 
 	ukeyBucket=new vector<uint64_t>[NBUCKETS];
-	hashEntyBucket=new vector<HashEntry*> [NBUCKETS];
+	hashEntryBucket=new vector<HashEntry*> [NBUCKETS];
 }
 
 HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
@@ -101,7 +101,7 @@ HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[],
 	invdyrange = 1.0 / (Yrange[1] - Yrange[0]);
 
 	ukeyBucket=new vector<uint64_t>[NBUCKETS];
-	hashEntyBucket=new vector<HashEntry*> [NBUCKETS];
+	hashEntryBucket=new vector<HashEntry*> [NBUCKETS];
 }
 
 HashTable::~HashTable()              //evacuate the table
@@ -116,7 +116,7 @@ HashTable::~HashTable()              //evacuate the table
 	}
 	delete[] bucket;
 	delete[] ukeyBucket;
-	delete[] hashEntyBucket;
+	delete[] hashEntryBucket;
 }
 
 HashEntryPtr HashTable::searchBucket(HashEntryPtr p, unsigned* keyi) {
@@ -164,14 +164,14 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[]) {
 			bucket[entry] = p;
 
 		ukeyBucket[entry].insert(ukeyBucket[entry].begin()+i,p->ukey);
-		hashEntyBucket[entry].insert(hashEntyBucket[entry].begin()+i,p);
+		hashEntryBucket[entry].insert(hashEntryBucket[entry].begin()+i,p);
 	}
 
 	//  p->next = *(bucket+entry);        //add the bucket to the head
 	else{
 		bucket[entry] = p;                //else eliminate it
 		ukeyBucket[entry].push_back(p->ukey);
-		hashEntyBucket[entry].push_back(p);
+		hashEntryBucket[entry].push_back(p);
 	}
 
 	return p;
@@ -197,7 +197,7 @@ HashTable::lookup(unsigned* key) {
 	if (size < HASHTABLE_LOOKUP_LINSEARCH) {
 		for (i = 0; i < size; i++) {
 			if (ukey == ukeyArr[i]) {
-				return hashEntyBucket[entry][i]->value;
+				return hashEntryBucket[entry][i]->value;
 			}
 		}
 	} else {
@@ -216,7 +216,7 @@ HashTable::lookup(unsigned* key) {
 		}
 		for (i = i0; i <= i2; i++) {
 			if (ukey == ukeyArr[i]) {
-				return hashEntyBucket[entry][i]->value;
+				return hashEntryBucket[entry][i]->value;
 			}
 		}
 	}
@@ -250,7 +250,7 @@ void HashTable::remove(unsigned* key) {
 		*(bucket + entry) = p->next;
 		delete p;
 		ukeyBucket[entry].erase(ukeyBucket[entry].begin());
-		hashEntyBucket[entry].erase(hashEntyBucket[entry].begin());
+		hashEntryBucket[entry].erase(hashEntryBucket[entry].begin());
 	}
 
 	else {
@@ -258,7 +258,7 @@ void HashTable::remove(unsigned* key) {
 		for (i = 0; i < ukeyBucket[entry].size(); ++i) {
 			if (ukeyBucket[entry][i] == p->ukey) {
 				ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
-				hashEntyBucket[entry].erase(hashEntyBucket[entry].begin() + i);
+				hashEntryBucket[entry].erase(hashEntryBucket[entry].begin() + i);
 				break;
 			}
 		}
@@ -294,7 +294,7 @@ void HashTable::remove(unsigned* key, int whatflag) {
 		*(bucket + entry) = p->next;
 		delete p;
 		ukeyBucket[entry].erase(ukeyBucket[entry].begin());
-		hashEntyBucket[entry].erase(hashEntyBucket[entry].begin());
+		hashEntryBucket[entry].erase(hashEntryBucket[entry].begin());
 	}
 
 	else {
@@ -302,7 +302,7 @@ void HashTable::remove(unsigned* key, int whatflag) {
 		for (i = 0; i < ukeyBucket[entry].size(); ++i) {
 			if (ukeyBucket[entry][i] == p->ukey) {
 				ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
-				hashEntyBucket[entry].erase(hashEntyBucket[entry].begin() + i);
+				hashEntryBucket[entry].erase(hashEntryBucket[entry].begin() + i);
 				break;
 			}
 		}
@@ -341,7 +341,7 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
 		*(bucket + entry) = p->next;
 		delete p;
 		ukeyBucket[entry].erase(ukeyBucket[entry].begin());
-		hashEntyBucket[entry].erase(hashEntyBucket[entry].begin());
+		hashEntryBucket[entry].erase(hashEntryBucket[entry].begin());
 	}
 
 	else {
@@ -349,7 +349,7 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
 		for (i = 0; i < ukeyBucket[entry].size(); ++i) {
 			if (ukeyBucket[entry][i] == p->ukey) {
 				ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
-				hashEntyBucket[entry].erase(hashEntyBucket[entry].begin() + i);
+				hashEntryBucket[entry].erase(hashEntryBucket[entry].begin() + i);
 				break;
 			}
 		}

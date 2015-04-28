@@ -90,7 +90,7 @@ protected:
 	int PRIME;
 	int ENTRIES;
 	vector<uint64_t> *ukeyBucket;
-	vector<HashEntry*> *hashEntyBucket;
+	vector<HashEntry*> *hashEntryBucket;
 
 	HashEntryPtr addElement(int entry, unsigned* key);
 	HashEntryPtr searchBucket(HashEntryPtr p, unsigned* key);
