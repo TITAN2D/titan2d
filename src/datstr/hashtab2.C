@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../header/hashtab.h"
+#include "../header/element2.h"
 #undef SEEK_SET
 #undef SEEK_END
 #undef SEEK_CUR
@@ -67,6 +68,8 @@ HashTable::HashTable(unsigned* min, unsigned* max, int size, int prime) {
 
 	ukeyBucket=new vector<uint64_t>[NBUCKETS];
 	hashEntryBucket=new vector<HashEntry*> [NBUCKETS];
+
+	NEntries=0;
 }
 
 HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
@@ -102,6 +105,7 @@ HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[],
 
 	ukeyBucket=new vector<uint64_t>[NBUCKETS];
 	hashEntryBucket=new vector<HashEntry*> [NBUCKETS];
+	NEntries=0;
 }
 
 HashTable::~HashTable()              //evacuate the table
@@ -173,7 +177,7 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[]) {
 		ukeyBucket[entry].push_back(p->ukey);
 		hashEntryBucket[entry].push_back(p);
 	}
-
+	NEntries++;
 	return p;
 }
 
@@ -270,7 +274,7 @@ void HashTable::remove(unsigned* key) {
 			delete p;
 		}
 	}
-
+	NEntries--;
 }
 // for debugging...
 void HashTable::remove(unsigned* key, int whatflag) {
@@ -314,6 +318,7 @@ void HashTable::remove(unsigned* key, int whatflag) {
 			delete p;
 		}
 	}
+	NEntries--;
 }
 
 void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int where) {
@@ -361,8 +366,46 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
 			delete p;
 		}
 	}
+	NEntries--;
 }
+void HashTable::updateAllLocalEntries(){
+	int i,j,count=0,NEntriesInBucket;
 
+	ukeyAllEntriesLocal.resize(NEntries);
+	allEntriesLocal.resize(NEntries);
+	for(int i = 0; i < NBUCKETS; i++){
+		NEntriesInBucket=ukeyBucket[i].size();
+		for(j=0;j<NEntriesInBucket;j++){
+			Element* Curr_El=(Element*)hashEntryBucket[i][j]->value;
+			if (Curr_El->get_adapted_flag() > 0) { //if this element does not belong on this processor don't involve!!!
+				ukeyAllEntriesLocal[count]=ukeyBucket[i][j];
+				allEntriesLocal[count]=hashEntryBucket[i][j]->value;
+				count++;
+			}
+		}
+	}
+	NEntriesLocal=count;
+	ukeyAllEntriesLocal.resize(NEntriesLocal);
+	allEntriesLocal.resize(NEntriesLocal);
+}
+int HashTable::ckeckAllLocalEntriesPointers(const char *prefix){
+	int i,j,count=0,NEntriesInBucket,mismatch=0;
+	for(int i = 0; i < NBUCKETS; i++){
+		NEntriesInBucket=ukeyBucket[i].size();
+		for(j=0;j<NEntriesInBucket;j++){
+			Element* Curr_El=(Element*)hashEntryBucket[i][j]->value;
+			if (Curr_El->get_adapted_flag() > 0) { //if this element does not belong on this processor don't involve!!!
+				if(ukeyAllEntriesLocal[count]!=ukeyBucket[i][j] || allEntriesLocal[count]!=hashEntryBucket[i][j]->value)
+					mismatch++;
+				count++;
+			}
+		}
+	}
+	if(mismatch>0){
+		printf("%s WARNING: AllEntriesPointersLocal are out-dated. %d values pointers/keys do not match.\n",prefix,mismatch);
+	}
+	return mismatch;
+}
 /*
  int HashTable:: hash(unsigned* key)
  { 

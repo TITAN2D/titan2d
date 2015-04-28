@@ -92,6 +92,15 @@ protected:
 	vector<uint64_t> *ukeyBucket;
 	vector<HashEntry*> *hashEntryBucket;
 
+	int NEntries;
+	vector<uint64_t> ukeyAllEntries;
+	vector<void*> allEntries;
+
+	int NEntriesLocal;
+	vector<uint64_t> ukeyAllEntriesLocal;
+	vector<void*> allEntriesLocal;
+
+
 	HashEntryPtr addElement(int entry, unsigned* key);
 	HashEntryPtr searchBucket(HashEntryPtr p, unsigned* key);
 
@@ -127,6 +136,18 @@ public:
 	 */
 	int get_no_of_entries();
 
+	int getNumberOfEntries(){return NEntries;}
+	void** getAllEntriesValues(){return &(allEntries[0]);}
+	void updateAllEntries();
+	//!debug function check that all allEntries are up to date, return number of mismatch
+	int ckeckAllEntriesPointers(const char *prefix);
+
+	int getNumberOfLocalEntries(){return NEntriesLocal;}
+	void** getAllLocalEntriesValues(){return &(allEntriesLocal[0]);}
+	//only works for elements
+	void updateAllLocalEntries();
+	//!debug function check that all allEntries are up to date, return number of mismatch
+	int ckeckAllLocalEntriesPointers(const char *prefix);
 };
 
 inline double* HashTable::get_doublekeyrange() {
@@ -187,5 +208,36 @@ inline int HashTable::hash(unsigned* key) {
 	 */
 	return (((int) ((key[0] * doublekeyrange[1] + key[1]) * hashconstant + 0.5)) % NBUCKETS);
 }
-
+inline void HashTable::updateAllEntries(){
+	int i,j,count=0,NEntriesInBucket;
+	ukeyAllEntries.resize(NEntries);
+	allEntries.resize(NEntries);
+	for(int i = 0; i < NBUCKETS; i++){
+		NEntriesInBucket=ukeyBucket[i].size();
+		for(j=0;j<NEntriesInBucket;j++){
+			ukeyAllEntries[count]=ukeyBucket[i][j];
+			allEntries[count]=hashEntryBucket[i][j]->value;
+			count++;
+		}
+	}
+}
+inline int HashTable::ckeckAllEntriesPointers(const char *prefix){
+	int i,j,count=0,NEntriesInBucket,mismatch=0;
+	if(NEntries!=ukeyAllEntries.size()){
+		printf("%s WARNING: AllEntriesPointers are out-dated, number of entries do not match.\n",prefix);
+		return ukeyAllEntries.size();
+	}
+	for(int i = 0; i < NBUCKETS; i++){
+		NEntriesInBucket=ukeyBucket[i].size();
+		for(j=0;j<NEntriesInBucket;j++){
+			if(ukeyAllEntries[count]!=ukeyBucket[i][j] || allEntries[count]!=hashEntryBucket[i][j]->value)
+				mismatch++;
+			count++;
+		}
+	}
+	if(mismatch>0){
+		printf("%s WARNING: AllEntriesPointers are out-dated. %d values pointers/keys do not match.\n",prefix,mismatch);
+	}
+	return mismatch;
+}
 #endif
