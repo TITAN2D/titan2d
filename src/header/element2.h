@@ -136,7 +136,10 @@ public:
 	unsigned* getNode();
 
 	//! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
-	Node** getNodePtr();
+	Node** getNodesPtrs();
+
+	//! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
+	Node* getNodePtr(int i){return node_keyPtr[i];}
 
 	//!update neighbors pointers from hash table
 	void update_neighbors_nodes_and_elements_pointers(HashTable*, HashTable*);
@@ -897,7 +900,7 @@ inline unsigned* Element::getNode() {
 	return &(node_key[0][0]);
 }
 
-inline Node** Element::getNodePtr(){
+inline Node** Element::getNodesPtrs(){
 	return &(node_keyPtr[0]);
 }
 

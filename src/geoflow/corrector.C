@@ -39,7 +39,7 @@ void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* mat
 
 	double fluxxp[3], fluxyp[3], fluxxm[3], fluxym[3];
 
-	Node** nodes=EmTemp->getNodePtr();
+	Node** nodes=EmTemp->getNodesPtrs();
 
 	Node* nxp = nodes[xp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xp + 4) * 2);
 	for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
