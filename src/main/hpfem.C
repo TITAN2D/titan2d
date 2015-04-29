@@ -118,9 +118,21 @@ int main(int argc, char *argv[]) {
 
 		AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -1.0);
 
+		//update temporary arrays of elements/nodes pointers
+		BT_Elem_Ptr->updateAllEntries();
+		BT_Elem_Ptr->updateAllLocalEntries();
+		update_elements_pointers(BT_Elem_Ptr, BT_Node_Ptr);
+
 		//initialize pile height and if appropriate perform initial adaptation
+
 		init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adaptflag, &matprops, &timeprops,
 		    &mapnames, &pileprops, &fluxprops, &statprops);
+	}
+	else{
+		//update temporary arrays of elements/nodes pointers
+		BT_Elem_Ptr->updateAllEntries();
+		BT_Elem_Ptr->updateAllLocalEntries();
+		update_elements_pointers(BT_Elem_Ptr, BT_Node_Ptr);
 	}
 
 	/* for debug only, to check if exactly what's loaded will be saved again
@@ -224,6 +236,11 @@ int main(int argc, char *argv[]) {
 				move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
 			}
 			move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+
+			//update temporary arrays of elements/nodes pointers
+			BT_Elem_Ptr->updateAllEntries();
+			BT_Elem_Ptr->updateAllLocalEntries();
+			update_elements_pointers(BT_Elem_Ptr, BT_Node_Ptr);
 		}
 		titanTimings.meshAdaptionTime+=MPI_Wtime()-t_start;
 

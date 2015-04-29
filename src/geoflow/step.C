@@ -95,6 +95,16 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
     int adaptflag) {
 	double t_start;
 
+	/*El_Table->updateAllEntries();
+	El_Table->updateAllLocalEntries();
+	update_elements_pointers(El_Table, NodeTable);*/
+
+#ifdef DEBUG_EXTRA_CHECKING
+	check_elements_pointers(El_Table, NodeTable,"check_elements_pointers_StepStart");
+	El_Table->ckeckAllEntriesPointers("ckeckAllEntriesPointers_StepStart");
+	El_Table->ckeckAllLocalEntriesPointers("ckeckAllLocalEntriesPointers_StepStart");
+#endif
+
 	/* 
 	 * PREDICTOR-CORRECTED based on Davis' Simplified Godunov Method 
 	 */
@@ -104,11 +114,7 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 
 
-	El_Table->updateAllEntries();
-	El_Table->updateAllLocalEntries();
-	//check_elements_pointers(El_Table, NodeTable,"Check0");
-	update_elements_pointers(El_Table, NodeTable);
-	//check_elements_pointers(El_Table, NodeTable,"Check1");
+
 
 	int Nelms=El_Table->getNumberOfLocalEntries();
 	Element** Elms=(Element**)El_Table->getAllLocalEntriesValues();
@@ -344,9 +350,9 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 
 #ifdef DEBUG_EXTRA_CHECKING
-	check_elements_pointers(El_Table, NodeTable,"Check2");
-	El_Table->ckeckAllEntriesPointers("Check2hash");
-	El_Table->ckeckAllLocalEntriesPointers("Check2hashLoc");
+	check_elements_pointers(El_Table, NodeTable,"check_elements_pointers_StepEnd");
+	El_Table->ckeckAllEntriesPointers("ckeckAllEntriesPointers_StepEnd");
+	El_Table->ckeckAllLocalEntriesPointers("ckeckAllLocalEntriesPointers_StepEnd");
 #endif
 	return;
 }
