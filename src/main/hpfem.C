@@ -118,13 +118,7 @@ int main(int argc, char *argv[]) {
 
 		AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -1.0);
 
-		//update temporary arrays of elements/nodes pointers
-		BT_Elem_Ptr->updateAllEntries();
-		BT_Elem_Ptr->updateAllLocalEntries();
-		update_elements_pointers(BT_Elem_Ptr, BT_Node_Ptr);
-
 		//initialize pile height and if appropriate perform initial adaptation
-
 		init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adaptflag, &matprops, &timeprops,
 		    &mapnames, &pileprops, &fluxprops, &statprops);
 	}

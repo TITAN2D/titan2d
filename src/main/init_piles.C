@@ -145,6 +145,7 @@ void init_piles(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nu
 
 	move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
 
+	//update temporary arrays of elements/nodes pointers
 	HT_Elem_Ptr->updateAllEntries();
 	HT_Elem_Ptr->updateAllLocalEntries();
 	update_elements_pointers(HT_Elem_Ptr, HT_Node_Ptr);
