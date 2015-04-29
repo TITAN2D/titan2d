@@ -311,22 +311,23 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
 
 					//calculate volume passing through "discharge planes"
 					unsigned *nodes = Curr_El->getNode();
+					Node** nodesPtr=Curr_El->getNodesPtrs();
 					double nodescoord[9][2], *coord;
 					Node* node;
 
 					for (int inode = 0; inode < 8; inode++) {
-						node = (Node*) NodeTable->lookup(nodes + 2 * inode);
+						node = nodesPtr[inode];//(Node*) NodeTable->lookup(nodes + 2 * inode);
 						coord = node->get_coord();
-						if ((timeprops->iter == 291) && (inode == 8)) {
+						/*if ((timeprops->iter == 291) && (inode == 8)) {
 							printf("coord=(%g,%g) node=%u  ", coord[0], coord[1], node);
 							fflush(stdout);
-						}
+						}*/
 						nodescoord[inode][0] = coord[0];
 						nodescoord[inode][1] = coord[1];
-						if ((timeprops->iter == 291) && (inode >= 8)) {
+						/*if ((timeprops->iter == 291) && (inode >= 8)) {
 							printf("inode=%d node=%u", inode, node);
 							fflush(stdout);
-						}
+						}*/
 					}
 					nodescoord[8][0] = *(Curr_El->get_coord());
 					nodescoord[8][1] = *(Curr_El->get_coord() + 1);
