@@ -160,7 +160,7 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	/* mdj 2007-04 */
 	int IF_STOPPED;
 	double curr_time, influx[3], *d_uvec; //VxVy[2];
-	Node* nd;
+	//Node* nd;
 //#pragma omp parallel for                                                \
 //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 	for (i = 0; i < Nelms; i++){
@@ -188,7 +188,7 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 
 		d_uvec = Curr_El->get_d_state_vars();
-		nd = (Node*) NodeTable->lookup(Curr_El->pass_key());
+		//nd = (Node*) NodeTable->lookup(Curr_El->pass_key());
 
 		// -- calc contribution of flux source
 		flux_src_coef = 0;
@@ -297,8 +297,8 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 		double *coord = Curr_El->get_coord();
 		//update the record of maximum pileheight in the area covered by this element
 		double hheight = *(Curr_El->get_state_vars());
-		if (hheight > 0 && hheight < 0)
-			;
+		//if (hheight > 0 && hheight < 0)
+		//	;
 		double *momenta = Curr_El->get_state_vars() + 1;
 
 #ifdef MAX_DEPTH_MAP
