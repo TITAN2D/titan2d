@@ -57,13 +57,11 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch);
 void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr);
 
 //! this function implements 1 time step which consists of (by calling other functions) computing spatial derivatives of state variables, computing k active/passive and wave speeds and therefore timestep size, does a finite difference predictor step, followed by a finite volume corrector step, and lastly computing statistics from the current timestep's data.
-void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
     TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops,
     StatProps* statprops_ptr, int* order_flag, OutLine* outline_ptr, DISCHARGE* discharge,
     int adaptflag);
 
-//! set neighboring elements and nodes pointers in elements
-void update_elements_pointers(HashTable* El_Table, HashTable* NodeTable);
 
 //! this function deletes unused elements and nodes, this is called durring grid adaptation in hadpt.C
 void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid);
@@ -89,22 +87,22 @@ extern void Read_data(int imat, MatProps* matprops_ptr, PileProps* pileprops_ptr
     OutLine* outline_ptr, int *srctype);
 
 //! this function reads in the "funky" grid at the start of an original run but not during restart.  This used to be part of Read_data() before Keith seperated them when adding the restart capability.  It is my (Keith's) opinion that this should be torn out and along with the preprocessor rewritten into a new format that is a lot more like what happens during the restart, this would significantly reduce the startup time for large runs.
-extern void Read_grid(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTable,
+extern void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable,
     MatProps* matprops_ptr, OutLine* outline_ptr);
 
 //! this function loads the restart file, recreates the hashtables and restores the saved nodes and elements.  Only one readstatement per Node is performed and one or two per Element depending upon the Element's boundary conditions so it is very fast.  Keith, who wrote this, believes a slightly cleaner solution is to add/move functionality to useful_lib.h and useful_lib.C to pack/unpack variables into an unsigned array, which is what should be done if Read_grid is ever rewritten.
-extern int loadrun(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTable,
+extern int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable,
     MatProps* matprops_ptr, TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int *adaptflag_ptr,
     int *order_flag_ptr, StatProps* statprops_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr);
 
 //! this function writes a restart file, all the non Node, non Element data, thfor example material properties, statistics, and hastable information.  A loop through the hastables call member functions Node::save_node() and Element::save_elem() which each save 1 Node or Element in a single write statement to the restart file so this is VERY fast.  However it could be rewritten in a slightly cleaner fashion by adding/moving functionality to useful_lib.h and useful_lib.C to pack/unpack variables into an unsigned array, which is what should be done if Read_grid is ever rewritten.
-extern void saverun(HashTable** NodeTable, int myid, int numprocs, HashTable** ElemTable,
+extern void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** ElemTable,
     MatProps* matprops_ptr, TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int adaptflag,
     int order_flag, StatProps *statprops_ptr, DISCHARGE *discharge_ptr, OutLine* outline_ptr,
     int *savefileflag);
 
 //! this function intializes the piles, by commenting/uncommenting define statements you can switch from parabaloid to elliptical cylinder shaped piles, or even a hard coded pileshapes written to match particular experiments.  Adaptive remeshing and pile reinitialization helps detect small piles and refine around pile edges to obtain a more accurate initial solution and speed up the first few timesteps before adaptive refinement and unrefinement would otherwise occur.  
-extern void init_piles(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs,
+extern void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs,
     int adaptflag, MatProps* matprops, TimeProps* timeprops, MapNames* mapnames,
     PileProps* pileprops, FluxProps* fluxprops, StatProps* statprops);
 

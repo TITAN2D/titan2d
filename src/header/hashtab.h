@@ -34,6 +34,8 @@ using namespace std;
 #include <stdint.h>
 #include "constant.h"
 
+class Element;
+
 struct HashEntry {
 	unsigned key[KEYLENGTH];  //key: object key word
 	uint64_t   ukey; //ukey: single 64 bit key
@@ -89,16 +91,9 @@ protected:
 	int NBUCKETS;
 	int PRIME;
 	int ENTRIES;
+
 	vector<uint64_t> *ukeyBucket;
 	vector<HashEntry*> *hashEntryBucket;
-
-	int NEntries;
-	vector<uint64_t> ukeyAllEntries;
-	vector<void*> allEntries;
-
-	int NEntriesLocal;
-	vector<uint64_t> ukeyAllEntriesLocal;
-	vector<void*> allEntriesLocal;
 
 
 	HashEntryPtr addElement(int entry, unsigned* key);
@@ -107,7 +102,7 @@ protected:
 public:
 	HashTable(unsigned*, unsigned*, int, int);
 	HashTable(double *doublekeyrangein, int, int, double* XR, double* YR, int ifrestart);
-	~HashTable();
+	virtual ~HashTable();
 
 	int hash(unsigned* key);
 	void add(unsigned* key, void* value);
@@ -135,19 +130,6 @@ public:
 	 double* getYrange();
 	 */
 	int get_no_of_entries();
-
-	int getNumberOfEntries(){return NEntries;}
-	void** getAllEntriesValues(){return &(allEntries[0]);}
-	void updateAllEntries();
-	//!debug function check that all allEntries are up to date, return number of mismatch
-	int ckeckAllEntriesPointers(const char *prefix);
-
-	int getNumberOfLocalEntries(){return NEntriesLocal;}
-	void** getAllLocalEntriesValues(){return &(allEntriesLocal[0]);}
-	//only works for elements
-	void updateAllLocalEntries();
-	//!debug function check that all allEntries are up to date, return number of mismatch
-	int ckeckAllLocalEntriesPointers(const char *prefix);
 };
 
 inline double* HashTable::get_doublekeyrange() {
@@ -198,6 +180,10 @@ inline int HashTable::get_nbuckets() {
 	return NBUCKETS;
 }
 ;
+inline int HashTable::get_no_of_entries() {
+	return ENTRIES;
+}
+;
 
 inline int HashTable::hash(unsigned* key) {
 	//Keith made this change 20061109; and made hash an inline function
@@ -208,36 +194,42 @@ inline int HashTable::hash(unsigned* key) {
 	 */
 	return (((int) ((key[0] * doublekeyrange[1] + key[1]) * hashconstant + 0.5)) % NBUCKETS);
 }
-inline void HashTable::updateAllEntries(){
-	int i,j,count=0,NEntriesInBucket;
-	ukeyAllEntries.resize(NEntries);
-	allEntries.resize(NEntries);
-	for(int i = 0; i < NBUCKETS; i++){
-		NEntriesInBucket=ukeyBucket[i].size();
-		for(j=0;j<NEntriesInBucket;j++){
-			ukeyAllEntries[count]=ukeyBucket[i][j];
-			allEntries[count]=hashEntryBucket[i][j]->value;
-			count++;
-		}
-	}
-}
-inline int HashTable::ckeckAllEntriesPointers(const char *prefix){
-	int i,j,count=0,NEntriesInBucket,mismatch=0;
-	if(NEntries!=ukeyAllEntries.size()){
-		printf("%s WARNING: AllEntriesPointers are out-dated, number of entries do not match.\n",prefix);
-		return ukeyAllEntries.size();
-	}
-	for(int i = 0; i < NBUCKETS; i++){
-		NEntriesInBucket=ukeyBucket[i].size();
-		for(j=0;j<NEntriesInBucket;j++){
-			if(ukeyAllEntries[count]!=ukeyBucket[i][j] || allEntries[count]!=hashEntryBucket[i][j]->value)
-				mismatch++;
-			count++;
-		}
-	}
-	if(mismatch>0){
-		printf("%s WARNING: AllEntriesPointers are out-dated. %d values pointers/keys do not match.\n",prefix,mismatch);
-	}
-	return mismatch;
-}
+//! Hashtables for Elements
+class ElementsHashTable: public HashTable{
+
+	//friend int hash(unsigned* keyi);
+	friend class Element;
+protected:
+
+	vector<uint64_t> ukeyElements;
+	vector<Element*> elements;
+
+	int NlocalElements;
+	vector<uint64_t> ukeyLocalElements;
+	vector<Element*> localElements;
+public:
+	ElementsHashTable(unsigned*, unsigned*, int, int);
+	ElementsHashTable(double *doublekeyrangein, int, int, double* XR, double* YR, int ifrestart);
+	virtual ~ElementsHashTable();
+
+	Element** getElements(){return &(elements[0]);}
+	void updateElements();
+	//!debug function check that all allEntries are up to date, return number of mismatch
+	int ckeckElementsPointers(const char *prefix);
+
+	int getNumberOfLocalElements(){return NlocalElements;}
+	Element** getLocalElementsValues(){return &(localElements[0]);}
+	//only works for elements
+	void updateLocalElements();
+	//!debug function check that all allEntries are up to date, return number of mismatch
+	int ckeckLocalElementsPointers(const char *prefix);
+
+	//! set neighboring elements and nodes pointers in elements
+	void updatePointersToNeighbours(HashTable* NodeTable);
+
+	//! check that neighboring elements and nodes pointers are correct
+	int checkPointersToNeighbours(HashTable* NodeTable, const char *prefix);
+
+};
+
 #endif

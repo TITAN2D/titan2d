@@ -499,7 +499,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
 /*************************************************************************/
 //this reads in the funky grid, ignoring the material properties at the 
 //end of the file, those are now read from frict.data in Read_data()
-void Read_grid(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTable,
+void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable,
     MatProps* matprops_ptr, OutLine* outline_ptr) {
 	int Node_Num, Elem_Num;
 
@@ -619,7 +619,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTa
 
 	freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
 
-	*ElemTable = new HashTable(doublekeyrange, EL_TABLE_SIZE, 503, XRange, YRange, 0);
+	*ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, 503, XRange, YRange, 0);
 	for (int ielem = 0; ielem < Elem_Num; ielem++) {
 
 		for (j = 0; j < 9; j++)

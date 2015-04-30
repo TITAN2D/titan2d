@@ -66,7 +66,7 @@ void setup_geoflow(HashTable* El_Table, HashTable* NodeTable, int myid, int nump
     MatProps* matprops_ptr, TimeProps *timeprops_ptr);
 
 //! this function calculates the spatial derivatives of the state variables
-void slopes(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr);
+void slopes(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr);
 
 //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model) calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum allowable timestep for this iteration.
 double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr,

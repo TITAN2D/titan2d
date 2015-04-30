@@ -69,7 +69,7 @@ HashTable::HashTable(unsigned* min, unsigned* max, int size, int prime) {
 	ukeyBucket=new vector<uint64_t>[NBUCKETS];
 	hashEntryBucket=new vector<HashEntry*> [NBUCKETS];
 
-	NEntries=0;
+	ENTRIES=0;
 }
 
 HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
@@ -105,7 +105,7 @@ HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[],
 
 	ukeyBucket=new vector<uint64_t>[NBUCKETS];
 	hashEntryBucket=new vector<HashEntry*> [NBUCKETS];
-	NEntries=0;
+	ENTRIES=0;
 }
 
 HashTable::~HashTable()              //evacuate the table
@@ -121,6 +121,7 @@ HashTable::~HashTable()              //evacuate the table
 	delete[] bucket;
 	delete[] ukeyBucket;
 	delete[] hashEntryBucket;
+	ENTRIES=0;
 }
 
 HashEntryPtr HashTable::searchBucket(HashEntryPtr p, unsigned* keyi) {
@@ -177,7 +178,7 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[]) {
 		ukeyBucket[entry].push_back(p->ukey);
 		hashEntryBucket[entry].push_back(p);
 	}
-	NEntries++;
+	ENTRIES++;
 	return p;
 }
 
@@ -274,7 +275,7 @@ void HashTable::remove(unsigned* key) {
 			delete p;
 		}
 	}
-	NEntries--;
+	ENTRIES--;
 }
 // for debugging...
 void HashTable::remove(unsigned* key, int whatflag) {
@@ -318,7 +319,7 @@ void HashTable::remove(unsigned* key, int whatflag) {
 			delete p;
 		}
 	}
-	NEntries--;
+	ENTRIES--;
 }
 
 void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int where) {
@@ -366,36 +367,66 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
 			delete p;
 		}
 	}
-	NEntries--;
+	ENTRIES--;
 }
-void HashTable::updateAllLocalEntries(){
+
+/*
+ int HashTable:: hash(unsigned* key)
+ {
+ unsigned numer = *key;
+ float    igaze = (float)numer/Range;
+ int      igazee = igaze*NBUCKETS+.5;
+
+ if(igazee>=NBUCKETS) igazee = NBUCKETS-1;
+
+ return (igazee);
+ }
+ */
+ElementsHashTable::ElementsHashTable(unsigned* min, unsigned* max, int size, int prime)
+	: HashTable(min, max, size, prime)
+{
+	NlocalElements=0;
+}
+
+ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
+    int ifrestart)
+	: HashTable(doublekeyrangein, size, prime, XR, YR, ifrestart)
+{
+	NlocalElements=0;
+}
+
+ElementsHashTable::~ElementsHashTable()              //evacuate the table
+{
+
+}
+void ElementsHashTable::updateLocalElements(){
 	int i,j,count=0,NEntriesInBucket;
 
-	ukeyAllEntriesLocal.resize(NEntries);
-	allEntriesLocal.resize(NEntries);
+	ukeyLocalElements.resize(ENTRIES);
+	localElements.resize(ENTRIES);
 	for(int i = 0; i < NBUCKETS; i++){
 		NEntriesInBucket=ukeyBucket[i].size();
 		for(j=0;j<NEntriesInBucket;j++){
 			Element* Curr_El=(Element*)hashEntryBucket[i][j]->value;
 			if (Curr_El->get_adapted_flag() > 0) { //if this element does not belong on this processor don't involve!!!
-				ukeyAllEntriesLocal[count]=ukeyBucket[i][j];
-				allEntriesLocal[count]=hashEntryBucket[i][j]->value;
+				ukeyLocalElements[count]=ukeyBucket[i][j];
+				localElements[count]=(Element*)hashEntryBucket[i][j]->value;
 				count++;
 			}
 		}
 	}
-	NEntriesLocal=count;
-	ukeyAllEntriesLocal.resize(NEntriesLocal);
-	allEntriesLocal.resize(NEntriesLocal);
+	NlocalElements=count;
+	ukeyLocalElements.resize(NlocalElements);
+	localElements.resize(NlocalElements);
 }
-int HashTable::ckeckAllLocalEntriesPointers(const char *prefix){
+int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix){
 	int i,j,count=0,NEntriesInBucket,mismatch=0;
 	for(int i = 0; i < NBUCKETS; i++){
 		NEntriesInBucket=ukeyBucket[i].size();
 		for(j=0;j<NEntriesInBucket;j++){
 			Element* Curr_El=(Element*)hashEntryBucket[i][j]->value;
 			if (Curr_El->get_adapted_flag() > 0) { //if this element does not belong on this processor don't involve!!!
-				if(ukeyAllEntriesLocal[count]!=ukeyBucket[i][j] || allEntriesLocal[count]!=hashEntryBucket[i][j]->value)
+				if(ukeyLocalElements[count]!=ukeyBucket[i][j] || localElements[count]!=hashEntryBucket[i][j]->value)
 					mismatch++;
 				count++;
 			}
@@ -406,15 +437,87 @@ int HashTable::ckeckAllLocalEntriesPointers(const char *prefix){
 	}
 	return mismatch;
 }
-/*
- int HashTable:: hash(unsigned* key)
- { 
- unsigned numer = *key;
- float    igaze = (float)numer/Range;
- int      igazee = igaze*NBUCKETS+.5;
+void ElementsHashTable::updateElements(){
+	int i,j,count=0,NEntriesInBucket;
+	ukeyElements.resize(ENTRIES);
+	elements.resize(ENTRIES);
+	for(int i = 0; i < NBUCKETS; i++){
+		NEntriesInBucket=ukeyBucket[i].size();
+		for(j=0;j<NEntriesInBucket;j++){
+			ukeyElements[count]=ukeyBucket[i][j];
+			elements[count]=(Element*)hashEntryBucket[i][j]->value;
+			count++;
+		}
+	}
+}
+int ElementsHashTable::ckeckElementsPointers(const char *prefix){
+	int i,j,count=0,NEntriesInBucket,mismatch=0;
+	if(ENTRIES!=ukeyElements.size()){
+		printf("%s WARNING: AllEntriesPointers are out-dated, number of entries do not match.\n",prefix);
+		return ukeyElements.size();
+	}
+	for(int i = 0; i < NBUCKETS; i++){
+		NEntriesInBucket=ukeyBucket[i].size();
+		for(j=0;j<NEntriesInBucket;j++){
+			if(ukeyElements[count]!=ukeyBucket[i][j] || elements[count]!=hashEntryBucket[i][j]->value)
+				mismatch++;
+			count++;
+		}
+	}
+	if(mismatch>0){
+		printf("%s WARNING: AllEntriesPointers are out-dated. %d values pointers/keys do not match.\n",prefix,mismatch);
+	}
+	return mismatch;
+}
+void ElementsHashTable::updatePointersToNeighbours(HashTable* NodeTable) {
+	int i;
+	HashEntryPtr currentPtr;
+	Element* Curr_El;
+	for (i = 0; i < NBUCKETS; i++){
+		if (*(bucket + i)) {
 
- if(igazee>=NBUCKETS) igazee = NBUCKETS-1;
+			currentPtr = *(bucket + i);
+			while (currentPtr) {
+				Curr_El = (Element*) (currentPtr->value);
+				if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
+					Curr_El->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+				currentPtr = currentPtr->next;
+			}
+		}
+	}
+	return;
+}
+int ElementsHashTable::checkPointersToNeighbours(HashTable* NodeTable, const char *prefix) {
+	int i;
+	int count=0;
+	HashEntryPtr currentPtr;
+	Element* Curr_El;
+	for (i = 0; i < NBUCKETS; i++){
+		if (*(bucket + i)) {
 
- return (igazee);
- }
- */
+			currentPtr = *(bucket + i);
+			while (currentPtr) {
+				Curr_El = (Element*) (currentPtr->value);
+				if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
+					count+=Curr_El->check_neighbors_nodes_and_elements_pointers(this, NodeTable);
+				currentPtr = currentPtr->next;
+			}
+		}
+	}
+	if(count>0)
+		printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n",prefix,count);
+	/*int i;
+	int pointersUpToDate = El_Table->isSortedBucketsUpToDate();
+	int nodesPointersUpToDate = NodeTable->isSortedBucketsUpToDate();
+	int NElements = El_Table->getNumberOfSortedBuckets();
+	int Nnodes = NodeTable->getNumberOfSortedBuckets();
+	Element** ElArr = (Element**) El_Table->getSortedBuckets();
+
+	if (pointersUpToDate == 0 || nodesPointersUpToDate==0) {
+		for (i = 0; i < NElements; i++) {
+			ElArr[i]->update_neighbors_pointers(El_Table, NodeTable);
+		}
+	}*/
+	return count;
+}
+

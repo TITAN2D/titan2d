@@ -463,7 +463,7 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
 	tempin[10] = testvolume;
 	tempin[11] = xVar;
 	tempin[12] = yVar;
-	tempin[13] = El_Table->getNumberOfEntries();
+	tempin[13] = El_Table->get_no_of_entries();
 
 	i = MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	temp2in[0] = max_height;

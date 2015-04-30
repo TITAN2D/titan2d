@@ -65,7 +65,7 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
 void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops_ptr,
     PileProps* pileprops_ptr);
 
-void init_piles(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs,
+void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs,
     int adaptflag, MatProps* matprops, TimeProps* timeprops_ptr, MapNames* mapnames,
     PileProps* pileprops, FluxProps *fluxprops, StatProps* statprops) {
 
@@ -146,9 +146,9 @@ void init_piles(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nu
 	move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
 
 	//update temporary arrays of elements/nodes pointers
-	HT_Elem_Ptr->updateAllEntries();
-	HT_Elem_Ptr->updateAllLocalEntries();
-	update_elements_pointers(HT_Elem_Ptr, HT_Node_Ptr);
+	HT_Elem_Ptr->updateElements();
+	HT_Elem_Ptr->updateLocalElements();
+	HT_Elem_Ptr->updatePointersToNeighbours(HT_Node_Ptr);
 
 	slopes(HT_Elem_Ptr, HT_Node_Ptr, matprops);
 

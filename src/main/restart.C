@@ -20,7 +20,7 @@
 //#define DEBUGSAVEHEADER
 #define NUM_CHAR_IN_SAVE_HEADER 16384 //equiv to 4096 integers of space available for save header
 
-int loadrun(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTable,
+int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable,
     MatProps* matprops_ptr, TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int *adaptflag_ptr,
     int *order_flag_ptr, StatProps* statprops_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
     /* need to handle StatProps and DISCHARGE (should be able to reload the outline from the outline file, not yet programmed in final form)
@@ -516,7 +516,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTable
 	}
 
 	//recreate the element hashtable
-	*ElemTable = new HashTable(doublekeyrange, ELEM_TABLE_SIZE, 503, Xrange, Yrange, 1);
+	*ElemTable = new ElementsHashTable(doublekeyrange, ELEM_TABLE_SIZE, 503, Xrange, Yrange, 1);
 
 	/*****************************************************************/
 
@@ -604,7 +604,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTable
 /*************************************************************************/
 /*************************************************************************/
 
-void saverun(HashTable** NodeTable, int myid, int numprocs, HashTable** ElemTable,
+void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** ElemTable,
     MatProps* matprops_ptr, TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int adaptflag,
     int order_flag, StatProps *statprops_ptr, DISCHARGE *discharge_ptr, OutLine* outline_ptr,
     int *savefileflag) {

@@ -24,72 +24,8 @@
 
 #include "../header/titan2d_utils.h"
 
-void update_elements_pointers(HashTable* El_Table, HashTable* NodeTable) {
-	int i;
-	HashEntryPtr* buck = El_Table->getbucketptr();
-	HashEntryPtr currentPtr;
-	Element* Curr_El;
-	for (i = 0; i < El_Table->get_no_of_buckets(); i++){
-		if (*(buck + i)) {
 
-			currentPtr = *(buck + i);
-			while (currentPtr) {
-				Curr_El = (Element*) (currentPtr->value);
-				if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
-					Curr_El->update_neighbors_nodes_and_elements_pointers(El_Table, NodeTable);
-				currentPtr = currentPtr->next;
-			}
-		}
-	}
-	/*int pointersUpToDate = El_Table->isSortedBucketsUpToDate();
-	int nodesPointersUpToDate = NodeTable->isSortedBucketsUpToDate();
-	int NElements = El_Table->getNumberOfSortedBuckets();
-	int Nnodes = NodeTable->getNumberOfSortedBuckets();
-	Element** ElArr = (Element**) El_Table->getSortedBuckets();
-
-	if (pointersUpToDate == 0 || nodesPointersUpToDate==0) {
-		for (i = 0; i < NElements; i++) {
-			ElArr[i]->update_neighbors_pointers(El_Table, NodeTable);
-		}
-	}*/
-	return;
-}
-int check_elements_pointers(HashTable* El_Table, HashTable* NodeTable, const char *prefix) {
-	int i;
-	int count=0;
-	HashEntryPtr* buck = El_Table->getbucketptr();
-	HashEntryPtr currentPtr;
-	Element* Curr_El;
-	for (i = 0; i < El_Table->get_no_of_buckets(); i++){
-		if (*(buck + i)) {
-
-			currentPtr = *(buck + i);
-			while (currentPtr) {
-				Curr_El = (Element*) (currentPtr->value);
-				if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
-					count+=Curr_El->check_neighbors_nodes_and_elements_pointers(El_Table, NodeTable);
-				currentPtr = currentPtr->next;
-			}
-		}
-	}
-	if(count>0)
-		printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n",prefix,count);
-	/*int i;
-	int pointersUpToDate = El_Table->isSortedBucketsUpToDate();
-	int nodesPointersUpToDate = NodeTable->isSortedBucketsUpToDate();
-	int NElements = El_Table->getNumberOfSortedBuckets();
-	int Nnodes = NodeTable->getNumberOfSortedBuckets();
-	Element** ElArr = (Element**) El_Table->getSortedBuckets();
-
-	if (pointersUpToDate == 0 || nodesPointersUpToDate==0) {
-		for (i = 0; i < NElements; i++) {
-			ElArr[i]->update_neighbors_pointers(El_Table, NodeTable);
-		}
-	}*/
-	return count;
-}
-
-void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
     TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops,
     StatProps* statprops_ptr, int* order_flag, OutLine* outline_ptr, DISCHARGE* discharge,
     int adaptflag) {
@@ -100,9 +36,9 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	update_elements_pointers(El_Table, NodeTable);*/
 
 #ifdef DEBUG_EXTRA_CHECKING
-	check_elements_pointers(El_Table, NodeTable,"check_elements_pointers_StepStart");
-	El_Table->ckeckAllEntriesPointers("ckeckAllEntriesPointers_StepStart");
-	El_Table->ckeckAllLocalEntriesPointers("ckeckAllLocalEntriesPointers_StepStart");
+	El_Table->checkPointersToNeighbours( NodeTable,"check_elements_pointers_StepStart");
+	El_Table->ckeckElementsPointers("ckeckAllEntriesPointers_StepStart");
+	El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart");
 #endif
 
 	/* 
@@ -116,8 +52,8 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 
 
-	int Nelms=El_Table->getNumberOfLocalEntries();
-	Element** Elms=(Element**)El_Table->getAllLocalEntriesValues();
+	int Nelms=El_Table->getNumberOfLocalElements();
+	Element** Elms=(Element**)El_Table->getLocalElementsValues();
 
 	slopes(El_Table, NodeTable, matprops_ptr);
 
@@ -351,9 +287,9 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 	statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 
 #ifdef DEBUG_EXTRA_CHECKING
-	check_elements_pointers(El_Table, NodeTable,"check_elements_pointers_StepEnd");
-	El_Table->ckeckAllEntriesPointers("ckeckAllEntriesPointers_StepEnd");
-	El_Table->ckeckAllLocalEntriesPointers("ckeckAllLocalEntriesPointers_StepEnd");
+	El_Table->checkPointersToNeighbours(NodeTable,"check_elements_pointers_StepEnd");
+	El_Table->ckeckElementsPointers("ckeckAllEntriesPointers_StepEnd");
+	El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepEnd");
 #endif
 	return;
 }

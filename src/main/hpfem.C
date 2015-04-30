@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	int i; //-- counters
 
 	HashTable* BT_Node_Ptr;
-	HashTable* BT_Elem_Ptr;
+	ElementsHashTable* BT_Elem_Ptr;
 
 	//-- MPI
 	int myid, master, numprocs;
@@ -125,9 +125,9 @@ int main(int argc, char *argv[]) {
 	}
 	else{
 		//update temporary arrays of elements/nodes pointers
-		BT_Elem_Ptr->updateAllEntries();
-		BT_Elem_Ptr->updateAllLocalEntries();
-		update_elements_pointers(BT_Elem_Ptr, BT_Node_Ptr);
+		BT_Elem_Ptr->updateElements();
+		BT_Elem_Ptr->updateLocalElements();
+		BT_Elem_Ptr->updatePointersToNeighbours(BT_Node_Ptr);
 	}
 
 	/* for debug only, to check if exactly what's loaded will be saved again
@@ -234,9 +234,9 @@ int main(int argc, char *argv[]) {
 			move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
 
 			//update temporary arrays of elements/nodes pointers
-			BT_Elem_Ptr->updateAllEntries();
-			BT_Elem_Ptr->updateAllLocalEntries();
-			update_elements_pointers(BT_Elem_Ptr, BT_Node_Ptr);
+			BT_Elem_Ptr->updateElements();
+			BT_Elem_Ptr->updateLocalElements();
+			BT_Elem_Ptr->updatePointersToNeighbours(BT_Node_Ptr);
 		}
 		titanTimings.meshAdaptionTime+=MPI_Wtime()-t_start;
 		titanTimingsAlongSimulation.meshAdaptionTime+=MPI_Wtime()-t_start;
