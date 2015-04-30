@@ -166,6 +166,7 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 			}
 		}
 	titanTimings.predictorStepTime+=MPI_Wtime()-t_start;
+	titanTimingsAlongSimulation.predictorStepTime+=MPI_Wtime()-t_start;
 	/* finished predictor step */
 
 	/* really only need to share dudx, state_vars, and kactxy */
@@ -245,7 +246,7 @@ private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
 			}
 		}
 	titanTimings.correctorStepTime+=MPI_Wtime()-t_start;
-
+	titanTimingsAlongSimulation.correctorStepTime+=MPI_Wtime()-t_start;
 	//update the orientation of the "dryline" (divides partially wetted cells
 	//into wet and dry parts solely based on which neighbors currently have 
 	//pileheight greater than GEOFLOW_TINY

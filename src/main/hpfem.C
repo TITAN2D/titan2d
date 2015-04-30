@@ -36,6 +36,7 @@ int REFINE_LEVEL = 3;
 #include "../header/titan2d_utils.h"
 
 TitanTimings titanTimings;
+TitanTimings titanTimingsAlongSimulation;
 
 int main(int argc, char *argv[]) {
 	int i; //-- counters
@@ -187,6 +188,7 @@ int main(int argc, char *argv[]) {
 	 for the colima hazard map runs, otherwise pass ifend() a constant 
 	 valued */
 
+	titanTimingsAlongSimulation.totalTime=MPI_Wtime();
 	while (!(timeprops.ifend(0)) && !ifstop) {
 		/*  
 		 *  mesh adaption routines 
@@ -226,11 +228,13 @@ int main(int argc, char *argv[]) {
 			move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
 		}
 		titanTimings.meshAdaptionTime+=MPI_Wtime()-t_start;
+		titanTimingsAlongSimulation.meshAdaptionTime+=MPI_Wtime()-t_start;
 
 		t_start=MPI_Wtime();
 		step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &pileprops, &fluxprops,
 		    &statprops, &order_flag, &outline, &discharge, adaptflag);
 		titanTimings.stepTime+=MPI_Wtime()-t_start;
+		titanTimingsAlongSimulation.stepTime+=MPI_Wtime()-t_start;
 
 		t_start=MPI_Wtime();
 		/*
@@ -293,6 +297,15 @@ int main(int argc, char *argv[]) {
 		MPI_Barrier(MPI_COMM_WORLD);
 #endif
 		titanTimings.resultsOutputTime+=MPI_Wtime()-t_start;
+		titanTimingsAlongSimulation.resultsOutputTime+=MPI_Wtime()-t_start;
+
+		if (timeprops.iter%200 == 0){
+			titanTimingsAlongSimulation.totalTime=MPI_Wtime()-titanTimingsAlongSimulation.totalTime;
+			if (myid == 0)
+				titanTimingsAlongSimulation.print("Timings over last 200 steps (seconds):");
+			titanTimingsAlongSimulation.reset();
+			titanTimingsAlongSimulation.totalTime=MPI_Wtime();
+		}
 	}
 
 	move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
