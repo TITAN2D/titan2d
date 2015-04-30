@@ -242,6 +242,7 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 	}
 	titanTimings.predictorStepTime+=MPI_Wtime()-t_start;
+	titanTimingsAlongSimulation.predictorStepTime+=MPI_Wtime()-t_start;
 	/* finished predictor step */
 
 	/* really only need to share dudx, state_vars, and kactxy */
@@ -315,7 +316,7 @@ void step(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProp
 
 	}
 	titanTimings.correctorStepTime+=MPI_Wtime()-t_start;
-
+	titanTimingsAlongSimulation.correctorStepTime+=MPI_Wtime()-t_start;
 	//update the orientation of the "dryline" (divides partially wetted cells
 	//into wet and dry parts solely based on which neighbors currently have 
 	//pileheight greater than GEOFLOW_TINY

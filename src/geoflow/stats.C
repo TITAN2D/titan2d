@@ -437,7 +437,7 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
 	}
 
 	int inttempout;
-	double tempin[13], tempout[13], temp2in[2], temp2out[2];
+	double tempin[14], tempout[14], temp2in[2], temp2out[2];
 
 	//find the minimum distance (squared) to the test point
 	MPI_Allreduce(&testpointmindist2, tempout, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
@@ -463,8 +463,9 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
 	tempin[10] = testvolume;
 	tempin[11] = xVar;
 	tempin[12] = yVar;
+	tempin[13] = El_Table->getNumberOfEntries();
 
-	i = MPI_Reduce(tempin, tempout, 13, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	i = MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	temp2in[0] = max_height;
 	temp2in[1] = v_max;
 	i = MPI_Reduce(temp2in, temp2out, 2, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -535,10 +536,11 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
     printf("At the end of time step %d the time is %d:%02d:%g (hrs:min:sec),\n \ 
            time step length is %g [sec], volume is %g [m^3],\n \
            max height is %g [m], max velocity is %g [m/s],\n \
-           ave velocity is %g [m/s], v* = %g\n\n",
+           ave velocity is %g [m/s], v* = %g,\n \
+           total number of elements %.0f\n\n",
 	   timeprops->iter, hours, minutes, seconds, d_time,
 	   statprops->statvolume, statprops->hmax, statprops->vmax,
-	   statprops->vmean, statprops->vstar);
+	   statprops->vmean, statprops->vstar,tempout[13]);
 	}
 
 	return;
