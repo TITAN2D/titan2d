@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 		//update temporary arrays of elements/nodes pointers
 		BT_Elem_Ptr->updateElements();
 		BT_Elem_Ptr->updateLocalElements();
-		BT_Elem_Ptr->updatePointersToNeighbours(BT_Node_Ptr);
+		BT_Elem_Ptr->updatePointersToNeighbours();
 	}
 
 	/* for debug only, to check if exactly what's loaded will be saved again
@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
 			//update temporary arrays of elements/nodes pointers
 			BT_Elem_Ptr->updateElements();
 			BT_Elem_Ptr->updateLocalElements();
-			BT_Elem_Ptr->updatePointersToNeighbours(BT_Node_Ptr);
+			BT_Elem_Ptr->updatePointersToNeighbours();
 		}
 		titanTimings.meshAdaptionTime+=MPI_Wtime()-t_start;
 		titanTimingsAlongSimulation.meshAdaptionTime+=MPI_Wtime()-t_start;

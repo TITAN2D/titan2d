@@ -36,7 +36,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
 	update_elements_pointers(El_Table, NodeTable);*/
 
 #ifdef DEBUG_EXTRA_CHECKING
-	El_Table->checkPointersToNeighbours( NodeTable,"check_elements_pointers_StepStart");
+	El_Table->checkPointersToNeighbours( "check_elements_pointers_StepStart");
 	El_Table->ckeckElementsPointers("ckeckAllEntriesPointers_StepStart");
 	El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart");
 #endif
@@ -287,7 +287,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
 	statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
 
 #ifdef DEBUG_EXTRA_CHECKING
-	El_Table->checkPointersToNeighbours(NodeTable,"check_elements_pointers_StepEnd");
+	El_Table->checkPointersToNeighbours("check_elements_pointers_StepEnd");
 	El_Table->ckeckElementsPointers("ckeckAllEntriesPointers_StepEnd");
 	El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepEnd");
 #endif

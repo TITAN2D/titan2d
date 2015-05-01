@@ -516,7 +516,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
 	}
 
 	//recreate the element hashtable
-	*ElemTable = new ElementsHashTable(doublekeyrange, ELEM_TABLE_SIZE, 503, Xrange, Yrange, 1);
+	*ElemTable = new ElementsHashTable(doublekeyrange, ELEM_TABLE_SIZE, 503, Xrange, Yrange, 1,*NodeTable);
 
 	/*****************************************************************/
 

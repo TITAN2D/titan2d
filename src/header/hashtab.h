@@ -200,6 +200,7 @@ class ElementsHashTable: public HashTable{
 	//friend int hash(unsigned* keyi);
 	friend class Element;
 protected:
+	HashTable* NodeTable;
 
 	vector<uint64_t> ukeyElements;
 	vector<Element*> elements;
@@ -208,11 +209,17 @@ protected:
 	vector<uint64_t> ukeyLocalElements;
 	vector<Element*> localElements;
 public:
-	ElementsHashTable(unsigned*, unsigned*, int, int);
-	ElementsHashTable(double *doublekeyrangein, int, int, double* XR, double* YR, int ifrestart);
+	ElementsHashTable(unsigned*, unsigned*, int, int,HashTable*);
+	ElementsHashTable(double *doublekeyrangein, int, int, double* XR, double* YR, int ifrestart,HashTable* nodeTable);
 	virtual ~ElementsHashTable();
 
 	Element** getElements(){return &(elements[0]);}
+
+/*	virtual void add(unsigned* key, void* value);
+	virtual void remove(unsigned* key);
+	virtual void remove(unsigned* key, int whatflag);  //for debugging
+	virtual void remove(unsigned* key, int whatflag, FILE *fp, int myid, int where);  //for debugging
+*/
 	void updateElements();
 	//!debug function check that all allEntries are up to date, return number of mismatch
 	int ckeckElementsPointers(const char *prefix);
@@ -225,10 +232,10 @@ public:
 	int ckeckLocalElementsPointers(const char *prefix);
 
 	//! set neighboring elements and nodes pointers in elements
-	void updatePointersToNeighbours(HashTable* NodeTable);
+	void updatePointersToNeighbours();
 
 	//! check that neighboring elements and nodes pointers are correct
-	int checkPointersToNeighbours(HashTable* NodeTable, const char *prefix);
+	int checkPointersToNeighbours(const char *prefix);
 
 };
 

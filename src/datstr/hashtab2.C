@@ -229,15 +229,12 @@ HashTable::lookup(unsigned* key) {
 }
 
 void HashTable::add(unsigned* key, void* value) {
-
-	int entry = hash(key);
-
-	HashEntryPtr p = searchBucket(*(bucket + entry), key);
-	if (p == NULL) {  //was (!p)
-		p = addElement(entry, key);
+	void* v=lookup(key);
+	if (v == NULL) {
+		int entry = hash(key);
+		HashEntryPtr p = addElement(entry, key);
 		p->value = value;
 	}
-
 	return;
 }
 
@@ -382,17 +379,19 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
  return (igazee);
  }
  */
-ElementsHashTable::ElementsHashTable(unsigned* min, unsigned* max, int size, int prime)
+ElementsHashTable::ElementsHashTable(unsigned* min, unsigned* max, int size, int prime,HashTable* nodeTable)
 	: HashTable(min, max, size, prime)
 {
 	NlocalElements=0;
+	NodeTable=nodeTable;
 }
 
 ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
-    int ifrestart)
+    int ifrestart,HashTable* nodeTable)
 	: HashTable(doublekeyrangein, size, prime, XR, YR, ifrestart)
 {
 	NlocalElements=0;
+	NodeTable=nodeTable;
 }
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table
@@ -469,7 +468,7 @@ int ElementsHashTable::ckeckElementsPointers(const char *prefix){
 	}
 	return mismatch;
 }
-void ElementsHashTable::updatePointersToNeighbours(HashTable* NodeTable) {
+void ElementsHashTable::updatePointersToNeighbours() {
 	int i;
 	HashEntryPtr currentPtr;
 	Element* Curr_El;
@@ -487,7 +486,7 @@ void ElementsHashTable::updatePointersToNeighbours(HashTable* NodeTable) {
 	}
 	return;
 }
-int ElementsHashTable::checkPointersToNeighbours(HashTable* NodeTable, const char *prefix) {
+int ElementsHashTable::checkPointersToNeighbours(const char *prefix) {
 	int i;
 	int count=0;
 	HashEntryPtr currentPtr;
@@ -520,4 +519,71 @@ int ElementsHashTable::checkPointersToNeighbours(HashTable* NodeTable, const cha
 	}*/
 	return count;
 }
+/*void ElementsHashTable::add(unsigned* key, void* value) {
+	int i;
+	HashTable::add(key, value);
+	Element* Curr_El;
+	Curr_El = (Element*) value;
+	//if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
+	//assuming neigbours keys are already good
+	Curr_El->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+	for(i=0;i<8;i++){
+		if(Curr_El->getNeighborPtr(i)!=NULL)
+			Curr_El->getNeighborPtr(i)->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+	}
+}
 
+void ElementsHashTable::remove(unsigned* key) {
+	int i;
+	unsigned* neighbors;
+
+	Element* Curr_El,*neighborElement[8];
+
+	Curr_El=(Element*)lookup(key);
+	neighbors=Curr_El->get_neighbors();
+
+	for(i=0;i<8;i++){
+		neighborElement[i]=(Element*)lookup(neighbors+i*KEYLENGTH);
+	}
+	HashTable::remove(key);
+	for(i=0;i<8;i++){
+		if(neighborElement[i]!=NULL)
+			neighborElement[i]->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+	}
+}
+// for debugging...
+void ElementsHashTable::remove(unsigned* key, int whatflag) {
+	int i;
+	unsigned* neighbors;
+
+	Element* Curr_El,*neighborElement[8];
+	Curr_El=(Element*)lookup(key);
+	neighbors=Curr_El->get_neighbors();
+
+	for(i=0;i<8;i++){
+		neighborElement[i]=(Element*)lookup(neighbors+i*KEYLENGTH);
+	}
+	HashTable::remove(key,whatflag);
+	for(i=0;i<8;i++){
+		if(neighborElement[i]!=NULL)
+			neighborElement[i]->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+	}
+}
+void ElementsHashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int where){
+	int i;
+	unsigned* neighbors;
+
+	Element* Curr_El,*neighborElement[8];
+	Curr_El=(Element*)lookup(key);
+
+	neighbors=Curr_El->get_neighbors();
+
+	for(i=0;i<8;i++){
+		neighborElement[i]=(Element*)lookup(neighbors+i*KEYLENGTH);
+	}
+	HashTable::remove(key,whatflag, fp, myid, where);
+	for(i=0;i<8;i++){
+		if(neighborElement[i]!=NULL)
+			neighborElement[i]->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+	}
+}*/

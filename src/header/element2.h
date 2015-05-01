@@ -141,11 +141,14 @@ public:
 	//! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
 	Node* getNodePtr(int i){return node_keyPtr[i];}
 
+	//! returns the pointers to the i-th of 8 (elements 0-7) elements , careful pointers can be outdated
+	Element* getNeighborPtr(int i){return neighborPtr[i];}
+
 	//!update neighbors pointers from hash table
-	void update_neighbors_nodes_and_elements_pointers(HashTable*, HashTable*);
+	void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
 	//!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
-	int check_neighbors_nodes_and_elements_pointers(HashTable*, HashTable*);
+	int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
 
 	//! returns the array of 8 processors for the 8 neigbors of this element
@@ -904,7 +907,7 @@ inline Node** Element::getNodesPtrs(){
 	return &(node_keyPtr[0]);
 }
 
-inline void Element::update_neighbors_nodes_and_elements_pointers(HashTable* El_Table, HashTable* NodeTable)
+inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable)
 {
 	int i;
 	if(El_Table!=NULL){
@@ -919,7 +922,7 @@ inline void Element::update_neighbors_nodes_and_elements_pointers(HashTable* El_
 	}
 	return;
 }
-inline int Element::check_neighbors_nodes_and_elements_pointers(HashTable* El_Table, HashTable* NodeTable)
+inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable)
 {
 	int i;
 	int count=0;

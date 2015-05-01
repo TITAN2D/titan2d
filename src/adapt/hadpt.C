@@ -50,7 +50,7 @@ extern void all_check(HashTable* eltab, HashTable* ndtab, int myid, int m, doubl
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
-void H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, double target,
+void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, double target,
     MatProps* matprops_ptr, FluxProps *fluxprops, //doesn't need fluxprops
     TimeProps* timeprops_ptr, int num_buffer_layer)
     /*-------------

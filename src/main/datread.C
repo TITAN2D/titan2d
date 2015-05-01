@@ -619,7 +619,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
 
 	freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
 
-	*ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, 503, XRange, YRange, 0);
+	*ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, 503, XRange, YRange, 0,*NodeTable);
 	for (int ielem = 0; ielem < Elem_Num; ielem++) {
 
 		for (j = 0; j < 9; j++)

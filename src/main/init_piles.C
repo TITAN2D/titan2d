@@ -148,7 +148,7 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
 	//update temporary arrays of elements/nodes pointers
 	HT_Elem_Ptr->updateElements();
 	HT_Elem_Ptr->updateLocalElements();
-	HT_Elem_Ptr->updatePointersToNeighbours(HT_Node_Ptr);
+	HT_Elem_Ptr->updatePointersToNeighbours();
 
 	slopes(HT_Elem_Ptr, HT_Node_Ptr, matprops);
 
