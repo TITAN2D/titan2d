@@ -35,7 +35,8 @@ public:
 		printf("    Mesh adoption time:... %.3f (%.2f %%)\n",meshAdaptionTime,100.0*meshAdaptionTime/totalTime);
 		printf("    Step time:............ %.3f (%.2f %%)\n",stepTime,100.0*stepTime/totalTime);
 		printf("      Predictor time:..... %.3f (%.2f %%, %.2f %%)\n",predictorStepTime,100.0*predictorStepTime/stepTime,100.0*predictorStepTime/totalTime);
-		printf("      Corrector  time:..... %.3f (%.2f %%, %.2f %%)\n",correctorStepTime,100.0*correctorStepTime/stepTime,100.0*correctorStepTime/totalTime);
+		printf("      Corrector  time:.... %.3f (%.2f %%, %.2f %%)\n",correctorStepTime,100.0*correctorStepTime/stepTime,100.0*correctorStepTime/totalTime);
+		printf("      Slope Calc. time:... %.3f (%.2f %%, %.2f %%)\n",slopesCalcTime,100.0*slopesCalcTime/stepTime,100.0*slopesCalcTime/totalTime);
 		printf("    Results dump time:.... %.3f (%.2f %%)\n",resultsOutputTime,100.0*resultsOutputTime/totalTime);
 		printf("\n");
 	}
@@ -45,6 +46,7 @@ public:
 		stepTime=0.0;
 		predictorStepTime=0.0;
 		correctorStepTime=0.0;
+		slopesCalcTime=0.0;
 		resultsOutputTime=0.0;
 	}
 	void devideBySteps(double steps){
@@ -53,6 +55,7 @@ public:
 		stepTime/=steps;
 		predictorStepTime/=steps;
 		correctorStepTime/=steps;
+		slopesCalcTime/=steps;
 		resultsOutputTime/=steps;
 	}
 
@@ -61,7 +64,9 @@ public:
 	double stepTime;
 	double predictorStepTime;
 	double correctorStepTime;
+	double slopesCalcTime;
 	double resultsOutputTime;
+
 };
 extern TitanTimings titanTimings;
 extern TitanTimings titanTimingsAlongSimulation;

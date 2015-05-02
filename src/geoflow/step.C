@@ -55,7 +55,10 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
 	int Nelms=El_Table->getNumberOfLocalElements();
 	Element** Elms=(Element**)El_Table->getLocalElementsValues();
 
+	t_start = MPI_Wtime();
 	slopes(El_Table, NodeTable, matprops_ptr);
+	titanTimings.slopesCalcTime+=MPI_Wtime()-t_start;
+	titanTimingsAlongSimulation.slopesCalcTime+=MPI_Wtime()-t_start;
 
 	// get coefficients, eigenvalues, hmax and calculate the time step 
 	double dt = get_coef_and_eigen(El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 0);
@@ -185,7 +188,10 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
 	move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
 
 	/* calculate the slopes for the new (half-time step) state variables */
+	t_start = MPI_Wtime();
 	slopes(El_Table, NodeTable, matprops_ptr);
+	titanTimings.slopesCalcTime+=MPI_Wtime()-t_start;
+	titanTimingsAlongSimulation.slopesCalcTime+=MPI_Wtime()-t_start;
 
 	/* really only need to share dudx, state_vars, and kactxy */
 	move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
