@@ -25,7 +25,7 @@ wget https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tar.xz
 tar -xJf Python-2.7.9.tar.xz
 cd Python-2.7.9
 export TITAN_PYTHON=$TITAN_WSP/Python-2.7.9
-./configure --prefix=$TITAN_PYTHON --disable-shared
+./configure --prefix=$TITAN_PYTHON --enable-shared
 make -j 8
 
 # after that stage python can complain that some of the modules was not 
@@ -90,10 +90,13 @@ cd iccopt
 
 ../../titan2d/configure --with-grass=<path_to_grass_installation> --without-gdal \
 --with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
-CC=mpicc CXX=mpic++ F77=mpif90
+CC=mpicc CXX=mpic++ F77=mpif90 PYTHON=<path to python2.7>
 
 # Now compile it:
 make -j <number of proccesses to use>
 
 # And install it:
 make install
+
+#
+

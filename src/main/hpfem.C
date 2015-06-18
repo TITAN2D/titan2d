@@ -38,7 +38,7 @@ int REFINE_LEVEL = 3;
 TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
 
-int main(int argc, char *argv[]) {
+int hpfem(int argc, char *argv[]) {
 	int i; //-- counters
 
 	HashTable* BT_Node_Ptr;

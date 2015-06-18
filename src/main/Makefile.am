@@ -5,13 +5,22 @@
 #
 
 bin_PROGRAMS = titan
+bin_SCRIPTS = titanvars.sh
 
-titan_SOURCES = compare_key.C delete_tab.C hpfem.C datread.C hilbert.C init_piles.C update_topo.C restart.C
+titan_SOURCES = titan.C cxxtitan_wrap.cxx titan_simulation.C compare_key.C delete_tab.C hpfem.C datread.C hilbert.C init_piles.C update_topo.C restart.C
 
-titan_CXXFLAGS = -I$(srcdir)/../gisapi
+titan_CXXFLAGS = -fpic -I$(srcdir)/../gisapi -I@PYTHON_ROOT@/include/python@PYTHON_VERSION@
 
 titan_LDADD = ../gisapi/libgisapi.a ../adapt/libadapt.a @FLIBS@ \
   ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
-  ../repartition/librepartition.a ../tecplot/libtecplot.a
+  ../repartition/librepartition.a ../tecplot/libtecplot.a \
+  -L@PYTHON_ROOT@/lib -lpython@PYTHON_VERSION@ -lutil
 
+#titan_simulation_CXXFLAGS = -fpic
 
+$(srcdir)/cxxtitan_wrap.cxx:$(srcdir)/cxxtitan.i
+	@SWIG@ -c++ -v -python -o $(srcdir)/cxxtitan_wrap.cxx -oh $(srcdir)/cxxtitan.py $(srcdir)/cxxtitan.i
+	
+
+pyfilesdir=$(prefix)/lib
+pyfiles_DATA=cxxtitan.py titan.py

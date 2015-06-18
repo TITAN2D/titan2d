@@ -53,7 +53,10 @@ AC_PROG_RANLIB
 AC_F77_LIBRARY_LDFLAGS
 AC_SYS_LARGEFILE
 
-
+AM_PATH_PYTHON([2.7],, [:])
+PYTHON_BIN_DIR=`AS_DIRNAME($PYTHON)`
+PYTHON_ROOT=`AS_DIRNAME($PYTHON_BIN_DIR)`
+AC_SUBST([PYTHON_ROOT],[$PYTHON_ROOT])
 
 
 
@@ -161,6 +164,21 @@ else
     AC_MSG_RESULT([no])
 fi
 AM_CONDITIONAL([WITH_GDAL], test "x$with_gdal" != "xno")
+
+
+#-------------------------------------------------------------------------------------
+AC_ARG_VAR([SWIG],[path to swig, python api generator])
+AC_PATH_PROG([SWIG],[swig],[])
+if test "x$SWIG" = "x"; then
+	AC_MSG_ERROR([swig is not found, set SWIG variable!])
+fi
+SWIG_VERSION=`$SWIG -version|grep ersion|cut -d ' ' -f 3`
+SWIG_VERSION_MAJOR=`echo $SWIG_VERSION|cut -d . -f1`
+if test "x$SWIG_VERSION_MAJOR" != "x3"; then
+	AC_MSG_ERROR([swig is too old should be at least 3.0, set SWIG variable for custom location!])
+fi
+AC_MSG_NOTICE([swig version: $SWIG_VERSION])
+
 #-------------------------------------------------------------------------------------
 AC_CHECK_LIB(m,matherr)
 AC_CHECK_LIB(nsl, inet_ntoa)
@@ -196,5 +214,8 @@ AC_CONFIG_FILES([Makefile
                  src/stochastic/Makefile
                  src/tecplot/Makefile
                  src/useful/Makefile
-                 src/vectordatapreproc/Makefile])
+                 src/vectordatapreproc/Makefile
+                 src/main/titanvars.sh])
+
+
 AC_OUTPUT
