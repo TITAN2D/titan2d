@@ -21,12 +21,7 @@ import sys,os,math,string,re,socket
 TITAN2d_HOME='/home/mikola/titan_wsp/titan2d_bld/iccopt'
 
 
-class FinalInstructions:
-    def __init__(self,master,instruction_string):
-        Label(master, text=instruction_string).grid(row=0,column=0,sticky=W,columnspan=3)
-        Button(master, text="Quit", command=master.quit).grid(row=3,column=1)
-
-class QuestionTemplate5:
+class TitanFluxSource:
     def __init__(self,master,src_number,filename,directory,heightscale):
         Label(master, text="Information for Flux Source Number "+str(src_number+1)).grid(row=0,column=0,sticky=W,columnspan=2)
         Label(master, text="Extrusion flux rate [m/s]:").grid(row=1,column=0,sticky=W)
@@ -191,7 +186,7 @@ Initial direction ([degrees] from X axis): """ + str(Vdirection)+"""
             file.write(python_data)
             file.close
 
-class QuestionTemplate4:
+class TitanDischargePlane:
 
     def __init__(self,master,discharge_indice,discharge_planes):
 
@@ -319,7 +314,6 @@ class TitanSimulation:
     }
     possible_orders=('PlaceHolder','First','Second')
     def __init__(self,
-                 directory,
                  
                  numcellsacrosspile,
                  
@@ -341,8 +335,7 @@ class TitanSimulation:
                  edge_height=None,
                  test_height=None,
                  test_location_x=None,
-                 test_location_y=None,
-                 emailaddress=None
+                 test_location_y=None
                  ):
         
         
@@ -356,10 +349,6 @@ class TitanSimulation:
         self.topomap = None
         self.vector=None
         self.matmap=None
-        
-        
-        #Simulation Directory Location
-        self.directory = directory
         
         #Number of Processors
         self.numprocs = numprocs
@@ -424,8 +413,6 @@ class TitanSimulation:
         #... at test point (x and y location)
         self.test_location_x = test_location_x
         self.test_location_y = test_location_y
-        #Email Address
-        self.emailaddress = emailaddress
         
         #other inits
         self.piles=[]
@@ -600,29 +587,10 @@ class TitanSimulation:
         
     
     def run(self):
-        os.system('echo "Please email abani@eng.buffalo.edu with any problems"')
         #get system information so it is known which system the script is running on
         machine = socket.gethostbyaddr(socket.gethostname())
         print 'Trying to run a job on ' + machine[0]
         
-        #create proper directory
-        if os.access(self.directory, os.F_OK) == 1:
-            raise ValueError(self.directory + ' already exists, will not overwrite it')
-
-        dir1 = self.directory
-        if dir1 == '':
-            raise ValueError('Must specify a simulation directory.')
-        
-        dirlen = len(dir1)
-        if dir1[dirlen-1] != '/':
-            directory = dir1 + '/'
-        else:
-            directory = dir1 
-            
-        instruction_string= "Completed setup ot Titan input data.\ncd to simulation directory, \"" + directory + "\"\nand run Titan (on linux PC's type \"./titan\")"
-
-        os.system('mkdir ' + directory)
-
         #check values
         srctype = 0
         
@@ -743,7 +711,7 @@ class TitanSimulation:
         #pile geometry stuff, friction coefficients, etc.
         # get all of the pile information
         max_height = 0.0
-        f_p = directory+'simulation.data'
+        f_p = 'simulation.data'
         f_p2=open(f_p, "w", 0)
         f_p2.write(str(srctype) + '\n')
         if int(numpiles) > 0:
@@ -765,7 +733,7 @@ class TitanSimulation:
         if numsrcs > 0:
             raise NotImplementedError("numsrcs > 0 not implemented yet!")
             #while counter < numsrcs:
-                #app=QuestionTemplate5(root5,counter,f_p,directory, heightscale)
+                #app=TitanFluxSource/QuestionTemplate5(root5,counter,f_p,directory, heightscale)
                 #heightscale = app.heightscale;
             
         output2 = str(numcellsacrosspile) + '\n' +\
@@ -788,7 +756,7 @@ class TitanSimulation:
         else:
             output1 = "1 \n1 \n1"
         
-        f2 = directory+ 'scale.data'
+        f2 = 'scale.data'
         f=open(f2, "w", 0)
         f.write(output1)
         f.close
@@ -818,12 +786,12 @@ class TitanSimulation:
             numdischarge = self.numdischarge
 
         #loop to allow user input of coordinates for variable # of discharge planes
-        fout = open(directory+'simulation.data',"a+",0)
+        fout = open('simulation.data',"a+",0)
         fout.write('\n'+str(numdischarge)+'\n')
         
         if numdischarge>0:
             raise NotImplementedError("numsrcs > 0 not implemented yet!")
-            #app=QuestionTemplate4(root4,counter,numdischarge)
+            #app=TitanDischargePlane/QuestionTemplate4(root4,counter,numdischarge)
 #             if app.xa != '' and app.xb != '' and app.ya != '' and app.yb != '':
 #                 fout.write(str(app.xa)+' '+str(app.ya)+' '+str(app.xb)+' '+str(app.yb)+'\n')
 #                 del app
@@ -872,387 +840,14 @@ class TitanSimulation:
                 print "executing:",command
                 os.system(command)
 
-        if self.vector != "":
-            os.system('./VecDataPreproc ' + self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+self.vector)
-            os.system('mv VectorDataOutput.data ' + directory)
-            
-        os.system('mv funky*inp '+directory)
-        os.system('cp titan ' + directory)
-        if os.access('Viewer',os.X_OK)==1:
-            os.system('cp Viewer ' + directory)
-        os.system('mv frict.data '+directory)
-        os.system('cp ../src/stochastic/*.pl ../src/stochastic/pbslhs  lhsbed lhsvol  lhstitanstats  ../src/stochastic/lhs.readme '+directory)
-
-        #        os.system('mpirun -np ' + str(numprocs) + directory+'titan')
-############################################################
-############################################################
-###  machine specific stuff here...
-############################################################
-############################################################
-        if machine[0] == 'crosby.ccr.buffalo.edu' or machine[0] == 'nash.ccr.buffalo.edu' or machine[0] == 'joplin.ccr.buffalo.edu':
-            iam = self.emailaddress
-            print 'sending email to : '+iam
-        elif machine[0] == 'stills.ccr.buffalo.edu':
-            print 'no email notification on stills'
-        elif machine[0] == 'popo.eng.buffalo.edu' or machine[0] == 'colima.eng.buffalo.edu' or machine[0] == 'rainier.eng.buffalo.edu' or machine[0] == 'elchichon.eng.buffalo.edu' or machine[0] == 'casita.eng.buffalo.edu' or machine[0] == 'sthelens.eng.buffalo.edu':
-            print 'no email notification on Linux machines'
-            
-        if machine[0] == 'crosby.ccr.buffalo.edu':            
-            batchscript = """#!/bin/csh -f 
-#PBS -m e
-#PBS -l ncpus="""+ str(numprocs)+ """
-#PBS -l walltime=50:00:00
-#PBS -l mem=128mb
-#PBS -M """+iam +"""
-#PBS -o volcano.out.crosby
-#PBS -j oe
-#PBS -N volc."""+str(numprocs)+ """.crosby
-#PBS
-limit coredumpsize 0
-#
-# stage input files and executable to scratch - $PBS_O_WORKDIR is
-#  the directory from which the job was submitted.
-#
-cp $PBS_O_WORKDIR/*.inp $PBSTMPDIR
-cp $PBS_O_WORKDIR/titan $PBSTMPDIR
-cp $PBS_O_WORKDIR/*.data $PBSTMPDIR
-# goto scratch dir and run job
-cd $PBSTMPDIR
-date
-mpirun -cpr -np """+str(numprocs)+"""  ./titan
-date
-#
-# stage output files back
-## cp *.out $PBS_O_WORKDIR/
-gzip *out *gz *h5
-# remove scratch directory
-#rm -r $PBSTMPDIR
-"""
-            f6 = directory+'pbs_script'
-            f=open(f6, "w", 0)
-            f.write(batchscript)
-            f.close
-            #os.system('cd '+directory+';qsub pbs_script')
-
-
-#################################
-# nash.ccr.buffalo.edu
-#################################
-        if machine[0] == 'nash.ccr.buffalo.edu':
-            if numprocs ==1:
-                b2 = "#PBS -l nodes=1:ppn=1"
-            else:
-                b2 = "#PBS -l nodes="+str(numprocs/2)+":ppn=2"
-                
-            batchscript = """#!/bin/csh
-#PBS -m e
-""" + b2 + """
-#PBS -l walltime=30:00:00
-#PBS -M """+iam +"""
-#PBS -o volcano.out.nash
-#PBS -j oe
-#PBS -N volcano."""+str(numprocs)+ """.nash
-#PBS
-limit coredumpsize 0
-#
-cd $PBS_O_WORKDIR
-set NP = `cat $PBS_NODEFILE | wc -l`
-set NN = `cat $PBS_NODEFILE | wc -l`
-echo "NN = "$NN
-set plist = `cat $PBS_NODEFILE | sed "s/\.ccr\.buffalo\.edu//"`
-set uplist = `cat $PBS_NODEFILE | uniq | sed "s/\.ccr\.buffalo\.edu//"`
-echo "unique nodes list = "$uplist
-echo "full process list = "$plist
-
-@ NN = -1
-foreach p ($plist)
- @ NN ++
-  set NUM = `echo $NN | awk '{printf "%.4d", $1}'`
-  rsh $p "cp $PBS_O_WORKDIR/funky$NUM.inp $PBSTMPDIR/."
-end
-
-foreach p ($uplist)
-  rsh $p "cp $PBS_O_WORKDIR/titan $PBSTMPDIR/"
-  rsh $p "cp $PBS_O_WORKDIR/*.data $PBSTMPDIR/"
-  echo "Contents of "$PBSTMPDIR" on node "$p
-  rsh $p "ls -l $PBSTMPDIR/"
-end
-
-source /util/tag-gm-gnu.csh
-cd $PBSTMPDIR
-date
-/util/mpich-gm/gnu/ch_gm/bin/mpirun.ch_gm -v -machinefile $PBS_NODEFILE  -np """+str(numprocs)+"""  ./titan
-date
-#
-foreach p ($uplist)
-  rsh $p "cd $PBSTMPDIR; gzip *out *plt *h5"
-  rsh $p "cp $PBSTMPDIR/*gz $PBS_O_WORKDIR/"
-end
-"""
-            f6 = directory+'pbs_script'
-            f=open(f6, "w", 0)
-            f.write(batchscript)
-            f.close
-            #os.system('cd '+directory+';qsub pbs_script')
-#################################
-# joplin.ccr.buffalo.edu -- added by abani 02/27
-################################
-        elif machine[0] == 'joplin.ccr.buffalo.edu':
-            if numprocs ==1:
-                b2 = "#PBS -l nodes=1:ppn=1"
-            else:
-                b2 = "#PBS -l nodes="+str(numprocs/2)+":ppn=2"
-                
-            batchscript = """#!/bin/csh -f 
-""" + b2 + """
-#PBS -l walltime=00:59:00
-#PBS -M """ + iam + """
-#PBS -m e
-#PBS -j oe
-#PBS -o volcano."""+str(numprocs)+""".joplin
-#
-# Set executable name & mpiexec path
-#  EXE = Executable name
-#  INITDIR = dir holding input & executable
-#  SAVEDIR = dir to place output files
-#
-source /util/tag-gm-gnu.csh
-set EXE = titan
-set INITDIR = $PBS_O_WORKDIR
-set SAVEDIR = $PBS_O_WORKDIR
-#
-# Get list of processors from PBS
-
-set plist = `cat $PBS_NODEFILE | sed "s/\.ccr\.buffalo\.edu//"`
-set uplist = `cat $PBS_NODEFILE | uniq | sed "s/\.ccr\.buffalo\.edu//"`
-echo "unique nodes list = "$uplist
-echo "full process list = "$plist
-#
-# Stage out indexed input files (and common ones too) to each
-#  processor
-# (also build an mpiexec config file with the ranks to correspond
-#  to the staged inputs, or so we hope - I still don't see that
-#  as guaranteed!)
-#
-cd $PBS_O_WORKDIR
-set conf = $PBSTMPDIR/conf.$$
-if (-e $conf) rm -f $conf
-@ NN = -1
-foreach p ($plist)
- @ NN ++
-  set NUM = `echo $NN | awk '{printf "%.4d", $1}'`
-  rsh $p "cp $INITDIR/funky$NUM.inp $PBSTMPDIR"
-  echo "$p : $EXE" >> $conf
-end
-#
-#  files that only need to appear once on a node, no matter
-#  how many procs
-#
-foreach p ($uplist)
-  rsh $p "cp $INITDIR/$EXE $PBSTMPDIR/"
-  rsh $p "cp $INITDIR/*.data $PBSTMPDIR/"
-  echo "Contents of "$PBSTMPDIR" on node "$p
-  rsh $p "ls -l $PBSTMPDIR/"
-end
-echo "Contents of mpiexec config file:"
-cat $conf
-#
-# Run code from $PBSTMPDIR
-#
-cd $PBSTMPDIR
-/usr/bin/time mpiexec -config $conf
-#
-# Stage back output files
-#
-foreach p ($uplist)
-  rsh $p "gzip $PBSTMPDIR/*out; gzip $PBSTMPDIR/*plt; gzip $PBSTMPDIR/*h5; cp $PBSTMPDIR/*gz $SAVEDIR/"
-end
-rm -f $conf
-"""
-            f6 = directory+'pbs_script'
-            f=open(f6, "w", 0)
-            f.write(batchscript)
-            f.close
-            #os.system('cd '+directory+';qsub pbs_script')
-
-#################################
-# stills.ccr.buffalo.edu - not working as of 5/7/03 but left in for future use/installation of proper libraries
-#################################
-        elif machine[0] == 'stills.ccr.buffalo.edu':
-            #figure out the distribution of processors
-            if numprocs <=4:
-                nodes = 1
-                procs_per_node = numprocs
-                requirements = '(Memory>256)'
-            else:
-                nodes = numprocs/4
-                procs_per_node = 4
-                requirements = '(Pool==2)'
-
-            batchscript = """###########################################################################
-## A sample Loadl file. 
-## Only run jobs in $LOADL_SCRATCH or /gpfs.
-###########################################################################
-## classes are:  Short, Medium, Long, V.Long
-#!/bin/csh -xf 
-# @ class =  V.Long
-# @ environment = COPY_ALL
-# @ error       = volcano"""+str(numprocs)+""".err..$(jobid)
-# @ output      = volcano"""+str(numprocs)+""".out.$(jobid)
-# @ network.MPI = css0,not_shared,US
-# @ job_type = parallel
-# @ requirements = """+requirements+"""
-# @ tasks_per_node="""+str(procs_per_node)+"""
-# @ node ="""+str(nodes)+"""
-# @ notification = never
-# @ queue
-#
-##########################################################################
-##
-##  Change to suit your needs
-
-set EXECDIR=`pwd`
-set EXECNAME=titan
-set WORKDIR=`pwd`
-
-if (-e $EXECDIR/EXECNAME) then
-   echo ' Executible not found'
-   echo ' Directory checked was $EXECDIR'
-   echo ' EXE filename checked was $EXECNAME'
-   exit1
-else
-   echo ' Found the EXE file $EXECDIR/$EXECNAME'
-endif
-set SCRATCH = $LOADL_SCRATCHDIR
-
-############################################################################
-##
-## No need to change this. 
-## Automatically sets up a proper scratch directory on all nodes. 
-##
-
-set SCRATCH = $LOADL_SCRATCHDIR
-cd $SCRATCH
-
-set LL_hosts = ($LOADL_PROCESSOR_LIST)
-echo 'Number of processes is' $#LL_hosts
-echo 'The scheduled processors are on nodes ' $LL_hosts
-set noclobber
-
-
-#############################################################################
-## Change to suit
-## Add to the copy list as necessary - never remove $EXECNAME copy
-##      
-mcp $EXECDIR/$EXECNAME $SCRATCH/.
-mcp $EXECDIR/scale.data $SCRATCH/.
-mcp $EXECDIR/topo.data $SCRATCH/.
-mcp $EXECDIR/simulation.data $SCRATCH/.
-"""
-            f6 = directory+'loadleveler_script'
-            f=open(f6, "w", 0)
-            f.write(batchscript)
-            for i in range(numprocs):
-                if i < 10:
-                    f.write("mcp $EXECDIR/funky0"+str(i)+".inp $SCRATCH/.\n")
-                else:
-                    f.write("mcp $EXECDIR/funky"+str(i)+".inp $SCRATCH/.\n")
-
-            f.write("""############################################################################
-## Change to suit
-## Invoke POE
-time poe << EOF
-    $SCRATCH/$EXECNAME 
-    quit
-EOF
-
-############################################################################
-## Change to suit
-## Copy output files back to $WORKDIR
-## need to do some tricky stuff here because the output files are
-## in scratch space on all of the nodes and only 1 node runs this script
-
-foreach node ($LL_hosts)
-        rcp "$node":"$SCRATCH/viz_output*.out" $WORKDIR/.
-end
-gzip viz*out
-
-# ----------------------------------------------------------------
-# Last second information before giving up the nodes/disks
-#
-date
-""")
-            f.close
-            os.system('cd '+directory+';llsubmit loadleveler_script')
-            
-        elif machine[0] == 'popo.eng.buffalo.edu' or machine[0] == 'colima.eng.buffalo.edu' or machine[0] == 'elchichon.eng.buffalo.edu' or machine[0] == 'sthelens.eng.buffalo.edu':
-            machine2 = os.uname()
-            f8 = directory+'machines'
-            f=open(f8, "w",0)
-            f.write(machine2[1])
-            f.close
-            i = 0
-            while i == 0:
-                i =  os.access(f_p, os.F_OK)
-                                        
-            os.system('cd '+directory+';/usr/local/mpich-1.2.4/ch_p4/bin/mpirun -machinefile machines -np '+str(numprocs)+' titan')
-
-        elif machine[0] == 'rainier.eng.buffalo.edu':
-            root3=Tk()
-            app=FinalInstructions(root3,instruction_string)
-            root3.mainloop()
-            root3.withdraw()
-            exit
-#            self.master.quit
-#            master.quit
-
-            machine2 = os.uname()
-            f8 = directory+'machines'
-            f=open(f8, "w",0)
-            f.write(machine2[1])
-            f.close
-            i = 0
-            while i == 0:
-                i =  os.access(f_p, os.F_OK)
-
-#            os.system('cd '+directory+';/usr/local/mpich-1.2.6/bin/mpirun -machinefile machines -np '+str(numprocs)+' titan')
-                
-        elif machine[0] == 'casita.eng.buffalo.edu':
-
-            machine2 = os.uname()
-            f8 = directory+'machines'
-            f=open(f8, "w",0)
-            f.write(machine2[1])
-            f.close
-            i = 0
-            while i == 0:
-                i =  os.access(f_p, os.F_OK)
-                                        
-            os.system('cd '+directory+';/usr/local/mpich-1.2.5/bin/mpirun -machinefile machines -np '+str(numprocs)+' titan')
-
-        else:
-            print 'TITAN2D is ready to run in  ' +directory
-            print """The files that the executable 'titan' needs to run are funky*.inp, scale.data, and simulation.data"""
-            print 'The output files will be:'
-            print 'output_summary.readme,'
-            if self.tecplotVar == 1:
-                print 'tecplot*tec'
-
-            if self.mshplotVar == 1:
-                print 'mshplot*tec'
-
-            if self.xdmfVar == 1:
-                print 'xdmf*.xdf'
-                
-            if self.grasssitesVar == 1:
-                print 'grass_sites*.*'
-
-
+        if self.vector != None:
+            raise NotImplementedError("GIS Vector is Not Implemented yet in py api!")
+            #os.system('./VecDataPreproc ' + self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+self.vector)
+            #os.system('mv VectorDataOutput.data ' + directory)
+        
     
 if __name__ == "__main__":
     if len(sys.argv)!=2:
         print "usage titan2d.py <simulation.py>"
     execfile(sys.argv[1])
-#root=Tk()
-#app=QuestionTemplate(root)
-#root.mainloop()
+
