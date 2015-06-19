@@ -36,6 +36,9 @@ case "$1" in
 	basedir=$2
 	shift 2
 	;;
+	--destdir)
+	shift 2
+	;;
     --help)
 	echo "Usage: py-compile [--basedir DIR] PY_FILES ..."
 	echo "Byte compile some python scripts.  This should be performed"
@@ -45,6 +48,13 @@ case "$1" in
     --version)
 	echo "py-compile version 0.0"
 	exit 0
+	;;
+esac
+
+case "$1" in
+    --basedir)
+	basedir=$2
+	shift 2
 	;;
 esac
 
@@ -65,7 +75,7 @@ $PYTHON -c "
 import sys, os, string, py_compile
 
 files = '''$*'''
-print 'Byte-compiling python modules...'
+print 'Byte-compiling python modules...',files
 for file in string.split(files):
     $trans
     if not os.path.exists(path) or not (len(path) >= 3 and path[-3:] == '.py'):
