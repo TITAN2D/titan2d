@@ -45,6 +45,10 @@ Makefile.in
 #configure generated file, for thouse who like to compile in source
 Makefile
 
+#swig generated
+/src/main/cxxtitan.py
+/src/main/cxxtitan_wrap.cxx
+
 #binaries
 /bin
 src/vectordatapreproc/VecDataPreproc
