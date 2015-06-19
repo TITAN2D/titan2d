@@ -18,9 +18,11 @@ titan_LDADD = ../gisapi/libgisapi.a ../adapt/libadapt.a @FLIBS@ \
 
 #titan_simulation_CXXFLAGS = -fpic
 
-$(srcdir)/cxxtitan_wrap.cxx:$(srcdir)/cxxtitan.i
+cxxtitan_wrap.cxx:cxxtitan.i ../header/titan_simulation.h
 	@SWIG@ -c++ -v -python -o $(srcdir)/cxxtitan_wrap.cxx -oh $(srcdir)/cxxtitan.py $(srcdir)/cxxtitan.i
-	
 
-pyfilesdir=$(prefix)/lib
-pyfiles_DATA=cxxtitan.py titan.py
+
+
+pyfilesdir=$(pythondir)/titan
+pyfiles_PYTHON=cxxtitan.py titan.py
+

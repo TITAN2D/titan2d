@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     PyRun_SimpleString("import os");
     PyRun_SimpleString("import sys");
 
-    sprintf(buffer,"sys.path.insert(1,os.path.abspath(os.path.join('%s','..','..','lib')))",executable);
+    sprintf(buffer,"sys.path.insert(1,os.path.abspath(os.path.join('%s','..','..','lib','python2.7','site-packages','titan')))",executable);
     PyRun_SimpleString(buffer);
 
 
