@@ -15,20 +15,22 @@
  */
 
 #include <stdio.h>
-
+#include <mpi.h>
 #include "../header/titan_simulation.h"
 
 cxxTitanSimulation::cxxTitanSimulation()
 {
-
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 }
 cxxTitanSimulation::~cxxTitanSimulation()
 {
 
 }
-
+int hpfem();
 void cxxTitanSimulation::run()
 {
 	printf("cxxTitanSimulation::run\n");
+	hpfem();
 
 }

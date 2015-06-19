@@ -23,5 +23,8 @@ public:
 	cxxTitanSimulation();
 	~cxxTitanSimulation();
 	void run();
+
+	int myid;
+	int numprocs;
 };
 #endif

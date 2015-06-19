@@ -38,7 +38,7 @@ int REFINE_LEVEL = 3;
 TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
 
-int hpfem(int argc, char *argv[]) {
+int hpfem() {
 	int i; //-- counters
 
 	HashTable* BT_Node_Ptr;
@@ -50,7 +50,7 @@ int hpfem(int argc, char *argv[]) {
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 	MPI_Status status;
 
-	MPI_Init(&argc, &argv);
+	//MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Get_processor_name(processor_name, &namelen);
@@ -407,7 +407,7 @@ int hpfem(int argc, char *argv[]) {
 	if (myid == 0)
 		titanTimings.print();
 
-	MPI_Finalize();
+	//MPI_Finalize();
 	return (0);
 
 }

@@ -19,6 +19,8 @@ import sys,os,math,string,re,socket
 
 TITAN2d_HOME='/home/mikola/titan_wsp/titan2d_bld/iccopt'
 
+from cxxtitan import cxxTitanSimulation
+
 
 class TitanFluxSource:
     def __init__(self,master,src_number,filename,directory,heightscale):
@@ -301,7 +303,7 @@ class TitanPile:
         fout.write( str(pileheight) + '\n' + str(xpilecenter) + '\n' + str(ypilecenter) + '\n' + str(majradius) + '\n' +str(minradius) + '\n' + str(orientation) + '\n' + str(Vmagnitude) + '\n' + str(Vdirection) + '\n')
         fout.close
         
-class TitanSimulation:
+class TitanSimulation(cxxTitanSimulation):
     possible_vizoutputs={
         'tecplotxxxx.tec':1, # first bit flag
         'mshplotxxxx.tec':2, # second bit flag
@@ -322,7 +324,6 @@ class TitanSimulation:
                  maxtime,
                  timeoutput,
                  timesave,
-                 numprocs=1,
                  lengthscale=None,
                  adapt=False,
                  vizoutput="tecplotxxxx.tec",
@@ -339,7 +340,7 @@ class TitanSimulation:
         
         
         
-        
+        super(TitanSimulation, self).__init__()
         #init values
         self.gisformat = None
         self.topomain = None
@@ -350,7 +351,7 @@ class TitanSimulation:
         self.matmap=None
         
         #Number of Processors
-        self.numprocs = numprocs
+        numprocs=self.numprocs
         if numprocs <= 0:
             raise ValueError('numprocs must be greater than 0, it is ' + str(numprocs))
         if numprocs not in (1,2,4,8,12,128,256,512):
@@ -586,263 +587,265 @@ class TitanSimulation:
         
     
     def run(self):
-        #get system information so it is known which system the script is running on
-        machine = socket.gethostbyaddr(socket.gethostname())
-        print 'Trying to run a job on ' + machine[0]
-        
-        #check values
-        srctype = 0
-        
-        self.numpiles=len(self.piles)
-        numpiles = self.numpiles
-        if numpiles < 0:
-            raise ValueError('Number of piles cannot be a negative number')
-        
-        numsrcs = self.numsrcs
-        if numsrcs < 0:
-            raise ValueError('Number of Flux Sources cannot be a negative number')
-        
-
-        if numpiles > 0:
-            srctype = srctype +1
-
-        if numsrcs  > 0:
-            srctype = srctype +2
+        if self.myid==0:
+            #get system information so it is known which system the script is running on
+            machine = socket.gethostbyaddr(socket.gethostname())
+            print 'Trying to run a job on ' + machine[0]
             
-        coord_flag = 0
-        min_location_x = 0
-        max_location_x = 0
-        min_location_y = 0
-        max_location_y = 0
-        if self.min_location_x != None:
-            coord_flag = 1
-            min_location_x = float(self.min_location_x)
-
-        if self.min_location_y != None:
-            coord_flag = 1+coord_flag
-            min_location_y = float(self.min_location_y)
-
-        if self.max_location_x != None:
-            coord_flag = 1+coord_flag
-            max_location_x = float(self.max_location_x)
-
-        if self.max_location_y != None:
-            coord_flag = 1+coord_flag
-            max_location_y = float(self.max_location_y)
-
-        if min_location_x > max_location_x:
-            temp = max_location_x
-            max_location_x = min_location_x
-            min_location_x = temp
-
-        if min_location_y > max_location_y:
-            temp = max_location_y
-            max_location_y = min_location_y
-            min_location_y = temp
-
-        if coord_flag != 0 and coord_flag != 4:
-            raise ValueError('Must either fill in none or all minimum and maximum coordinate values')
-        
-        numcellsacrosspile = 20
-        if self.numcellsacrosspile != None:
-            numcellsacrosspile = int(self.numcellsacrosspile)
-            if numcellsacrosspile <= 0:
-                numcellsacrosspile = 20
-
-        if self.steps == None:
-            steps = 100
-        else:
-            steps = self.steps
-            if steps < 1:
-                steps = 100
-
-        if self.timeoutput == None:
-            timeoutput = 10
-        else:
-            timeoutput = self.timeoutput
-            if timeoutput < 0:
-                timeoutput = 10
-
-        if self.maxtime == None:
-            maxtime = 1.5
-        else:
-            maxtime = float(self.maxtime)
-            if maxtime <= 0:
-                maxtime = 1.5
-
-        if self.timesave == None:
-            timesave = -1
-        else:
-            timesave = float(self.timesave)
-            if timesave <= 0:
-                timesave = -1
-                if timesave > maxtime:
-                    timesave = -1
-
-        if self.edge_height == None:
-            edge_height = -1
-        else:
-            edge_height = float(self.edge_height)
-            if edge_height <= 0:
-                print 'you entered an edge height <= 0!\nusing default value hardcoded in titan instead\n'
-                edge_height = -1
-                            
-        if self.test_height == None:
-            test_height = -1
-        else:
-            test_height =float(self.test_height)
-            if test_height <= 0:
-                 print 'you entered an point test height <= 0!\nusing default value hardcoded in titan instead\n'
-                 test_height = -1
-
-        if self.test_location_x == None or self.test_location_y == None:
-            test_height = -2
-            test_location_x = 'none'
-            test_location_y = 'none'
+            #check values
+            srctype = 0
             
-        else:
-            test_location_x = str(float(self.test_location_x))
-            test_location_y = str(float(self.test_location_y))
-
+            self.numpiles=len(self.piles)
+            numpiles = self.numpiles
+            if numpiles < 0:
+                raise ValueError('Number of piles cannot be a negative number')
             
-        
-        
-        #pile geometry stuff, friction coefficients, etc.
-        # get all of the pile information
-        max_height = 0.0
-        f_p = 'simulation.data'
-        f_p2=open(f_p, "w", 0)
-        f_p2.write(str(srctype) + '\n')
-        if int(numpiles) > 0:
-            f_p2.write(str(numpiles) + '\n')
-        if int(numsrcs) > 0:
-            f_p2.write(str(numsrcs) + '\n')
-        f_p2.close
-        
-        max_height=0.0
-        for iPile in range(len(self.piles)):
-            self.piles[iPile].showVolume()
-            self.piles[iPile].done(f_p)
-            if self.piles[iPile].pileheight > max_height:
-                max_height = self.piles[iPile].pileheight
-        
-
-        counter = 0
-        heightscale = max_height
-        if numsrcs > 0:
-            raise NotImplementedError("numsrcs > 0 not implemented yet!")
-            #while counter < numsrcs:
-                #app=TitanFluxSource/QuestionTemplate5(root5,counter,f_p,directory, heightscale)
-                #heightscale = app.heightscale;
+            numsrcs = self.numsrcs
+            if numsrcs < 0:
+                raise ValueError('Number of Flux Sources cannot be a negative number')
             
-        output2 = str(numcellsacrosspile) + '\n' +\
-            str(steps) + '\n' + str(maxtime) + '\n' +\
-            str(timeoutput) + '\n' + str(timesave) + '\n' +\
-            str(int(self.adapt))
-        f_p2=open(f_p, "a+", 0)        
-        f_p2.write(output2)
-        
-        #scaling stuff
-        scale = self.scale
-        lengthscale = 1.
-        if scale:
-            lengthscale = self.lengthscale
-            if max_height <= 0.:max_height = 1.
-            if heightscale <= 0.:heightscale = 1.
+    
+            if numpiles > 0:
+                srctype = srctype +1
+    
+            if numsrcs  > 0:
+                srctype = srctype +2
                 
-            output1 = str(lengthscale) + "\n" + str(heightscale) + "\n9.80" 
+            coord_flag = 0
+            min_location_x = 0
+            max_location_x = 0
+            min_location_y = 0
+            max_location_y = 0
+            if self.min_location_x != None:
+                coord_flag = 1
+                min_location_x = float(self.min_location_x)
+    
+            if self.min_location_y != None:
+                coord_flag = 1+coord_flag
+                min_location_y = float(self.min_location_y)
+    
+            if self.max_location_x != None:
+                coord_flag = 1+coord_flag
+                max_location_x = float(self.max_location_x)
+    
+            if self.max_location_y != None:
+                coord_flag = 1+coord_flag
+                max_location_y = float(self.max_location_y)
+    
+            if min_location_x > max_location_x:
+                temp = max_location_x
+                max_location_x = min_location_x
+                min_location_x = temp
+    
+            if min_location_y > max_location_y:
+                temp = max_location_y
+                max_location_y = min_location_y
+                min_location_y = temp
+    
+            if coord_flag != 0 and coord_flag != 4:
+                raise ValueError('Must either fill in none or all minimum and maximum coordinate values')
             
-        else:
-            output1 = "1 \n1 \n1"
-        
-        f2 = 'scale.data'
-        f=open(f2, "w", 0)
-        f.write(output1)
-        f.close
-
-        #put in the stuff for viz the idea is to use prime numbers and the remainder function to determine which formats to output in
-        viz_num = self.vizoutput
-
-        f_p2.write('\n' + str(viz_num) + '\n' + str(self.order))
-        #GIS stuff
-        f_p2.write('\n' + str(self.gisformat))
-        if self.gisformat == 1:
-            f_p2.write('\n' + self.topomain + '\n' + self.toposub + '\n' + self.topomapset + '\n' + self.topomap +'\n' + str(int(self.matmap)))
-        else:
-            f_p2.write('\n' + self.topomap)
-
-        f_p2.write('\n' + str(edge_height) + '\n' + str(test_height) + '\n' + test_location_x + ' ' + test_location_y)
-        f_p2.close
-
-        #----------------------------------------
-        #-----Number of Discharge Planes---------
-        #----------------------------------------
-        #check values
-        if self.numdischarge == 0:
-            numdischarge = 0
-            print 'Number of Discharge Planes not set.  Setting it to ' + str(numdischarge)
-        else:
-            numdischarge = self.numdischarge
-
-        #loop to allow user input of coordinates for variable # of discharge planes
-        fout = open('simulation.data',"a+",0)
-        fout.write('\n'+str(numdischarge)+'\n')
-        
-        if numdischarge>0:
-            raise NotImplementedError("numsrcs > 0 not implemented yet!")
-            #app=TitanDischargePlane/QuestionTemplate4(root4,counter,numdischarge)
-#             if app.xa != '' and app.xb != '' and app.ya != '' and app.yb != '':
-#                 fout.write(str(app.xa)+' '+str(app.ya)+' '+str(app.xb)+' '+str(app.yb)+'\n')
-#                 del app
-#                 counter = counter + 1
-#             else:
-#                 print 'Missing data.  Must re-enter.'
-        fout.close
-        #----------------------------------------------
-        #----------------------------------------------
-
-
-        print 'max height is ' + str(max_height)
-        print 'heightscale is ' + str(heightscale)
-        
-        
-        # run preproc.x to create the fem grid, if it is not already there
-        #if os.access('PRE/preproc.x',os.X_OK)==0:
-        #    os.system('cd PRE;gmake')
-        # locate titan_preprocess: 
-        # first check the local-diretory,
-        
-        numprocs=self.numprocs
-        
-        if ( os.path.isfile('titan_preprocess') ):
-            preproc = './titan_preprocess'
-        else:
-            preproc = '/home/mikola/titan_wsp/titan2d_bld/iccopt/bin/titan_preprocess'
+            numcellsacrosspile = 20
+            if self.numcellsacrosspile != None:
+                numcellsacrosspile = int(self.numcellsacrosspile)
+                if numcellsacrosspile <= 0:
+                    numcellsacrosspile = 20
+    
+            if self.steps == None:
+                steps = 100
+            else:
+                steps = self.steps
+                if steps < 1:
+                    steps = 100
+    
+            if self.timeoutput == None:
+                timeoutput = 10
+            else:
+                timeoutput = self.timeoutput
+                if timeoutput < 0:
+                    timeoutput = 10
+    
+            if self.maxtime == None:
+                maxtime = 1.5
+            else:
+                maxtime = float(self.maxtime)
+                if maxtime <= 0:
+                    maxtime = 1.5
+    
+            if self.timesave == None:
+                timesave = -1
+            else:
+                timesave = float(self.timesave)
+                if timesave <= 0:
+                    timesave = -1
+                    if timesave > maxtime:
+                        timesave = -1
+    
+            if self.edge_height == None:
+                edge_height = -1
+            else:
+                edge_height = float(self.edge_height)
+                if edge_height <= 0:
+                    print 'you entered an edge height <= 0!\nusing default value hardcoded in titan instead\n'
+                    edge_height = -1
+                                
+            if self.test_height == None:
+                test_height = -1
+            else:
+                test_height =float(self.test_height)
+                if test_height <= 0:
+                     print 'you entered an point test height <= 0!\nusing default value hardcoded in titan instead\n'
+                     test_height = -1
+    
+            if self.test_location_x == None or self.test_location_y == None:
+                test_height = -2
+                test_location_x = 'none'
+                test_location_y = 'none'
+                
+            else:
+                test_location_x = str(float(self.test_location_x))
+                test_location_y = str(float(self.test_location_y))
+    
+                
             
-        if coord_flag == 0:
-            if self.gisformat == 1:
-                command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap
-                print "executing:",command
-                os.system(command)
+            
+            #pile geometry stuff, friction coefficients, etc.
+            # get all of the pile information
+            max_height = 0.0
+            f_p = 'simulation.data'
+            f_p2=open(f_p, "w", 0)
+            f_p2.write(str(srctype) + '\n')
+            if int(numpiles) > 0:
+                f_p2.write(str(numpiles) + '\n')
+            if int(numsrcs) > 0:
+                f_p2.write(str(numsrcs) + '\n')
+            f_p2.close
+            
+            max_height=0.0
+            for iPile in range(len(self.piles)):
+                self.piles[iPile].showVolume()
+                self.piles[iPile].done(f_p)
+                if self.piles[iPile].pileheight > max_height:
+                    max_height = self.piles[iPile].pileheight
+            
+    
+            counter = 0
+            heightscale = max_height
+            if numsrcs > 0:
+                raise NotImplementedError("numsrcs > 0 not implemented yet!")
+                #while counter < numsrcs:
+                    #app=TitanFluxSource/QuestionTemplate5(root5,counter,f_p,directory, heightscale)
+                    #heightscale = app.heightscale;
+                
+            output2 = str(numcellsacrosspile) + '\n' +\
+                str(steps) + '\n' + str(maxtime) + '\n' +\
+                str(timeoutput) + '\n' + str(timesave) + '\n' +\
+                str(int(self.adapt))
+            f_p2=open(f_p, "a+", 0)        
+            f_p2.write(output2)
+            
+            #scaling stuff
+            scale = self.scale
+            lengthscale = 1.
+            if scale:
+                lengthscale = self.lengthscale
+                if max_height <= 0.:max_height = 1.
+                if heightscale <= 0.:heightscale = 1.
+                    
+                output1 = str(lengthscale) + "\n" + str(heightscale) + "\n9.80" 
+                
             else:
-                command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomap
-                print "executing:",command
-                os.system(command)
-        else:
-            print 'window is  '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
+                output1 = "1 \n1 \n1"
+            
+            f2 = 'scale.data'
+            f=open(f2, "w", 0)
+            f.write(output1)
+            f.close
+    
+            #put in the stuff for viz the idea is to use prime numbers and the remainder function to determine which formats to output in
+            viz_num = self.vizoutput
+    
+            f_p2.write('\n' + str(viz_num) + '\n' + str(self.order))
+            #GIS stuff
+            f_p2.write('\n' + str(self.gisformat))
             if self.gisformat == 1:
-                command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
-                print "executing:",command
-                os.system(command)
+                f_p2.write('\n' + self.topomain + '\n' + self.toposub + '\n' + self.topomapset + '\n' + self.topomap +'\n' + str(int(self.matmap)))
             else:
-                command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomap+' '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
-                print "executing:",command
-                os.system(command)
-
-        if self.vector != None:
-            raise NotImplementedError("GIS Vector is Not Implemented yet in py api!")
-            #os.system('./VecDataPreproc ' + self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+self.vector)
-            #os.system('mv VectorDataOutput.data ' + directory)
+                f_p2.write('\n' + self.topomap)
+    
+            f_p2.write('\n' + str(edge_height) + '\n' + str(test_height) + '\n' + test_location_x + ' ' + test_location_y)
+            f_p2.close
+    
+            #----------------------------------------
+            #-----Number of Discharge Planes---------
+            #----------------------------------------
+            #check values
+            if self.numdischarge == 0:
+                numdischarge = 0
+                print 'Number of Discharge Planes not set.  Setting it to ' + str(numdischarge)
+            else:
+                numdischarge = self.numdischarge
+    
+            #loop to allow user input of coordinates for variable # of discharge planes
+            fout = open('simulation.data',"a+",0)
+            fout.write('\n'+str(numdischarge)+'\n')
+            
+            if numdischarge>0:
+                raise NotImplementedError("numsrcs > 0 not implemented yet!")
+                #app=TitanDischargePlane/QuestionTemplate4(root4,counter,numdischarge)
+    #             if app.xa != '' and app.xb != '' and app.ya != '' and app.yb != '':
+    #                 fout.write(str(app.xa)+' '+str(app.ya)+' '+str(app.xb)+' '+str(app.yb)+'\n')
+    #                 del app
+    #                 counter = counter + 1
+    #             else:
+    #                 print 'Missing data.  Must re-enter.'
+            fout.close
+            #----------------------------------------------
+            #----------------------------------------------
+    
+    
+            print 'max height is ' + str(max_height)
+            print 'heightscale is ' + str(heightscale)
+            
+            
+            # run preproc.x to create the fem grid, if it is not already there
+            #if os.access('PRE/preproc.x',os.X_OK)==0:
+            #    os.system('cd PRE;gmake')
+            # locate titan_preprocess: 
+            # first check the local-diretory,
+            
+            numprocs=self.numprocs
+            
+            if ( os.path.isfile('titan_preprocess') ):
+                preproc = './titan_preprocess'
+            else:
+                preproc = TITAN2d_HOME+'/bin/titan_preprocess'
+                
+            if coord_flag == 0:
+                if self.gisformat == 1:
+                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap
+                    print "executing:",command
+                    os.system(command)
+                else:
+                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomap
+                    print "executing:",command
+                    os.system(command)
+            else:
+                print 'window is  '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
+                if self.gisformat == 1:
+                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
+                    print "executing:",command
+                    os.system(command)
+                else:
+                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomap+' '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
+                    print "executing:",command
+                    os.system(command)
+    
+            if self.vector != None:
+                raise NotImplementedError("GIS Vector is Not Implemented yet in py api!")
+                #os.system('./VecDataPreproc ' + self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+self.vector)
+                #os.system('mv VectorDataOutput.data ' + directory)
         
+        super(TitanSimulation, self).run()
 
 
