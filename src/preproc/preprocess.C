@@ -50,23 +50,23 @@ using namespace std;
 //createfunky() is found in createfunky.C
 void createfunky(int NumProc, int gisformat, char *GISDbase, char *location, char *mapset,
     char *topomap, int havelimits, double limits[4], int *node_count, Node **node,
-    int *element_count, Element **element, int *force_count, int *constraint_count,
+    int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     Boundary **boundary, int *material_count, char ***materialnames, double **lambda, double **mu);
 
 int Read_no_of_objects(int*, int*, int*, int*, int*, long*);
 void Read_node_data(int*, Node*, long*);
-void Read_element_data(int*, Node*, Element*, long*);
+void Read_element_data(int*, Node*, ElementPreproc*, long*);
 void Read_boundary_data(int*, int*, Node*, Boundary*, long*);
 void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
-void Write_data(int, int, int, int, int, Node*, Element**, Boundary*, unsigned*, unsigned*, double*,
+void Write_data(int, int, int, int, int, Node*, ElementPreproc**, Boundary*, unsigned*, unsigned*, double*,
     double*, char**, double*, double*);
-void Determine_neighbors(int, Element*, int, Node*);
+void Determine_neighbors(int, ElementPreproc*, int, Node*);
 
 const int material_length = 80;
 
 int compare_key_fn(const void* elem1, const void* elem2) {
-	Element** em1 = (Element**) elem1;
-	Element** em2 = (Element**) elem2;
+	ElementPreproc** em1 = (ElementPreproc**) elem1;
+	ElementPreproc** em2 = (ElementPreproc**) elem2;
 	if (*((*em1)->pass_key()) < *((*em2)->pass_key()))
 		return (-1);
 	else if (*((*em1)->pass_key()) > *((*em2)->pass_key()))
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 	double min[2] = { 0, 0 };
 
 	Node *node;
-	Element *element, **ordering;
+	ElementPreproc *element, **ordering;
 	Boundary *boundary;
 
 	if ((argc != 5) && (argc != 8) && (argc != 9) && (argc != 12)) {
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
 	    &node_count, &node, &element_count, &element, &force_count, &constraint_count, &boundary,
 	    &material_count, &materialnames, &lambda, &mu);
 
-	ordering = (Element **) calloc(element_count, sizeof(Element*));
+	ordering = (ElementPreproc **) calloc(element_count, sizeof(ElementPreproc*));
 	element[0].create_m_node(max, min);
 
 	min[0] = max[0] = *((*(element[0].get_element_node()))->get_node_coord());
@@ -192,11 +192,11 @@ int main(int argc, char** argv) {
 		ordering[i] = &(element[i]);
 
 	// before doing qsort, switch the first element with the middle element
-	Element* EmTemp = ordering[0];
+	ElementPreproc* EmTemp = ordering[0];
 	ordering[0] = ordering[element_count / 2];
 	ordering[element_count / 2] = EmTemp;
 
-	qsort(ordering, element_count, sizeof(Element*), compare_key_fn);
+	qsort(ordering, element_count, sizeof(ElementPreproc*), compare_key_fn);
 
 	for (i = 0; i < element_count; i++)
 		(ordering[i])->myproc(NumProc, i, element_count);
@@ -338,7 +338,7 @@ void Read_node_data(int* nc, Node n[], long* loc) {
 #endif
 }
 
-void Read_element_data(int* ec, Node n[], Element e[], long* loc) {
+void Read_element_data(int* ec, Node n[], ElementPreproc e[], long* loc) {
 	int elem_id;
 	int element_nodes[8];
 	int material;
@@ -535,7 +535,7 @@ void Read_material_data(int *material_count, char ***materialnames, double **lam
 }
 
 //**************************FINDING THE NEIGHBORS******************************
-void Determine_neighbors(int element_count, Element* element, int node_count, Node* node) {
+void Determine_neighbors(int element_count, ElementPreproc* element, int node_count, Node* node) {
 	int i, j;
 	for (i = 0; i < node_count; i++)
 		node[i].put_element_array_loc(-1);
@@ -555,7 +555,7 @@ void Determine_neighbors(int element_count, Element* element, int node_count, No
 
 //**************************DATA OUTPUT******************************
 
-void Write_data(int np, int nc, int ec, int bc, int mc, Node n[], Element* o[], Boundary b[],
+void Write_data(int np, int nc, int ec, int bc, int mc, Node n[], ElementPreproc* o[], Boundary b[],
     unsigned maxk[], unsigned mink[], double min[], double max[], char **materialnames,
     double* lambda, double* mu) {
 

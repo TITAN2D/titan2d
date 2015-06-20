@@ -21,7 +21,7 @@
 
 class Node {
 
-	friend class Element;
+	friend class ElementPreproc;
 //friend class Edge;
 	friend class Boundary;
 	friend void get_key(double*, unsigned*, unsigned*);

@@ -38,7 +38,7 @@ void Read_material_data(int *material_count, char ***materialnames, double **lam
 
 void createfunky(int NumProc, int format, char *GISDbase, char *location, char *mapset,
     char *topomap, int havelimits, double limits[4], int *node_count, Node **node,
-    int *element_count, Element **element, int *force_count, int *constraint_count,
+    int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     Boundary **boundary, int *material_count, char ***materialnames, double **lambda, double **mu) {
 
 	// *********************************************************************
@@ -340,7 +340,7 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 		int w; //name is legacy, it might stand for "which" or "while"
 		Node* address[8];
 
-		*element = (Element *) calloc(*element_count, sizeof(Element));
+		*element = (ElementPreproc *) calloc(*element_count, sizeof(ElementPreproc));
 
 		//store the elements
 		for (ielem = 0; ielem < *element_count; ielem++) {

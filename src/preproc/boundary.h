@@ -21,7 +21,7 @@
 
 class Boundary {
 
-	friend class Element;
+	friend class ElementPreproc;
 
 public:
 

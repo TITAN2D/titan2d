@@ -28,14 +28,14 @@ using namespace std;
 #include "../header/FileFormat.h"
 #include "useful_lib.h"
 
-Element::Element() {
+ElementPreproc::ElementPreproc() {
 	int i;
 	for (i = 0; i < 4; i++)
 		neighbor[i] = NULL;
 	opposite_brother = NULL;
 }
 
-void Element::setparameters(int di, Node* nodes[], int mat, int* elm_loc_in) {
+void ElementPreproc::setparameters(int di, Node* nodes[], int mat, int* elm_loc_in) {
 	int i;
 	elementid = di;
 	for (i = 0; i < 8; i++)
@@ -63,7 +63,7 @@ void Element::setparameters(int di, Node* nodes[], int mat, int* elm_loc_in) {
 	}
 }
 
-void Element::order_nodes() {
+void ElementPreproc::order_nodes() {
 	double v[3][2];
 	int count0 = 0, count1 = 0, count2 = 0, count3 = 0, count4 = 0, count5 = 0;
 
@@ -106,7 +106,7 @@ void Element::order_nodes() {
 
 }
 
-void Element::case5() {
+void ElementPreproc::case5() {
 
 	Node* temp;
 
@@ -119,7 +119,7 @@ void Element::case5() {
 
 }
 
-void Element::case1() {
+void ElementPreproc::case1() {
 	Node* temp;
 
 	temp = element_nodes[2];
@@ -128,7 +128,7 @@ void Element::case1() {
 
 }
 
-void Element::case2() {
+void ElementPreproc::case2() {
 
 	Node* temp;
 
@@ -137,7 +137,7 @@ void Element::case2() {
 	element_nodes[2] = temp;
 }
 
-void Element::case3() {
+void ElementPreproc::case3() {
 	Node* temp;
 
 	temp = element_nodes[1];
@@ -147,7 +147,7 @@ void Element::case3() {
 
 }
 
-void Element::case4() {
+void ElementPreproc::case4() {
 	Node* temp;
 
 	temp = element_nodes[1];
@@ -156,7 +156,7 @@ void Element::case4() {
 	element_nodes[2] = temp;
 }
 
-void Element::create_m_node(double* max, double *min) {
+void ElementPreproc::create_m_node(double* max, double *min) {
 
 	Node* newPtr = new Node();
 
@@ -194,7 +194,7 @@ void Element::create_m_node(double* max, double *min) {
 
  }*/
 
-void Element::determine_neighbors(int array_loc, Element* el) {
+void ElementPreproc::determine_neighbors(int array_loc, ElementPreproc* el) {
 	int i, neigh_loc;
 
 	for (i = 4; i < 8; i++) {
@@ -205,7 +205,7 @@ void Element::determine_neighbors(int array_loc, Element* el) {
 }
 
 //*************************finding the opposite brother***********************
-void Element::determine_opposite_brother() {
+void ElementPreproc::determine_opposite_brother() {
 	if (which_son != 3) {
 		if (neighbor[which_son + 1] != NULL) {
 			if (which_son != 2)
@@ -220,18 +220,18 @@ void Element::determine_opposite_brother() {
 
 }
 
-Element* Element::get_neighbors(int side) {
+ElementPreproc* ElementPreproc::get_neighbors(int side) {
 	return neighbor[side];
 }
 
-void Element::myproc(int np, int i, int ec) {
+void ElementPreproc::myproc(int np, int i, int ec) {
 	myprocess = i / (ec / np);
 
 	if (i >= (ec / np) * np)
 		myprocess = np - 1;
 }
 
-void Element::write_element_data_bin(FILE *fp) {
+void ElementPreproc::write_element_data_bin(FILE *fp) {
 	int i;
 	for (i = 0; i < 9; i++) {
 		fwriteU(fp, element_nodes[i]->key[0]);
@@ -284,7 +284,7 @@ void Element::write_element_data_bin(FILE *fp) {
 	return;
 }
 
-void Element::write_element_data(ofstream* out) {
+void ElementPreproc::write_element_data(ofstream* out) {
 	int i;
 	for (i = 0; i < 9; i++)
 		//    *out<<elementid<<'\n';
@@ -332,7 +332,7 @@ void Element::write_element_data(ofstream* out) {
 
 }
 
-void Element::reset_written_flag() {
+void ElementPreproc::reset_written_flag() {
 
 	for (int i = 0; i < 8; i++)
 		if (element_nodes[i]->written != 0)
@@ -340,7 +340,7 @@ void Element::reset_written_flag() {
 
 }
 
-void Element::set_boundary(Boundary *b) {
+void ElementPreproc::set_boundary(Boundary *b) {
 	for (int j = 0; j < 4; j++)
 		if (b->node->nodeid == element_nodes[j + 4]->nodeid) {
 			if (b->type == -2)
@@ -352,7 +352,7 @@ void Element::set_boundary(Boundary *b) {
 	return;
 }
 
-void Element::find_boundary(int cc, int fc, Boundary b[]) {
+void ElementPreproc::find_boundary(int cc, int fc, Boundary b[]) {
 	for (int i = 0; i < cc + fc; i++)
 		for (int j = 4; j < 8; j++)
 			if (b[i].node->nodeid == element_nodes[j]->nodeid) {
@@ -366,7 +366,7 @@ void Element::find_boundary(int cc, int fc, Boundary b[]) {
 			}
 }
 
-unsigned* Element::pass_key() {
+unsigned* ElementPreproc::pass_key() {
 	unsigned* mykey = element_nodes[8]->get_key();
 
 	return mykey;

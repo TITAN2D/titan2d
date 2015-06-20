@@ -20,13 +20,13 @@
 #include "node.h"
 #include "boundary.h"
 
-class Element {
+class ElementPreproc {
 
-	friend void drawit(Element);
+	friend void drawit(ElementPreproc);
 
 public:
 
-	Element();
+	ElementPreproc();
 	void setparameters(int, Node*[], int, int*);
 	void order_nodes();
 	void case1();
@@ -41,7 +41,7 @@ public:
 	;
 	//void determine_the_key(unsigned, double*, double*);
 	unsigned* pass_key();
-	void determine_neighbors(int, Element*);
+	void determine_neighbors(int, ElementPreproc*);
 	Node** get_element_node() {
 		return element_nodes;
 	}
@@ -71,9 +71,9 @@ public:
 	void set_boundary(Boundary *b);
 
 	//Edge* get_element_edges();
-	Element* get_neighbors(int);
+	ElementPreproc* get_neighbors(int);
 	void determine_opposite_brother();
-	Element* get_opposite_brother() {
+	ElementPreproc* get_opposite_brother() {
 		return opposite_brother;
 	}
 	;
@@ -83,12 +83,12 @@ private:
 	Boundary *boundary[4][2];
 	Node* element_nodes[9];
 	//Edge* element_edges[4];
-	Element* neighbor[4];
+	ElementPreproc* neighbor[4];
 	int material;
 	int myprocess;
 	int elm_loc[2];
 	int which_son;
-	Element* opposite_brother;
+	ElementPreproc* opposite_brother;
 
 };
 #endif
