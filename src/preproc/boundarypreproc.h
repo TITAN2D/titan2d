@@ -19,13 +19,13 @@
 #define BOUNDARY_H
 #include "node.h"
 
-class Boundary {
+class BoundaryPreproc {
 
 	friend class ElementPreproc;
 
 public:
 
-	Boundary();
+	BoundaryPreproc();
 	void setparameters(NodePreproc*, double, double, int);
 	NodePreproc* get_boundary_node() {
 		return node;

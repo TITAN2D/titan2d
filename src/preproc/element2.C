@@ -340,7 +340,7 @@ void ElementPreproc::reset_written_flag() {
 
 }
 
-void ElementPreproc::set_boundary(Boundary *b) {
+void ElementPreproc::set_boundary(BoundaryPreproc *b) {
 	for (int j = 0; j < 4; j++)
 		if (b->node->nodeid == element_nodes[j + 4]->nodeid) {
 			if (b->type == -2)
@@ -352,7 +352,7 @@ void ElementPreproc::set_boundary(Boundary *b) {
 	return;
 }
 
-void ElementPreproc::find_boundary(int cc, int fc, Boundary b[]) {
+void ElementPreproc::find_boundary(int cc, int fc, BoundaryPreproc b[]) {
 	for (int i = 0; i < cc + fc; i++)
 		for (int j = 4; j < 8; j++)
 			if (b[i].node->nodeid == element_nodes[j]->nodeid) {

@@ -23,7 +23,7 @@ class NodePreproc {
 
 	friend class ElementPreproc;
 //friend class Edge;
-	friend class Boundary;
+	friend class BoundaryPreproc;
 	friend void get_key(double*, unsigned*, unsigned*);
 
 public:

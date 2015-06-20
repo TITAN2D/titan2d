@@ -24,14 +24,14 @@
 using namespace std;
 
 #include <stdio.h>
-#include "boundary.h"
+#include "boundarypreproc.h"
 #include "useful_lib.h"
 #include "../header/FileFormat.h"
 
-Boundary::Boundary() {
+BoundaryPreproc::BoundaryPreproc() {
 }
 
-void Boundary::setparameters(NodePreproc* n, double xv, double yv, int t) {
+void BoundaryPreproc::setparameters(NodePreproc* n, double xv, double yv, int t) {
 
 	node = n;
 	x_value = xv;
@@ -40,7 +40,7 @@ void Boundary::setparameters(NodePreproc* n, double xv, double yv, int t) {
 
 }
 
-void Boundary::write_b_data_bin(FILE *fp) {
+void BoundaryPreproc::write_b_data_bin(FILE *fp) {
 	fwriteI(fp, type);
 	fwriteI(fp, node->key[0]);
 	fwriteI(fp, node->key[1]);
@@ -54,7 +54,7 @@ void Boundary::write_b_data_bin(FILE *fp) {
 	return;
 }
 
-void Boundary::write_b_data(ofstream* out) {
+void BoundaryPreproc::write_b_data(ofstream* out) {
 	*out << type << ' ' << node->key[0] << ' ' << node->key[1] << ' ' << x_value << ' ' << y_value
 	    << ' ' << '\n';
 

@@ -24,7 +24,7 @@ using namespace std;
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "boundary.h"
+#include "boundarypreproc.h"
 #include "element.h"
 #include "../header/FileFormat.h"
 #include "GisApi.h"
@@ -39,7 +39,7 @@ void Read_material_data(int *material_count, char ***materialnames, double **lam
 void createfunky(int NumProc, int format, char *GISDbase, char *location, char *mapset,
     char *topomap, int havelimits, double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
-    Boundary **boundary, int *material_count, char ***materialnames, double **lambda, double **mu) {
+    BoundaryPreproc **boundary, int *material_count, char ***materialnames, double **lambda, double **mu) {
 
 	// *********************************************************************
 	// ** Because the keys are generated from normalized (0 to 1) x and y **
@@ -265,7 +265,7 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 		xy = CAllocD2(*node_count, 2);
 
 		*node = (NodePreproc *) calloc(*node_count, sizeof(NodePreproc));
-		*boundary = (Boundary *) calloc(2 * (nx + ny), sizeof(Boundary));
+		*boundary = (BoundaryPreproc *) calloc(2 * (nx + ny), sizeof(BoundaryPreproc));
 
 		int ibc = 0, ielem, inode = 0;
 		int *ibc2inode = CAllocI1(2 * (nx + ny));

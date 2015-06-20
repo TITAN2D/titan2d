@@ -17,8 +17,8 @@
 
 #ifndef ELEMENT_H
 #define ELEMENT_H
+#include "boundarypreproc.h"
 #include "node.h"
-#include "boundary.h"
 
 class ElementPreproc {
 
@@ -46,7 +46,7 @@ public:
 		return element_nodes;
 	}
 	;
-	Boundary* get_element_bound(int iside, int i) {
+	BoundaryPreproc* get_element_bound(int iside, int i) {
 		return boundary[iside][i];
 	}
 	;
@@ -67,8 +67,8 @@ public:
 	void write_element_data(ofstream*);
 	void write_element_data_bin(FILE *);
 	void reset_written_flag();
-	void find_boundary(int, int, Boundary*);
-	void set_boundary(Boundary *b);
+	void find_boundary(int, int, BoundaryPreproc*);
+	void set_boundary(BoundaryPreproc *b);
 
 	//Edge* get_element_edges();
 	ElementPreproc* get_neighbors(int);
@@ -80,7 +80,7 @@ public:
 
 private:
 	int elementid;
-	Boundary *boundary[4][2];
+	BoundaryPreproc *boundary[4][2];
 	NodePreproc* element_nodes[9];
 	//Edge* element_edges[4];
 	ElementPreproc* neighbor[4];

@@ -27,7 +27,7 @@ using namespace std;
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "boundary.h"
+#include "boundarypreproc.h"
 #include "element.h"
 #include "../header/FileFormat.h"
 #include "node.h"
@@ -51,14 +51,14 @@ using namespace std;
 void createfunky(int NumProc, int gisformat, char *GISDbase, char *location, char *mapset,
     char *topomap, int havelimits, double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
-    Boundary **boundary, int *material_count, char ***materialnames, double **lambda, double **mu);
+    BoundaryPreproc **boundary, int *material_count, char ***materialnames, double **lambda, double **mu);
 
 int Read_no_of_objects(int*, int*, int*, int*, int*, long*);
 void Read_node_data(int*, NodePreproc*, long*);
 void Read_element_data(int*, NodePreproc*, ElementPreproc*, long*);
-void Read_boundary_data(int*, int*, NodePreproc*, Boundary*, long*);
+void Read_boundary_data(int*, int*, NodePreproc*, BoundaryPreproc*, long*);
 void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
-void Write_data(int, int, int, int, int, NodePreproc*, ElementPreproc**, Boundary*, unsigned*, unsigned*, double*,
+void Write_data(int, int, int, int, int, NodePreproc*, ElementPreproc**, BoundaryPreproc*, unsigned*, unsigned*, double*,
     double*, char**, double*, double*);
 void Determine_neighbors(int, ElementPreproc*, int, NodePreproc*);
 
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
 
 	NodePreproc *node;
 	ElementPreproc *element, **ordering;
-	Boundary *boundary;
+	BoundaryPreproc *boundary;
 
 	if ((argc != 5) && (argc != 8) && (argc != 9) && (argc != 12)) {
 		printf("You entered %d arguments, preprocess requires 4, 7, 8 or 11 arguments."
@@ -420,7 +420,7 @@ void Read_element_data(int* ec, NodePreproc n[], ElementPreproc e[], long* loc) 
 #endif
 }
 
-void Read_boundary_data(int* fc, int* cc, NodePreproc n[], Boundary b[], long* loc) {
+void Read_boundary_data(int* fc, int* cc, NodePreproc n[], BoundaryPreproc b[], long* loc) {
 	int bound_id, i, w;
 	double xcomp;
 	double ycomp;
@@ -555,7 +555,7 @@ void Determine_neighbors(int element_count, ElementPreproc* element, int node_co
 
 //**************************DATA OUTPUT******************************
 
-void Write_data(int np, int nc, int ec, int bc, int mc, NodePreproc n[], ElementPreproc* o[], Boundary b[],
+void Write_data(int np, int nc, int ec, int bc, int mc, NodePreproc n[], ElementPreproc* o[], BoundaryPreproc b[],
     unsigned maxk[], unsigned mink[], double min[], double max[], char **materialnames,
     double* lambda, double* mu) {
 
