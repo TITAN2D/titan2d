@@ -31,7 +31,7 @@ using namespace std;
 Boundary::Boundary() {
 }
 
-void Boundary::setparameters(Node* n, double xv, double yv, int t) {
+void Boundary::setparameters(NodePreproc* n, double xv, double yv, int t) {
 
 	node = n;
 	x_value = xv;

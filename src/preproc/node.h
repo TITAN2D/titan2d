@@ -19,7 +19,7 @@
 #ifndef NODE_H
 #define NODE_H
 
-class Node {
+class NodePreproc {
 
 	friend class ElementPreproc;
 //friend class Edge;
@@ -28,8 +28,8 @@ class Node {
 
 public:
 
-	Node(int, double*, int, int); //constructor
-	Node();
+	NodePreproc(int, double*, int, int); //constructor
+	NodePreproc();
 	void setparameters(int, double*);
 	int get_nodeid() {
 		return nodeid;

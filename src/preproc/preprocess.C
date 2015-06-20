@@ -49,18 +49,18 @@ using namespace std;
 
 //createfunky() is found in createfunky.C
 void createfunky(int NumProc, int gisformat, char *GISDbase, char *location, char *mapset,
-    char *topomap, int havelimits, double limits[4], int *node_count, Node **node,
+    char *topomap, int havelimits, double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     Boundary **boundary, int *material_count, char ***materialnames, double **lambda, double **mu);
 
 int Read_no_of_objects(int*, int*, int*, int*, int*, long*);
-void Read_node_data(int*, Node*, long*);
-void Read_element_data(int*, Node*, ElementPreproc*, long*);
-void Read_boundary_data(int*, int*, Node*, Boundary*, long*);
+void Read_node_data(int*, NodePreproc*, long*);
+void Read_element_data(int*, NodePreproc*, ElementPreproc*, long*);
+void Read_boundary_data(int*, int*, NodePreproc*, Boundary*, long*);
 void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
-void Write_data(int, int, int, int, int, Node*, ElementPreproc**, Boundary*, unsigned*, unsigned*, double*,
+void Write_data(int, int, int, int, int, NodePreproc*, ElementPreproc**, Boundary*, unsigned*, unsigned*, double*,
     double*, char**, double*, double*);
-void Determine_neighbors(int, ElementPreproc*, int, Node*);
+void Determine_neighbors(int, ElementPreproc*, int, NodePreproc*);
 
 const int material_length = 80;
 
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
 	double max[2] = { 0, 0 };
 	double min[2] = { 0, 0 };
 
-	Node *node;
+	NodePreproc *node;
 	ElementPreproc *element, **ordering;
 	Boundary *boundary;
 
@@ -290,7 +290,7 @@ int Read_no_of_objects(int* nc, int* ec, int* fc, int* cc, int* mc, long* loc) {
 
 }
 
-void Read_node_data(int* nc, Node n[], long* loc) {
+void Read_node_data(int* nc, NodePreproc n[], long* loc) {
 	int node_id, i;
 	double node_coordinates[2];
 #ifdef BINARYPRE
@@ -338,14 +338,14 @@ void Read_node_data(int* nc, Node n[], long* loc) {
 #endif
 }
 
-void Read_element_data(int* ec, Node n[], ElementPreproc e[], long* loc) {
+void Read_element_data(int* ec, NodePreproc n[], ElementPreproc e[], long* loc) {
 	int elem_id;
 	int element_nodes[8];
 	int material;
 	int elm_loc[2];
 	int i, j, w;
 
-	Node* address[8];
+	NodePreproc* address[8];
 #ifdef BINARYPRE
 	FILE *fp=fopen_bin("funky.bin","r");
 #ifdef DEBUGFUNKYBIN
@@ -420,7 +420,7 @@ void Read_element_data(int* ec, Node n[], ElementPreproc e[], long* loc) {
 #endif
 }
 
-void Read_boundary_data(int* fc, int* cc, Node n[], Boundary b[], long* loc) {
+void Read_boundary_data(int* fc, int* cc, NodePreproc n[], Boundary b[], long* loc) {
 	int bound_id, i, w;
 	double xcomp;
 	double ycomp;
@@ -535,7 +535,7 @@ void Read_material_data(int *material_count, char ***materialnames, double **lam
 }
 
 //**************************FINDING THE NEIGHBORS******************************
-void Determine_neighbors(int element_count, ElementPreproc* element, int node_count, Node* node) {
+void Determine_neighbors(int element_count, ElementPreproc* element, int node_count, NodePreproc* node) {
 	int i, j;
 	for (i = 0; i < node_count; i++)
 		node[i].put_element_array_loc(-1);
@@ -555,7 +555,7 @@ void Determine_neighbors(int element_count, ElementPreproc* element, int node_co
 
 //**************************DATA OUTPUT******************************
 
-void Write_data(int np, int nc, int ec, int bc, int mc, Node n[], ElementPreproc* o[], Boundary b[],
+void Write_data(int np, int nc, int ec, int bc, int mc, NodePreproc n[], ElementPreproc* o[], Boundary b[],
     unsigned maxk[], unsigned mink[], double min[], double max[], char **materialnames,
     double* lambda, double* mu) {
 

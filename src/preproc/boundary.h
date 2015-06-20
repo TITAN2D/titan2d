@@ -26,8 +26,8 @@ class Boundary {
 public:
 
 	Boundary();
-	void setparameters(Node*, double, double, int);
-	Node* get_boundary_node() {
+	void setparameters(NodePreproc*, double, double, int);
+	NodePreproc* get_boundary_node() {
 		return node;
 	}
 	;
@@ -47,7 +47,7 @@ public:
 	void write_b_data_bin(FILE *);
 
 private:
-	Node* node;
+	NodePreproc* node;
 	int type; //-2 essential -3 natural
 	double x_value;
 	double y_value;

@@ -27,7 +27,7 @@ class ElementPreproc {
 public:
 
 	ElementPreproc();
-	void setparameters(int, Node*[], int, int*);
+	void setparameters(int, NodePreproc*[], int, int*);
 	void order_nodes();
 	void case1();
 	void case2();
@@ -42,7 +42,7 @@ public:
 	//void determine_the_key(unsigned, double*, double*);
 	unsigned* pass_key();
 	void determine_neighbors(int, ElementPreproc*);
-	Node** get_element_node() {
+	NodePreproc** get_element_node() {
 		return element_nodes;
 	}
 	;
@@ -81,7 +81,7 @@ public:
 private:
 	int elementid;
 	Boundary *boundary[4][2];
-	Node* element_nodes[9];
+	NodePreproc* element_nodes[9];
 	//Edge* element_edges[4];
 	ElementPreproc* neighbor[4];
 	int material;

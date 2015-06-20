@@ -35,7 +35,7 @@ ElementPreproc::ElementPreproc() {
 	opposite_brother = NULL;
 }
 
-void ElementPreproc::setparameters(int di, Node* nodes[], int mat, int* elm_loc_in) {
+void ElementPreproc::setparameters(int di, NodePreproc* nodes[], int mat, int* elm_loc_in) {
 	int i;
 	elementid = di;
 	for (i = 0; i < 8; i++)
@@ -108,7 +108,7 @@ void ElementPreproc::order_nodes() {
 
 void ElementPreproc::case5() {
 
-	Node* temp;
+	NodePreproc* temp;
 
 	temp = element_nodes[1];
 	element_nodes[1] = element_nodes[3];
@@ -120,7 +120,7 @@ void ElementPreproc::case5() {
 }
 
 void ElementPreproc::case1() {
-	Node* temp;
+	NodePreproc* temp;
 
 	temp = element_nodes[2];
 	element_nodes[2] = element_nodes[3];
@@ -130,7 +130,7 @@ void ElementPreproc::case1() {
 
 void ElementPreproc::case2() {
 
-	Node* temp;
+	NodePreproc* temp;
 
 	temp = element_nodes[1];
 	element_nodes[1] = element_nodes[2];
@@ -138,7 +138,7 @@ void ElementPreproc::case2() {
 }
 
 void ElementPreproc::case3() {
-	Node* temp;
+	NodePreproc* temp;
 
 	temp = element_nodes[1];
 	element_nodes[1] = element_nodes[2];
@@ -148,7 +148,7 @@ void ElementPreproc::case3() {
 }
 
 void ElementPreproc::case4() {
-	Node* temp;
+	NodePreproc* temp;
 
 	temp = element_nodes[1];
 	element_nodes[1] = element_nodes[3];
@@ -158,7 +158,7 @@ void ElementPreproc::case4() {
 
 void ElementPreproc::create_m_node(double* max, double *min) {
 
-	Node* newPtr = new Node();
+	NodePreproc* newPtr = new NodePreproc();
 
 	for (int j = 0; j < 2; j++) {
 		newPtr->node_coord[j] = 0;

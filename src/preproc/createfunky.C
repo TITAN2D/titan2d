@@ -37,7 +37,7 @@ using namespace std;
 void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
 
 void createfunky(int NumProc, int format, char *GISDbase, char *location, char *mapset,
-    char *topomap, int havelimits, double limits[4], int *node_count, Node **node,
+    char *topomap, int havelimits, double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     Boundary **boundary, int *material_count, char ***materialnames, double **lambda, double **mu) {
 
@@ -264,7 +264,7 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 		//generate the node list
 		xy = CAllocD2(*node_count, 2);
 
-		*node = (Node *) calloc(*node_count, sizeof(Node));
+		*node = (NodePreproc *) calloc(*node_count, sizeof(NodePreproc));
 		*boundary = (Boundary *) calloc(2 * (nx + ny), sizeof(Boundary));
 
 		int ibc = 0, ielem, inode = 0;
@@ -338,7 +338,7 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 		/******************************************/
 
 		int w; //name is legacy, it might stand for "which" or "while"
-		Node* address[8];
+		NodePreproc* address[8];
 
 		*element = (ElementPreproc *) calloc(*element_count, sizeof(ElementPreproc));
 

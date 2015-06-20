@@ -29,14 +29,14 @@ using namespace std;
 #include "../header/FileFormat.h"
 #include "useful_lib.h"
 
-Node::Node() {
+NodePreproc::NodePreproc() {
 
 	for (int i = 0; i < 2; i++)
 		node_coord[i] = 0;
 
 }
 
-void Node::setparameters(int di, double* co) {
+void NodePreproc::setparameters(int di, double* co) {
 
 	for (int i = 0; i < 2; i++)
 		node_coord[i] = *(co + i);
@@ -45,7 +45,7 @@ void Node::setparameters(int di, double* co) {
 	written = 0;
 }
 
-void Node::determine_max_min(double max[], double min[])
+void NodePreproc::determine_max_min(double max[], double min[])
 
 {
 	if (node_coord[0] > max[0])
@@ -59,7 +59,7 @@ void Node::determine_max_min(double max[], double min[])
 
 }
 
-void Node::determine_the_key(unsigned nkey, double* max, double *min, unsigned ma[],
+void NodePreproc::determine_the_key(unsigned nkey, double* max, double *min, unsigned ma[],
     unsigned mi[]) {
 
 	FILE *fp;
@@ -82,7 +82,7 @@ void Node::determine_the_key(unsigned nkey, double* max, double *min, unsigned m
 
 }
 
-void Node::write_node_data_bin(FILE *fp) {
+void NodePreproc::write_node_data_bin(FILE *fp) {
 	if (!written) {
 		fwriteU(fp, key[0]);
 		fwriteU(fp, key[1]);
@@ -97,18 +97,18 @@ void Node::write_node_data_bin(FILE *fp) {
 	written = 1;
 }
 
-void Node::write_node_data(ofstream* out) {
+void NodePreproc::write_node_data(ofstream* out) {
 	if (!written)
 		*out << key[0] << ' ' << key[1] << ' ' << setprecision(20) << node_coord[0] << ' '
 		    << setprecision(20) << node_coord[1] << '\n';
 	written = 1;
 }
 
-void Node::clear_written_flag() {
+void NodePreproc::clear_written_flag() {
 	written = 0;
 }
 
-void Node::put_element_array_loc(int in) {
+void NodePreproc::put_element_array_loc(int in) {
 	if (in < 0) {
 		element_array_loc[0] = element_array_loc[1] = -1;
 	} else {
@@ -123,7 +123,7 @@ void Node::put_element_array_loc(int in) {
 	return;
 }
 
-int Node::get_element_array_loc(int in) {
+int NodePreproc::get_element_array_loc(int in) {
 	if (in == element_array_loc[0] && element_array_loc[1] >= 0)
 		return (element_array_loc[1]);
 	if (in == element_array_loc[1] && element_array_loc[0] >= 0)
