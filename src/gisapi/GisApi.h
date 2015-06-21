@@ -151,13 +151,13 @@ typedef struct {
 /* SELECTION OF DATA */
 /***************************************************************/
 //! initialize the GIS digital elevation map for all formats
-int Initialize_GIS_data(char *GISDbase, char *location, char *mapset, char *raster, int format);
+int Initialize_GIS_data(const char *GISDbase, const char *location, const char *mapset, const char *raster, const int format);
 
 //! initialize the GIS digital elevation map for grass format
-int Initialize_GIS_data(char *GISDbase, char *location, char *mapset, char *raster);
+int Initialize_GIS_data(const char *GISDbase, const char *location, const char *mapset, const char *raster);
 
 //! initialize the GIS material map
-int Initialize_Raster_data(char *GISDbase, char *location, char *mapset, char *raster);
+int Initialize_Raster_data(const char *GISDbase, const char *location, const char *mapset, const char *raster);
 
 //! initialize the matching visual image map to cover the terrain (texture wrapping) for the gmfg viewer
 int Initialize_Image_data(char *GISDbase, char *location, char *mapset, char *raster_file);

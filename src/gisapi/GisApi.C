@@ -151,8 +151,8 @@ void Set_vector_scale(double scale) {
 	vectorDataScale = scale;
 }
 
-int Initialize_GIS_data(char* GISDbase, char* location, char* mapset, char* mapdata,
-    int gis_format) {
+int Initialize_GIS_data(const char* GISDbase, const char* location, const char* mapset, const char* mapdata,
+        const int gis_format) {
 	char gisPath[200];
 	int ierr = 1;
 
@@ -172,7 +172,7 @@ int Initialize_GIS_data(char* GISDbase, char* location, char* mapset, char* mapd
 		return (Initialize_GIS_data(GISDbase, location, mapset, mapdata));
 }
 
-int Initialize_GIS_data(char* GISDbase, char* location, char* mapset, char* raster_file) {
+int Initialize_GIS_data(const char* GISDbase, const char* location, const char* mapset, const char* raster_file) {
 	int nrows, ncols;
 
 	char gisPath[200];
@@ -312,7 +312,7 @@ int load_GIS_data() {
 	return -4;
 }
 
-int Initialize_Raster_data(char* GISDbase, char* location, char* mapset, char* raster_file) {
+int Initialize_Raster_data(const char* GISDbase, const char* location, const char* mapset, const char* raster_file) {
 	int nrows, ncols;
 	int row;
 
