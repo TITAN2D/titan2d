@@ -27,11 +27,14 @@ using namespace std;
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "boundarypreproc.h"
-#include "element.h"
+#include "boundary_preproc.h"
+#include "element_preproc.h"
 #include "../header/FileFormat.h"
-#include "node.h"
+#include "../header/titan_simulation.h"
+#include "node_preproc.h"
 #include "useful_lib.h"
+
+#include "preproc.h"
 
 //load has to be applied on the middle node of the face!!!
 /* executable must include the 3, 6, 7 or 10 arguments on the command line, they are 
@@ -48,11 +51,11 @@ using namespace std;
  all or none of the optional arguments must be present */
 
 //createfunky() is found in createfunky.C
-void createfunky(int NumProc, int gisformat, char *GISDbase, char *location, char *mapset,
+/*void createfunky(int NumProc, int gisformat, char *GISDbase, char *location, char *mapset,
     char *topomap, int havelimits, double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     BoundaryPreproc **boundary, int *material_count, char ***materialnames, double **lambda, double **mu);
-
+*/
 int Read_no_of_objects(int*, int*, int*, int*, int*, long*);
 void Read_node_data(int*, NodePreproc*, long*);
 void Read_element_data(int*, NodePreproc*, ElementPreproc*, long*);
@@ -82,7 +85,44 @@ int compare_key_fn(const void* elem1, const void* elem2) {
 	return (0);
 }
 
-int main(int argc, char** argv) {
+TitanPreproc::TitanPreproc(cxxTitanSimulation *tSim){
+    NumProc=-1;
+    gis_format=-1;
+    topomain="";
+    toposub="";
+    topomapset="";
+    topomap="";
+
+    min_location_x=0.0;
+    max_location_x=0.0;
+    min_location_y=0.0;
+    max_location_y=0.0;
+
+    region_limits_set=true;
+
+    NumProc=tSim->numprocs;
+    gis_format=tSim->gis_format;
+    topomain=tSim->topomain;
+    toposub=tSim->toposub;
+    topomapset=tSim->topomapset;
+    topomap=tSim->topomap;
+
+    min_location_x=tSim->min_location_x;
+    max_location_x=tSim->max_location_x;
+    min_location_y=tSim->min_location_y;
+    max_location_y=tSim->max_location_y;
+
+    region_limits_set=tSim->region_limits_set;
+}
+TitanPreproc::~TitanPreproc(){
+
+}
+
+bool TitanPreproc::validate() {
+    return true;
+}
+
+void TitanPreproc::run() {
 	char **materialnames;
 	unsigned nkey = 2;
 	unsigned minkey[2] = { 0, 0 };
@@ -93,7 +133,7 @@ int main(int argc, char** argv) {
 	 or funky.dat), this is only used if you're reading from 
 	 an intermediate file (i.e. you're NOT passing the funky 
 	 directly from createfunky() to main()) see FileFormat.h */
-	int NumProc; //the number of processes  
+	//int NumProc; //the number of processes
 	int ny; /* either the number of initial cells or gridpoints in y direction.
 	 the old documentation says gridpoints but code looks like cells 
 	 see createfunky.C */
@@ -109,41 +149,17 @@ int main(int argc, char** argv) {
 	ElementPreproc *element, **ordering;
 	BoundaryPreproc *boundary;
 
-	if ((argc != 5) && (argc != 8) && (argc != 9) && (argc != 12)) {
-		printf("You entered %d arguments, preprocess requires 4, 7, 8 or 11 arguments."
-				"In order, they are:\n"
-				"1) number of processes,\n"
-				"2) the number of cells across smallest pile dimension,\n"
-				"3) GIS data format\n"
-				"If using GIS GRASS data format:\n"
-				"---------------------------------\n"
-				"4) the full path of the GIS database,\n"
-				"5) the location,\n"
-				"6) the mapset,\n"
-				"7) the raster map name,\n\n"
-				"If using Gdal data format:\n"
-				"---------------------------------\n"
-				"4) raster map subdirectory,\n\n"
-				"Optionally\n"
-				"5|8) the requested minimum x,\n"
-				"6|9) the requested minimum y,\n"
-				"7|10) the requested maximum x\n"
-				"8|11) the requested maximum y.\n"
-				"Please enter the correct number of arguments.\n", argc - 1);
-		exit(1);
-	}
 
-	NumProc = atoi(argv[1]); // the number of processors -- this parameter is passed in
-	int gis_format = atoi(argv[3]);
 
-	if ((argc == 9) || (argc == 12)) {
+	//NumProc = atoi(argv[1]); // the number of processors -- this parameter is passed in
+	//int gis_format = atoi(argv[3]);
+
+	if (region_limits_set) {
 		havelimits = 1;
-		if (gis_format == 1)
-			for (i = 0; i < 4; i++)
-				limits[i] = atof(argv[8 + i]);
-		else
-			for (i = 0; i < 4; i++)
-				limits[i] = atof(argv[5 + i]);
+		limits[0] = min_location_x;
+        limits[1] = max_location_x;
+        limits[2] = min_location_y;
+        limits[3] = max_location_y;
 	} else
 		havelimits = 0;
 
@@ -151,16 +167,16 @@ int main(int argc, char** argv) {
 	char *gisdb, *gisloc, *gismapset, *mapname;
 	// copy file structure of data is in grass format
 	if (gis_format == 1) {
-		gisdb = strdup(argv[4]);
-		gisloc = strdup(argv[5]);
-		gismapset = strdup(argv[6]);
-		mapname = strdup(argv[7]);
+		gisdb = strdup(topomain.c_str());
+		gisloc = strdup(toposub.c_str());
+		gismapset = strdup(topomapset.c_str());
+		mapname = strdup(topomap.c_str());
 	} else {
 		gisloc = NULL;
 		gismapset = NULL;
-		mapname = strdup(argv[4]);
+		mapname = strdup(topomap.c_str());
 	}
-	createfunky(NumProc, gis_format, gisdb, gisloc, gismapset, mapname, havelimits, limits,
+	createfunky(limits,
 	    &node_count, &node, &element_count, &element, &force_count, &constraint_count, &boundary,
 	    &material_count, &materialnames, &lambda, &mu);
 
@@ -215,7 +231,7 @@ int main(int argc, char** argv) {
 	free(element);
 	free(boundary);
 	free(ordering);
-	return (0);
+	return;
 
 }
 

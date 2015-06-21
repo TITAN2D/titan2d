@@ -19,7 +19,7 @@ import sys,os,math,string,re,socket
 
 TITAN2d_HOME='/home/mikola/titan_wsp/titan2d_bld/iccopt'
 
-from cxxtitan import cxxTitanSimulation
+from cxxtitan import cxxTitanSimulation,TitanPreproc,MaterialMap
 
 
 class TitanFluxSource:
@@ -313,6 +313,10 @@ class TitanSimulation(cxxTitanSimulation):
         'meshlot':2, # second bit flag
         'grasssites':8 # fourth bit flag
     }
+    possible_gis_formats={
+        'GIS_GRASS':cxxTitanSimulation.GIS_GRASS,
+        'GDAL':cxxTitanSimulation.GDAL
+    }
     possible_orders=('PlaceHolder','First','Second')
     def __init__(self,
                  
@@ -328,10 +332,6 @@ class TitanSimulation(cxxTitanSimulation):
                  adapt=False,
                  vizoutput="tecplotxxxx.tec",
                  order='First',
-                 min_location_x=None,
-                 min_location_y=None,
-                 max_location_x=None,
-                 max_location_y=None,
                  edge_height=None,
                  test_height=None,
                  test_location_x=None,
@@ -342,13 +342,6 @@ class TitanSimulation(cxxTitanSimulation):
         
         super(TitanSimulation, self).__init__()
         #init values
-        self.gisformat = None
-        self.topomain = None
-        self.toposub = None
-        self.topomapset = None
-        self.topomap = None
-        self.vector=None
-        self.matmap=None
         
         #Number of Processors
         numprocs=self.numprocs
@@ -400,12 +393,7 @@ class TitanSimulation(cxxTitanSimulation):
             raise ValueError("Unknown order "+str(order)+". Possible formats: "+str(possible_orders[1:]))
         
         
-        #Minimum x and y location (UTM E, UTM N)
-        self.min_location_x = min_location_x
-        self.min_location_y = min_location_y
-        #Maximum x and y location (UTM E, UTM N)
-        self.max_location_x = max_location_x
-        self.max_location_y = max_location_y
+        
         #Height used to define flow outline (>0) [m]
         self.edge_height = edge_height
         #Test if flow reaches height [m] ...
@@ -416,87 +404,57 @@ class TitanSimulation(cxxTitanSimulation):
         
         #other inits
         self.piles=[]
-        
 
-    def selRegion(self):
-        if self.topomap.get() != '':
-            helper = os.path.dirname(os.path.abspath(sys.argv[0])) + '/titan_regionhelper'
-            os.system('sh ' + helper + ' ' +
-                      self.topomap.get() + ' ' +
-                      str(self.newmon.get()) + ' ' +
-                      '/tmp/region.coord' )
-            
-            # parse coordinate file
-            m = re.compile('^(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)').match( open('/tmp/region.coord').readline() )
-            if m:
-                self.min_location_x.delete(0, END)
-                self.min_location_y.delete(0, END)
-                self.max_location_x.delete(0, END)
-                self.max_location_y.delete(0, END)
-
-                self.min_location_x.insert(END, m.group(3)) 
-                self.min_location_y.insert(END, m.group(2)) 
-                self.max_location_x.insert(END, m.group(4)) 
-                self.max_location_y.insert(END, m.group(1)) 
-            else:
-                tkMessageBox.showerror(
-                    "Region Selection",
-                    "Unable to parse region,\ne-mail sorokine@buffalo.edu"
-                    )
-        else:
-            tkMessageBox.showwarning(
-                "GRASS Region",
-                "Specify GIS map name first!"
-                )
-            
-    def selTestPoint(self):
-        # just copied Alex's pile centroid point selector and changed
-        # where the values were stored
-        # calls the _pilehelper with the map name and output file name
-        # the takes the output file and parses it into coordinates
-        if self.newmon.get() == 1:
-            helper = os.path.dirname(os.path.abspath(sys.argv[0])) + '/titan_pilehelper'
-            os.system('sh ' + helper + ' ' + self.topomap.get() + ' ' + '/tmp/pile.coord')
-            #os.system('sh ' + helper + ' ' + self.topomap.get() + ' ' + self.directory + '/pile.coord')
-        else:
-            os.system('d.where -1 > ' + '/tmp/pile.coord')
-        m = re.compile('^\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)').match( open('/tmp/pile.coord').readline() )
-        if m:
-           self.test_location_x.delete(0, END) 
-           self.test_location_x.insert(END, m.group(1)) 
-           self.test_location_y.delete(0, END) 
-           self.test_location_y.insert(END, m.group(2)) 
-        else:
-            tkMessageBox.showerror(
-                "Test point location",
-                "Unable to parse d.where output,\ne-mail sorokine@buffalo.edu"
-                )
-
-    def setTopo(self,gisformat='GIS_GRASS',
+    def setTopo(self,gis_format='GIS_GRASS',
                  topomain=None,
                  toposub=None,
                  topomapset=None,
                  topomap=None,
-                 vector=None):
-        possible_gisformats=('PlaceHolder','GIS_GRASS', 'GDAL')
-        if gisformat in possible_gisformats:
-            self.gisformat = possible_gisformats.index(gisformat)
+                 vector=None,
+                 min_location_x=None,
+                 min_location_y=None,
+                 max_location_x=None,
+                 max_location_y=None):
+        
+        if gis_format in TitanSimulation.possible_gis_formats:
+            self.gis_format = TitanSimulation.possible_gis_formats[gis_format]
+            print "gis_format",gis_format,self.gis_format,TitanSimulation.possible_gis_formats[gis_format]
         else:
-            raise ValueError("Unknown gisformat "+str(gisformat)+". Possible formats: "+str(gisformats[1:]))
+            raise ValueError("Unknown gis format "+str(gis_format)+". Possible formats: "+str(gis_formats[1:]))
         #GIS Information Main Directory
-        self.topomain = topomain
+        self.topomain = topomain if topomain!=None else ''
         #GIS Sub-Directory
-        self.toposub = toposub
+        self.toposub = toposub if toposub!=None else ''
         #GIS Map Set
-        self.topomapset = topomapset
+        self.topomapset = topomapset if topomapset!=None else ''
         #GIS Map
-        self.topomap = topomap
+        self.topomap = topomap if topomap!=None else ''
         #GIS Vector
-        self.vector = vector
+        self.vector = vector if vector!=None else ''
+        
+        if min_location_x!=None and min_location_y!=None and \
+            max_location_x!=None and max_location_y!=None:
+            self.region_limits_set=True
+            #Minimum x and y location (UTM E, UTM N)
+            self.min_location_x = min_location_x
+            self.min_location_y = min_location_y
+            #Maximum x and y location (UTM E, UTM N)
+            self.max_location_x = max_location_x
+            self.max_location_y = max_location_y
+        else:
+            self.region_limits_set=False
+            #Minimum x and y location (UTM E, UTM N)
+            self.min_location_x = 0.0
+            self.min_location_y = 0.0
+            #Maximum x and y location (UTM E, UTM N)
+            self.max_location_x = 0.0
+            self.max_location_y = 0.0
+        
+        
         
         #here should be validator
         # if there is no topo file, quit
-        if self.gisformat == 1:
+        if self.gis_format == 1:
             errmsg='Missing GIS information.  No job will be run.'
             if self.topomain == '' or self.toposub == '' or self.topomapset == '' or self.topomap == '':
                 raise ValueError(errmsg)
@@ -513,7 +471,7 @@ class TitanSimulation(cxxTitanSimulation):
                 if not os.path.isdir(p):
                     raise ValueError(errmsg+". "+p+" does not exist!")
             #self.topomap?
-        elif  self.gisformat == 2:
+        elif  self.gis_format == 2:
             if (self.topomap == '') or (self.topomap == None) or (not isinstance(self.topomap, basestring)) or \
                     (not os.path.isdir(self.topomap)):
                 raise ValueError(errmsg)
@@ -521,7 +479,7 @@ class TitanSimulation(cxxTitanSimulation):
     def setMatMap(self,
             useGIS_MatMap=False,
             matMap=None):
-        #Use GIS Material Map?
+        #Use GIS Material Map?        
         self.matmap = useGIS_MatMap
         if matMap==None:
             matMap=[{'intfrict':30.0,'bedfrict':15.0}]
@@ -536,6 +494,15 @@ class TitanSimulation(cxxTitanSimulation):
         previntfrict = 0.
         prevbedfrict = 0.
         
+        m=MaterialMap()
+        if self.matmap == False:
+            self.materialMap.name.push_back("all materials")
+            self.materialMap.intfrict.push_back(matMap[0]['intfrict'])
+            self.materialMap.bedfrict.push_back(matMap[0]['bedfrict'])
+            self.materialMap.print0()
+        else:  #if they did want to use a GIS material map...
+            raise Exception("GIS material map Not implemented yet")
+        #m.print0()
 
         fout=open("frict.data","w",0)
 
@@ -585,7 +552,12 @@ class TitanSimulation(cxxTitanSimulation):
         if pile!=None:
             self.piles.append(pile)
         
-    
+    def preproc(self):
+        if self.myid==0:
+            preproc=TitanPreproc(self)
+            preproc.validate();
+            preproc.run();
+        
     def run(self):
         if self.myid==0:
             #get system information so it is known which system the script is running on
@@ -767,8 +739,8 @@ class TitanSimulation(cxxTitanSimulation):
     
             f_p2.write('\n' + str(viz_num) + '\n' + str(self.order))
             #GIS stuff
-            f_p2.write('\n' + str(self.gisformat))
-            if self.gisformat == 1:
+            f_p2.write('\n' + str(self.gis_format))
+            if self.gis_format == 1:
                 f_p2.write('\n' + self.topomain + '\n' + self.toposub + '\n' + self.topomapset + '\n' + self.topomap +'\n' + str(int(self.matmap)))
             else:
                 f_p2.write('\n' + self.topomap)
@@ -814,34 +786,9 @@ class TitanSimulation(cxxTitanSimulation):
             # locate titan_preprocess: 
             # first check the local-diretory,
             
-            numprocs=self.numprocs
-            
-            if ( os.path.isfile('titan_preprocess') ):
-                preproc = './titan_preprocess'
-            else:
-                preproc = TITAN2d_HOME+'/bin/titan_preprocess'
-                
-            if coord_flag == 0:
-                if self.gisformat == 1:
-                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap
-                    print "executing:",command
-                    os.system(command)
-                else:
-                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomap
-                    print "executing:",command
-                    os.system(command)
-            else:
-                print 'window is  '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
-                if self.gisformat == 1:
-                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
-                    print "executing:",command
-                    os.system(command)
-                else:
-                    command=preproc+' '+str(numprocs)+' '+str(numcellsacrosspile)+' '+str(self.gisformat)+' '+self.topomap+' '+str(min_location_x)+' '+str(min_location_y)+' '+str(max_location_x)+' '+str(max_location_y)
-                    print "executing:",command
-                    os.system(command)
+            self.preproc()
     
-            if self.vector != None:
+            if self.vector != "":
                 raise NotImplementedError("GIS Vector is Not Implemented yet in py api!")
                 #os.system('./VecDataPreproc ' + self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+self.vector)
                 #os.system('mv VectorDataOutput.data ' + directory)

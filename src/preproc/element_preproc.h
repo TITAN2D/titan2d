@@ -15,10 +15,10 @@
  * $Id: element.h 117 2007-06-07 19:14:40Z dkumar $ 
  */
 
-#ifndef ELEMENT_H
-#define ELEMENT_H
-#include "boundarypreproc.h"
-#include "node.h"
+#ifndef ELEMENT_PREPROC_H
+#define ELEMENT_PREPROC_H
+#include "boundary_preproc.h"
+#include "node_preproc.h"
 
 class ElementPreproc {
 

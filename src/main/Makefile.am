@@ -11,14 +11,14 @@ titan_SOURCES = titan.C cxxtitan_wrap.cxx titan_simulation.C compare_key.C delet
 
 titan_CXXFLAGS = -fpic -I$(srcdir)/../gisapi -I@PYTHON_ROOT@/include/python@PYTHON_VERSION@
 
-titan_LDADD = ../gisapi/libgisapi.a ../adapt/libadapt.a @FLIBS@ \
+titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a @FLIBS@ \
   ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
   ../repartition/librepartition.a ../tecplot/libtecplot.a \
   -L@PYTHON_ROOT@/lib -lpython@PYTHON_VERSION@ -lutil
 
 #titan_simulation_CXXFLAGS = -fpic
 
-cxxtitan_wrap.cxx:cxxtitan.i ../header/titan_simulation.h
+cxxtitan_wrap.cxx:cxxtitan.i ../header/titan_simulation.h ../preproc/preproc.h
 	@SWIG@ -c++ -v -python -o $(srcdir)/cxxtitan_wrap.cxx -oh $(srcdir)/cxxtitan.py $(srcdir)/cxxtitan.i
 
 

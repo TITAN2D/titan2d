@@ -16,8 +16,8 @@
  */
 
 // node.h for the definition of node class
-#ifndef NODE_H
-#define NODE_H
+#ifndef NODE_PREPROC_H
+#define NODE_PREPROC_H
 
 class NodePreproc {
 

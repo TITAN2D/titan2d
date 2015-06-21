@@ -53,7 +53,7 @@ for prop in ('PILE_HEIGHT', 'XMOMENTUM', 'YMOMENTUM'):
     if ds1.shape!=ds2.shape:
         print "\tDatasets have different size!"
         continue
-    ds=ds1-ds2
+    ds=(ds1-ds2)*(ds1-ds2)
     rmsd=math.sqrt(ds.mean())
     print "\tRMSD=%.3e"%(rmsd,)
     

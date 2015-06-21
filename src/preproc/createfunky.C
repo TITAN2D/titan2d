@@ -24,20 +24,20 @@ using namespace std;
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "boundarypreproc.h"
-#include "element.h"
+#include "boundary_preproc.h"
+#include "element_preproc.h"
 #include "../header/FileFormat.h"
 #include "GisApi.h"
-#include "node.h"
+#include "node_preproc.h"
 #include "useful_lib.h"
+#include "preproc.h"
 
 #define MIN_NONSEQ_REPART
 
 /* found in preprocess.C */
 void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
 
-void createfunky(int NumProc, int format, char *GISDbase, char *location, char *mapset,
-    char *topomap, int havelimits, double limits[4], int *node_count, NodePreproc **node,
+void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     BoundaryPreproc **boundary, int *material_count, char ***materialnames, double **lambda, double **mu) {
 
@@ -100,11 +100,7 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 	// ** been warned!!!                                                  **
 	// *********************************************************************
 
-	int gis_format = GIS_GRASS;
-	if (format == 2)
-		gis_format = GDAL;
-
-	if (!Initialize_GIS_data(GISDbase, location, mapset, topomap, gis_format)) {
+	if (!Initialize_GIS_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), topomap.c_str(), gis_format)) {
 		double xmin, xmax, ymin, ymax;
 		double res;
 		int havematmap = 0; //default is we don't have one
@@ -126,11 +122,11 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 		double matres; /* need to put this outside this if statement so if 
 		 downstream will see it */
 		if (*material_count > 1) {
-			char *matmap = (char *) malloc((strlen(topomap) + 5) * sizeof(char));
-			strcpy(matmap, topomap);
-			strcat(matmap + strlen(topomap), "_Mat");
+			char *matmap = (char *) malloc((strlen(topomap.c_str()) + 5) * sizeof(char));
+			strcpy(matmap, topomap.c_str());
+			strcat(matmap + strlen(topomap.c_str()), "_Mat");
 
-			if (Initialize_Raster_data(GISDbase, location, mapset, matmap)) {
+			if (Initialize_Raster_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), matmap)) {
 				printf(
 				    "createfunky.C cannot open material property map \"%s\".\n  Check if the file exists.\n",
 				    matmap);
@@ -162,7 +158,7 @@ void createfunky(int NumProc, int format, char *GISDbase, char *location, char *
 				ymax = ymaxmat;
 		}
 
-		if (havelimits) {
+		if (region_limits_set) {
 			/* check the values for user input min and max coordinates ... */
 			if ((limits[0] > xmin) && (limits[0] < xmax))
 				xmin = limits[0];

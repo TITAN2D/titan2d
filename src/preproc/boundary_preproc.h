@@ -15,9 +15,9 @@
  * $Id: boundary.h 12 2003-11-07 17:58:49Z kdalbey $ 
  */
 
-#ifndef BOUNDARY_H
-#define BOUNDARY_H
-#include "node.h"
+#ifndef BOUNDARY_PREPROC_H
+#define BOUNDARY_PREPROC_H
+#include "node_preproc.h"
 
 class BoundaryPreproc {
 

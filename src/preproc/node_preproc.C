@@ -25,7 +25,7 @@
 using namespace std;
 
 #include <stdio.h>
-#include "node.h"
+#include "node_preproc.h"
 #include "../header/FileFormat.h"
 #include "useful_lib.h"
 

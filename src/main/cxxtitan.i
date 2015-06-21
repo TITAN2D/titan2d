@@ -18,7 +18,18 @@
 
 %{
 #include "../header/titan_simulation.h"
+#include "../preproc/preproc.h"
 %}
 
+%include "std_string.i"
+%include "std_vector.i"
+
+namespace std {
+   %template(vectori) vector<int>;
+   %template(vectord) vector<double>;
+   %template(vectors) vector<string>;
+};
+
 %include "../header/titan_simulation.h"
+%include "../preproc/preproc.h"
 

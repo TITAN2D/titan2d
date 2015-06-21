@@ -24,7 +24,7 @@
 using namespace std;
 
 #include <stdio.h>
-#include "boundarypreproc.h"
+#include "boundary_preproc.h"
 #include "useful_lib.h"
 #include "../header/FileFormat.h"
 
