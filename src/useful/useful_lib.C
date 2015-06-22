@@ -391,7 +391,13 @@ FILE *fopen_bin(char *filename, char *mode) {
 		sprintf(fullmode, "%sb", mode);
 
 	fp = fopen(filename, fullmode); //open the file
-	setbuf(fp, (char *) NULL); //buffer the file 
+
+        if (!fp){
+           fprintf(stderr,"fopen_bin: file %s not found\n", filename);
+        } else {
+           setbuf(fp,(char *) NULL); //buffer the file 
+        }
+
 	return (fp);
 }
 
