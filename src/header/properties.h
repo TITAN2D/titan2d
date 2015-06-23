@@ -563,14 +563,12 @@ struct OutLine {
 	}
 
 	//! this function initializes the OutLine map/2-dimensional array 
-	void init(double *dxy, int power, double *XRange, double *YRange) {
+	void init(double resx, double resy, double *XRange, double *YRange) {
 		int ix, iy;
 
-		if (power < 0)
-			power = 0;
+		dx = resx; // OutLine.dx
+		dy = resy; // OutLine.dy
 
-		dx = dxy[0] / pow(2.0, power);
-		dy = dxy[1] / pow(2.0, power);
 		//printf("dx=%g dy=%g  XRange={%g,%g} YRange={%g,%g}\n",dx,dy,XRange[0],XRange[1],YRange[0],YRange[1]);
 
 		xminmax[0] = XRange[0];
@@ -581,13 +579,6 @@ struct OutLine {
 		Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
 		Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
 
-		while (Nx * Ny > 1024 * 1024) {
-			dx *= 2.0;
-			dy *= 2.0;
-
-			Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
-			Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
-		}
 		printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d\n", Nx, Ny, Nx * Ny);
 
 		pileheight = CAllocD2(Ny, Nx);
@@ -743,7 +734,9 @@ struct OutLine {
 				ierr = Get_elevation(res, xx, yy, &elevation);
 				fprintf(fp, "%g ", elevation);
 			}
-			fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
+			xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->LENGTH_SCALE;
+			ierr = Get_elevation(res, xx, yy, &elevation);
+			fprintf(fp,"%g\n",elevation);
 		}
 		fclose(fp);
 		return;

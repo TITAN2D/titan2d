@@ -524,7 +524,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTa
 
 	fp = fopen_bin(filename, "r");
 	if (!fp) {
-		printf("Can't open file for %d \n", myid);
+		printf("Can't open file for processor %d \n", myid);
 		exit(0);
 	}
 
@@ -771,7 +771,19 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, HashTable** ElemTa
 		}
 
 #ifdef MAX_DEPTH_MAP
-	outline_ptr->init(Quad9P->get_dx(), REFINE_LEVEL - Quad9P->get_gen(), xminmax, yminmax);
+	double ewresol;
+	double nsresol;
+	double resx;
+	double resy;
+
+	// Get e-w and n-s resolutions from the GisApi static gis_grid structure	
+	Get_grid_ewresol(&ewresol);
+	Get_grid_nsresol(&nsresol);
+
+	resx = ewresol/matprops_ptr->LENGTH_SCALE;
+	resy = nsresol/matprops_ptr->LENGTH_SCALE;
+
+	outline_ptr->init(resx, resy, xminmax, yminmax);
 #endif
 
 	delete[] value;

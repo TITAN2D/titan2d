@@ -313,6 +313,10 @@ int Get_raster_id(double resolution, double x, double y, int *category_id);
 int Get_image(double resolution, double x, double y, unsigned char *r, unsigned char *g,
     unsigned char *b);
 
+//! Return e-w and n-s resolutions from the static gis_grid structure. For Gis, GisApi.C:set_from_header sets wresolution=resolution=e-w resol. For Gdal, GdalApi.cc:Initialize_GDAL_data sets wresolution=e-w resol and sets resolution=n-s resol
+int Get_grid_ewresol(double *ewresol);
+int Get_grid_nsresol(double *nsresol);
+
 /***************************************************************/
 /* GETTING VALUES FOR MULTIPLE POINTS */
 /***************************************************************/

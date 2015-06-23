@@ -65,10 +65,10 @@ int Initialize_GDAL_data(const char *fullGispath) {
 			return (-4);
 		}
 
-                //adfGeoTransform[0] - top left x
-                //adfGeoTransform[1] - w-e pixel resolution
-                //adfGeoTransform[3] - top left y
-                //adfGeoTransform[5] - n-s pixel resolution (negative value) 
+		//adfGeoTransform[0] - top left x
+		//adfGeoTransform[1] - w-e pixel resolution
+		//adfGeoTransform[3] - top left y
+		//adfGeoTransform[5] - n-s pixel resolution (negative value) 
 		gishead.xmin = adfGeoTransform[0];
 		gishead.wresolution = fabs(adfGeoTransform[1]);
 		gishead.xmax = gishead.xmin + nx * gishead.wresolution;
