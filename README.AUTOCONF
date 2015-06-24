@@ -24,5 +24,9 @@ if autoconf complains run:
 
 aclocal && autoconf && automake
 
+Run the following command sequence when the repository is pulled from GitHub:
+
+aclocal;autoheader;autoconf;automake --add-missing --copy
+
 
 $Id: README.AUTOCONF 224 2011-12-04 20:49:23Z dkumar $
