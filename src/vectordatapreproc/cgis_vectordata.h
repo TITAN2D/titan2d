@@ -32,7 +32,7 @@ class CGIS_VectorData {
 public:
 	CGIS_VectorData();
 	CGIS_VectorData(double res, double xmin, double xmax, double ymin, double ymax, int rows,
-	    int cols, char *GIS_Dbase, char *GIS_Maplocation, char *GIS_Mapset, char *GIS_VectorFile);
+	    int cols, const char *GIS_Dbase, const char *GIS_Maplocation, const char *GIS_Mapset, const char *GIS_VectorFile);
 	~CGIS_VectorData();
 
 	int ReadVectorData();

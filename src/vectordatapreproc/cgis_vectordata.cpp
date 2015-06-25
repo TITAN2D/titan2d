@@ -29,8 +29,8 @@ CGIS_VectorData::CGIS_VectorData() {
 }
 
 CGIS_VectorData::CGIS_VectorData(double res, double xmin, double xmax, double ymin, double ymax,
-    int rows, int cols, char *GIS_Dbase, char *GIS_Maplocation, char *GIS_Mapset,
-    char *GIS_VectorFile) {
+    int rows, int cols, const char *GIS_Dbase, const char *GIS_Maplocation, const char *GIS_Mapset,
+    const char *GIS_VectorFile) {
 	_res = res;
 	strcpy(_gisDBase, GIS_Dbase);
 	strcpy(_gisMaplocation, GIS_Maplocation);

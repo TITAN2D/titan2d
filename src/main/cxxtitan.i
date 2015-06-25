@@ -19,6 +19,7 @@
 %{
 #include "../header/titan_simulation.h"
 #include "../preproc/preproc.h"
+#include "../vectordatapreproc/vectordatpreproc.h"
 %}
 
 %include "std_string.i"
@@ -30,8 +31,10 @@ namespace std {
    %template(vectors) vector<string>;
    %template(vector_cxxTitanPile) vector<cxxTitanPile>;
    %template(vector_cxxTitanFluxSource) vector<cxxTitanFluxSource>;
+   %template(vector_cxxTitanDischargePlane) vector<cxxTitanDischargePlane>;
 };
 
 %include "../header/titan_simulation.h"
 %include "../preproc/preproc.h"
+%include "../vectordatapreproc/vectordatpreproc.h"
 

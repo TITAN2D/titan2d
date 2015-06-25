@@ -17,9 +17,8 @@
 
 import sys,os,math,string,re,socket
 
-TITAN2d_HOME='/home/mikola/titan_wsp/titan2d_bld/iccopt'
-
-from cxxtitan import cxxTitanSimulation,TitanPreproc,cxxTitanPile,cxxTitanFluxSource,MaterialMap
+from cxxtitan import *
+#cxxTitanSimulation,TitanPreproc,cxxTitanPile,cxxTitanFluxSource,MaterialMap,vectordatpreproc
 
 
 class TitanFluxSource(cxxTitanFluxSource):
@@ -90,45 +89,17 @@ Initial direction ([degrees] from X axis): """ + str(self.Vdirection)+"""
         file.write(python_data)
         file.close
 
-class TitanDischargePlane:
+class TitanDischargePlane(cxxTitanDischargePlane):
 
-    def __init__(self,master,discharge_indice,discharge_planes):
-
-        Label(master, text="Enter Discharge Plane "+str(discharge_indice+1)+" of "+str(discharge_planes)+": ").grid(row=0,column=0,sticky=W,columnspan=2)
-        Label(master, text="Point A (UTM E, UTM N): ").grid(row=1,column=0,sticky=W)
-        Label(master, text="Point B (UTM E, UTM N): ").grid(row=2,column=0,sticky=W)
-
-        self.x_a = Entry(master)
-        self.y_a = Entry(master)
-        self.x_b = Entry(master)
-        self.y_b = Entry(master)
-
-        self.x_a.grid(row=1,column=1)
-        self.y_a.grid(row=1,column=2)
-        self.x_b.grid(row=2,column=1)
-        self.y_b.grid(row=2,column=2)
-
-        Button(master, text="Done", command=self.done).grid(row=4,column=0)
-        Button(master, text="Quit", command=master.quit).grid(row=4,column=1)
-
-    def done(self):
-        # check values and store them
-        if self.x_a.get() != '':
-            self.xa = float(self.x_a.get())
-        else:
-            self.xa = ''
-        if self.x_b.get() != '':
-            self.xb = float(self.x_b.get())
-        else:
-            self.xb = ''
-        if self.y_a.get() != '':
-            self.ya = float(self.y_a.get())
-        else:
-            self.ya = ''
-        if self.y_b.get() != '':
-            self.yb = float(self.y_b.get())
-        else:
-            self.yb = ''
+    def __init__(self,x_a,y_a,x_b,y_b):
+        super(TitanDischargePlane, self).__init__(float(x_a), float(y_a), float(x_b), float(y_b))
+        #Enter Discharge Plane
+        #Point A (UTM E, UTM N):
+        #self.x_a = float(x_a)
+        #self.y_a = float(y_a)
+        #Point B (UTM E, UTM N):
+        #self.x_b = float(x_b)
+        #self.y_b = float(y_b)
 
 
 class TitanPile(cxxTitanPile):
@@ -206,10 +177,7 @@ class TitanSimulation(cxxTitanSimulation):
     }
     possible_orders=('PlaceHolder','First','Second')
     def __init__(self,
-                 
                  numcellsacrosspile,
-                 
-                 numdischarge,
                  steps,
                  maxtime,
                  timeoutput,
@@ -220,8 +188,7 @@ class TitanSimulation(cxxTitanSimulation):
                  order='First',
                  edge_height=None,
                  test_height=None,
-                 test_location_x=None,
-                 test_location_y=None
+                 test_location=None
                  ):
         
         
@@ -238,8 +205,6 @@ class TitanSimulation(cxxTitanSimulation):
         
         #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
         self.numcellsacrosspile = numcellsacrosspile
-        #Number of Discharge Planes
-        self.numdischarge = int(numdischarge)
         
         #Scale Simulation?
         if lengthscale!=None:
@@ -281,19 +246,21 @@ class TitanSimulation(cxxTitanSimulation):
         #Test if flow reaches height [m] ...
         self.test_height = test_height
         #... at test point (x and y location)
-        self.test_location_x = test_location_x
-        self.test_location_y = test_location_y
+        if test_location!=None:
+            self.test_location_x = test_location[0]
+            self.test_location_y = test_location[1]
         
         #other inits
         self.pileHelper=[]
         self.flux_sourcesHelper=[]
+        self.discharge_planesHelper=[]
 
     def setTopo(self,gis_format='GIS_GRASS',
                  topomain=None,
                  toposub=None,
                  topomapset=None,
                  topomap=None,
-                 vector=None,
+                 topovector=None,
                  min_location_x=None,
                  min_location_y=None,
                  max_location_x=None,
@@ -313,7 +280,7 @@ class TitanSimulation(cxxTitanSimulation):
         #GIS Map
         self.topomap = topomap if topomap!=None else ''
         #GIS Vector
-        self.vector = vector if vector!=None else ''
+        self.topovector = topovector if topovector!=None else ''
         
         if min_location_x!=None and min_location_y!=None and \
             max_location_x!=None and max_location_y!=None:
@@ -423,6 +390,12 @@ class TitanSimulation(cxxTitanSimulation):
         if fluxSource!=None:
             self.flux_sources.push_back(fluxSource)
             self.flux_sourcesHelper.append(fluxSource)
+    
+    def addDischargePlane(self,*args):
+        dischargePlane=TitanDischargePlane(*args)
+        if dischargePlane!=None:
+            self.discharge_planes.push_back(dischargePlane)
+            self.discharge_planesHelper.append(dischargePlane)
         
     def preproc(self):
         if self.myid==0:
@@ -624,25 +597,19 @@ class TitanSimulation(cxxTitanSimulation):
             #-----Number of Discharge Planes---------
             #----------------------------------------
             #check values
-            if self.numdischarge == 0:
-                numdischarge = 0
-                print 'Number of Discharge Planes not set.  Setting it to ' + str(numdischarge)
-            else:
-                numdischarge = self.numdischarge
-    
             #loop to allow user input of coordinates for variable # of discharge planes
             fout = open('simulation.data',"a+",0)
+            numdischarge=len(self.discharge_planesHelper)
             fout.write('\n'+str(numdischarge)+'\n')
             
+            
             if numdischarge>0:
-                raise NotImplementedError("numsrcs > 0 not implemented yet!")
-                #app=TitanDischargePlane/QuestionTemplate4(root4,counter,numdischarge)
-    #             if app.xa != '' and app.xb != '' and app.ya != '' and app.yb != '':
-    #                 fout.write(str(app.xa)+' '+str(app.ya)+' '+str(app.xb)+' '+str(app.yb)+'\n')
-    #                 del app
-    #                 counter = counter + 1
-    #             else:
-    #                 print 'Missing data.  Must re-enter.'
+                for i in range(len(self.discharge_planesHelper)):
+                    fout.write(str(self.discharge_planesHelper[i].x_a)+' '+\
+                               str(self.discharge_planesHelper[i].y_a)+' '+\
+                               str(self.discharge_planesHelper[i].x_b)+' '+\
+                               str(self.discharge_planesHelper[i].y_b)+'\n')
+                    
             fout.close
             #----------------------------------------------
             #----------------------------------------------
@@ -658,12 +625,14 @@ class TitanSimulation(cxxTitanSimulation):
             # locate titan_preprocess: 
             # first check the local-diretory,
             
+            print "\npreproc..."
             self.preproc()
     
-            if self.vector != "":
-                raise NotImplementedError("GIS Vector is Not Implemented yet in py api!")
-                #os.system('./VecDataPreproc ' + self.topomain +' '+self.toposub+' '+self.topomapset+' '+self.topomap+' '+self.vector)
-                #os.system('mv VectorDataOutput.data ' + directory)
+            if self.topovector != "":
+                print "\nvectordatpreproc..."
+                vectordatpreproc(self.topomain, self.toposub, self.topomapset, self.topomap, self.topovector)
+            
+            print
         
         super(TitanSimulation, self).run()
 

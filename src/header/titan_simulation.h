@@ -87,6 +87,20 @@ public:
     void print0();
 };
 
+/**
+ * cxxTitanDischargePlane
+ */
+class cxxTitanDischargePlane{
+public:
+    cxxTitanDischargePlane();
+    cxxTitanDischargePlane::cxxTitanDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b, const double m_y_b);
+    ~cxxTitanDischargePlane();
+
+    cxxTitanDischargePlane& operator=(const cxxTitanDischargePlane& other);
+
+    double x_a,y_a,x_b,y_b;
+    void print0();
+};
 
 /**
  * MaterialMap
@@ -134,12 +148,17 @@ public:
     std::string topomapset;
     //!>the raster map name, used for Gdal too
     std::string topomap;
+    //!>GIS Vector
+    std::string topovector;
 
     //!>Piles
     std::vector<cxxTitanPile> piles;
 
     //!>Flux sources
     std::vector<cxxTitanFluxSource> flux_sources;
+
+    //!>Discharge planes
+    std::vector<cxxTitanDischargePlane> discharge_planes;
 
 	bool region_limits_set;
 

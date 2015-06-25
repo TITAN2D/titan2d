@@ -151,7 +151,39 @@ void cxxTitanFluxSource::print0()
     printf("\t\tEffective Thickness, P (m):%f\n", get_effective_height());
 }
 
+cxxTitanDischargePlane::cxxTitanDischargePlane(){
+    x_a = 0.0;
+    y_a = 0.0;
+    x_b = 0.0;
+    y_b = 0.0;
+}
 
+cxxTitanDischargePlane::cxxTitanDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b, const double m_y_b){
+    x_a = m_x_a;
+    y_a = m_y_a;
+    x_b = m_x_b;
+    y_b = m_y_b;
+}
+cxxTitanDischargePlane::~cxxTitanDischargePlane(){
+
+}
+
+cxxTitanDischargePlane& cxxTitanDischargePlane::operator=(
+        const cxxTitanDischargePlane& other) {
+
+    if (this != &other) {
+        x_a = other.x_a;
+        y_a = other.y_a;
+        x_b = other.x_b;
+        y_b = other.y_b;
+    }
+    return *this;
+}
+
+void cxxTitanDischargePlane::print0(){
+    printf("\t\tPoint A (UTM E, UTM N): %f, %f\n", x_a, y_a);
+    printf("\t\tPoint B (UTM E, UTM N): %f, %f\n", x_b, y_b);
+}
 
 
 MaterialMap::MaterialMap()
@@ -206,6 +238,7 @@ cxxTitanSimulation::cxxTitanSimulation()
     toposub="";
     topomapset="";
     topomap="";
+    topovector="";
 
     region_limits_set=false;
 
@@ -245,6 +278,7 @@ void cxxTitanSimulation::input_summary()
     printf("\ttoposub: %s\n",toposub.c_str());
     printf("\ttopomapset: %s\n",topomapset.c_str());
     printf("\ttopomap: %s\n",topomap.c_str());
+    printf("\ttopovector: %s\n",topovector.c_str());
 
     printf("\tregion_limits_set %d\n",(int)region_limits_set);
 
@@ -260,6 +294,12 @@ void cxxTitanSimulation::input_summary()
     for(i=0;i<flux_sources.size();i++){
         printf("\tFlux_source %d:\n",i);
         flux_sources[i].print0();
+    }
+    printf("Discharge planes:\n");
+    printf("\tNumber of discharge planes: %d\n",(int)discharge_planes.size());
+    for(i=0;i<discharge_planes.size();i++){
+        printf("\tDischarge plane %d:\n",i);
+        discharge_planes[i].print0();
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

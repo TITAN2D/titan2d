@@ -14,6 +14,7 @@ titan_CXXFLAGS = -fpic -I$(srcdir)/../gisapi -I@PYTHON_ROOT@/include/python@PYTH
 titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a @FLIBS@ \
   ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
   ../repartition/librepartition.a ../tecplot/libtecplot.a \
+  ../vectordatapreproc/libvectordatpreproc.a \
   -L@PYTHON_ROOT@/lib -lpython@PYTHON_VERSION@ -lutil
 
 #titan_simulation_CXXFLAGS = -fpic

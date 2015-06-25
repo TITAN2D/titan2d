@@ -2,10 +2,9 @@
 # automake template for src/main/ directory
 #
 
-bin_PROGRAMS = VecDataPreproc
+noinst_LIBRARIES = libvectordatpreproc.a
 
-VecDataPreproc_SOURCES = vectordatpreproc.cpp cgis_trigrid.cpp cgis_trigrid.h cgis_vectordata.cpp cgis_vectordata.h cpolyline.cpp cpolyline.h
+libvectordatpreproc_a_SOURCES = vectordatpreproc.cpp cgis_trigrid.cpp cgis_trigrid.h cgis_vectordata.cpp cgis_vectordata.h cpolyline.cpp cpolyline.h
 
-VecDataPreproc_CXXFLAGS = -I$(srcdir)/../gisapi/
+libvectordatpreproc_CXXFLAGS = -I$(srcdir)/../gisapi/
 
-VecDataPreproc_LDADD = ../gisapi/libgisapi.a
