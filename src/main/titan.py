@@ -19,173 +19,76 @@ import sys,os,math,string,re,socket
 
 TITAN2d_HOME='/home/mikola/titan_wsp/titan2d_bld/iccopt'
 
-from cxxtitan import cxxTitanSimulation,TitanPreproc,MaterialMap
+from cxxtitan import cxxTitanSimulation,TitanPreproc,cxxTitanPile,cxxTitanFluxSource,MaterialMap
 
 
-class TitanFluxSource:
-    def __init__(self,master,src_number,filename,directory,heightscale):
-        Label(master, text="Information for Flux Source Number "+str(src_number+1)).grid(row=0,column=0,sticky=W,columnspan=2)
-        Label(master, text="Extrusion flux rate [m/s]:").grid(row=1,column=0,sticky=W)
-        Label(master, text="Active Time [s], start, end:").grid(row=2,column=0,sticky=W)
-        Label(master, text="Center of the source, xc, yc (UTM E, UTM N):").grid(row=3,column=0,sticky=W)
-        Label(master, text="Major and Minor Extent, majorR, minorR (m, m):").grid(row=4,column=0,sticky=W)        
-        Label(master, text="Orientation (angle [degrees] from X axis to major axis):").grid(row=5,column=0,sticky=W)
-        Label(master, text="Initial speed [m/s]:").grid(row=6,column=0,sticky=W)
-        Label(master, text="Initial direction ([degrees] from X axis):").grid(row=7,column=0,sticky=W)
-
-
-        self.influx = Entry(master)
-        self.start_time = Entry(master)
-        self.end_time   = Entry(master)
-        self.xcenter = Entry(master)
-        self.ycenter = Entry(master)
-        self.majradius = Entry(master)
-        self.minradius = Entry(master)
-        self.orientation = Entry(master)
-        self.Vmagnitude = Entry(master)
-        self.Vdirection = Entry(master)
-
-        self.influx.grid(row=1,column=1)
-        self.start_time.grid(row=2,column=1)
-        self.end_time.grid(row=2,column=2)
-        self.xcenter.grid(row=3,column=1)
-        self.ycenter.grid(row=3,column=2)
-        self.majradius.grid(row=4,column=1)
-        self.minradius.grid(row=4,column=2)
-        self.orientation.grid(row=5,column=1)
-        self.Vmagnitude.grid(row=6,column=1)
-        self.Vdirection.grid(row=7,column=1)
-
-        Button(master, text="Done", command=self.done).grid(row=8,column=0)
-        Button(master, text="Quit", command=master.quit).grid(row=8,column=1)
-
-        #passed in variables
-        self.master = master
-        self.filename = filename
-        self.heightscale = heightscale
-        self.write_flag = 0 
-        self.directory = directory
-        self.input_flag = 0 
-        self.src_number = src_number
-
-    def done(self):
-        # check values
-        if self.influx.get() == '':
-            influx = 0.0
+class TitanFluxSource(cxxTitanFluxSource):
+    def __init__(self,influx,start_time,end_time,center=None,radii=None,
+                 orientation=0.0,
+                 Vmagnitude=0.0,
+                 Vdirection=0.0):
+        super(TitanFluxSource, self).__init__()
+        #Extrusion flux rate [m/s]
+        self.influx = float(influx)
+        
+        #Active Time [s], start, end
+        self.start_time = float(start_time)
+        self.end_time   = float(end_time)
+        #Center of the source, xc, yc (UTM E, UTM N):
+        if center!=None:
+            self.xcenter = float(center[0])
+            self.ycenter = float(center[1])
         else:
-            influx = float(self.influx.get())
-            if influx <= float(0.):
-                influx = 0.
-
-        if self.start_time.get() == '':
-            start_time = 0.0
+            self.xcenter = 1.0
+            self.ycenter = 1.0
+        #Major and Minor Extent, majorR, minorR (m, m)
+        if radii!=None:
+            self.majradius = float(radii[0])
+            self.minradius = float(radii[1])
         else:
-            start_time = float(self.start_time.get())
-            if start_time < 0.0:
-                start_time = 0
+            self.majradius = 1.0
+            self.minradius = 1.0
+        #Orientation (angle [degrees] from X axis to major axis):
+        self.orientation = float(orientation)
+        #Initial speed [m/s]:
+        self.Vmagnitude = float(Vmagnitude)
+        #Initial direction ([degrees] from X axis):
+        self.Vdirection = float(Vdirection)
+        
+        self.validateValues()
+    def validateValues(self):
+        if self.influx < 0.0:
+            raise ValueError('TitanFluxSource::influx should be non negative')
+        if self.start_time < 0.0:
+            raise ValueError('TitanFluxSource::start_time should be non negative')
+        if self.end_time < 0.0:
+            raise ValueError('TitanFluxSource::start_time should be non negative')
+    def done(self,filename):
+        file = open(filename, "a+", 0)
+        file.write( str(self.influx) + '\n' + \
+                    str(self.start_time) + '\n' + str(self.end_time) + '\n' + \
+                    str(self.xcenter) + '\n' + str(self.ycenter) + '\n' + \
+                    str(self.majradius) + '\n' +str(self.minradius) + '\n' + \
+                    str(self.orientation) + '\n' + \
+                    str(self.Vmagnitude) + '\n' + \
+                    str(self.Vdirection) + '\n')
+        file.close
+        
+       
 
-        if self.end_time.get() == '':
-            end_time = 0.0
-        else:
-            end_time = float(self.end_time.get())
-            if end_time < 0:
-                end_time = 0
-
-        if self.xcenter.get() == '':
-            xcenter = 1.0
-        else:
-            xcenter = float(self.xcenter.get())
-
-        if self.ycenter.get() == '':
-            ycenter = 1.0
-        else:
-            ycenter = float(self.ycenter.get())
-
-        if self.majradius.get() == '':
-            majradius = 1.0
-        else:
-            majradius = float(self.majradius.get())
-            if majradius <= 0:
-                majradius = 1
-
-        if self.minradius.get() == '':
-            minradius = 1.0
-        else:
-            minradius = float(self.minradius.get())
-            if minradius <= 0:
-                minradius = 1
-
-        if self.orientation.get() == '':
-            orientation = 0.0
-        else:
-            orientation = float(self.orientation.get())
-
-        if self.Vmagnitude.get() == '':
-            Vmagnitude = 0.0
-            Vdirection = 0.0
-        else:
-            Vmagnitude=float(self.Vmagnitude.get())
-            if self.Vdirection.get() == '':
-                Vdirection = 0.0
-            else:
-                Vdirection=float(self.Vdirection.get())
-                            
-        #print 'Vmagnitude= ' + str(Vmagnitude) + '\nVdirection= ' + str(Vdirection) + '\n'
-
-        if self.write_flag == 0:
-            self.write_flag = 1
-            file = open(self.filename, "a+", 0)
-            file.write( str(influx) + '\n' + str(start_time) + '\n' + str(end_time) + '\n' + str(xcenter) + '\n' + str(ycenter) + '\n' + str(majradius) + '\n' +str(minradius) + '\n' + str(orientation) + '\n' + str(Vmagnitude) + '\n' + str(Vdirection) + '\n')
-            file.close
-            #approx: h=influx*t-0.5*a*t^2
-            #if no s => t1=N*(2*h/g)^0.5  N is a empirical constant,
-            #for cylindrical piles of aspect ratio (height/radius) of approx 1
-            #2<=N<=3 (closer to 2) but there are 3 reasons we should increase N
-            #(1) cylindrical pile does not collapse the whole way, shorter
-            #distance means decreased acceleration means increased time, N
-            #(2) paraboloid piles are closer to conical than cylinder so it
-            #should collapse even less, so increase N
-            #(3) "influx" is a constant source "velocity" not an initial
-            #velocity which should increase h in "approx: h=..." equation, so
-            #as a fudge factor increase N some more
-            #calibrated on a single starting condition at tungaruhau says
-            #N=3.21   N=X
-            #anyway a=2*h/t1^2 = g/N^2
-            #approx: v=influx-a*t2 at hmax v=0 => t2=influx/a = N^2*influx/g
-            #t3=min(t2,end_time-start_time)
-            #plug int first equation
-            #approx hmax=influx*t3-0.5*a*t3^2
-            #if t3==t2=> hmax= N^2/2*s^2/g
-            #DEM: tungfla2
-            #influx 12 m/s (vel 50 m/s at +35 degrees cc from +x direction
-            #starts in filled crater which means this velocity points up hill
-            #so pile is mostly stationary while flux source is active, 50 m/s
-            #is just short of what is needed to top the crater)
-            #end_time-start_time=20 gives actual hmax=75.6 m
-            #g=9.8 m/s^2, N=3.21, t3=t2=12.62<20 s => computed hmax=75.7 m
-            X = 3.21
-            g = 9.8
-            a = g/X/X
-            t3 = X*X*influx/g
-            if t3 > (end_time-start_time):
-                t3=(end_time-start_time)
-            effectheight=influx*t3 - 0.5*a*t3*t3
-            if effectheight>self.heightscale:
-                self.heightscale = effectheight
-
-            self.input_flag = 1
-            #write to the python_input.data file
-            file = open(self.directory+'python_input.data', "a+", 0)
-            python_data = """ Mean Flux  (kg/(m^2-s)): """+ str(influx) +"""
-Active duration of source (start time, end time) (s) " """ + str(start_time) + """ """+ str(end_time) +"""
-Center of the Source, xc, yc (UTM E, UTM N): """ + str(xcenter) + """ """+str(ycenter)+"""
-Major and Minor Extent, majorR, minorR (m, m): """ + str(majradius)+ """ """ +str(minradius)+"""
-Angle from X axis to major axis (degrees): """ +str(orientation)+"""
-Initial speed [m/s]: """ + str(Vmagnitude) + """
-Initial direction ([degrees] from X axis): """ + str(Vdirection)+"""
+        self.input_flag = 1
+        #write to the python_input.data file
+        file = open('python_input.data', "a+", 0)
+        python_data = """ Mean Flux  (kg/(m^2-s)): """+ str(self.influx) +"""
+Active duration of source (start time, end time) (s) " """ + str(self.start_time) + """ """+ str(self.end_time) +"""
+Center of the Source, xc, yc (UTM E, UTM N): """ + str(self.xcenter) + """ """+str(self.ycenter)+"""
+Major and Minor Extent, majorR, minorR (m, m): """ + str(self.majradius)+ """ """ +str(self.minradius)+"""
+Angle from X axis to major axis (degrees): """ +str(self.orientation)+"""
+Initial speed [m/s]: """ + str(self.Vmagnitude) + """
+Initial direction ([degrees] from X axis): """ + str(self.Vdirection)+"""
 """
-            file.write(python_data)
-            file.close
+        file.write(python_data)
+        file.close
 
 class TitanDischargePlane:
 
@@ -228,12 +131,13 @@ class TitanDischargePlane:
             self.yb = ''
 
 
-class TitanPile:
+class TitanPile(cxxTitanPile):
 
-    def __init__(self,pileheight=0.0,pilecenter=None,radii=None,
+    def __init__(self,height=0.0,center=None,radii=None,
                  orientation=0.0,
                  Vmagnitude=0.0,
                  Vdirection=0.0):
+        super(TitanPile, self).__init__()
         #def __init__(self,master,pile_number,filename,directory,max_height,topomap):
         
         
@@ -241,14 +145,14 @@ class TitanPile:
         #Thickness of Initial Volume, h(x,y)
         #P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
         #Maximum Initial Thickness, P (m)
-        self.pileheight = float(pileheight)
+        self.height = float(height)
         #Center of Initial Volume, xc, yc (UTM E, UTM N)
-        if pilecenter!=None:
-            self.xpilecenter = float(pilecenter[0])
-            self.ypilecenter = float(pilecenter[1])
+        if center!=None:
+            self.xcenter = float(center[0])
+            self.ycenter = float(center[1])
         else:
-            self.xpilecenter = 1.0
-            self.ypilecenter = 1.0
+            self.xcenter = 1.0
+            self.ycenter = 1.0
         #Major and Minor Extent, majorR, minorR (m, m)
         if radii!=None:
             self.majradius = float(radii[0])
@@ -263,34 +167,17 @@ class TitanPile:
         #Initial direction ([degrees] from X axis)
         self.Vdirection = float(Vdirection)
         
-        # create Map button if started from within grass
-        #mapbutt = Button(master, text="Map", command=self.showMap )
-        
-        #passed in variables
-        if 0:
-            self.master = master
-            self.top = master.winfo_toplevel()
-            self.filename = filename
-            self.max_height = max_height
-            self.write_flag = 0 # used to make sure that the information is written out only once per call
-            self.directory = directory
-            self.input_flag = 0 #used to make sure that the values are entered
-            self.topomap = topomap
-            self.pile_number = pile_number
-        
         self.validateValues()
         
+        
     def validateValues(self):
-        if self.pileheight < 0.0:
-            raise ValueError('TitanPile::pileheight should be non negative')
-    def showVolume(self): 
-        self.volume=math.pi*self.pileheight*self.majradius*self.minradius/2.0
-        print "Pile volume:",self.volume
+        if self.height < 0.0:
+            raise ValueError('TitanPile::height should be non negative')
 
     def done(self,filename):
-        pileheight = self.pileheight
-        xpilecenter = self.xpilecenter
-        ypilecenter = self.ypilecenter
+        pileheight = self.height
+        xpilecenter = self.xcenter
+        ypilecenter = self.ycenter
         
         majradius = self.majradius
         minradius = self.minradius
@@ -322,7 +209,6 @@ class TitanSimulation(cxxTitanSimulation):
                  
                  numcellsacrosspile,
                  
-                 numsrcs,
                  numdischarge,
                  steps,
                  maxtime,
@@ -352,10 +238,6 @@ class TitanSimulation(cxxTitanSimulation):
         
         #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
         self.numcellsacrosspile = numcellsacrosspile
-        #Number of Piles
-        self.numpiles = None #int(numpiles)
-        #Number of Flux Sources
-        self.numsrcs = int(numsrcs)
         #Number of Discharge Planes
         self.numdischarge = int(numdischarge)
         
@@ -403,7 +285,8 @@ class TitanSimulation(cxxTitanSimulation):
         self.test_location_y = test_location_y
         
         #other inits
-        self.piles=[]
+        self.pileHelper=[]
+        self.flux_sourcesHelper=[]
 
     def setTopo(self,gis_format='GIS_GRASS',
                  topomain=None,
@@ -496,10 +379,10 @@ class TitanSimulation(cxxTitanSimulation):
         
         m=MaterialMap()
         if self.matmap == False:
-            self.materialMap.name.push_back("all materials")
-            self.materialMap.intfrict.push_back(matMap[0]['intfrict'])
-            self.materialMap.bedfrict.push_back(matMap[0]['bedfrict'])
-            self.materialMap.print0()
+            self.material_map.name.push_back("all materials")
+            self.material_map.intfrict.push_back(matMap[0]['intfrict'])
+            self.material_map.bedfrict.push_back(matMap[0]['bedfrict'])
+            #self.material_map.print0()
         else:  #if they did want to use a GIS material map...
             raise Exception("GIS material map Not implemented yet")
         #m.print0()
@@ -528,29 +411,18 @@ class TitanSimulation(cxxTitanSimulation):
         else:  #if they did want to use a GIS material map...
             raise Exception("Not implemented as there were no suitable example")
         fout.close
-    def setPiles(self,piles):
-        #Information for Pile Number
-        #Thickness of Initial Volume, h(x,y)
-        #P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
-        #Maximum Initial Thickness, P (m)
-        self.pileheight = None
-        #Center of Initial Volume, xc, yc (UTM E, UTM N)
-        self.xpilecenter = None
-        self.ypilecenter = None
-        #Major and Minor Extent, majorR, minorR (m, m) 
-        self.majradius = None
-        self.minradius = None
-        #Orientation (angle [degrees] from X axis to major axis)
-        self.orientation = None
-        #Initial speed [m/s]
-        self.Vmagnitude = None
-        #Initial direction ([degrees] from X axis)
-        self.Vdirection = None
     
     def addPile(self,**kwargs):
         pile=TitanPile(**kwargs)
         if pile!=None:
-            self.piles.append(pile)
+            self.piles.push_back(pile)
+            self.pileHelper.append(pile)
+        
+    def addFluxSource(self,**kwargs):
+        fluxSource=TitanFluxSource(**kwargs)
+        if fluxSource!=None:
+            self.flux_sources.push_back(fluxSource)
+            self.flux_sourcesHelper.append(fluxSource)
         
     def preproc(self):
         if self.myid==0:
@@ -567,12 +439,12 @@ class TitanSimulation(cxxTitanSimulation):
             #check values
             srctype = 0
             
-            self.numpiles=len(self.piles)
-            numpiles = self.numpiles
+            numpiles = len(self.piles)
             if numpiles < 0:
                 raise ValueError('Number of piles cannot be a negative number')
             
-            numsrcs = self.numsrcs
+            numsrcs = len(self.flux_sources)
+            print "self.flux_sources",numsrcs
             if numsrcs < 0:
                 raise ValueError('Number of Flux Sources cannot be a negative number')
             
@@ -695,19 +567,19 @@ class TitanSimulation(cxxTitanSimulation):
             
             max_height=0.0
             for iPile in range(len(self.piles)):
-                self.piles[iPile].showVolume()
-                self.piles[iPile].done(f_p)
-                if self.piles[iPile].pileheight > max_height:
-                    max_height = self.piles[iPile].pileheight
+                self.pileHelper[iPile].done(f_p)
+                if self.piles[iPile].height > max_height:
+                    max_height = self.piles[iPile].height
             
     
             counter = 0
             heightscale = max_height
-            if numsrcs > 0:
-                raise NotImplementedError("numsrcs > 0 not implemented yet!")
-                #while counter < numsrcs:
-                    #app=TitanFluxSource/QuestionTemplate5(root5,counter,f_p,directory, heightscale)
-                    #heightscale = app.heightscale;
+            for i in range(len(self.flux_sourcesHelper)):
+                self.flux_sourcesHelper[i].done(f_p)
+                effective_height=self.flux_sources[i].get_effective_height()
+                if effective_height > max_height:
+                    max_height = effective_height
+            
                 
             output2 = str(numcellsacrosspile) + '\n' +\
                 str(steps) + '\n' + str(maxtime) + '\n' +\

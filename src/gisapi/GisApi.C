@@ -1194,7 +1194,10 @@ void get_rgb_grid(double resolution, double xmin, double xmax, double ymin, doub
 }
 
 int clear_gis_grid() {
-	free(gis_grid.ghead.datafile);
+    if(gis_grid.ghead.datafile!=NULL){
+        free(gis_grid.ghead.datafile);
+        gis_grid.ghead.datafile=NULL;
+    }
 
 	gis_grid.ghead.zmin = 0;
 	gis_grid.ghead.zmax = 0;

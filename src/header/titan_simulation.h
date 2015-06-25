@@ -14,17 +14,89 @@
  *******************************************************************
  */
 
-#ifndef TITAN_SIMULATION_H
+#ifndef TITAN2D_SIMULATION_H
 #define TITAN2D_SIMULATION_H
 
 #include <string>
 #include <vector>
 #include "../gisapi/GisApi.h"
 
+/**
+ * Information for Pile
+ * Thickness of Initial Volume, h(x,y)
+ * P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
+ */
+class cxxTitanPile{
+public:
+    cxxTitanPile();
+    ~cxxTitanPile();
+
+    cxxTitanPile& operator=(const cxxTitanPile& other);
+
+    //! Maximum Initial Thickness, P (m)
+    double height;
+    //! Center of Initial Volume, xc, yc (UTM E, UTM N)
+    double xcenter;
+    double ycenter;
+    //! Major and Minor Extent, majorR, minorR (m, m)
+    double majradius;
+    double minradius;
+    //! Orientation (angle [degrees] from X axis to major axis)
+    double orientation;
+    //! Initial speed [m/s]
+    double Vmagnitude;
+    //! Initial direction ([degrees] from X axis)
+    double Vdirection;
+
+    //! calculate volume m^3
+    double get_volume();
+
+    void print0();
+};
+
+/**
+ * cxxTitanFluxSource
+ */
+class cxxTitanFluxSource{
+public:
+    cxxTitanFluxSource();
+    ~cxxTitanFluxSource();
+
+    cxxTitanFluxSource& operator=(const cxxTitanFluxSource& other);
+
+    //! Extrusion flux rate [m/s]
+    double influx;
+
+    //! Active Time [s], start, end
+    double start_time;
+    double end_time;
+    //! Center of Initial Volume, xc, yc (UTM E, UTM N)
+    double xcenter;
+    double ycenter;
+    //! Major and Minor Extent, majorR, minorR (m, m)
+    double majradius;
+    double minradius;
+    //! Orientation (angle [degrees] from X axis to major axis)
+    double orientation;
+    //! Initial speed [m/s]
+    double Vmagnitude;
+    //! Initial direction ([degrees] from X axis)
+    double Vdirection;
+
+    double get_effective_height();
+    void print0();
+};
+
+
+/**
+ * MaterialMap
+ */
 class MaterialMap {
 public:
     MaterialMap();
     ~MaterialMap();
+
+    MaterialMap& operator=(const MaterialMap& other);
 private:
     int myid;
     int numprocs;
@@ -63,6 +135,12 @@ public:
     //!>the raster map name, used for Gdal too
     std::string topomap;
 
+    //!>Piles
+    std::vector<cxxTitanPile> piles;
+
+    //!>Flux sources
+    std::vector<cxxTitanFluxSource> flux_sources;
+
 	bool region_limits_set;
 
     double min_location_x;
@@ -70,6 +148,6 @@ public:
     double min_location_y;
     double max_location_y;
 
-    MaterialMap materialMap;
+    MaterialMap material_map;
 };
 #endif

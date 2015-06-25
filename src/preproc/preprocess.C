@@ -60,7 +60,6 @@ int Read_no_of_objects(int*, int*, int*, int*, int*, long*);
 void Read_node_data(int*, NodePreproc*, long*);
 void Read_element_data(int*, NodePreproc*, ElementPreproc*, long*);
 void Read_boundary_data(int*, int*, NodePreproc*, BoundaryPreproc*, long*);
-void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
 void Write_data(int, int, int, int, int, NodePreproc*, ElementPreproc**, BoundaryPreproc*, unsigned*, unsigned*, double*,
     double*, char**, double*, double*);
 void Determine_neighbors(int, ElementPreproc*, int, NodePreproc*);
@@ -106,6 +105,8 @@ TitanPreproc::TitanPreproc(cxxTitanSimulation *tSim){
     toposub=tSim->toposub;
     topomapset=tSim->topomapset;
     topomap=tSim->topomap;
+
+    material_map=tSim->material_map;
 
     min_location_x=tSim->min_location_x;
     max_location_x=tSim->max_location_x;
@@ -521,31 +522,35 @@ void Read_boundary_data(int* fc, int* cc, NodePreproc n[], BoundaryPreproc b[], 
 }
 
 //Read_material_data() is also called in createfunky.C... do not delete 
-void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu) {
+void TitanPreproc::Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu) {
 
+    material_map.print0();
 	//read in the material names and properties from file "frict.data"
-	FILE *fp = fopen("frict.data", "r");
-	fscanf(fp, "%d", material_count); //number of materials
+	//FILE *fp = fopen("frict.data", "r");
+	//fscanf(fp, "%d", material_count); //number of materials
+    *material_count=material_map.get_material_count();
 
 	//material id tags/indices start from 1
 	*lambda = CAllocD1(*material_count + 1); //internal friction angle
 	*mu = CAllocD1(*material_count + 1); //bed friction angle
 	*materialnames = (char **) malloc((*material_count + 1) * sizeof(char *));
-	char tempstring[200];
+	//char tempstring[200];
 
 	for (int imat = 1; imat <= *material_count; imat++) {
-		fgets(tempstring, 200, fp); //get rid of newline at end of previous line
+		//fgets(tempstring, 200, fp); //get rid of newline at end of previous line
 
-		fgets(tempstring, 200, fp); //read the material name
+		//fgets(tempstring, 200, fp); //read the material name
 		//replace newline with null character
-		tempstring[strlen(tempstring) - 1] = '\0';
-		(*materialnames)[imat] = allocstrcpy(tempstring);
+		//tempstring[strlen(tempstring) - 1] = '\0';
+		(*materialnames)[imat] = allocstrcpy(material_map.name[imat-1].c_str());
 
 		//read in internal and bed friction angles
-		fscanf(fp, "%lf", &((*lambda)[imat]));
-		fscanf(fp, "%lf", &((*mu)[imat]));
+		(*lambda)[imat]=material_map.intfrict[imat-1];
+		(*mu)[imat]=material_map.bedfrict[imat-1];
+		//fscanf(fp, "%lf", &((*lambda)[imat]));
+		//fscanf(fp, "%lf", &((*mu)[imat]));
 	}
-	fclose(fp);
+	//fclose(fp);
 
 	return;
 }

@@ -34,9 +34,6 @@ using namespace std;
 
 #define MIN_NONSEQ_REPART
 
-/* found in preprocess.C */
-void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
-
 void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **node,
     int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
     BoundaryPreproc **boundary, int *material_count, char ***materialnames, double **lambda, double **mu) {
@@ -110,6 +107,7 @@ void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **
 		 this data is otherwise read at the same time as funky.bin or funky.dat 
 		 see the function Read_material_data() in preprocess.C */
 		Read_material_data(material_count, materialnames, lambda, mu);
+
 
 		Get_max_resolution(&res);
 		Get_xmax(res, &xmax);

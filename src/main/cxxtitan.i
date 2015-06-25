@@ -28,6 +28,8 @@ namespace std {
    %template(vectori) vector<int>;
    %template(vectord) vector<double>;
    %template(vectors) vector<string>;
+   %template(vector_cxxTitanPile) vector<cxxTitanPile>;
+   %template(vector_cxxTitanFluxSource) vector<cxxTitanFluxSource>;
 };
 
 %include "../header/titan_simulation.h"

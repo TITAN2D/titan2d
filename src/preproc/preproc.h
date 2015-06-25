@@ -21,12 +21,11 @@
 #include <string>
 
 
-class cxxTitanSimulation;
 class NodePreproc;
 class ElementPreproc;
 class BoundaryPreproc;
 
-
+#include "../header/titan_simulation.h"
 
 /*
  * "You entered %d arguments, preprocess requires 4, 7, 8 or 11 arguments."
@@ -72,6 +71,10 @@ public:
     //!>the raster map name, used for Gdal too
     std::string topomap;
 
+    MaterialMap material_map;
+
+
+
 
     //If using Gdal data format:
     //raster map subdirectory, mapname
@@ -88,6 +91,8 @@ public:
     void createfunky(double limits[4], int *node_count, NodePreproc **node,
         int *element_count, ElementPreproc **element, int *force_count, int *constraint_count,
         BoundaryPreproc **boundary, int *material_count, char ***materialnames, double **lambda, double **mu);
+    void Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu);
+
 
 };
 #endif
