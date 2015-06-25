@@ -82,7 +82,7 @@ void mark_flux_region(HashTable* ElemTable, HashTable* NodeTable, MatProps *matp
 	return;
 }
 
-void adapt_fluxsrc_region(HashTable *ElemTable, HashTable *NodeTable, MatProps *matprops,
+void adapt_fluxsrc_region(ElementsHashTable *ElemTable, HashTable *NodeTable, MatProps *matprops,
     PileProps *pileprops, FluxProps *fluxprops, TimeProps *timeprops, double dt, int myid,
     int adaptflag) {
 
@@ -90,9 +90,14 @@ void adapt_fluxsrc_region(HashTable *ElemTable, HashTable *NodeTable, MatProps *
 
 	if ( //(adaptflag)&&
 	(fluxprops->IfAnyStart(timeprops)) && (timeprops->iter > 0) //iteration zero flux adaptation happens at same time as pile adaptation don't waste cpu work by doing it a second time
-	    )
+	    ){
 		//initial_H_adapt adapts the grid for initial pile and flux sources
 		initial_H_adapt(ElemTable, NodeTable, 0, matprops, pileprops, fluxprops, timeprops, 5);
+		//update temporary arrays of elements/nodes pointers
+		ElemTable->updateElements();
+		ElemTable->updateLocalElements();
+		ElemTable->updatePointersToNeighbours();
+	}
 
 	return;
 }

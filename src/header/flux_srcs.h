@@ -6,7 +6,7 @@ extern void mark_flux_region(HashTable *ElmTable, HashTable *NodeTable, MatProps
     FluxProps *fluxprops, TimeProps *timeprops);
 
 //! this function triggers refinement when a flux sources starts adding material. TODO currently this is crudely implemented. Needs improvement, keith's idea of using binary flag is a good idea.
-extern void adapt_fluxsrc_region(HashTable *ElemTable, HashTable *NodeTable, MatProps *matprops,
+extern void adapt_fluxsrc_region(ElementsHashTable *ElemTable, HashTable *NodeTable, MatProps *matprops,
     PileProps *pileprops, FluxProps *fluxprops, TimeProps *timeprops, double dt, int myid,
     int adaptflag);
 
