@@ -29,7 +29,8 @@ const int XDMF_CLOSE = 2;
 #include <hdf5.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*! GH5_openfile opens hdf file for reading or writing.
@@ -45,8 +46,9 @@ hid_t GH5_fopen(const char *filename, char mode);
  * after data writing is finished, or system will
  * run out of file descriptors
  */
-inline void GH5_fclose(hid_t fp) {
-	herr_t status = H5Fclose(fp);
+inline void GH5_fclose(hid_t fp)
+{
+    herr_t status = H5Fclose(fp);
 }
 
 /*! Writes the mesh to hdf file. 

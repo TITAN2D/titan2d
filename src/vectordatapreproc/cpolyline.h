@@ -29,25 +29,26 @@ using namespace std;
  *@author Amrita Chanda
  */
 
-class CPolyLine {
+class CPolyLine
+{
 public:
-	CPolyLine(int type, string lbl);
-	CPolyLine();
-	~CPolyLine();
+    CPolyLine(int type, string lbl);
+    CPolyLine();
+    ~CPolyLine();
 
-	void SetLinesXY(int npts, double *x, double *y);
+    void SetLinesXY(int npts, double *x, double *y);
 
-	int Get_ith_xy(int idx, float *x, float *y);
+    int Get_ith_xy(int idx, float *x, float *y);
 
-	int WritePolyLine(ofstream *stream);
+    int WritePolyLine(ofstream *stream);
 
-	int ReadPolyLine(ifstream *stream);
+    int ReadPolyLine(ifstream *stream);
 
-	int _numOfPts;
-	int _type;
-	float **_xylst;
-	string _label;
-
+    int _numOfPts;
+    int _type;
+    float **_xylst;
+    string _label;
+    
 };
 
 #endif

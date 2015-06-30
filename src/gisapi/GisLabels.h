@@ -25,43 +25,47 @@
 #include <map>
 using namespace std;
 
-class GisLabels {
+class GisLabels
+{
 public:
+    
+    GisLabels(const string& name);
 
-	GisLabels(const string& name);
+    virtual ~GisLabels()
+    {
+    }
+    
+    bool good()
+    {
+        return _status;
+    }
+    
+    int numberOfLabels()
+    {
+        return _nlabels;
+    }
+    
+    bool getLabel(int nlabel, string& labelString, double& x, double& y);
 
-	virtual ~GisLabels() {
-	}
+    int getIndex(string& labelStr);
 
-	bool good() {
-		return _status;
-	}
-
-	int numberOfLabels() {
-		return _nlabels;
-	}
-
-	bool getLabel(int nlabel, string& labelString, double& x, double& y);
-
-	int getIndex(string& labelStr);
-
-	void print();
+    void print();
 
 protected:
+    
+    bool _status;
 
-	bool _status;
-
-	int _nlabels;
-	vector<string> _labelStrings;
-	vector<double> _labelXs;
-	vector<double> _labelYs;
-	map<string, int> _labelIndxs;
+    int _nlabels;
+    vector<string> _labelStrings;
+    vector<double> _labelXs;
+    vector<double> _labelYs;
+    map<string, int> _labelIndxs;
 
 private:
-
+    
 // No copy allowed
-	GisLabels(const GisLabels&);
-	GisLabels& operator=(const GisLabels&);
+    GisLabels(const GisLabels&);
+    GisLabels& operator=(const GisLabels&);
 };
 
 #endif

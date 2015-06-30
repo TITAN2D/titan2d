@@ -24,17 +24,18 @@
  *@author Amrita Chanda
  */
 
-class CGIS_TriGrid {
+class CGIS_TriGrid
+{
 public:
-	CGIS_TriGrid(char *GIS_Dbase, char *GIS_Maplocation, char *GIS_Mapset, char *GIS_Rasterimage);
-	~CGIS_TriGrid();
+    CGIS_TriGrid(char *GIS_Dbase, char *GIS_Maplocation, char *GIS_Mapset, char *GIS_Rasterimage);
+    ~CGIS_TriGrid();
 
-	double *_elevations;
-	double _xmax, _xmin, _ymax, _ymin;
-	int _num_of_rows;
-	int _num_of_cols;
-	double _res;
-
+    double *_elevations;
+    double _xmax, _xmin, _ymax, _ymin;
+    int _num_of_rows;
+    int _num_of_cols;
+    double _res;
+    
 };
 
 #endif

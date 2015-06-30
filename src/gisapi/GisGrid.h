@@ -9,94 +9,103 @@ using namespace std;
 
 class GisTriOut;
 
-class GisGrid {
+class GisGrid
+{
 public:
+    
+    GisGrid();
 
-	GisGrid();
+    virtual ~ GisGrid()
+    {
+    }
+    
+    void setNumRowsCols(int nRows, int nCols);
 
-	virtual ~ GisGrid() {
-	}
+    void setNumRows(int nRows);
 
-	void setNumRowsCols(int nRows, int nCols);
+    void setNumCols(int nCols);
 
-	void setNumRows(int nRows);
+    void setBox(double xMin, double yMin, double xMax, double yMax)
+    {
+        xMin_ = xMin;
+        yMin_ = yMin;
+        xMax_ = xMax;
+        yMax_ = yMax;
+    }
+    
+    void setRes(float res);
 
-	void setNumCols(int nCols);
+    void setResX(float res);
 
-	void setBox(double xMin, double yMin, double xMax, double yMax) {
-		xMin_ = xMin;
-		yMin_ = yMin;
-		xMax_ = xMax;
-		yMax_ = yMax;
-	}
+    double getResX()
+    {
+        return resX_;
+    }
+    
+    void setResY(float res);
 
-	void setRes(float res);
+    double getResY()
+    {
+        return resY_;
+    }
+    
+    double deltaX()
+    {
+        return (xMax_ - xMin_);
+    }
+    
+    double deltaY()
+    {
+        return (yMax_ - yMin_);
+    }
+    
+    double noDataValue()
+    {
+        return noData_;
+    }
+    
+    void noDataValue(double doubleVal)
+    {
+        noData_ = doubleVal;
+    }
+    
+    void initGrid();
 
-	void setResX(float res);
+    void setMax(GisTriOut & tri, int simVar);
+    //    simVar: 1 - Pile height; 2 - Velocity";
+    
+    double get(int row, int col);
 
-	double getResX() {
-		return resX_;
-	}
+    int getRow(double y);
 
-	void setResY(float res);
+    int getCol(double x);
 
-	double getResY() {
-		return resY_;
-	}
+    double getY(int row);
 
-	double deltaX() {
-		return (xMax_ - xMin_);
-	}
+    double getX(int col);
 
-	double deltaY() {
-		return (yMax_ - yMin_);
-	}
+    void set(int row, int col, float floatVal);
 
-	double noDataValue() {
-		return noData_;
-	}
+    void smooth3();
 
-	void noDataValue(double doubleVal) {
-		noData_ = doubleVal;
-	}
+    void print();
 
-	void initGrid();
+    // protected: 
+    
+    double resX_;
+    double resY_;
+    double xMin_;
+    double yMin_;
+    double xMax_;
+    double yMax_;
+    double noData_;
+    int nCols_;
+    int nRows_;
 
-	void setMax(GisTriOut & tri, int simVar);
-	//    simVar: 1 - Pile height; 2 - Velocity";
-
-	double get(int row, int col);
-
-	int getRow(double y);
-
-	int getCol(double x);
-
-	double getY(int row);
-
-	double getX(int col);
-
-	void set(int row, int col, float floatVal);
-
-	void smooth3();
-
-	void print();
-
-	// protected: 
-
-	double resX_;
-	double resY_;
-	double xMin_;
-	double yMin_;
-	double xMax_;
-	double yMax_;
-	double noData_;
-	int nCols_;
-	int nRows_;
-
-	vector<float> gisGrid_;
+    vector<float> gisGrid_;
 
 private:
-
+    
 };
 
 #endif

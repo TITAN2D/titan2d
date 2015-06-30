@@ -37,20 +37,22 @@
  */
 
 //! the BC structure contains members: "type[4]" identifying type of boundary condition as essential=1, natural=2, or both=3; and "value[4][2][2]": identifying the element-side, type (0=natural, 1=essential), and load component (0=x, 1=y) comprising the boundary condition.
-struct BC {
-	int type[4];
-	float value[4][2][2];
+struct BC
+{
+    int type[4];
+    float value[4][2][2];
 
-	//! this function is a constuctor initializes the type and value of the boundary condition to zero
-	BC() {
-		type[0] = 0;
-		type[1] = 0;
-		type[2] = 0;
-		type[3] = 0;
-		for (int i = 0; i < 4; i++)
-			for (int j = 0; j < 2; j++)
-				for (int k = 0; k < 2; k++)
-					value[i][j][k] = 0.0;
-	}
+    //! this function is a constuctor initializes the type and value of the boundary condition to zero
+    BC()
+    {
+        type[0] = 0;
+        type[1] = 0;
+        type[2] = 0;
+        type[3] = 0;
+        for(int i = 0; i < 4; i++)
+            for(int j = 0; j < 2; j++)
+                for(int k = 0; k < 2; k++)
+                    value[i][j][k] = 0.0;
+    }
 };
 #endif

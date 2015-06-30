@@ -24,40 +24,45 @@
 #include <map>
 using namespace std;
 
-class GisCats {
+class GisCats
+{
 public:
+    
+    GisCats(const string & name);
 
-	GisCats(const string & name);
-
-	virtual ~ GisCats() {
-	}
-
-	bool good() {
-		return _status;
-	}
-
-	int mumberOfCats() {
-		return _ncats;
-	}
-
-	const char *category(int index) {
-		return _catnames[index].c_str();
-	}
-
-	void print();
+    virtual ~ GisCats()
+    {
+    }
+    
+    bool good()
+    {
+        return _status;
+    }
+    
+    int mumberOfCats()
+    {
+        return _ncats;
+    }
+    
+    const char *category(int index)
+    {
+        return _catnames[index].c_str();
+    }
+    
+    void print();
 
 protected:
+    
+    bool _status;
 
-	bool _status;
-
-	int _ncats;
-	map<int, string> _catnames;
+    int _ncats;
+    map<int, string> _catnames;
 
 private:
-
+    
 // No copy allowed
-	GisCats(const GisCats &);
-	GisCats & operator=(const GisCats &);
+    GisCats(const GisCats &);
+    GisCats & operator=(const GisCats &);
 };
 
 #endif

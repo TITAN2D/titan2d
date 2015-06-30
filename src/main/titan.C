@@ -39,56 +39,60 @@
 
 extern "C" void init_cxxtitan();
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int myid, master, numprocs;
     int namelen;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Status status;
-
+    
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Get_processor_name(processor_name, &namelen);
-
+    
     //set program full name
     int i;
     char executable[1028];
     char buffer[1028];
-
-    i=readlink("/proc/self/exe", executable, 1028);
-    executable[i]='\0';
+    
+    i = readlink("/proc/self/exe", executable, 1028);
+    executable[i] = '\0';
     Py_SetProgramName(executable);
-
+    
     Py_Initialize();
-
-    if(myid==0){
+    
+    if(myid == 0)
+    {
         printf("Titan2d %d.%d.%d\n", TITAN2D_VERSION_MAJOR, TITAN2D_VERSION_MINOR, TITAN2D_VERSION_REVISION);
         printf("Executable location: %s\n", executable);
         printf("\n");
     }
-
+    
     PyRun_SimpleString("import os");
     PyRun_SimpleString("import sys");
-
-    sprintf(buffer,"sys.path.insert(1,os.path.abspath(os.path.join('%s','..','..','lib','python2.7','site-packages','titan')))",executable);
+    
+    sprintf(buffer,
+            "sys.path.insert(1,os.path.abspath(os.path.join('%s','..','..','lib','python2.7','site-packages','titan')))",
+            executable);
     PyRun_SimpleString(buffer);
-
-
+    
     init_cxxtitan();
     PyRun_SimpleString("from titan import *");
-
-    if(argc>0){
+    
+    if(argc > 0)
+    {
         Py_Main(argc, argv);
     }
-    else if(myid==0){
+    else if(myid == 0)
+    {
         printf("Usage:\n");
-        printf("\t%s <run_script>\n",argv[0]);
+        printf("\t%s <run_script>\n", argv[0]);
     }
-
-
+    
     Py_Finalize();
-    if(myid==0){
+    if(myid == 0)
+    {
         printf("Done\n");
     }
     MPI_Finalize();

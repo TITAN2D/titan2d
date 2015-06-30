@@ -28,26 +28,28 @@ using namespace std;
  *@author Amrita Chanda
  */
 
-class CGIS_VectorData {
+class CGIS_VectorData
+{
 public:
-	CGIS_VectorData();
-	CGIS_VectorData(double res, double xmin, double xmax, double ymin, double ymax, int rows,
-	    int cols, const char *GIS_Dbase, const char *GIS_Maplocation, const char *GIS_Mapset, const char *GIS_VectorFile);
-	~CGIS_VectorData();
+    CGIS_VectorData();
+    CGIS_VectorData(double res, double xmin, double xmax, double ymin, double ymax, int rows, int cols,
+                    const char *GIS_Dbase, const char *GIS_Maplocation, const char *GIS_Mapset,
+                    const char *GIS_VectorFile);
+    ~CGIS_VectorData();
 
-	int ReadVectorData();
+    int ReadVectorData();
 
-	int ProjectOn2DGrid();
+    int ProjectOn2DGrid();
 
-	int StoreInFile();
+    int StoreInFile();
 
-	int ReadFromFile();
+    int ReadFromFile();
 
 private:
-	vector<CPolyLine *> _polylines;
-	double _res, _xmin, _xmax, _ymin, _ymax;
-	int _npolylines, _rows, _cols;
-	char _gisDBase[256], _gisMaplocation[256], _gisMapset[256], _gisVectorFile[256];
+    vector<CPolyLine *> _polylines;
+    double _res, _xmin, _xmax, _ymin, _ymax;
+    int _npolylines, _rows, _cols;
+    char _gisDBase[256], _gisMaplocation[256], _gisMapset[256], _gisVectorFile[256];
 };
 
 #endif

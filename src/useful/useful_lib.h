@@ -88,19 +88,21 @@ double ran1(long *idum);
 #ifndef UNIONBYTES
 #define UNIONBYTES
 
-typedef union fourbytes {
-	char c[4];
-	unsigned u;
-	int i;
-	float f;
+typedef union fourbytes
+{
+    char c[4];
+    unsigned u;
+    int i;
+    float f;
 } FourBytes;
 
-typedef union eightbytes {
-	char c[8];
-	unsigned u[2];
-	int i[2];
-	float f[2];
-	double d;
+typedef union eightbytes
+{
+    char c[8];
+    unsigned u[2];
+    int i[2];
+    float f[2];
+    double d;
 } EightBytes;
 
 double key2double(unsigned key[2]);

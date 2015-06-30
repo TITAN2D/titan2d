@@ -74,222 +74,236 @@
 /* 2D Hilbert Space-filling curve */
 
 void hsfc2d(unsigned coord[], /* IN: Normalized integer coordinates */
-unsigned * nkey, /* IN: Word length of key */
-unsigned key[]) /* OUT: space-filling curve key */
+            unsigned * nkey, /* IN: Word length of key */
+            unsigned key[]) /* OUT: space-filling curve key */
 {
-	static int init = 0;
-	static unsigned char gray_inv[2 * 2];
+    static int init = 0;
+    static unsigned char gray_inv[2 * 2];
+    
+    const unsigned NKey = (2 < *nkey) ? 2 : (*nkey);
+    const unsigned NBits = ( MaxBits * NKey) / 2;
+    
+    unsigned i;
+    unsigned char order[2 + 2];
+    unsigned char reflect;
+    
+    /* GRAY coding */
 
-	const unsigned NKey = (2 < *nkey) ? 2 : (*nkey);
-	const unsigned NBits = ( MaxBits * NKey) / 2;
+    if(!init)
+    {
+        unsigned char gray[2 * 2];
+        register unsigned k;
+        register unsigned j;
+        
+        gray[0] = 0;
+        for(k = 1; k < sizeof(gray); k <<= 1)
+        {
+            for(j = 0; j < k; j++)
+                gray[k + j] = k | gray[k - (j + 1)];
+        }
+        for(k = 0; k < sizeof(gray); k++)
+            gray_inv[gray[k]] = k;
+        init = 1;
+    }
+    
+    /* Zero out the key */
 
-	unsigned i;
-	unsigned char order[2 + 2];
-	unsigned char reflect;
+    for(i = 0; i < NKey; ++i)
+        key[i] = 0;
+    
+    order[0] = 0;
+    order[1] = 1;
+    reflect = (0 << 0) | (0);
+    
+    for(i = 1; i <= NBits; i++)
+    {
+        const unsigned s = MaxBits - i;
+        const unsigned c = gray_inv[reflect
+                ^ ((((coord[0] >> s) & 01) << order[0]) | (((coord[1] >> s) & 01) << order[1]))];
+        
+        const unsigned off = 2 * i; /* Bit offset */
+        const unsigned which = off / MaxBits; /* Which word to update */
+        const unsigned shift = MaxBits - off % MaxBits; /* Which bits to update */
+        
+        /* Set the two bits */
 
-	/* GRAY coding */
+        if(shift == MaxBits) /* Word boundary */
+        {
+            key[which - 1] |= c;
+        }
+        else
+        {
+            key[which] |= c << shift;
+        }
+        
+        /* Determine the recursive quadrant */
 
-	if (!init) {
-		unsigned char gray[2 * 2];
-		register unsigned k;
-		register unsigned j;
-
-		gray[0] = 0;
-		for (k = 1; k < sizeof(gray); k <<= 1) {
-			for (j = 0; j < k; j++)
-				gray[k + j] = k | gray[k - (j + 1)];
-		}
-		for (k = 0; k < sizeof(gray); k++)
-			gray_inv[gray[k]] = k;
-		init = 1;
-	}
-
-	/* Zero out the key */
-
-	for (i = 0; i < NKey; ++i)
-		key[i] = 0;
-
-	order[0] = 0;
-	order[1] = 1;
-	reflect = (0 << 0) | (0);
-
-	for (i = 1; i <= NBits; i++) {
-		const unsigned s = MaxBits - i;
-		const unsigned c = gray_inv[reflect
-		    ^ ((((coord[0] >> s) & 01) << order[0]) | (((coord[1] >> s) & 01) << order[1]))];
-
-		const unsigned off = 2 * i; /* Bit offset */
-		const unsigned which = off / MaxBits; /* Which word to update */
-		const unsigned shift = MaxBits - off % MaxBits; /* Which bits to update */
-
-		/* Set the two bits */
-
-		if (shift == MaxBits) /* Word boundary */
-		{
-			key[which - 1] |= c;
-		} else {
-			key[which] |= c << shift;
-		}
-
-		/* Determine the recursive quadrant */
-
-		switch (c) {
-			case 3:
-				reflect ^= 03;
-			case 0:
-				order[2 + 0] = order[0];
-				order[2 + 1] = order[1];
-				order[0] = order[2 + 1];
-				order[1] = order[2 + 0];
-				break;
-		}
-	}
+        switch (c)
+        {
+            case 3:
+                reflect ^= 03;
+            case 0:
+                order[2 + 0] = order[0];
+                order[2 + 1] = order[1];
+                order[0] = order[2 + 1];
+                order[1] = order[2 + 0];
+                break;
+        }
+    }
 }
 
 /*--------------------------------------------------------------------*/
 /* 3D Hilbert Space-filling curve */
 
 void hsfc3d(unsigned coord[], /* IN: Normalized integer coordinates */
-unsigned * nkey, /* IN: Word length of 'key' */
-unsigned key[]) /* OUT: space-filling curve key */
+            unsigned * nkey, /* IN: Word length of 'key' */
+            unsigned key[]) /* OUT: space-filling curve key */
 {
-	static int init = 0;
-	static unsigned char gray_inv[2 * 2 * 2];
+    static int init = 0;
+    static unsigned char gray_inv[2 * 2 * 2];
+    
+    const unsigned NKey = (3 < *nkey) ? 3 : (*nkey);
+    const unsigned NBits = ( MaxBits * NKey) / 3;
+    
+    unsigned i;
+    unsigned char axis[3 + 3];
+    
+    /* GRAY coding */
 
-	const unsigned NKey = (3 < *nkey) ? 3 : (*nkey);
-	const unsigned NBits = ( MaxBits * NKey) / 3;
+    if(!init)
+    {
+        unsigned char gray[2 * 2 * 2];
+        register unsigned k;
+        register unsigned j;
+        
+        gray[0] = 0;
+        for(k = 1; k < sizeof(gray); k <<= 1)
+        {
+            for(j = 0; j < k; j++)
+                gray[k + j] = k | gray[k - (j + 1)];
+        }
+        for(k = 0; k < sizeof(gray); k++)
+            gray_inv[gray[k]] = k;
+        init = 1;
+    }
+    
+    /* Zero out the key */
 
-	unsigned i;
-	unsigned char axis[3 + 3];
+    for(i = 0; i < NKey; ++i)
+        key[i] = 0;
+    
+    axis[0] = 0 << 1;
+    axis[1] = 1 << 1;
+    axis[2] = 2 << 1;
+    
+    for(i = 1; i <= NBits; i++)
+    {
+        const unsigned s = MaxBits - i;
+        const unsigned c = gray_inv[((((coord[axis[0] >> 1] >> s) ^ axis[0]) & 01) << 0)
+                | ((((coord[axis[1] >> 1] >> s) ^ axis[1]) & 01) << 1)
+                | ((((coord[axis[2] >> 1] >> s) ^ axis[2]) & 01) << 2)];
+        unsigned n;
+        
+        /* Set the 3bits */
 
-	/* GRAY coding */
+        for(n = 0; n < 3; ++n)
+        {
+            const unsigned bit = 01 & (c >> (2 - n)); /* Bit value  */
+            const unsigned off = 3 * i + n; /* Bit offset */
+            const unsigned which = off / MaxBits; /* Which word */
+            const unsigned shift = MaxBits - off % MaxBits; /* Which bits */
+            
+            if( MaxBits == shift)
+            { /* Word boundary */
+                key[which - 1] |= bit;
+            }
+            else
+            {
+                key[which] |= bit << shift;
+            }
+        }
+        
+        /* Determine the recursive quadrant */
 
-	if (!init) {
-		unsigned char gray[2 * 2 * 2];
-		register unsigned k;
-		register unsigned j;
-
-		gray[0] = 0;
-		for (k = 1; k < sizeof(gray); k <<= 1) {
-			for (j = 0; j < k; j++)
-				gray[k + j] = k | gray[k - (j + 1)];
-		}
-		for (k = 0; k < sizeof(gray); k++)
-			gray_inv[gray[k]] = k;
-		init = 1;
-	}
-
-	/* Zero out the key */
-
-	for (i = 0; i < NKey; ++i)
-		key[i] = 0;
-
-	axis[0] = 0 << 1;
-	axis[1] = 1 << 1;
-	axis[2] = 2 << 1;
-
-	for (i = 1; i <= NBits; i++) {
-		const unsigned s = MaxBits - i;
-		const unsigned c = gray_inv[((((coord[axis[0] >> 1] >> s) ^ axis[0]) & 01) << 0)
-		    | ((((coord[axis[1] >> 1] >> s) ^ axis[1]) & 01) << 1)
-		    | ((((coord[axis[2] >> 1] >> s) ^ axis[2]) & 01) << 2)];
-		unsigned n;
-
-		/* Set the 3bits */
-
-		for (n = 0; n < 3; ++n) {
-			const unsigned bit = 01 & (c >> (2 - n)); /* Bit value  */
-			const unsigned off = 3 * i + n; /* Bit offset */
-			const unsigned which = off / MaxBits; /* Which word */
-			const unsigned shift = MaxBits - off % MaxBits; /* Which bits */
-
-			if ( MaxBits == shift) { /* Word boundary */
-				key[which - 1] |= bit;
-			} else {
-				key[which] |= bit << shift;
-			}
-		}
-
-		/* Determine the recursive quadrant */
-
-		axis[3 + 0] = axis[0];
-		axis[3 + 1] = axis[1];
-		axis[3 + 2] = axis[2];
-
-		switch (c) {
-			case 0:
-				axis[0] = axis[3 + 2];
-				axis[1] = axis[3 + 1];
-				axis[2] = axis[3 + 0];
-				break;
-			case 1:
-				axis[0] = axis[3 + 0];
-				axis[1] = axis[3 + 2];
-				axis[2] = axis[3 + 1];
-				break;
-			case 2:
-				axis[0] = axis[3 + 0];
-				axis[1] = axis[3 + 1];
-				axis[2] = axis[3 + 2];
-				break;
-			case 3:
-				axis[0] = axis[3 + 2] ^ 01;
-				axis[1] = axis[3 + 0] ^ 01;
-				axis[2] = axis[3 + 1];
-				break;
-			case 4:
-				axis[0] = axis[3 + 2];
-				axis[1] = axis[3 + 0] ^ 01;
-				axis[2] = axis[3 + 1] ^ 01;
-				break;
-			case 5:
-				axis[0] = axis[3 + 0];
-				axis[1] = axis[3 + 1];
-				axis[2] = axis[3 + 2];
-				break;
-			case 6:
-				axis[0] = axis[3 + 0];
-				axis[1] = axis[3 + 2] ^ 01;
-				axis[2] = axis[3 + 1] ^ 01;
-				break;
-			case 7:
-				axis[0] = axis[3 + 2] ^ 01;
-				axis[1] = axis[3 + 1];
-				axis[2] = axis[3 + 0] ^ 01;
-				break;
-			default:
-				exit(-1);
-		}
-	}
+        axis[3 + 0] = axis[0];
+        axis[3 + 1] = axis[1];
+        axis[3 + 2] = axis[2];
+        
+        switch (c)
+        {
+            case 0:
+                axis[0] = axis[3 + 2];
+                axis[1] = axis[3 + 1];
+                axis[2] = axis[3 + 0];
+                break;
+            case 1:
+                axis[0] = axis[3 + 0];
+                axis[1] = axis[3 + 2];
+                axis[2] = axis[3 + 1];
+                break;
+            case 2:
+                axis[0] = axis[3 + 0];
+                axis[1] = axis[3 + 1];
+                axis[2] = axis[3 + 2];
+                break;
+            case 3:
+                axis[0] = axis[3 + 2] ^ 01;
+                axis[1] = axis[3 + 0] ^ 01;
+                axis[2] = axis[3 + 1];
+                break;
+            case 4:
+                axis[0] = axis[3 + 2];
+                axis[1] = axis[3 + 0] ^ 01;
+                axis[2] = axis[3 + 1] ^ 01;
+                break;
+            case 5:
+                axis[0] = axis[3 + 0];
+                axis[1] = axis[3 + 1];
+                axis[2] = axis[3 + 2];
+                break;
+            case 6:
+                axis[0] = axis[3 + 0];
+                axis[1] = axis[3 + 2] ^ 01;
+                axis[2] = axis[3 + 1] ^ 01;
+                break;
+            case 7:
+                axis[0] = axis[3 + 2] ^ 01;
+                axis[1] = axis[3 + 1];
+                axis[2] = axis[3 + 0] ^ 01;
+                break;
+            default:
+                exit(-1);
+        }
+    }
 }
 
 /*--------------------------------------------------------------------*/
 
 void fhsfc2d_(double coord[], /* IN: Normalized floating point coordinates */
-unsigned * nkey, /* IN: Word length of key */
-unsigned key[]) /* OUT: space-filling curve key */
+              unsigned * nkey, /* IN: Word length of key */
+              unsigned key[]) /* OUT: space-filling curve key */
 {
-	const unsigned imax = IScale;
-	const double c0 = (coord[0] <= 0) ? 0 : imax * coord[0];
-	const double c1 = (coord[1] <= 0) ? 0 : imax * coord[1];
-	unsigned c[2];
-	c[0] = (unsigned) ((imax < c0) ? imax : c0);
-	c[1] = (unsigned) ((imax < c1) ? imax : c1);
-	hsfc2d(c, nkey, key);
+    const unsigned imax = IScale;
+    const double c0 = (coord[0] <= 0) ? 0 : imax * coord[0];
+    const double c1 = (coord[1] <= 0) ? 0 : imax * coord[1];
+    unsigned c[2];
+    c[0] = (unsigned) ((imax < c0) ? imax : c0);
+    c[1] = (unsigned) ((imax < c1) ? imax : c1);
+    hsfc2d(c, nkey, key);
 }
 
 void fhsfc3d(double coord[], /* IN: Normalized floating point coordinates */
-unsigned * nkey, /* IN: Word length of key */
-unsigned key[]) /* OUT: space-filling curve key */
+             unsigned * nkey, /* IN: Word length of key */
+             unsigned key[]) /* OUT: space-filling curve key */
 {
-	const unsigned imax = IScale;
-	const double c0 = (coord[0] <= 0) ? 0 : imax * coord[0];
-	const double c1 = (coord[1] <= 0) ? 0 : imax * coord[1];
-	const double c2 = (coord[2] <= 0) ? 0 : imax * coord[2];
-	unsigned c[3];
-	c[0] = (unsigned) ((imax < c0) ? imax : c0);
-	c[1] = (unsigned) ((imax < c1) ? imax : c1);
-	c[2] = (unsigned) ((imax < c2) ? imax : c2);
-	hsfc3d(c, nkey, key);
+    const unsigned imax = IScale;
+    const double c0 = (coord[0] <= 0) ? 0 : imax * coord[0];
+    const double c1 = (coord[1] <= 0) ? 0 : imax * coord[1];
+    const double c2 = (coord[2] <= 0) ? 0 : imax * coord[2];
+    unsigned c[3];
+    c[0] = (unsigned) ((imax < c0) ? imax : c0);
+    c[1] = (unsigned) ((imax < c1) ? imax : c1);
+    c[2] = (unsigned) ((imax < c2) ? imax : c2);
+    hsfc3d(c, nkey, key);
 }
 

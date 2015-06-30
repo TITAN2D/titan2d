@@ -18,7 +18,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
- 
+
 #include "../header/hpfem.h"
 
 /*! element_weight() cycles through the element Hashtable (listing of all 
@@ -33,54 +33,58 @@
  *  function is calculated and stored in global_weight[] (i.e. the sum of 
  *  sub_weight[] from all processors).
  */
-double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int nump) {
-  int i,j,k, counter;
-  double tiny = GEOFLOW_TINY;
-  int el_counter = 0;
-  double evalue = 1;
-  double sub_weight[2] = {0,0}; // second number is to keep track of the number of objects
-  
-  //-------------------go through all the elements of the subdomain and  
-  //-------------------find the edge states
-
-  HashEntryPtr* buck = El_Table->getbucketptr();
-  for(i=0; i<El_Table->get_no_of_buckets(); i++)
-    if(*(buck+i))
-      {
-	HashEntryPtr currentPtr = *(buck+i);
-	while(currentPtr)
-	  {
-	    Element* Curr_El=(Element*)(currentPtr->value);
-	    if((Curr_El->get_adapted_flag()>0)//&&
-	       //((*(Curr_El->get_state_vars()+0)>GEOFLOW_TINY)||
-	       //(Curr_El->get_adapted_flag()==BUFFER))
-	       ){ //Keith added this
-	      //if this element doesn't belong on this processor don't involve!!! 
-	      Curr_El->calc_flux_balance(NodeTable);
-	      //sub_weight[0] += *(Curr_El->get_el_error())+1.;
-	      if(*(Curr_El->get_state_vars()+0)>GEOFLOW_TINY){
-		sub_weight[1] += 1;
-		sub_weight[0] += *(Curr_El->get_el_error());
-	      }
-	      else if(Curr_El->get_adapted_flag()==BUFFER){
-		sub_weight[1] += 0.1;
-		sub_weight[0] += *(Curr_El->get_el_error())*0.1;
-	      }	      
-	    }
-	    
-	    currentPtr=currentPtr->next;      	    
-	  }
-      }
-
-  double global_weight[2];
-  i = MPI_Allreduce(sub_weight, global_weight, 2,
-		    MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  
-  //global_weight[0] = (global_weight[0]-global_weight[1])/global_weight[1];
-  if(global_weight[1]>0.0)
-    global_weight[0]=(global_weight[0])/global_weight[1]; //to protect from division by zero
-  else
-    global_weight[0]=1.0; //just to make it nonzero
-
-  return global_weight[0];
+double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int nump)
+{
+    int i, j, k, counter;
+    double tiny = GEOFLOW_TINY;
+    int el_counter = 0;
+    double evalue = 1;
+    double sub_weight[2] =
+    { 0, 0 }; // second number is to keep track of the number of objects
+    
+    //-------------------go through all the elements of the subdomain and  
+    //-------------------find the edge states
+    
+    HashEntryPtr* buck = El_Table->getbucketptr();
+    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
+        if(*(buck + i))
+        {
+            HashEntryPtr currentPtr = *(buck + i);
+            while (currentPtr)
+            {
+                Element* Curr_El = (Element*) (currentPtr->value);
+                if((Curr_El->get_adapted_flag() > 0)  //&&
+                //((*(Curr_El->get_state_vars()+0)>GEOFLOW_TINY)||
+                //(Curr_El->get_adapted_flag()==BUFFER))
+                )
+                { //Keith added this
+                  //if this element doesn't belong on this processor don't involve!!! 
+                    Curr_El->calc_flux_balance(NodeTable);
+                    //sub_weight[0] += *(Curr_El->get_el_error())+1.;
+                    if(*(Curr_El->get_state_vars() + 0) > GEOFLOW_TINY)
+                    {
+                        sub_weight[1] += 1;
+                        sub_weight[0] += *(Curr_El->get_el_error());
+                    }
+                    else if(Curr_El->get_adapted_flag() == BUFFER)
+                    {
+                        sub_weight[1] += 0.1;
+                        sub_weight[0] += *(Curr_El->get_el_error()) * 0.1;
+                    }
+                }
+                
+                currentPtr = currentPtr->next;
+            }
+        }
+    
+    double global_weight[2];
+    i = MPI_Allreduce(sub_weight, global_weight, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+    //global_weight[0] = (global_weight[0]-global_weight[1])/global_weight[1];
+    if(global_weight[1] > 0.0)
+        global_weight[0] = (global_weight[0]) / global_weight[1]; //to protect from division by zero
+    else
+        global_weight[0] = 1.0; //just to make it nonzero
+                
+    return global_weight[0];
 }

@@ -19,38 +19,43 @@
 #define BOUNDARY_PREPROC_H
 #include "node_preproc.h"
 
-class BoundaryPreproc {
-
-	friend class ElementPreproc;
+class BoundaryPreproc
+{
+    
+    friend class ElementPreproc;
 
 public:
-
-	BoundaryPreproc();
-	void setparameters(NodePreproc*, double, double, int);
-	NodePreproc* get_boundary_node() {
-		return node;
-	}
-	;
-	int get_type() {
-		return type;
-	}
-	;
-	double get_x_value() {
-		return x_value;
-	}
-	;
-	double get_y_value() {
-		return y_value;
-	}
-	;
-	void write_b_data(ofstream*);
-	void write_b_data_bin(FILE *);
+    
+    BoundaryPreproc();
+    void setparameters(NodePreproc*, double, double, int);
+    NodePreproc* get_boundary_node()
+    {
+        return node;
+    }
+    ;
+    int get_type()
+    {
+        return type;
+    }
+    ;
+    double get_x_value()
+    {
+        return x_value;
+    }
+    ;
+    double get_y_value()
+    {
+        return y_value;
+    }
+    ;
+    void write_b_data(ofstream*);
+    void write_b_data_bin(FILE *);
 
 private:
-	NodePreproc* node;
-	int type; //-2 essential -3 natural
-	double x_value;
-	double y_value;
-
+    NodePreproc* node;
+    int type; //-2 essential -3 natural
+    double x_value;
+    double y_value;
+    
 };
 #endif

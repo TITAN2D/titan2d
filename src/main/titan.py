@@ -246,7 +246,14 @@ class TitanSimulation(cxxTitanSimulation):
         #Test if flow reaches height [m] ...
         self.test_height = test_height
         #... at test point (x and y location)
-        if test_location!=None:
+        if test_location==None:
+            self.test_location_x = None
+            self.test_location_y = None
+        else:
+            if not isinstance(test_location, (list, tuple)):
+                raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
+            if len(test_location)!=2:
+                raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
             self.test_location_x = test_location[0]
             self.test_location_y = test_location[1]
         

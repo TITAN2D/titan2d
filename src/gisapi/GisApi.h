@@ -28,111 +28,116 @@ class GisLabels;
 class GisLines;
 
 //! structure holding the GIS header
-typedef struct {
-	//! minimum z value
-	double zmin;
+typedef struct
+{
+    //! minimum z value
+    double zmin;
 
-	//! maximum z value
-	double zmax;
+    //! maximum z value
+    double zmax;
 
-	//! minimum x value
-	double xmin;
+    //! minimum x value
+    double xmin;
 
-	//! maximum x value
-	double xmax;
+    //! maximum x value
+    double xmax;
 
-	//! minimum y value
-	double ymin;
+    //! minimum y value
+    double ymin;
 
-	//! maximum y value
-	double ymax;
+    //! maximum y value
+    double ymax;
 
-	//! GIS cell edge size
-	double resolution;
+    //! GIS cell edge size
+    double resolution;
 
-	//! number of rows of GIS cells or points
-	int nrows;
+    //! number of rows of GIS cells or points
+    int nrows;
 
-	//! number of columns of GIS cells or points
-	int ncols;
-	double wxmin;
-	double wxmax;
-	double wymin;
-	double wymax;
-	double wresolution;
-	int wnrows;
-	int wncols;
+    //! number of columns of GIS cells or points
+    int ncols;
+    double wxmin;
+    double wxmax;
+    double wymin;
+    double wymax;
+    double wresolution;
+    int wnrows;
+    int wncols;
 
-	//! GDAL = 2, GRASS = 1 (default)
-	int Format;
-	//! string holding a GIS complete path.
-	char *datafile;
+    //! GDAL = 2, GRASS = 1 (default)
+    int Format;
+    //! string holding a GIS complete path.
+    char *datafile;
 
-	//! flag saying wether the file is compressed or not
-	int compressed;
+    //! flag saying wether the file is compressed or not
+    int compressed;
 } Gis_Head;
 
 //! structure holding the GIS terrain elevation data
-typedef struct {
-	//! GIS header
-	Gis_Head ghead;
+typedef struct
+{
+    //! GIS header
+    Gis_Head ghead;
 
-	//! array holding elevation data at GIS grid points
-	float **elev;
+    //! array holding elevation data at GIS grid points
+    float **elev;
 
-	//! array holding x direction slope data at GIS grid points
-	float **xslope;
+    //! array holding x direction slope data at GIS grid points
+    float **xslope;
 
-	//! array holding y direction slope data at GIS grid points
-	float **yslope;
+    //! array holding y direction slope data at GIS grid points
+    float **yslope;
 
-	//! array holding slope (actually I think this is a mixed directions second order partial derivative first order x, first order y)) data at GIS grid points
-	float **slope;
+    //! array holding slope (actually I think this is a mixed directions second order partial derivative first order x, first order y)) data at GIS grid points
+    float **slope;
 
-	//! array holding curvature (actually I think this is second derivative rather than curvature) in the x direction data at GIS grid points
-	float **xcurv;
+    //! array holding curvature (actually I think this is second derivative rather than curvature) in the x direction data at GIS grid points
+    float **xcurv;
 
-	//! array holding (actually I think this is second derivative rather than curvature) in the y direction data at GIS grid points
-	float **ycurv;
+    //! array holding (actually I think this is second derivative rather than curvature) in the y direction data at GIS grid points
+    float **ycurv;
 } Gis_Grid;
 
 //! structure holding the GIS material map
-typedef struct {
-	//! GIS header
-	Gis_Head ghead;
+typedef struct
+{
+    //! GIS header
+    Gis_Head ghead;
 
-	//! number of categories (materials possibly plus 1 for 0 state)
-	int ncats;
+    //! number of categories (materials possibly plus 1 for 0 state)
+    int ncats;
 
-	//! array holding the category values (which material at each GIS grid point)
-	char **cvals;
+    //! array holding the category values (which material at each GIS grid point)
+    char **cvals;
 
-	//! array of pointers to strings holding the category (material) names
-	char **cnames;
+    //! array of pointers to strings holding the category (material) names
+    char **cnames;
 } Gis_Raster;
 
 //! structure holding information about a matching GIS image, for the gmfg viewer 
-typedef struct {
-	//! GIS header
-	Gis_Head ghead;
+typedef struct
+{
+    //! GIS header
+    Gis_Head ghead;
 
-	//! array of integer (color) values
-	unsigned char **ivals;
+    //! array of integer (color) values
+    unsigned char **ivals;
 
-	//! red ??lower upper triangular??
-	unsigned char rlut[256];
+    //! red ??lower upper triangular??
+    unsigned char rlut[256];
 
-	//! green ??lower upper triangular??
-	unsigned char glut[256];
+    //! green ??lower upper triangular??
+    unsigned char glut[256];
 
-	//! blue ??lower upper triangular??
-	unsigned char blut[256];
+    //! blue ??lower upper triangular??
+    unsigned char blut[256];
 } Gis_Image;
 
 //! structure holding information about GIS vector data (putting roads, bridges, buildings etc on the image map), for the gmfg viewer 
-typedef struct {
-	GisLabels *glabels;
-	GisLines *glines;
+typedef struct
+{
+    GisLabels *glabels;
+    GisLines *glines;
 } Gis_Vector;
 
 #define G_API_MAXFLOAT 1.0e31
@@ -151,7 +156,8 @@ typedef struct {
 /* SELECTION OF DATA */
 /***************************************************************/
 //! initialize the GIS digital elevation map for all formats
-int Initialize_GIS_data(const char *GISDbase, const char *location, const char *mapset, const char *raster, const int format);
+int Initialize_GIS_data(const char *GISDbase, const char *location, const char *mapset, const char *raster,
+                        const int format);
 
 //! initialize the GIS digital elevation map for grass format
 int Initialize_GIS_data(const char *GISDbase, const char *location, const char *mapset, const char *raster);
@@ -310,51 +316,44 @@ int Get_curvature(double resolution, double x, double y, double *xcurv, double *
 int Get_raster_id(double resolution, double x, double y, int *category_id);
 
 //! Return RGB at point XY of image, Input: resolution - resolution, x - point X coordinate, y - Point Y coordinate, Output: r - R component at point XY of image, g - G component at point XY of image, b - B component at point XY of image, Return: 0 if OK, see table otherwise
-int Get_image(double resolution, double x, double y, unsigned char *r, unsigned char *g,
-    unsigned char *b);
+int Get_image(double resolution, double x, double y, unsigned char *r, unsigned char *g, unsigned char *b);
 
 /***************************************************************/
 /* GETTING VALUES FOR MULTIPLE POINTS */
 /***************************************************************/
 //! Return elevation at points XY of original grid, Input: resolution - resolution, x - array with points X coordinate, y - array with points Y coordinate, number_of_locations - number of points, Output: elev - elevation at points XY of original grid, Return: 0 if OK, see table otherwise
-int Get_elevation_array(double *resolution, double *x, double *y, double *elev,
-    int number_of_locations);
+int Get_elevation_array(double *resolution, double *x, double *y, double *elev, int number_of_locations);
 
 //! Return slope at points XY of original grid, Input: resolution - resolution, x - array with points X coordinate, y - array with points Y coordinate, number_of_locations - number of points, Output: xslope - slopes at points XY of original grid in X direction, yslope - slopes at points XY of original grid in Y direction, Return: 0 if OK, see table otherwise
-int Get_slope_array(double *resolution, double *x, double *y, double *xslope, double *yslope,
-    int number_of_locations);
+int Get_slope_array(double *resolution, double *x, double *y, double *xslope, double *yslope, int number_of_locations);
 
 //! Return curvature at points XY of original grid, Input: resolution - resolution, x - array with points X coordinate, y - array with points Y coordinate, number_of_locations - number of points, Output: xcurv - curvature at point XY of original grid in X direction, ycurv - curvature at point XY of original grid in Y direction, Return: 0 if OK, see table otherwise
 int Get_curvature_array(double *resolution, double *x, double *y, double *xcurv, double *ycurv,
-    int number_of_locations);
+                        int number_of_locations);
 
 //! Return category number at points XY of raster map, Input: resolution - resolution, x - array with points X coordinate, y - array with points Y coordinate, number_of_locations - number of points, Output: category_id - category number at points XY of raster map, Return: 0 if OK, see table otherwise
-int Get_raster_id_array(double *resolution, double *x, double *y, int *category_id,
-    int number_of_locations);
+int Get_raster_id_array(double *resolution, double *x, double *y, int *category_id, int number_of_locations);
 
 //! Return RGB at point XY of image, Input: resolution - resolution, x - array with points X coordinate, y - array with points Y coordinate, number_of_locations - number of points, Output: r - R component at points XY of image, g - G component at points XY of image, b - B component at points XY of image, Return: 0 if OK, see table otherwise
-int Get_image_array(double *resolution, double *x, double *y, unsigned char *r, unsigned char *g,
-    unsigned char *b, int number_of_locations);
+int Get_image_array(double *resolution, double *x, double *y, unsigned char *r, unsigned char *g, unsigned char *b,
+                    int number_of_locations);
 
 //! Return elevation at points XY of original grid, Input: resolution - resolution, xmin - minimum X coordinate of points window, xmax - maximum X coordinate of points window, ymin - minimum Y coordinate of points window, ymax - maximum Y coordinate of points window, Output: elev - elevation at points XY of selected window, Return: 0 if OK, see table otherwise
-int Get_elevation_grid(double resolution, double xmin, double xmax, double ymin, double ymax,
-    double *elev);
+int Get_elevation_grid(double resolution, double xmin, double xmax, double ymin, double ymax, double *elev);
 
 //! Return elevation at points XY of original grid, Input: resolution - resolution, xmin - minimum X coordinate of points window, xmax - maximum X coordinate of points window, ymin - minimum Y coordinate of points window, ymax - maximum Y coordinate of points window, Output: elev - elevation at points XY of selected window, Return: 0 if OK, see table otherwise
-int Get_slope_grid(double resolution, double xmin, double xmax, double ymin, double ymax,
-    double *slope);
+int Get_slope_grid(double resolution, double xmin, double xmax, double ymin, double ymax, double *slope);
 
 //! Return elevation at points XY of original grid, Input: resolution - resolution, xmin - minimum X coordinate of points window, xmax - maximum X coordinate of points window, ymin - minimum Y coordinate of points window, ymax - maximum Y coordinate of points window, Output: elev - elevation at points XY of selected window, Return: 0 if OK, see table otherwise
-int Get_curvature_grid(double resolution, double xmin, double xmax, double ymin, double ymax,
-    double *xcurv, double *ycurv);
+int Get_curvature_grid(double resolution, double xmin, double xmax, double ymin, double ymax, double *xcurv,
+                       double *ycurv);
 
 //! Return category number at points XY of original grid, Input: resolution - resolution, xmin - minimum X coordinate of points window, xmax - maximum X coordinate of points window, ymin - minimum Y coordinate of points window, ymax - maximum Y coordinate of points window, Output: category_id - category number at points XY of selected window, Return: 0 if OK, see table otherwise
-int Get_raster_id_grid(double resolution, double xmin, double xmax, double ymin, double ymax,
-    int *category_id);
+int Get_raster_id_grid(double resolution, double xmin, double xmax, double ymin, double ymax, int *category_id);
 
 //! Return RGB at points XY of original grid, Input: resolution - resolution, xmin - minimum X coordinate of points window, xmax - maximum X coordinate of points window, ymin - minimum Y coordinate of points window, ymax - maximum Y coordinate of points window, Output: r - R component at points XY of selected window, g - G component at points XY of selected window, b - B component at points XY of selected window, Return: 0 if OK, see table otherwise
-int Get_image_grid(double resolution, double xmin, double xmax, double ymin, double ymax,
-    unsigned char *r, unsigned char *g, unsigned char *b);
+int Get_image_grid(double resolution, double xmin, double xmax, double ymin, double ymax, unsigned char *r,
+                   unsigned char *g, unsigned char *b);
 
 /***************************************************************/
 /* SETTING GLOBAL PARAMETERS */

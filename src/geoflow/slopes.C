@@ -22,21 +22,23 @@
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
 
-void slopes(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr) {
-	int i;
-	//-------------------go through all the elements of the subdomain------------------------
-	//-------------------and   --------------------------
-
-	HashEntryPtr* buck = El_Table->getbucketptr();
-	/* mdj 2007-02 */
-	HashEntryPtr currentPtr;
-	Element* Curr_El;
-	int Nelms=El_Table->getNumberOfLocalElements();
-	//if this element does not belong on this processor don't involve!!!
-	Element** Elms=(Element**)El_Table->getLocalElementsValues();
+void slopes(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr)
+{
+    int i;
+    //-------------------go through all the elements of the subdomain------------------------
+    //-------------------and   --------------------------
+    
+    HashEntryPtr* buck = El_Table->getbucketptr();
+    /* mdj 2007-02 */
+    HashEntryPtr currentPtr;
+    Element* Curr_El;
+    int Nelms = El_Table->getNumberOfLocalElements();
+    //if this element does not belong on this processor don't involve!!!
+    Element** Elms = (Element**) El_Table->getLocalElementsValues();
 //#pragma omp parallel for private(currentPtr,Curr_El)
-	for (i = 0; i < Nelms; i++){
-		Elms[i]->get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
-	}
-	return;
+    for(i = 0; i < Nelms; i++)
+    {
+        Elms[i]->get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
+    }
+    return;
 }

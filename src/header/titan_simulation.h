@@ -26,7 +26,8 @@
  * Thickness of Initial Volume, h(x,y)
  * P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
  */
-class cxxTitanPile{
+class cxxTitanPile
+{
 public:
     cxxTitanPile();
     ~cxxTitanPile();
@@ -57,7 +58,8 @@ public:
 /**
  * cxxTitanFluxSource
  */
-class cxxTitanFluxSource{
+class cxxTitanFluxSource
+{
 public:
     cxxTitanFluxSource();
     ~cxxTitanFluxSource();
@@ -90,22 +92,25 @@ public:
 /**
  * cxxTitanDischargePlane
  */
-class cxxTitanDischargePlane{
+class cxxTitanDischargePlane
+{
 public:
     cxxTitanDischargePlane();
-    cxxTitanDischargePlane::cxxTitanDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b, const double m_y_b);
+    cxxTitanDischargePlane::cxxTitanDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b,
+                                                   const double m_y_b);
     ~cxxTitanDischargePlane();
 
     cxxTitanDischargePlane& operator=(const cxxTitanDischargePlane& other);
 
-    double x_a,y_a,x_b,y_b;
+    double x_a, y_a, x_b, y_b;
     void print0();
 };
 
 /**
  * MaterialMap
  */
-class MaterialMap {
+class MaterialMap
+{
 public:
     MaterialMap();
     ~MaterialMap();
@@ -123,23 +128,24 @@ public:
     int get_material_count();
 };
 
-class cxxTitanSimulation {
+class cxxTitanSimulation
+{
 public:
-	cxxTitanSimulation();
-	~cxxTitanSimulation();
-	void run();
-	void input_summary();
+    cxxTitanSimulation();
+    ~cxxTitanSimulation();
+    void run();
+    void input_summary();
 
-	int myid;
-	int numprocs;
+    int myid;
+    int numprocs;
 
-	static const int GDAL=GDAL;
-	static const int GIS_GRASS=GIS_GRASS;
+    static const int GDAL = GDAL;
+    static const int GIS_GRASS = GIS_GRASS;
 
-	//GIS
-	//!>GIS data format, 1 if GIS 0 if gdal
-	int gis_format;
-	//If using GIS GRASS data format:
+    //GIS
+    //!>GIS data format, 1 if GIS 0 if gdal
+    int gis_format;
+    //If using GIS GRASS data format:
     //!>the full path of the GIS database
     std::string topomain;
     //!>the location
@@ -160,7 +166,7 @@ public:
     //!>Discharge planes
     std::vector<cxxTitanDischargePlane> discharge_planes;
 
-	bool region_limits_set;
+    bool region_limits_set;
 
     double min_location_x;
     double max_location_x;

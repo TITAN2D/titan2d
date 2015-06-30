@@ -26,114 +26,129 @@ using namespace std;
 
 class GisLabels;
 
-class GisLine {
+class GisLine
+{
 public:
+    
+    GisLine();
+    GisLine(vector<double>& xS, vector<double>& yS);
 
-	GisLine();
-	GisLine(vector<double>& xS, vector<double>& yS);
+    virtual ~GisLine()
+    {
+    }
+    
+    int numberOfPoints()
+    {
+        return _nPoints;
+    }
+    
+    void getPoints(double* xCoords, double* yCoords);
 
-	virtual ~GisLine() {
-	}
+    void insertPoints(double x, double y);
 
-	int numberOfPoints() {
-		return _nPoints;
-	}
+    void setIndex(int lineIndex)
+    {
+        _lineIndex = lineIndex;
+    }
+    
+    void setLabel(string lineLabel)
+    {
+        _lineLabel = lineLabel;
+    }
+    
+    int getIndex()
+    {
+        return _lineIndex;
+    }
+    
+    string getLabel()
+    {
+        return _lineLabel;
+    }
+    
+    bool findPoints(double x, double y, double scale);
 
-	void getPoints(double* xCoords, double* yCoords);
+    void print();
 
-	void insertPoints(double x, double y);
-
-	void setIndex(int lineIndex) {
-		_lineIndex = lineIndex;
-	}
-
-	void setLabel(string lineLabel) {
-		_lineLabel = lineLabel;
-	}
-
-	int getIndex() {
-		return _lineIndex;
-	}
-
-	string getLabel() {
-		return _lineLabel;
-	}
-
-	bool findPoints(double x, double y, double scale);
-
-	void print();
-
-	vector<double> _xS;
-	vector<double> _yS;
-	GisLine(const GisLine& a) {
-		_xS = a._xS;
-		_yS = a._yS;
-		_lineIndex = 0;
-		_nPoints = (int) _xS.size();
-	}
-
-	GisLine& operator=(const GisLine& a) {
-		if (this != &a) {
-			_xS = a._xS;
-			_yS = a._yS;
-			_lineIndex = 0;
-			_nPoints = (int) _xS.size();
-		}
-		return *this;
-	}
-
+    vector<double> _xS;
+    vector<double> _yS;
+    GisLine(const GisLine& a)
+    {
+        _xS = a._xS;
+        _yS = a._yS;
+        _lineIndex = 0;
+        _nPoints = (int) _xS.size();
+    }
+    
+    GisLine& operator=(const GisLine& a)
+    {
+        if(this != &a)
+        {
+            _xS = a._xS;
+            _yS = a._yS;
+            _lineIndex = 0;
+            _nPoints = (int) _xS.size();
+        }
+        return *this;
+    }
+    
 protected:
-	int _nPoints;
-	int _lineIndex;
-	string _lineLabel;
+    int _nPoints;
+    int _lineIndex;
+    string _lineLabel;
 private:
-
+    
 };
 
-class GisLines {
+class GisLines
+{
 public:
+    
+    GisLines(const string& name);
 
-	GisLines(const string& name);
+    virtual ~GisLines()
+    {
+    }
+    
+    bool good()
+    {
+        return _status;
+    }
+    
+    int numberOfLines()
+    {
+        return _nLines;
+    }
+    
+    void insertLine(const GisLine& readLine)
+    {
+        _lines.push_back(readLine);
+    }
+    
+    int getLineSize(int nLine, int* lineSize);
 
-	virtual ~GisLines() {
-	}
+    int getIndex(int nLine, int* lineIndex);
 
-	bool good() {
-		return _status;
-	}
+    int getLabel(int nLine, string* lineStr);
 
-	int numberOfLines() {
-		return _nLines;
-	}
+    int getLine(int nLine, double* x, double* y);
 
-	void insertLine(const GisLine& readLine) {
-		_lines.push_back(readLine);
-	}
+    void setIndices(GisLabels& labels, double scale);
 
-	int getLineSize(int nLine, int* lineSize);
-
-	int getIndex(int nLine, int* lineIndex);
-
-	int getLabel(int nLine, string* lineStr);
-
-	int getLine(int nLine, double* x, double* y);
-
-	void setIndices(GisLabels& labels, double scale);
-
-	void print();
+    void print();
 
 protected:
+    
+    bool _status;
 
-	bool _status;
-
-	int _nLines;
-	vector<GisLine> _lines;
+    int _nLines;
+    vector<GisLine> _lines;
 
 private:
-
+    
 // No copy allowed
-	GisLines(const GisLines&);
-	GisLines& operator=(const GisLines&);
+    GisLines(const GisLines&);
+    GisLines& operator=(const GisLines&);
 };
 
 #endif

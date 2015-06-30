@@ -18,8 +18,7 @@
 #ifndef VECTORDATPREPROC_H
 #define VECTORDATPREPROC_H
 
-
-int vectordatpreproc(const char * topomain, const char * toposub,
-        const char * topomapset, const char * topomap, const char * topovector);
+int vectordatpreproc(const char * topomain, const char * toposub, const char * topomapset, const char * topomap,
+                     const char * topovector);
 
 #endif

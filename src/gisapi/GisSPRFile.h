@@ -6,36 +6,38 @@
 #include "GisAscFile.h"
 #include "GisLines.h"
 
-class GisSPRFile: public GisAscFile {
+class GisSPRFile: public GisAscFile
+{
 public:
+    
+    GisSPRFile(const string& name, const char* mode = "r");
 
-	GisSPRFile(const string& name, const char* mode = "r");
+    virtual ~GisSPRFile()
+    {
+    }
+    
+    bool gotoPOINTSSection();
+    bool gotoLINESSection();
 
-	virtual ~GisSPRFile() {
-	}
+    bool readLabels(vector<double>& x, vector<double>& y, vector<string>& labelStr);
 
-	bool gotoPOINTSSection();
-	bool gotoLINESSection();
+    bool readFirstLine(vector<double>& x, vector<double>& y);
 
-	bool readLabels(vector<double>& x, vector<double>& y, vector<string>& labelStr);
+    bool readNextLine(vector<double>& x, vector<double>& y);
 
-	bool readFirstLine(vector<double>& x, vector<double>& y);
+    bool readINFOSection();
 
-	bool readNextLine(vector<double>& x, vector<double>& y);
-
-	bool readINFOSection();
-
-	bool gotoSection(string& sectionName);
+    bool gotoSection(string& sectionName);
 
 protected:
-
-	string _sepStr;
+    
+    string _sepStr;
 
 private:
-
+    
 // No copy allowed
-	GisSPRFile(const GisSPRFile&);
-	GisSPRFile& operator=(const GisSPRFile&);
+    GisSPRFile(const GisSPRFile&);
+    GisSPRFile& operator=(const GisSPRFile&);
 };
 
 #endif

@@ -19,56 +19,63 @@
 #ifndef NODE_PREPROC_H
 #define NODE_PREPROC_H
 
-class NodePreproc {
-
-	friend class ElementPreproc;
+class NodePreproc
+{
+    
+    friend class ElementPreproc;
 //friend class Edge;
-	friend class BoundaryPreproc;
-	friend void get_key(double*, unsigned*, unsigned*);
+    friend class BoundaryPreproc;
+    friend void get_key(double*, unsigned*, unsigned*);
 
 public:
-
-	NodePreproc(int, double*, int, int); //constructor
-	NodePreproc();
-	void setparameters(int, double*);
-	int get_nodeid() {
-		return nodeid;
-	}
-	;
-	double* get_node_coord() {
-		return node_coord;
-	}
-	;
-	double* get_coord() {
-		return node_coord;
-	}
-	;
-	void determine_the_key(unsigned, double*, double*, unsigned*, unsigned*);
-	void determine_max_min(double*, double*);
-	int get_written_flag() {
-		return written;
-	}
-	;
-	void set_written_flag() {
-		written = 1;
-	}
-	;
-	unsigned* get_key() {
-		return key;
-	}
-	;
-	void write_node_data(ofstream*);
-	void write_node_data_bin(FILE *);
-	void clear_written_flag();
-	void put_element_array_loc(int);
-	int get_element_array_loc(int);
+    
+    NodePreproc(int, double*, int, int); //constructor
+    NodePreproc();
+    void setparameters(int, double*);
+    int get_nodeid()
+    {
+        return nodeid;
+    }
+    ;
+    double* get_node_coord()
+    {
+        return node_coord;
+    }
+    ;
+    double* get_coord()
+    {
+        return node_coord;
+    }
+    ;
+    void determine_the_key(unsigned, double*, double*, unsigned*, unsigned*);
+    void determine_max_min(double*, double*);
+    int get_written_flag()
+    {
+        return written;
+    }
+    ;
+    void set_written_flag()
+    {
+        written = 1;
+    }
+    ;
+    unsigned* get_key()
+    {
+        return key;
+    }
+    ;
+    void write_node_data(ofstream*);
+    void write_node_data_bin(FILE *);
+    void clear_written_flag();
+    void put_element_array_loc(int);
+    int get_element_array_loc(int);
 
 private:
-	int nodeid;
-	double node_coord[3];
-	unsigned key[2];
-	int written;
-	int element_array_loc[2]; // used to find the elements faster
-
+    int nodeid;
+    double node_coord[3];
+    unsigned key[2];
+    int written;
+    int element_array_loc[2]; // used to find the elements faster
+    
 };
 #endif
