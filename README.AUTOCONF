@@ -1,5 +1,7 @@
 Use of autoconf and automake scripts
 
+If you are installing titan2d from github repository, also see INSTALL
+
 + New make system
 
 - All compilation logic goes into Makefile.am files 
@@ -23,10 +25,5 @@ run autoconf before configure
 if autoconf complains run:
 
 aclocal && autoconf && automake
-
-Run the following command sequence when the repository is pulled from GitHub:
-
-aclocal;autoheader;autoconf;automake --add-missing --copy
-
 
 $Id: README.AUTOCONF 224 2011-12-04 20:49:23Z dkumar $
