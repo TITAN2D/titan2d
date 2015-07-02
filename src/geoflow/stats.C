@@ -312,8 +312,13 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
     /****** calculate the rest of the stats in a ******/
     /****** straight forward manner              ******/
     /**************************************************/
-
+#ifdef TWO_PHASES
+    double Vsolid[2];
+    double Vfluid[2];
+#else
     double VxVy[2];
+#endif
+
     for(i = 0; i < num_buck; i++)
         if(*(buck + i))
         {
@@ -404,7 +409,44 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
                         yVar += xy[1] * xy[1] * dVol;
                         piler2 += (xy[0] * xy[0] + xy[1] * xy[1]) * dVol;
                         rC += sqrt((xy[0] - xCen) * (xy[0] - xCen) + (xy[1] - yCen) * (xy[1] - yCen)) * dVol;
+#ifdef TWO_PHASES
+                        v_ave += sqrt(state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]) * dA;
+                        Curr_El->eval_velocity(0.0, 0.0, Vsolid);
                         
+                        if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((state_vars[0] <= 0.0) || (0.0 <= state_vars[0])))
+                           || (!((state_vars[1] <= 0.0) || (0.0 <= state_vars[1])))
+                           || (!((state_vars[2] <= 0.0) || (0.0 <= state_vars[2])))
+                           || (!((state_vars[3] <= 0.0) || (0.0 <= state_vars[3])))
+                           || (!((state_vars[4] <= 0.0) || (0.0 <= state_vars[4])))
+                           || (!((state_vars[5] <= 0.0) || (0.0 <= state_vars[5]))))
+                        {
+                            //v_ave is NaN
+                            printf("calc_stats(): NaN detected in element={%10u,%10u} at iter=%d\n",
+                                   *(Curr_El->pass_key() + 0), *(Curr_El->pass_key() + 1), timeprops->iter);
+                            printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
+                                   *(Curr_El->get_prev_state_vars() + 0), *(Curr_El->get_prev_state_vars() + 1),
+                                   *(Curr_El->get_prev_state_vars() + 2), *(Curr_El->get_prev_state_vars() + 3),
+                                   *(Curr_El->get_prev_state_vars() + 4), *(Curr_El->get_prev_state_vars() + 5));
+                            printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", state_vars[0], state_vars[1],
+                                   state_vars[2], state_vars[3], state_vars[4], state_vars[5]);
+                            printf("prev {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
+                                   *(Curr_El->get_prev_state_vars() + 2) / (*(Curr_El->get_prev_state_vars() + 1)),
+                                   *(Curr_El->get_prev_state_vars() + 3) / (*(Curr_El->get_prev_state_vars() + 1)),
+                                   *(Curr_El->get_prev_state_vars() + 4) / (*(Curr_El->get_prev_state_vars())),
+                                   *(Curr_El->get_prev_state_vars() + 5) / (*(Curr_El->get_prev_state_vars())));
+                            printf("this {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
+                                   state_vars[2] / state_vars[1], state_vars[3] / state_vars[1],
+                                   state_vars[4] / state_vars[0], state_vars[5] / state_vars[0]);
+                            ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
+                            exit(1);
+                        }
+                        
+                        temp = sqrt(Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1]);
+                        if(temp > v_max)
+                            v_max = temp;
+                        vx_ave += state_vars[2] * dA;
+                        vy_ave += state_vars[3] * dA;
+#else                       
                         v_ave += sqrt(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]) * dA;
                         Curr_El->eval_velocity(0.0, 0.0, VxVy);
                         
@@ -433,6 +475,7 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
                             v_max = temp;
                         vx_ave += state_vars[1] * dA;
                         vy_ave += state_vars[2] * dA;
+#endif
                         
                         //these are garbage, Bin Yu wanted them when he was trying to come up
                         //with a global stopping criteria (to stop the calculation, not the pile)
@@ -444,7 +487,11 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
                                   *((Curr_El->get_coord()) + 1) * matprops->LENGTH_SCALE, &xslope, &yslope);
                         if(temp > GEOFLOW_TINY)
                         {
+#ifdef TWO_PHASES
+                            slope_ave += -(state_vars[2] * xslope + state_vars[3] * yslope) * dA / temp;
+#else
                             slope_ave += -(state_vars[1] * xslope + state_vars[2] * yslope) * dA / temp;
+#endif
                             slopevolume += dVol;
                         }
                     }
@@ -547,11 +594,12 @@ void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* m
 
         /* output Center Of Mass and x and y components of mean velocity to
          assist the dynamic gis update daemon */
+#ifndef TWO_PHASES
         FILE* fp2 = fopen("com.up", "w");
         fprintf(fp2, "%d %g %g %g %g %g %g\n", timeprops->iter, timeprops->timesec(), statprops->xcen, statprops->ycen,
                 statprops->vxmean, statprops->vymean, statprops->piler);
         fclose(fp2);
-        
+#endif 
         /* standard to screen output */
         d_time *= timeprops->TIME_SCALE;
         //chunk time

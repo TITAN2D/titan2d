@@ -88,7 +88,12 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
     int intswap;
     double *curve, maxcurve;
     int ifanynonzeroheight = 0;
+#ifdef TWO_PHASES
+    double Vsolid[2], Vfluid[2];
+#else
     double VxVy[2];
+#endif
+
     for(ibuck = 0; ibuck < num_elem_buckets; ibuck++)
     {
         entryp = *(elem_bucket_zero + ibuck);
@@ -112,9 +117,18 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
                     d_uvec = EmTemp->get_d_state_vars();
                     dx_ptr = EmTemp->get_dx();
 #ifdef SUNOS
+#ifdef TWO_PHASES
+                    double kactxy[DIMENSION];
+                    gmfggetcoef2ph_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
+                                 &(matprops_ptr->bedfrict[EmTemp->get_material()]), &(matprops_ptr->intfrict), kactxy,
+                                 (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));
+                    
+                    EmTemp->put_kactxy(kactxy);
+#else
                     gmfggetcoef_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
                                  &(matprops_ptr->bedfrict[EmTemp->get_material()]), &(matprops_ptr->intfrict),
                                  EmTemp->get_kactxy(), (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));
+#endif
                     EmTemp->calc_stop_crit(matprops_ptr);
                     intswap = EmTemp->get_stoppedflags();
 #ifdef DEBUGINHERE
@@ -126,13 +140,25 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
                     //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
                     //rule speed if it is smaller) because underestimating speed (which
                     //results in over estimating the timestep) is fatal to stability...
+#ifdef TWO_PHASES
+                    Vsolid[0] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars() + 1));
+                    Vsolid[1] = (*(EmTemp->get_state_vars() + 3)) / (*(EmTemp->get_state_vars() + 1));
+                    
+                    Vfluid[0] = (*(EmTemp->get_state_vars() + 4)) / (*(EmTemp->get_state_vars()));
+                    Vfluid[1] = (*(EmTemp->get_state_vars() + 5)) / (*(EmTemp->get_state_vars()));
+                    
+                    //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                    eigen2ph_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()), (EmTemp->get_eigenvxymax() + 1),
+                           &evalue, &tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), Vsolid, Vfluid,
+                           &(matprops_ptr->epsilon), &(matprops_ptr->flow_type));
+#else
                     VxVy[0] = (*(EmTemp->get_state_vars() + 1)) / (*(EmTemp->get_state_vars()));
                     VxVy[1] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars()));
                     
                     //eigen_(EmTemp->eval_state_vars(u_vec_alt),
                     eigen_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()), (EmTemp->get_eigenvxymax() + 1),
                            &evalue, &tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), VxVy);
-                    
+#endif               
 #endif
                     
                     //printf("evalue=%g\n",evalue);
@@ -151,18 +177,35 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
                     {
                         curve = EmTemp->get_curvature();
                         maxcurve = (dabs(curve[0]) > dabs(curve[1])) ? curve[0] : curve[1];
-                        
+#ifdef TWO_PHASES
+                        fprintf(stderr,
+                                "eigenvalue is %e for procd %d momentums are:\n \
+                     solid :(%e, %e) \n \
+                     fluid :(%e, %e) \n \
+                     for pile height %e curvature=%e (x,y)=(%e,%e)\n",
+                                evalue, myid, *(EmTemp->get_state_vars() + 2), *(EmTemp->get_state_vars() + 3),
+                                *(EmTemp->get_state_vars() + 4), *(EmTemp->get_state_vars() + 5),
+                                *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
+                                *(EmTemp->get_coord() + 1));
+                        exit(1);
+#else
                         printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
                                evalue, myid, *(EmTemp->get_state_vars() + 1), *(EmTemp->get_state_vars() + 2),
                                *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
                                *(EmTemp->get_coord() + 1));
+#endif
                     }
                     
                     min_dx_dy_evalue = c_dmin1(c_dmin1(dx_ptr[0], dx_ptr[1]) / evalue, min_dx_dy_evalue);
                 }
                 else
                 {
+#ifdef TWO_PHASES
+                    EmTemp->calc_stop_crit(matprops_ptr); // ensure decent values of kactxy
+#else
                     EmTemp->put_stoppedflags(2);
+#endif
+
 #ifdef DEBUGINHERE
                     fprintf(fp,"%d\n",EmTemp->get_stoppedflags());
 #endif

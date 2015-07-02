@@ -162,6 +162,11 @@ struct PileProps
     //!array holding pile height
     double *pileheight;
 
+#ifdef TWO_PHASES
+    //! array of volume -fractions
+    double *vol_fract;
+#endif
+
     //!array holding x coordinate of pile center
     double *xCen;
 
@@ -197,6 +202,9 @@ struct PileProps
     {
         numpiles = numpiles_in;
         pileheight = CAllocD1(numpiles);
+#ifdef TWO_PHASES
+        vol_fract = CAllocD1(numpiles);
+#endif
         xCen = CAllocD1(numpiles);
         yCen = CAllocD1(numpiles);
         majorrad = CAllocD1(numpiles);
@@ -214,6 +222,9 @@ struct PileProps
         if(numpiles > 0)
         {
             CDeAllocD1(pileheight);
+#ifdef TWO_PHASES
+            CDeAllocD1(vol_fract);
+#endif
             CDeAllocD1(xCen);
             CDeAllocD1(yCen);
             CDeAllocD1(majorrad);
@@ -468,17 +479,36 @@ struct MatProps
     //! v_f, legacy not used
     double porosity;
 
+#ifdef TWO_PHASES
+    //! density
+    double den_solid;
+
+    //! fluid density
+    double den_fluid;
+
+    //! fluid viscosity
+    double viscosity;
+
+    //! terminal velocity of a single solid particle in fluid medium
+    double v_terminal;
+#else
     //! pore fluid viscosity, legacy not used
     double mu;
 
     //! density
     double rho;
+#endif
 
     //! scaling value, ratio of HEIGHT_SCALE to LENGTH_SCALE
     double epsilon;
 
     //! slope limiting stuff
     double gamma;
+
+#ifdef TWO_PHASES
+    //! Flow type flag
+    int flow_type;
+#endif
 
     //! length scaling factor
     double LENGTH_SCALE;
@@ -499,9 +529,15 @@ struct MatProps
     double frict_tiny;
 
     //! this constructor allocates initial properties unfortunately the properties aren't known at the time this is called so dummy values are fed in instead for many if not all of these
+#ifdef TWO_PHASES
+    MatProps(int material_countin, char **matnamesin, double intfrictin, double *bedfrictin, double porosityin,
+             double muin, double rhoin, double rhofin, double epsilonin, double gammain, double frict_tinyin,
+             double lscale, double hscale, double gscale)
+#else
     MatProps(int material_countin, char **matnamesin, double intfrictin, double *bedfrictin, double porosityin,
              double muin, double rhoin, double epsilonin, double gammain, double frict_tinyin, double lscale,
              double hscale, double gscale)
+#endif
     {
         
         material_count = material_countin;
@@ -524,9 +560,14 @@ struct MatProps
         intfrict = intfrictin;
         tanintfrict = tan(intfrict);
         porosity = porosityin;
+#ifdef TWO_PHASES
+        viscosity = muin;
+        den_solid = rhoin;
+        den_fluid = rhofin;
+#else
         mu = muin;
         rho = rhoin;
-        
+#endif
         epsilon = epsilonin;
         gamma = gammain;
         frict_tiny = frict_tinyin;
@@ -577,12 +618,13 @@ struct OutLine
     //! 2-d array holding the maximum throughout time pileheight at every point
     double **pileheight;
 
+#ifndef TWO_PHASES
     //! 2-d array holding the maximum throughout time kinetice energy at every point
     double **max_kinergy;
 
     //! 2-d array holding the cummulative kinetic energy at every point
     double **cum_kinergy;
-
+#endif
     //! this is the OutLine constructor it initializes the number of cells to zero
     OutLine()
     {
@@ -629,14 +671,18 @@ struct OutLine
         printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d\n", Nx, Ny, Nx * Ny);
         
         pileheight = CAllocD2(Ny, Nx);
+#ifndef TWO_PHASES
         max_kinergy = CAllocD2(Ny, Nx);
         cum_kinergy = CAllocD2(Ny, Nx);
+#endif
         for(iy = 0; iy < Ny; iy++)
             for(ix = 0; ix < Nx; ix++)
             {
                 pileheight[iy][ix] = 0.0;
+#ifndef TWO_PHASES
                 max_kinergy[iy][ix] = 0.0;
                 cum_kinergy[iy][ix] = 0.0;
+#endif
             }
         return;
     }
@@ -658,20 +704,28 @@ struct OutLine
         Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
         
         pileheight = CAllocD2(Ny, Nx);
+#ifndef TWO_PHASES
         max_kinergy = CAllocD2(Ny, Nx);
         cum_kinergy = CAllocD2(Ny, Nx);
+#endif
         for(iy = 0; iy < Ny; iy++)
             for(ix = 0; ix < Nx; ix++)
             {
                 pileheight[iy][ix] = 0.0;
+#ifndef TWO_PHASES
                 max_kinergy[iy][ix] = 0.0;
                 cum_kinergy[iy][ix] = 0.0;
+#endif
             }
         return;
     }
     
     //! this function updates the maximum throughout time pileheight in every cell covered by an arbitrary element
+#ifdef TWO_PHASES
+    void update(double xstart, double xstop, double ystart, double ystop, double height, double h2[6])
+#else
     void update(double xstart, double xstop, double ystart, double ystop, double height, double *hv)
+#endif
     {
         int ixstart = (int) ((xstart - xminmax[0]) / dx + 0.5);
         int ixstop = (int) ((xstop - xminmax[0]) / dx + 0.5);
@@ -697,18 +751,23 @@ struct OutLine
         }
         if(iystop > Ny)
             iystop = Ny;
-        
+#ifndef TWO_PHASES
         double ke = 0.;
         if(height > 1.0E-04)
             ke = 0.5 * (hv[0] * hv[0] + hv[1] * hv[1]) / height;
+#endif
         for(int iy = iystart; iy < iystop; iy++)
             for(int ix = ixstart; ix < ixstop; ix++)
             {
+#ifndef TWO_PHASES
                 cum_kinergy[iy][ix] += ke;
+#endif
                 if(height > pileheight[iy][ix])
                     pileheight[iy][ix] = height;
+#ifndef TWO_PHASES
                 if(ke > max_kinergy[iy][ix])
                     max_kinergy[iy][ix] = ke;
+#endif
             }
         return;
     }
@@ -737,7 +796,7 @@ struct OutLine
             fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
         }
         fclose(fp);
-        
+#ifndef TWO_PHASES       
         //output max over time kinetic energy
         double ENERGY_SCALE = matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE * matprops_ptr->HEIGHT_SCALE;
         
@@ -756,7 +815,7 @@ struct OutLine
             fprintf(fp, "%g\n", max_kinergy[iy][ix] * ENERGY_SCALE);
         }
         fclose(fp);
-        
+  
         // output cummulative kinetic-energy
         sprintf(filename, "cumkerecord.%06d", statprops_ptr->runid);
         fp = fopen(filename, "w");
@@ -773,6 +832,7 @@ struct OutLine
             fprintf(fp, "%g\n", cum_kinergy[iy][ix] * ENERGY_SCALE);
         }
         fclose(fp);
+#endif
         
         // output elevation data
         fp = fopen("elevation.grid", "w");

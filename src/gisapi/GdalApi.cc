@@ -47,9 +47,9 @@ int Initialize_GDAL_data(const char *fullGispath)
     }
     else
     {
-        cout << "GIS WARNING: ";
+        cout << "FATAL ERROR:" << endl;
         cout << "Can't read the projection information from mapset" << endl;
-        //return (-4);
+        return (-4);
     }
     nx = dataset->GetRasterXSize();
     ny = dataset->GetRasterYSize();

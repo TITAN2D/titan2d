@@ -83,7 +83,11 @@ public:
     {
         counted = 0;
         father[0] = father[1] = 0; //initialize the father key to zero
-        Influx[0] = Influx[1] = Influx[2] = state_vars[0] = state_vars[1] = state_vars[2] = -1;
+        for(int i = 0; i < NUM_STATE_VARS; i++)
+        {
+            state_vars[i] = -1;
+            Influx[i] = 0.;
+        }
         adapted = TOBEDELETED;
         refined = 1;
         Awet = 0.0;
@@ -311,7 +315,11 @@ public:
     /* geoflow functions */
 
     //! this function initializes pileheight, momentums and shortspeed (also known as the L'Hosptial speed see calc_shortspeed for an explanation),this function is called in init_piles.C 
+#ifdef TWO_PHASES
+    void put_height_mom(double pile_height, double vfract, double xmom, double ymom);
+#else
     void put_height_mom(double pile_height, double xmom, double ymom);
+#endif
 
     //! this function assigns a specified value to the pileheight and zeros to the momentums and shortspeed
     void put_height(double pile_height);
@@ -339,6 +347,9 @@ public:
 
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
     double* get_prev_state_vars();
+
+    //! updates prev_states variables to current states, for first order-calculations
+    void update_prev_state_vars();
 
     //! this function calculates the lengths of the element in the (global) x and y directions
     void calculate_dx(HashTable* NodeTable);
@@ -379,7 +390,12 @@ public:
     void put_shortspeed(double shortspeedin);
 
     //! this function computes the velocity, either V=hV/h or shortspeed in the direction of hV/h, if the pile is short, that is h is less than the defined (nondimensional) value of GEOFLOW_SHORT, see geoflow.h, it chooses the speed to be min(|hV/h|,shortspeed) if h is greater than GEOFLOW_SHORT it chooses hV/h regardless of which one is smaller.
+#ifdef TWO_PHASES
+    void eval_velocity(double xoffset, double yoffset, double Vel[]);
+#else
     double* eval_velocity(double xoffset, double yoffset, double VxVy[2]);
+#endif
+
 
     //! this function is legacy afeapi code, it is never called in the finite difference/volume version of titan
     double* get_coefABCD()
@@ -459,6 +475,15 @@ public:
     //! this function is used to assign a value to stopped flags, for when you don't want to compute the criteria to decide whether it's stopped or not, useful during developement
     void put_stoppedflags(int stoppedflagsin);
 
+#ifdef TWO_PHASES
+    //! interface to change value of earth-pressure cofficients
+    void put_kactxy(double kap[])
+    {
+        kactxy[0] = kap[0];
+        kactxy[1] = kap[1];
+    }
+#endif
+
     //! this function returns the value of "stoppedflags"
     int get_stoppedflags();
 
@@ -537,6 +562,13 @@ public:
     //! The Element member function convect_dryline() calculates the coordinates of the "drypoint" in the element's local coordinate system.  This is used to determine the location of the wet-dry front (or dryline) inside this element, which in turn is used (in conjunction with the location of "iwetnode" - which indicates which side of the dryline is wet) to determine the fraction of its total area that is wet (Awet).  Awet is then returned by the function.  Keith wrote this function may 2007
     double convect_dryline(double VxVy[2], double dt);
 
+#ifdef TWO_PHASES
+    //! sgn of double
+    double sgn(double a)
+    {
+        return (a < 0 ? -1. : 1);
+    }
+#endif
 private:
     //! myprocess is id of the process(or) that owns this element
     int myprocess;
@@ -687,7 +719,7 @@ private:
     double effect_kactxy[2];
 
     //! extrusion flux rate for this timestep for this element, used when having material flow out of the ground, a volume per unit area influx rate source term
-    double Influx[3];
+    double Influx[NUM_STATE_VARS];
 
     int counted;
 
@@ -779,6 +811,26 @@ inline int Element::get_opposite_brother_flag()
 }
 ;
 
+#ifdef TWO_PHASES
+inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom)
+{
+    prev_state_vars[0] = state_vars[0] = pile_height;
+    prev_state_vars[1] = state_vars[1] = pile_height * volf;
+    prev_state_vars[2] = state_vars[2] = xmom;
+    prev_state_vars[3] = state_vars[3] = ymom;
+    if(pile_height > GEOFLOW_TINY)
+    {
+        shortspeed = sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf);
+        Awet = 1.0;
+    }
+    else
+    {
+        shortspeed = 0.0;
+        Awet = 0.0;
+    }
+    return;
+};
+#else
 inline void Element::put_height_mom(double pile_height, double xmom, double ymom)
 {
     prev_state_vars[0] = state_vars[0] = pile_height;
@@ -798,13 +850,17 @@ inline void Element::put_height_mom(double pile_height, double xmom, double ymom
     return;
 }
 ;
+#endif
 
 inline void Element::put_height(double pile_height)
 {
+#ifdef TWO_PHASES
+    put_height_mom(pile_height, 1., 0., 0.);
+#else
     put_height_mom(pile_height, 0.0, 0.0);
+#endif
     return;
-}
-;
+};
 
 inline double* Element::get_state_vars()
 {
@@ -835,6 +891,12 @@ inline double* Element::get_prev_state_vars()
     return prev_state_vars;
 }
 ;
+
+inline void Element::update_prev_state_vars()
+{
+    for(int i = 0; i < NUM_STATE_VARS; i++)
+        prev_state_vars[i] = state_vars[i];
+}
 
 inline double* Element::get_eigenvxymax()
 {
@@ -929,6 +991,14 @@ inline int Element::get_stoppedflags()
 ;
 
 //above this line Keith made inline 20061128
+/* REALLY? member functions defined in class body are 
+ * automatically inlined by the complier. When they are
+ * not, "inline" keyword is not going to help the cause.
+ * This was a huge waste of time
+ */
+
+/* agreed, but keeping it outside class body makes class definition cleaner and easier to read
+*/
 
 inline int* Element::getassoc()
 {
@@ -1162,7 +1232,8 @@ inline void Element::change_neighbor_process(int which, int newp)
 
 inline void Element::zero_influx()
 {
-    Influx[0] = Influx[1] = Influx[2] = 0.0;
+    for(int i = 0; i < NUM_STATE_VARS; i++)
+        Influx[i] = 0.;
 }
 ;
 

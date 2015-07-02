@@ -167,9 +167,15 @@ void tecplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
     timeprops->chunktime(&hrs, &mins, &secs);
     
     fprintf(fp, "TITLE= \" %s: time %d:%02d:%g (hrs:min:sec), V*=%g\"\n", mapnames->gis_map, hrs, mins, secs, v_star);
+#ifdef TWO_PHASES 
+    fprintf(fp, "VARIABLES = \"X\", \"Y\", \"Z\", \"PILE_HEIGHT\","
+            "\"VOL_FRACT\", \"SOLID_X_MOMENTUM\", \"SOLID_Y_MOMENTUM\","
+            "\"FLUID_X_MOMENTUM\", \"FLUID_Y_MOMENTUM\","
+            "\"ELEVATION\", \"SOLID_SPEED\", \"FLUID_SPEED\" \n");
+#else
     fprintf(fp,
             "VARIABLES = \"X\", \"Y\", \"Z\", \"PILE_HEIGHT\", \"X_MOMENTUM\", \"Y_MOMENTUM\", \"ELEVATION\", \"CORRECTSPEED\" \n"); //}
-            
+#endif     
     fprintf(fp, "\n");
     fprintf(fp, "ZONE N=%d, E=%d, F=FEPOINT, ET=QUADRILATERAL\n", num_tec_node, num_tec_elem);
     
@@ -537,7 +543,24 @@ int print_bubble_node(FILE * fp, HashTable * NodeTable, MatProps * matprops, Ele
     momentum_scale = matprops->HEIGHT_SCALE * velocity_scale;     // scaling factor for the momentums
             
     num_missing_bubble_node = get_elem_elev(NodeTable, matprops, EmTemp, &elevation);
-    
+#ifdef TWO_PHASES 
+    double Vel[4];
+    double volf;
+    if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
+        volf = (*(EmTemp->get_state_vars() + 1) / (*(EmTemp->get_state_vars())));
+    else
+        volf = 0;
+    EmTemp->eval_velocity(0.0, 0.0, Vel);
+    fprintf(fp, "%e %e %e %e %e %e %e %e %e %e %e %e\n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+            (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+            elevation + (*(EmTemp->get_state_vars())) * (matprops)->HEIGHT_SCALE,
+            *(EmTemp->get_state_vars()) * (matprops)->HEIGHT_SCALE, volf,
+            *(EmTemp->get_state_vars() + 2) * momentum_scale, *(EmTemp->get_state_vars() + 3) * momentum_scale,
+            *(EmTemp->get_state_vars() + 4) * momentum_scale, *(EmTemp->get_state_vars() + 5) * momentum_scale,
+            elevation, sqrt(Vel[0] * Vel[0] + Vel[1] * Vel[1]) * velocity_scale,
+            sqrt(Vel[2] * Vel[2] + Vel[3] * Vel[3]) * velocity_scale);
+   
+#else
     double VxVy[2];
     EmTemp->eval_velocity(0.0, 0.0, VxVy);
     fprintf(fp, "%e %e %e %e %e %e %e %e\n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
@@ -546,7 +569,7 @@ int print_bubble_node(FILE * fp, HashTable * NodeTable, MatProps * matprops, Ele
             *(EmTemp->get_state_vars()) * (matprops)->HEIGHT_SCALE, *(EmTemp->get_state_vars() + 1) * momentum_scale,
             *(EmTemp->get_state_vars() + 2) * momentum_scale, elevation,
             sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]) * velocity_scale);
-    
+#endif 
     return (num_missing_bubble_node);
 }
 
@@ -670,6 +693,18 @@ void viz_output(HashTable * El_Table, HashTable * NodeTable, int myid, int numpr
                 }
                 else
                 {
+#ifdef TWO_PHASES 
+                    double Vel[4];
+                    EmTemp->eval_velocity(0.0, 0.0, Vel);
+                    fprintf(fp, "%u %u %f %f %f %f %f %f %f %f %d %f \n", *(EmTemp->pass_key()),
+                            *(EmTemp->pass_key() + 1), (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                            (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                            (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
+                            *(EmTemp->get_zeta() + 1), state_vars[0] * (matprops)->HEIGHT_SCALE,
+                            velocity_scale * Vel[0], //*state_vars[1]/state_vars[0],
+                            velocity_scale * Vel[1], //state_vars[2]/state_vars[0], 
+                            myid, (double) (state_vars[0] / 20.));  //state_vars[0]/20 is just a filler item
+#else
                     double VxVy[2];
                     EmTemp->eval_velocity(0.0, 0.0, VxVy);
                     fprintf(fp, "%u %u %f %f %f %f %f %f %f %f %d %f \n", *(EmTemp->pass_key()),
@@ -680,6 +715,7 @@ void viz_output(HashTable * El_Table, HashTable * NodeTable, int myid, int numpr
                             velocity_scale * VxVy[0],     //*state_vars[1]/state_vars[0],
                             velocity_scale * VxVy[1],    //state_vars[2]/state_vars[0], 
                             myid, (double) (state_vars[0] / 20.));       //state_vars[0]/20 is just a filler item
+#endif
                 }
             }
             entryp = entryp->next;
@@ -725,7 +761,11 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
     }
     MPI_Barrier (MPI_COMM_WORLD);
     
+#ifdef TWO_PHASES 
+    sprintf(filename, "mshpl%02d%08d.tec", myid, timeprops->iter);
+#else
     sprintf(filename, "mshpl%02d%08d.plt", myid, timeprops->iter);
+#endif
     
     int order;
     int e_buckets = El_Table->get_no_of_buckets();
@@ -827,6 +867,19 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                     int jj = j;
                     if(1)
                     {           //NodeTemp->getinfo() != S_C_CON) {
+#ifdef TWO_PHASES 
+                        fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
+                                (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                                (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
+                                state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
+                                state_vars[3] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
+                                EmTemp->get_gen(), EmTemp->get_which_son(),
+                                EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
+                                *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
+                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
+                                *(EmTemp->get_elm_loc() + 1));
+#else
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
@@ -838,6 +891,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
                                 *(EmTemp->get_elm_loc() + 1));
+#endif
                     }
                     else
                     { // S_C_CON will have a discontinuity in the elevation so fix that by interpolation
@@ -881,6 +935,18 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                         
                         NodeTemp2 = (Node *) NodeTable->lookup(EmTemp2->getNode() + j * KEYLENGTH);
                         elev += .5 * NodeTemp2->get_elevation();
+#ifdef TWO_PHASES 
+                        fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
+                                (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                                (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
+                                state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, *(EmTemp->pass_key()),
+                                *(EmTemp->pass_key() + 1), EmTemp->get_gen(), EmTemp->get_which_son(),
+                                EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
+                                *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
+                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
+                                *(EmTemp->get_elm_loc() + 1));
+#else
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
@@ -891,6 +957,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
                                 *(EmTemp->get_elm_loc() + 1));
+#endif
                     }
                     
                 }
@@ -1039,6 +1106,15 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                 {
                     NodeTemp = (Node *) NodeTable->lookup(nodes + j * KEYLENGTH);
                     //int* dof = NodeTemp->getdof();
+#ifdef TWO_PHASES 
+                    fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
+                            (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                            (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                            (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
+                            state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
+                            state_vars[3] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
+                            EmTemp->get_gen(), EmTemp->get_which_son());
+#else
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
                             (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                             (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
@@ -1046,6 +1122,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
                             state_vars[2] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
                             EmTemp->get_gen(), EmTemp->get_which_son());
+#endif
                     
                 }
             }

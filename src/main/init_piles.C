@@ -20,8 +20,13 @@
 #endif
 
 #include "../header/hpfem.h"
-//#define PARABALOID
+#ifdef TWO_PHASES
+#define PARABALOID
+#else
 #define CYLINDER
+#endif
+//
+
 //#define PLANE
 //#define CASITA
 //#define POPO
@@ -101,6 +106,7 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
                 double* ndcoord = EmTemp->get_coord();
                 double pile_height=0.0;
                 double radius_sq;
+#ifndef TWO_PHASES
 
 #ifdef PLANE
                 radius_sq = pow(ndcoord[0]-76.,2)+pow(ndcoord[1]-80.,2);
@@ -141,6 +147,7 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
                 printf("Danger no recognized pile type defined in init_piles.C\n");
                 exit(0);
 #endif 
+#endif
                 EmTemp->put_height(pileheight);
 
             }
@@ -161,6 +168,10 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
     /* initial calculation of actual volume on the map */
 
     double realvolume = 0.0, depositedvol = 0.0, forcebed = 0.0, meanslope = 0.0;
+#ifdef TWO_PHASES
+    double epsilon[2] =
+    { matprops->epsilon, matprops->epsilon };
+#endif
     
     HashEntryPtr* buck = HT_Elem_Ptr->getbucketptr();
     for(int ibucket = 0; ibucket < HT_Elem_Ptr->get_no_of_buckets(); ibucket++)
@@ -177,7 +188,12 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
                     double *dxy = Curr_El->get_dx();
                     double dvol = dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
                     realvolume += dvol;
+#ifdef TWO_PHASES
+                    Curr_El->put_kactxy(epsilon);
+#else
                     *(Curr_El->get_kactxy() + 0) = *(Curr_El->get_kactxy() + 1) = matprops->epsilon;
+#endif
+
                     Curr_El->calc_stop_crit(matprops);
                     if(Curr_El->get_stoppedflags() == 2)
                         depositedvol += dvol;
@@ -241,6 +257,9 @@ void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* m
     double sum_node_xmom[9];
     double sum_node_ymom[9];
     double height;
+#ifdef TWO_PHASES
+    double vfract = 0.;
+#endif
     
     for(int inode = 0; inode < 9; inode++)
     {
@@ -258,7 +277,10 @@ void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* m
         //check each pile to see which has max height at this node
         for(int ipile = 0; ipile < pileprops->numpiles; ipile++)
         {
-            
+#ifdef TWO_PHASES
+            if(pileprops->vol_fract[ipile] > vfract)
+                vfract = pileprops->vol_fract[ipile];
+#endif
             //get position relative to pile center
             double major = ndcoord[0] - pileprops->xCen[ipile];
             double minor = ndcoord[1] - pileprops->yCen[ipile];
@@ -330,7 +352,10 @@ void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* m
     //center node
     4.0 * sum_node_ymom[8])
                   / 16.0;
-    
+#ifdef TWO_PHASES
+    EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
+#else
     EmTemp->put_height_mom(pileheight, xmom, ymom);
+#endif
     return;
 }

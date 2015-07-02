@@ -38,7 +38,35 @@ int REFINE_LEVEL = 3;
 TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
 
+#ifdef TWO_PHASES
+void checkelemnode2(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *fpdebug, double loc)
+{
+    unsigned elemdebugkey2a[2] =
+    { 695876266, 2863311530 };
+    unsigned nodedebugkey2a[2] =
+    { 695852110, 3303820997 };
+    
+    if(fpdebug == NULL)
+        fpdebug = stdout;
+    
+    if(myid == TARGETPROC)
+    {
+        fprintf(fpdebug, "**************************\nmyid=%d location=%g\n", myid, loc);
+        ElemBackgroundCheck(El_Table, NodeTable, elemdebugkey2a, fpdebug);
+        //NodeBackgroundCheck(El_Table,NodeTable,nodedebugkey2a,fpdebug);
+        
+        fflush(fpdebug);
+    }
+    
+    return;
+}
+#endif
+
+#ifdef TWO_PHASES
+int main(int argc, char *argv[])
+#else
 int hpfem()
+#endif
 {
     int i; //-- counters
     
@@ -51,7 +79,10 @@ int hpfem()
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Status status;
     
-    //MPI_Init(&argc, &argv);
+#ifdef TWO_PHASES
+    MPI_Init(&argc, &argv);
+#endif
+    
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Get_processor_name(processor_name, &namelen);
@@ -69,13 +100,22 @@ int hpfem()
 
     int material_count = 0;
     double epsilon = 1., intfrictang = 1, *bedfrictang = NULL, gamma = 1;
+#ifdef TWO_PHASES
+    double frict_tiny = 0.1, mu = 0.1, rho = 2700, rhof = 1200, porosity = 1;
+#else
     double frict_tiny = 0.1, mu = .0001, rho = 2200, porosity = 1;
+#endif
     char **matnames = NULL;
     int xdmerr;
-    
+
     StatProps statprops;
+#ifdef TWO_PHASES
+    MatProps matprops(material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, rhof, epsilon, gamma,
+                      frict_tiny, 1.0, 1.0, 1.0);
+#else
     MatProps matprops(material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, epsilon, gamma, frict_tiny,
                       1.0, 1.0, 1.0);
+#endif
     TimeProps timeprops;
     timeprops.starttime = time(NULL);
     
@@ -312,7 +352,10 @@ int hpfem()
                 if((EmTemp->get_adapted_flag()>=NOTRECADAPTED)&&
                         (EmTemp->get_adapted_flag()<=BUFFER)
                 )
-                { //if this element doesn't belong on this processor don't involve element_counter++; EmTemp->put_counted(countedvalue);
+                { 
+                    //if this element doesn't belong on this processor don't involve
+                    element_counter++;
+                    EmTemp->put_counted(countedvalue);
                 }
                 entryp = entryp->next;
             }
@@ -394,10 +437,12 @@ int hpfem()
         outline2.init2(dxy, outline.xminmax, outline.yminmax);
         int NxNyout = outline.Nx * outline.Ny;
         
+//TWO_PHASES is:MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+#ifndef TWO_PHASES
         MPI_Reduce(*(outline.max_kinergy), *(outline2.max_kinergy), NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         MPI_Reduce(*(outline.cum_kinergy), *(outline2.cum_kinergy), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        
+#endif
         if(myid == 0)
             outline2.output(&matprops, &statprops);
     }
@@ -419,8 +464,11 @@ int hpfem()
     titanTimings.totalTime = MPI_Wtime() - start;
     if(myid == 0)
         titanTimings.print();
-    
-    //MPI_Finalize();
+
+#ifdef TWO_PHASES
+    MPI_Finalize();
+#endif
+
     return (0);
     
 }

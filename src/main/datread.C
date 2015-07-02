@@ -63,11 +63,26 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
         
         double rotang;
         double doubleswap1, doubleswap2;
+#ifdef TWO_PHASES
+        double maxphi = 0.;
+        double minphi = HUGE_VAL;
+#endif
         int imat;
         
         for(isrc = 0; isrc < numpiles; isrc++)
         {
             inD2 >> pileprops_ptr->pileheight[isrc];  // pile height
+
+#ifdef TWO_PHASES    
+            // solid-volume fraction
+            inD2 >> pileprops_ptr->vol_fract[isrc];
+            // search for min-max phi
+            if(pileprops_ptr->vol_fract[isrc] > maxphi)
+                maxphi = pileprops_ptr->vol_fract[isrc];
+            if(pileprops_ptr->vol_fract[isrc] < minphi)
+                minphi = pileprops_ptr->vol_fract[isrc];
+#endif
+
             inD2 >> pileprops_ptr->xCen[isrc];  // pile x-center
             inD2 >> pileprops_ptr->yCen[isrc];  // pile y-center
             inD2 >> pileprops_ptr->majorrad[isrc];/* pile "major axis" radius
@@ -85,6 +100,16 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
             pileprops_ptr->initialVy[isrc] = doubleswap1 * sin(doubleswap2);
             
         }
+#ifdef TWO_PHASES
+        // cut-off extremes
+        assert(minphi <= maxphi);
+        if(minphi < 0.2)
+            matprops_ptr->flow_type = FLUID_FLOW;
+        else if(maxphi > 0.9)
+            matprops_ptr->flow_type = DRY_FLOW;
+        else
+            matprops_ptr->flow_type = TWOPHASE;
+#endif
     }
     if((*srctype) & 0x2)
     {
@@ -210,7 +235,8 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
         matprops_ptr->GRAVITY_SCALE = 1;
     }
     inscale.close();
-    
+
+#ifndef TWO_PHASES
     double totalvolume = 0.0;
     
     if(pileprops_ptr->numpiles > 0)
@@ -230,20 +256,32 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
         matprops_ptr->HEIGHT_SCALE = doubleswap;
     else
         matprops_ptr->HEIGHT_SCALE = 1.0;
-    
+#endif 
     matprops_ptr->epsilon = matprops_ptr->HEIGHT_SCALE / matprops_ptr->LENGTH_SCALE;
     
     //this is used in ../geoflow/stats.C ... might want to set 
     //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin 
     //layer control, need to reevaluate this, we should also 
     //reevaluate after we implement a "good" local stopping criteria
+#ifdef TWO_PHASES
+    matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = matprops_ptr->HEIGHT_SCALE / 10000.0;
+#else
     matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = doubleswap / matprops_ptr->HEIGHT_SCALE / 10000.0;
+#endif
+
     
     double TIME_SCALE = sqrt(matprops_ptr->LENGTH_SCALE / matprops_ptr->GRAVITY_SCALE);
     
     //non-dimensionalize the inputs
     double VELOCITY_SCALE = sqrt(matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE);
-    
+
+#ifdef TWO_PHASES
+    double diameter = 0.005;
+    double vterm = pow(diameter, 2.) * (matprops_ptr->den_solid - matprops_ptr->den_fluid) * matprops_ptr->GRAVITY_SCALE
+            / (18. * matprops_ptr->viscosity);
+    matprops_ptr->v_terminal = vterm;
+#endif
+
     double smallestpileradius = HUGE_VAL;
     
     for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
@@ -284,6 +322,20 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     
     matprops_ptr->smallest_axis = 2.0 * smallestpileradius;
     inD2 >> matprops_ptr->number_of_cells_across_axis;
+
+#ifdef TWO_PHASES
+    /*************************************************************************/
+    /* the non-dimensional velocity stopping criteria is an idea that 
+     didn't work for anything other than a slumping pile on a horizontal 
+     surface, it's only still here because I didn't want to bother
+     with removing it.  --Keith Dalbey 2005.10.28
+
+     kappa is a to be determined constant, calculation stops when 
+     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
+    double kappa = 1.0;   //should eventually move to a header file
+    double gravity = 9.8; //[m/s^2]
+    matprops_ptr->Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
+#endif
     
     /*************************************************************************/
     //time related info
@@ -309,9 +361,11 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     char gis_mapset[100];
     char gis_map[100];
     int extramaps;
-    int gis_format;
-    
+    int gis_format=GIS_GRASS;
+
+#ifndef TWO_PHASES 
     inD2 >> gis_format;
+#endif
     if(gis_format == GDAL)
     {
         inD2 >> gis_map;
@@ -335,7 +389,8 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
         printf("Problem with GIS on processor %d\n", myid);
         exit(0);
     }
-    
+
+#ifndef TWO_PHASES
     /*************************************************************************
      * Vslump doesn't mean it is related to slumping of pile
      * It is simply the maximum hypothetical velocity from 
@@ -377,7 +432,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     // calculate Vslump
     double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
     matprops_ptr->Vslump = sqrt(gravity * hscale);
-    
+#endif
     /*************************************************************************/
     //test point information
     inD2 >> statprops_ptr->hxyminmax;
@@ -458,6 +513,9 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     matprops_ptr->tanbedfrict = CAllocD1(matprops_ptr->material_count + 1);
     char stringswap[512];
     int imat;
+#ifdef TWO_PHASES
+    double doubleswap;
+#endif
     for(imat = 1; imat <= matprops_ptr->material_count; imat++)
     {
         fgets(stringswap, 512, fp);

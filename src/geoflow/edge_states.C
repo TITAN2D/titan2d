@@ -72,6 +72,5 @@ void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matpr
             }
         }
     *outflow = localoutflow_sum;
-    
     return;
 }

@@ -270,7 +270,9 @@ void cxxTitanSimulation::run()
     printf("cxxTitanSimulation::run %d\n", myid);
     MPI_Barrier (MPI_COMM_WORLD);
     printf("cxxTitanSimulation::run::let's go %d\n", myid);
+#ifndef TWO_PHASES
     hpfem();
+#endif
     MPI_Barrier(MPI_COMM_WORLD);
     
 }
