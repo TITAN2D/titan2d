@@ -17,6 +17,7 @@
 %module cxxtitan
 
 %{
+#include "../header/properties.h"
 #include "../header/titan_simulation.h"
 #include "../preproc/preproc.h"
 #include "../vectordatapreproc/vectordatpreproc.h"
@@ -29,11 +30,11 @@ namespace std {
    %template(vectori) vector<int>;
    %template(vectord) vector<double>;
    %template(vectors) vector<string>;
-   %template(vector_cxxTitanPile) vector<cxxTitanPile>;
    %template(vector_cxxTitanFluxSource) vector<cxxTitanFluxSource>;
    %template(vector_cxxTitanDischargePlane) vector<cxxTitanDischargePlane>;
 };
 
+%include "../header/properties.h"
 %include "../header/titan_simulation.h"
 %include "../preproc/preproc.h"
 %include "../vectordatapreproc/vectordatpreproc.h"

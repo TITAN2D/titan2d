@@ -21,48 +21,8 @@
 #include <vector>
 #include "../gisapi/GisApi.h"
 
-class MatProps;
-class PileProps;
-class StatProps;
-class TimeProps;
-class FluxProps;
-class MapNames;
-class DISCHARGE;
-class OutLine;
+#include "properties.h"
 
-/**
- * Information for Pile
- * Thickness of Initial Volume, h(x,y)
- * P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
- */
-class cxxTitanPile
-{
-public:
-    cxxTitanPile();
-    ~cxxTitanPile();
-
-    cxxTitanPile& operator=(const cxxTitanPile& other);
-
-    //! Maximum Initial Thickness, P (m)
-    double height;
-    //! Center of Initial Volume, xc, yc (UTM E, UTM N)
-    double xcenter;
-    double ycenter;
-    //! Major and Minor Extent, majorR, minorR (m, m)
-    double majradius;
-    double minradius;
-    //! Orientation (angle [degrees] from X axis to major axis)
-    double orientation;
-    //! Initial speed [m/s]
-    double Vmagnitude;
-    //! Initial direction ([degrees] from X axis)
-    double Vdirection;
-
-    //! calculate volume m^3
-    double get_volume();
-
-    void print0();
-};
 
 /**
  * cxxTitanFluxSource
@@ -226,8 +186,10 @@ public:
 
 
 
+
+
     //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input(MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
+    virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, FluxProps* fluxprops, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
     {}
 
@@ -246,7 +208,7 @@ public:
     ~cxxTitanSinglePhase();
 
     //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input(MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
+    virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, FluxProps* fluxprops, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr);
     virtual void hpfem();
     virtual void run();
@@ -255,7 +217,7 @@ public:
 
 
     //!>Piles
-    std::vector<cxxTitanPile> piles;
+    PileProps pileprops;
 
     //!>Flux sources
     std::vector<cxxTitanFluxSource> flux_sources;

@@ -102,65 +102,6 @@ class TitanDischargePlane(cxxTitanDischargePlane):
         #self.y_b = float(y_b)
 
 
-class TitanPile(cxxTitanPile):
-
-    def __init__(self,height=0.0,center=None,radii=None,
-                 orientation=0.0,
-                 Vmagnitude=0.0,
-                 Vdirection=0.0):
-        super(TitanPile, self).__init__()
-        #def __init__(self,master,pile_number,filename,directory,max_height,topomap):
-        
-        
-        #Information for Pile Number 
-        #Thickness of Initial Volume, h(x,y)
-        #P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
-        #Maximum Initial Thickness, P (m)
-        self.height = float(height)
-        #Center of Initial Volume, xc, yc (UTM E, UTM N)
-        if center!=None:
-            self.xcenter = float(center[0])
-            self.ycenter = float(center[1])
-        else:
-            self.xcenter = 1.0
-            self.ycenter = 1.0
-        #Major and Minor Extent, majorR, minorR (m, m)
-        if radii!=None:
-            self.majradius = float(radii[0])
-            self.minradius = float(radii[1])
-        else:
-            self.majradius = 1.0
-            self.minradius = 1.0
-        #Orientation (angle [degrees] from X axis to major axis)
-        self.orientation = float(orientation)
-        #Initial speed [m/s]
-        self.Vmagnitude = float(Vmagnitude)
-        #Initial direction ([degrees] from X axis)
-        self.Vdirection = float(Vdirection)
-        
-        self.validateValues()
-        
-        
-    def validateValues(self):
-        if self.height < 0.0:
-            raise ValueError('TitanPile::height should be non negative')
-
-    def done(self,filename):
-        pileheight = self.height
-        xpilecenter = self.xcenter
-        ypilecenter = self.ycenter
-        
-        majradius = self.majradius
-        minradius = self.minradius
-        
-        orientation = self.orientation
-        Vmagnitude=self.Vmagnitude
-        Vdirection=self.Vdirection
-        
-        fout = open(filename, "a+", 0)
-        fout.write( str(pileheight) + '\n' + str(xpilecenter) + '\n' + str(ypilecenter) + '\n' + str(majradius) + '\n' +str(minradius) + '\n' + str(orientation) + '\n' + str(Vmagnitude) + '\n' + str(Vdirection) + '\n')
-        fout.close
-
 class TitanSimulation(cxxTitanSimulation):
     possible_vizoutputs={
         'tecplotxxxx.tec':1, # first bit flag
@@ -296,7 +237,6 @@ class TitanSinglePhase(cxxTitanSinglePhase):
             self.test_location_y = float(test_location[1])
         
         #other inits
-        self.pileHelper=[]
         self.flux_sourcesHelper=[]
         self.discharge_planesHelper=[]
 
@@ -422,12 +362,54 @@ class TitanSinglePhase(cxxTitanSinglePhase):
         else:  #if they did want to use a GIS material map...
             raise Exception("Not implemented as there were no suitable example")
         fout.close
-    
+    def validatePile(self, **kwargs):
+        out={}
+        out['height']=float(kwargs['height'])
+        if out['height'] < 0.0:
+            raise ValueError('TitanPile::height should be non negative')
+        
+        if kwargs['center']!=None:
+            out['xcenter'] = float(kwargs['center'][0])
+            out['ycenter'] = float(kwargs['center'][1])
+        else:
+            out['xcenter'] = 1.0
+            out['ycenter'] = 1.0
+            
+        if kwargs['radii']!=None:
+            out['majradius'] = float(kwargs['radii'][0])
+            out['minradius'] = float(kwargs['radii'][1])
+        else:
+            out['majradius'] = 1.0
+            out['minradius'] = 1.0
+        out['orientation'] = float(kwargs['orientation'])
+        out['Vmagnitude'] = float(kwargs['Vmagnitude'])
+        out['Vdirection'] = float(kwargs['Vdirection'])
+        return out
+        
     def addPile(self,**kwargs):
-        pile=TitanPile(**kwargs)
+        """
+        Information for Pile Number 
+        Thickness of Initial Volume, h(x,y)
+        P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
+        
+        height=float - Maximum Initial Thickness, P (m)
+        
+        center=[float,float] - Center of Initial Volume, xc, yc (UTM E, UTM N)
+        
+        radii=[float,float] - Major and Minor Extent, majorR, minorR (m, m)
+        
+        orientation=float - Orientation (angle [degrees] from X axis to major axis)
+        
+        Vmagnitude=float - Initial speed [m/s]
+        
+        Vdirection = float - Initial direction ([degrees] from X axis)
+        """
+        
+        pile=self.validatePile(**kwargs)
         if pile!=None:
-            self.piles.push_back(pile)
-            self.pileHelper.append(pile)
+            self.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'])
+            
         
     def addFluxSource(self,**kwargs):
         fluxSource=TitanFluxSource(**kwargs)
@@ -448,173 +430,25 @@ class TitanSinglePhase(cxxTitanSinglePhase):
             preproc.run();
         
     def run(self):
+        max_height=0.0
+        for iPile in range(self.pileprops.numpiles):
+            if self.pileprops.pileheight[iPile] > max_height:
+                max_height = self.pileprops.pileheight[iPile]
+        heightscale = max_height
+        for i in range(len(self.flux_sourcesHelper)):
+            self.flux_sourcesHelper[i].done(f_p)
+            effective_height=self.flux_sources[i].get_effective_height()
+            if effective_height > max_height:
+                max_height = effective_height
+        #scaling stuff
+        if max_height <= 0.:max_height = 1.
+        if heightscale <= 0.:heightscale = 1.
+        
         if self.myid==0:
-            #get system information so it is known which system the script is running on
-            machine = socket.gethostbyaddr(socket.gethostname())
-            print 'Trying to run a job on ' + machine[0]
-            
-            #check values
-            srctype = 0
-            
-            numpiles = len(self.piles)
-            if numpiles < 0:
-                raise ValueError('Number of piles cannot be a negative number')
-            
-            numsrcs = len(self.flux_sources)
-            print "self.flux_sources",numsrcs
-            if numsrcs < 0:
-                raise ValueError('Number of Flux Sources cannot be a negative number')
-            
-    
-            if numpiles > 0:
-                srctype = srctype +1
-    
-            if numsrcs  > 0:
-                srctype = srctype +2
-                
-            coord_flag = 0
-            min_location_x = 0
-            max_location_x = 0
-            min_location_y = 0
-            max_location_y = 0
-            if self.min_location_x != None:
-                coord_flag = 1
-                min_location_x = float(self.min_location_x)
-    
-            if self.min_location_y != None:
-                coord_flag = 1+coord_flag
-                min_location_y = float(self.min_location_y)
-    
-            if self.max_location_x != None:
-                coord_flag = 1+coord_flag
-                max_location_x = float(self.max_location_x)
-    
-            if self.max_location_y != None:
-                coord_flag = 1+coord_flag
-                max_location_y = float(self.max_location_y)
-    
-            if min_location_x > max_location_x:
-                temp = max_location_x
-                max_location_x = min_location_x
-                min_location_x = temp
-    
-            if min_location_y > max_location_y:
-                temp = max_location_y
-                max_location_y = min_location_y
-                min_location_y = temp
-    
-            if coord_flag != 0 and coord_flag != 4:
-                raise ValueError('Must either fill in none or all minimum and maximum coordinate values')
-            
-            numcellsacrosspile = int(self.number_of_cells_across_axis)
-    
-            steps = self.maxiter
-            timeoutput = self.timeoutput
-            maxtime = self.maxtime
-            timesave = self.timesave
-    
-            edge_height = self.edge_height
-            test_height = self.test_height
-    
-            if self.test_height == -2.0:
-                test_height = -2
-                test_location_x = 'none'
-                test_location_y = 'none'
-                
-            else:
-                test_location_x = str(float(self.test_location_x))
-                test_location_y = str(float(self.test_location_y))
-    
-                
-            
-            
-            #pile geometry stuff, friction coefficients, etc.
-            # get all of the pile information
-            max_height = 0.0
-            f_p = 'simulation.data'
-            f_p2=open(f_p, "w", 0)
-            f_p2.write(str(srctype) + '\n')
-            if int(numpiles) > 0:
-                f_p2.write(str(numpiles) + '\n')
-            if int(numsrcs) > 0:
-                f_p2.write(str(numsrcs) + '\n')
-            f_p2.close
-            
-            max_height=0.0
-            for iPile in range(len(self.piles)):
-                self.pileHelper[iPile].done(f_p)
-                if self.piles[iPile].height > max_height:
-                    max_height = self.piles[iPile].height
-            
-    
-            counter = 0
-            heightscale = max_height
-            for i in range(len(self.flux_sourcesHelper)):
-                self.flux_sourcesHelper[i].done(f_p)
-                effective_height=self.flux_sources[i].get_effective_height()
-                if effective_height > max_height:
-                    max_height = effective_height
-            
-                
-            output2 = str(numcellsacrosspile) + '\n' +\
-                str(steps) + '\n' + str(maxtime) + '\n' +\
-                str(timeoutput) + '\n' + str(timesave) + '\n' +\
-                str(int(self.adapt))
-            f_p2=open(f_p, "a+", 0)        
-            f_p2.write(output2)
-            
-            #scaling stuff
-            lengthscale = self.length_scale
-            if max_height <= 0.:max_height = 1.
-            if heightscale <= 0.:heightscale = 1.
-                
-            output1 = str(lengthscale) + "\n" + str(heightscale) + "\n"+str(self.gravity_scale)
-            
-            f2 = 'scale.data'
-            f=open(f2, "w", 0)
-            f.write(output1)
-            f.close
-    
-            #put in the stuff for viz the idea is to use prime numbers and the remainder function to determine which formats to output in
-            viz_num = self.vizoutput
-    
-            f_p2.write('\n' + str(viz_num) + '\n' + str(self.order))
-            #GIS stuff
-            f_p2.write('\n' + str(self.gis_format))
-            if self.gis_format == 1:
-                f_p2.write('\n' + self.topomain + '\n' + self.toposub + '\n' + self.topomapset + '\n' + self.topomap +'\n' + str(int(self.use_gis_matmap)))
-            else:
-                f_p2.write('\n' + self.topomap)
-    
-            f_p2.write('\n' + str(edge_height) + '\n' + str(test_height) + '\n' + test_location_x + ' ' + test_location_y)
-            f_p2.close
-    
-            #----------------------------------------
-            #-----Number of Discharge Planes---------
-            #----------------------------------------
-            #check values
-            #loop to allow user input of coordinates for variable # of discharge planes
-            fout = open('simulation.data',"a+",0)
-            numdischarge=len(self.discharge_planesHelper)
-            fout.write('\n'+str(numdischarge)+'\n')
-            
-            
-            if numdischarge>0:
-                for i in range(len(self.discharge_planesHelper)):
-                    fout.write(str(self.discharge_planesHelper[i].x_a)+' '+\
-                               str(self.discharge_planesHelper[i].y_a)+' '+\
-                               str(self.discharge_planesHelper[i].x_b)+' '+\
-                               str(self.discharge_planesHelper[i].y_b)+'\n')
-                    
-            fout.close
-            #----------------------------------------------
-            #----------------------------------------------
-    
-    
             print 'max height is ' + str(max_height)
             print 'heightscale is ' + str(heightscale)
-            
-            
+        
+        if self.myid==0:
             # run preproc.x to create the fem grid, if it is not already there
             #if os.access('PRE/preproc.x',os.X_OK)==0:
             #    os.system('cd PRE;gmake')
@@ -627,9 +461,42 @@ class TitanSinglePhase(cxxTitanSinglePhase):
             if self.topovector != "":
                 print "\nvectordatpreproc..."
                 vectordatpreproc(self.topomain, self.toposub, self.topomapset, self.topomap, self.topovector)
-            
             print
         
         super(TitanSinglePhase, self).run()
 
-
+class TitanTwoPhases(TitanSinglePhase):
+    def __init__(self):
+        super(TitanSinglePhase, self).__init__()
+        self.pileprops2=PilePropsTwoPhases()
+    def validatePile(self, **kwargs):
+        out=super(TitanTwoPhases, self).validatePile(**kwargs)
+        out['vol_fract'] = float(kwargs['vol_fract'])
+        return out
+        
+    def addPile(self,**kwargs):
+        """
+        Information for Pile Number 
+        Thickness of Initial Volume, h(x,y)
+        P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
+        
+        height=float - Maximum Initial Thickness, P (m)
+        
+        center=[float,float] - Center of Initial Volume, xc, yc (UTM E, UTM N)
+        
+        radii=[float,float] - Major and Minor Extent, majorR, minorR (m, m)
+        
+        orientation=float - Orientation (angle [degrees] from X axis to major axis)
+        
+        Vmagnitude=float - Initial speed [m/s]
+        
+        Vdirection = float - Initial direction ([degrees] from X axis)
+        
+        vol_fract = float - Initial solid-volume fraction,(0:1.)
+        """
+        
+        pile=self.validatePile(**kwargs)
+        if pile!=None:
+            self.pileprops2.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['vol_fract'])
+    

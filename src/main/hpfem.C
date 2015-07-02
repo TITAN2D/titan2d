@@ -122,7 +122,6 @@ void cxxTitanSinglePhase::hpfem()
     timeprops.starttime = time(NULL);
     
     MapNames mapnames;
-    PileProps pileprops;
     FluxProps fluxprops;
     OutLine outline;
     DISCHARGE discharge;
@@ -152,10 +151,10 @@ void cxxTitanSinglePhase::hpfem()
      criteria paper... plan to include in v_star implicitly 
      later */
 #ifdef TWO_PHASES
-    Read_data(myid, &matprops, &pileprops, &statprops, &timeprops, &fluxprops, &adapt, &vizoutput, &order,
+    Read_data(myid, &matprops, &statprops, &timeprops, &fluxprops, &adapt, &vizoutput, &order,
           &mapnames, &discharge, &outline);
 #else
-    process_input(&matprops, &pileprops, &statprops, &timeprops, &fluxprops,
+    process_input(&matprops, &statprops, &timeprops, &fluxprops,
               &mapnames, &discharge, &outline);
 #endif
 

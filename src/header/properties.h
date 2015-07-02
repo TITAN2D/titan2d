@@ -29,6 +29,11 @@
 #include<math.h>
 #include "../gisapi/GisApi.h"
 
+#include <string>
+#include <vector>
+
+#include "constant.h"
+
 //! LHS stands for Latin Hypercube Sampling, it is a constrained sampling method whose convergence can be much faster than monte carlo 
 struct LHS_Props
 {
@@ -154,88 +159,177 @@ struct StatProps
 };
 
 //! the PileProps structure holds the pile properties read in in Read_data() so the pile can be placed at the proper locations shortly thereafter in init_piles() 
-struct PileProps
+class PileProps
 {
+public:
     //! the number of piles
     int numpiles;
 
     //!array holding pile height
-    double *pileheight;
-
-#ifdef TWO_PHASES
-    //! array of volume -fractions
-    double *vol_fract;
-#endif
+    std::vector<double> pileheight;
 
     //!array holding x coordinate of pile center
-    double *xCen;
+    std::vector<double> xCen;
 
     //!array holding y coordinate of pile center
-    double *yCen;
+    std::vector<double> yCen;
 
     //!array holding the major (x before rotation) radius
-    double *majorrad;
+    std::vector<double> majorrad;
 
     //!array holding the minor (y before rotation) radius
-    double *minorrad;
+    std::vector<double> minorrad;
 
     //!array holding the cosine of the rotation angle
-    double *cosrot;
+    std::vector<double> cosrot;
 
     //!array holding the sine of the rotation angle;
-    double *sinrot;
+    std::vector<double> sinrot;
 
     //!array holding the initial x speed of the pile
-    double *initialVx;
+    std::vector<double> initialVx;
 
     //!array holding the initial y speed of the pile
-    double *initialVy;
+    std::vector<double> initialVy;
 
     //! this constuctor initializes the number of piles to zero.
     PileProps()
     {
         numpiles = 0;
     }
-    
+    virtual ~PileProps(){}
     //! function allocates space for the pile data
-    void allocpiles(int numpiles_in)
+    virtual void allocpiles(int numpiles_in)
     {
         numpiles = numpiles_in;
-        pileheight = CAllocD1(numpiles);
-#ifdef TWO_PHASES
-        vol_fract = CAllocD1(numpiles);
-#endif
-        xCen = CAllocD1(numpiles);
-        yCen = CAllocD1(numpiles);
-        majorrad = CAllocD1(numpiles);
-        minorrad = CAllocD1(numpiles);
-        cosrot = CAllocD1(numpiles);
-        sinrot = CAllocD1(numpiles);
-        initialVx = CAllocD1(numpiles);
-        initialVy = CAllocD1(numpiles);
-        
+        pileheight.resize(numpiles);
+
+        xCen.resize(numpiles);
+        yCen.resize(numpiles);
+        majorrad.resize(numpiles);
+        minorrad.resize(numpiles);
+        cosrot.resize(numpiles);
+        sinrot.resize(numpiles);
+        initialVx.resize(numpiles);
+        initialVy.resize(numpiles);
     }
     
-    //! this function deallocates the dynamically out array members of the PileProps structure
-    ~PileProps()
+    virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection)
     {
-        if(numpiles > 0)
+        numpiles++;
+        pileheight.push_back(hight);
+        xCen.push_back(xcenter);
+        yCen.push_back(ycenter);
+        majorrad.push_back(majradius);
+        minorrad.push_back(minradius);
+        cosrot.push_back(cos(orientation * PI / 180.0));
+        sinrot.push_back(sin(orientation * PI / 180.0));
+        initialVx.push_back(Vmagnitude * cos(Vdirection * PI / 180.0));
+        initialVy.push_back(Vmagnitude * sin(Vdirection * PI / 180.0));
+    }
+    virtual double get_volume(int i)
+    {
+        return PI * pileheight[i] * majorrad[i] * minorrad[i] / 2.0;
+    }
+    virtual void scale(double length_scale,double height_scale,double gravity_scale)
+    {
+        //non-dimensionalize the inputs
+        double velocity_scale = sqrt(length_scale * gravity_scale);
+        int isrc;
+        for(isrc = 0; isrc < numpiles; isrc++)
         {
-            CDeAllocD1(pileheight);
-#ifdef TWO_PHASES
-            CDeAllocD1(vol_fract);
-#endif
-            CDeAllocD1(xCen);
-            CDeAllocD1(yCen);
-            CDeAllocD1(majorrad);
-            CDeAllocD1(minorrad);
-            CDeAllocD1(cosrot);
-            CDeAllocD1(sinrot);
-            CDeAllocD1(initialVx);
-            CDeAllocD1(initialVy);
+            pileheight[isrc] /= height_scale;
+            xCen[isrc] /= length_scale;
+            yCen[isrc] /= length_scale;
+            majorrad[isrc] /= length_scale;
+            minorrad[isrc] /= length_scale;
+            initialVx[isrc] /= velocity_scale;
+            initialVy[isrc] /= velocity_scale;
         }
     }
-    
+    double get_smallest_pile_radius()
+    {
+        double smallestpileradius = HUGE_VAL;
+        int isrc;
+        for(isrc = 0; isrc < numpiles; isrc++)
+        {
+            if(smallestpileradius > majorrad[isrc])
+                smallestpileradius = majorrad[isrc];
+
+            if(smallestpileradius > minorrad[isrc])
+                smallestpileradius = minorrad[isrc];
+        }
+        return smallestpileradius;
+    }
+    virtual void print_pile(int i)
+    {
+        printf("\tPile %d\n", i);
+        printf("\t\tMaximum Initial Thickness, P (m):%f\n", pileheight[i]);
+        printf("\t\tCenter of Initial Volume, xc, yc (UTM E, UTM N): %f %f\n", xCen[i], xCen[i]);
+        printf("\t\tMajor and Minor Extent, majorR, minorR (m, m): %f %f\n", majorrad[i], minorrad[i]);
+        double orientation=atan2(sinrot[i],cosrot[i])*180.0/PI;
+        printf("\t\tOrientation (angle [degrees] from X axis to major axis): %f\n", orientation);
+        double Vmagnitude=sqrt(initialVx[i]*initialVx[i]+initialVy[i]*initialVy[i]);
+        double Vdirection=atan2(initialVy[i],initialVx[i])*180.0/PI;
+        printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude);
+        printf("\t\tInitial direction ([degrees] from X axis): %f\n", Vdirection);
+        printf("\t\tPile volume [m^3]: %f\n", get_volume(i));
+    }
+    virtual void print0()
+    {
+        int i;
+        if(numpiles>0)
+        {
+            printf("Piles:    (Number of piles: %d)\n", numpiles);
+            for(i = 0; i < numpiles; i++)
+                print_pile(i);
+        }
+        else
+        {
+            printf("Piles:    there is no piles\n");
+        }
+    }
+};
+
+//! the PilePropsTwoPhases is PileProps for TwoPhases
+class PilePropsTwoPhases: public PileProps
+{
+public:
+    //! array of volume -fractions
+    std::vector<double> vol_fract;
+
+    PilePropsTwoPhases() :
+            PileProps()
+    {
+    }
+    virtual  ~PilePropsTwoPhases()
+    {
+    }
+
+    virtual void allocpiles(int numpiles_in)
+    {
+        PileProps::allocpiles(numpiles_in);
+        vol_fract.resize(numpiles);
+    }
+#ifndef SWIG
+    virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection)
+    {
+        addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, 1.0);
+    }
+#endif
+    virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection, double volfract)
+    {
+        PileProps::addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection);
+        vol_fract.push_back(volfract);
+    }
+    virtual void print_pile(int i)
+    {
+        PileProps::print_pile(i);
+        printf("\t\tInitial solid-volume fraction,(0:1.): %f\n", vol_fract[i]);
+    }
 };
 
 /*************************************************************************/
