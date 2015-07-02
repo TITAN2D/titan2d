@@ -51,7 +51,7 @@ class BoundaryPreproc;
 class TitanPreproc
 {
 public:
-    TitanPreproc(cxxTitanSimulation *tSim);
+    TitanPreproc(cxxTitanSinglePhase *tSim);
     ~TitanPreproc();
 
     //!>number of processes

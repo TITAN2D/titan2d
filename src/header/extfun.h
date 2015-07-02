@@ -78,8 +78,7 @@ int update_topo(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nu
 //! this function reads in the input data (excluding the "funky" grid) at the start of a run, whether or not run is a restart.
 extern void Read_data(int imat, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
                       TimeProps* timeprops_ptr, FluxProps *fluxprops, int* adaptflag_ptr, int* viz_flag_ptr,
-                      int* order_flag_ptr, MapNames* mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr,
-                      int *srctype);
+                      int* order_flag_ptr, MapNames* mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr);
 
 //! this function reads in the "funky" grid at the start of an original run but not during restart.  This used to be part of Read_data() before Keith seperated them when adding the restart capability.  It is my (Keith's) opinion that this should be torn out and along with the preprocessor rewritten into a new format that is a lot more like what happens during the restart, this would significantly reduce the startup time for large runs.
 extern void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable,

@@ -160,7 +160,7 @@ class TitanPile(cxxTitanPile):
         fout = open(filename, "a+", 0)
         fout.write( str(pileheight) + '\n' + str(xpilecenter) + '\n' + str(ypilecenter) + '\n' + str(majradius) + '\n' +str(minradius) + '\n' + str(orientation) + '\n' + str(Vmagnitude) + '\n' + str(Vdirection) + '\n')
         fout.close
-        
+
 class TitanSimulation(cxxTitanSimulation):
     possible_vizoutputs={
         'tecplotxxxx.tec':1, # first bit flag
@@ -175,14 +175,19 @@ class TitanSimulation(cxxTitanSimulation):
         'GIS_GRASS':cxxTitanSimulation.GIS_GRASS,
         'GDAL':cxxTitanSimulation.GDAL
     }
-    possible_orders=('PlaceHolder','First','Second')
+    possible_orders={'First':1,'Second':2}
+    def __init__():
+        pass
+class TitanSinglePhase(cxxTitanSinglePhase):
     def __init__(self,
-                 numcellsacrosspile,
-                 steps,
-                 maxtime,
-                 timeoutput,
-                 timesave,
-                 lengthscale=None,
+                 maxiter=100,
+                 maxtime=1.5,
+                 timeoutput=10.0,
+                 timesave=None,
+                 number_of_cells_across_axis=20,
+                 length_scale=1.0,
+                 gravity_scale=9.8,
+                 height_scale=None,
                  adapt=False,
                  vizoutput="tecplotxxxx.tec",
                  order='First',
@@ -190,10 +195,7 @@ class TitanSimulation(cxxTitanSimulation):
                  test_height=None,
                  test_location=None
                  ):
-        
-        
-        
-        super(TitanSimulation, self).__init__()
+        super(TitanSinglePhase, self).__init__()
         #init values
         
         #Number of Processors
@@ -204,29 +206,52 @@ class TitanSimulation(cxxTitanSimulation):
             raise ValueError('wrong amount of processors!')
         
         #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
-        self.numcellsacrosspile = numcellsacrosspile
+        self.number_of_cells_across_axis = int(number_of_cells_across_axis)
+        if self.number_of_cells_across_axis<=0:
+            raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
         
-        #Scale Simulation?
-        if lengthscale!=None:
-            self.scale = True
-            #If Scaled, Length Scale [m]
-            self.lengthscale = float(lengthscale)
-            if self.lengthscale<=0.0:
-                raise ValueError("TitanSimulation::lengthscale should be positive")
+        #Length Scale [m]
+        self.length_scale = float(length_scale)
+        if self.length_scale<=0.0:
+            raise ValueError("TitanSimulation::length_scale should be positive")
+        #gravity scaling factor [m/s^2]
+        self.gravity_scale = float(gravity_scale)
+        if self.gravity_scale<=0.0:
+            raise ValueError("TitanSimulation::gravity_scale should be positive")
+        #height scaling factor
+        if height_scale==None:
+            self.height_scale=0.0
         else:
-            self.scale = False
-            self.lengthscale = 1.0
+            self.height_scale = float(height_scale)
+            if self.height_scale<=0.0:
+                raise ValueError("TitanSimulation::height_scale should be positive")
+            
         
         #Maximum Number of Time Steps
-        self.steps = steps
+        self.maxiter = int(maxiter)
+        if self.maxiter<=0:
+            raise ValueError("TitanSimulation::maxiter should be positive")
         #Maximum Time [sec]
-        self.maxtime = maxtime
+        self.maxtime = float(maxtime)
+        if self.maxtime<=0.0:
+            raise ValueError("TitanSimulation::maxtime should be positive")
         #Time [sec] between Results Output
-        self.timeoutput = timeoutput
+        self.timeoutput = float(timeoutput)
+        if self.timeoutput<=0.0:
+            raise ValueError("TitanSimulation::timeoutput should be positive")
         #Time [sec] between Saves
-        self.timesave = timesave
+        if timesave == None:
+            self.timesave = -1.0
+        else:
+            self.timesave = float(timesave)
+            if self.timesave<=0.0:
+                raise ValueError("TitanSimulation::timesave should be positive or None")
+            
         #Adapt the Grid?
-        self.adapt = adapt
+        if adapt:
+            self.adapt = 1
+        else:
+            self.adapt = 0
         #Visualization Output
         if vizoutput in TitanSimulation.possible_vizoutputs:
             self.vizoutput = TitanSimulation.possible_vizoutputs[vizoutput]
@@ -235,27 +260,40 @@ class TitanSimulation(cxxTitanSimulation):
         
         #First/Second Order Method
         if order in TitanSimulation.possible_orders:
-            self.order = TitanSimulation.possible_orders.index(order)
+            self.order = TitanSimulation.possible_orders[order]
         else:
-            raise ValueError("Unknown order "+str(order)+". Possible formats: "+str(possible_orders[1:]))
+            raise ValueError("Unknown order "+str(order)+". Possible formats: "+str(possible_orders.keys()))
         
-        
+        #Test if flow reaches height [m] ...
+        if edge_height == None:
+            self.edge_height = -1.0
+        else:
+            self.edge_height = float(edge_height)
+            if self.edge_height <= 0:
+                raise ValueError('TitanSimulation::edge_height should be positive or None\n')
         
         #Height used to define flow outline (>0) [m]
-        self.edge_height = edge_height
-        #Test if flow reaches height [m] ...
-        self.test_height = test_height
+        
+        if test_height == None:
+            self.test_height = -2.0
+        else:
+            self.test_height =float(test_height)
+            if test_height <= 0:
+                raise ValueError('TitanSimulation::test_height should be positive or None\n') 
+        
         #... at test point (x and y location)
         if test_location==None:
-            self.test_location_x = None
-            self.test_location_y = None
+            if test_height!=None:
+                raise ValueError('TitanSimulation::test_location should be set if test_height>0\n') 
+            self.test_location_x = 0.0
+            self.test_location_y = 0.0
         else:
             if not isinstance(test_location, (list, tuple)):
                 raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
             if len(test_location)!=2:
                 raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
-            self.test_location_x = test_location[0]
-            self.test_location_y = test_location[1]
+            self.test_location_x = float(test_location[0])
+            self.test_location_y = float(test_location[1])
         
         #other inits
         self.pileHelper=[]
@@ -334,12 +372,12 @@ class TitanSimulation(cxxTitanSimulation):
                 raise ValueError(errmsg)
             
     def setMatMap(self,
-            useGIS_MatMap=False,
-            matMap=None):
+            use_gis_matmap=False,
+            matmap=None):
         #Use GIS Material Map?        
-        self.matmap = useGIS_MatMap
-        if matMap==None:
-            matMap=[{'intfrict':30.0,'bedfrict':15.0}]
+        self.use_gis_matmap = use_gis_matmap
+        if matmap==None:
+            matmap=[{'intfrict':30.0,'bedfrict':15.0}]
         
         #get (then write) list of material names and properties
 
@@ -351,11 +389,10 @@ class TitanSimulation(cxxTitanSimulation):
         previntfrict = 0.
         prevbedfrict = 0.
         
-        m=MaterialMap()
-        if self.matmap == False:
+        if self.use_gis_matmap == False:
             self.material_map.name.push_back("all materials")
-            self.material_map.intfrict.push_back(matMap[0]['intfrict'])
-            self.material_map.bedfrict.push_back(matMap[0]['bedfrict'])
+            self.material_map.intfrict.push_back(matmap[0]['intfrict'])
+            self.material_map.bedfrict.push_back(matmap[0]['bedfrict'])
             #self.material_map.print0()
         else:  #if they did want to use a GIS material map...
             raise Exception("GIS material map Not implemented yet")
@@ -365,14 +402,14 @@ class TitanSimulation(cxxTitanSimulation):
 
         #if they didn't want to use a GIS material map, get the material
         #properties once up front
-        if self.matmap == False:
+        if self.use_gis_matmap == False:
             nummat=1
             fout.write(str(nummat)+'\n')
             matname = 'all materials'
             
             # check values and store them
-            intfrict=float(matMap[0]['intfrict'])
-            bedfrict=float(matMap[0]['bedfrict'])
+            intfrict=float(matmap[0]['intfrict'])
+            bedfrict=float(matmap[0]['bedfrict'])
             
             if intfrict <= 0.0 :
                 raise ValueError('intfrict can not be negative')
@@ -469,59 +506,17 @@ class TitanSimulation(cxxTitanSimulation):
             if coord_flag != 0 and coord_flag != 4:
                 raise ValueError('Must either fill in none or all minimum and maximum coordinate values')
             
-            numcellsacrosspile = 20
-            if self.numcellsacrosspile != None:
-                numcellsacrosspile = int(self.numcellsacrosspile)
-                if numcellsacrosspile <= 0:
-                    numcellsacrosspile = 20
+            numcellsacrosspile = int(self.number_of_cells_across_axis)
     
-            if self.steps == None:
-                steps = 100
-            else:
-                steps = self.steps
-                if steps < 1:
-                    steps = 100
+            steps = self.maxiter
+            timeoutput = self.timeoutput
+            maxtime = self.maxtime
+            timesave = self.timesave
     
-            if self.timeoutput == None:
-                timeoutput = 10
-            else:
-                timeoutput = self.timeoutput
-                if timeoutput < 0:
-                    timeoutput = 10
+            edge_height = self.edge_height
+            test_height = self.test_height
     
-            if self.maxtime == None:
-                maxtime = 1.5
-            else:
-                maxtime = float(self.maxtime)
-                if maxtime <= 0:
-                    maxtime = 1.5
-    
-            if self.timesave == None:
-                timesave = -1
-            else:
-                timesave = float(self.timesave)
-                if timesave <= 0:
-                    timesave = -1
-                    if timesave > maxtime:
-                        timesave = -1
-    
-            if self.edge_height == None:
-                edge_height = -1
-            else:
-                edge_height = float(self.edge_height)
-                if edge_height <= 0:
-                    print 'you entered an edge height <= 0!\nusing default value hardcoded in titan instead\n'
-                    edge_height = -1
-                                
-            if self.test_height == None:
-                test_height = -1
-            else:
-                test_height =float(self.test_height)
-                if test_height <= 0:
-                     print 'you entered an point test height <= 0!\nusing default value hardcoded in titan instead\n'
-                     test_height = -1
-    
-            if self.test_location_x == None or self.test_location_y == None:
+            if self.test_height == -2.0:
                 test_height = -2
                 test_location_x = 'none'
                 test_location_y = 'none'
@@ -569,17 +564,11 @@ class TitanSimulation(cxxTitanSimulation):
             f_p2.write(output2)
             
             #scaling stuff
-            scale = self.scale
-            lengthscale = 1.
-            if scale:
-                lengthscale = self.lengthscale
-                if max_height <= 0.:max_height = 1.
-                if heightscale <= 0.:heightscale = 1.
-                    
-                output1 = str(lengthscale) + "\n" + str(heightscale) + "\n9.80" 
+            lengthscale = self.length_scale
+            if max_height <= 0.:max_height = 1.
+            if heightscale <= 0.:heightscale = 1.
                 
-            else:
-                output1 = "1 \n1 \n1"
+            output1 = str(lengthscale) + "\n" + str(heightscale) + "\n"+str(self.gravity_scale)
             
             f2 = 'scale.data'
             f=open(f2, "w", 0)
@@ -593,7 +582,7 @@ class TitanSimulation(cxxTitanSimulation):
             #GIS stuff
             f_p2.write('\n' + str(self.gis_format))
             if self.gis_format == 1:
-                f_p2.write('\n' + self.topomain + '\n' + self.toposub + '\n' + self.topomapset + '\n' + self.topomap +'\n' + str(int(self.matmap)))
+                f_p2.write('\n' + self.topomain + '\n' + self.toposub + '\n' + self.topomapset + '\n' + self.topomap +'\n' + str(int(self.use_gis_matmap)))
             else:
                 f_p2.write('\n' + self.topomap)
     
@@ -641,6 +630,6 @@ class TitanSimulation(cxxTitanSimulation):
             
             print
         
-        super(TitanSimulation, self).run()
+        super(TitanSinglePhase, self).run()
 
 

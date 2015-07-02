@@ -85,7 +85,7 @@ int compare_key_fn(const void* elem1, const void* elem2)
     return (0);
 }
 
-TitanPreproc::TitanPreproc(cxxTitanSimulation *tSim)
+TitanPreproc::TitanPreproc(cxxTitanSinglePhase *tSim)
 {
     NumProc = -1;
     gis_format = -1;

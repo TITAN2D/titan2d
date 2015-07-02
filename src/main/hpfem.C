@@ -35,6 +35,8 @@ int REFINE_LEVEL = 3;
 
 #include "../header/titan2d_utils.h"
 
+#include "../header/titan_simulation.h"
+
 TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
 
@@ -65,7 +67,7 @@ void checkelemnode2(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *f
 #ifdef TWO_PHASES
 int main(int argc, char *argv[])
 #else
-int hpfem()
+void cxxTitanSinglePhase::hpfem()
 #endif
 {
     int i; //-- counters
@@ -124,8 +126,9 @@ int hpfem()
     FluxProps fluxprops;
     OutLine outline;
     DISCHARGE discharge;
-    
-    int adaptflag;
+#ifdef TWO_PHASES
+    int adapt;
+#endif
     double end_time = 10000.0;
     /*
      * viz_flag is used to determine which viz output to use
@@ -139,17 +142,25 @@ int hpfem()
      */
 
     //savefileflag will be flipped so first savefile will end in 0
-    int viz_flag = 0, order_flag, savefileflag = 1;
-    int Init_Node_Num, Init_Elem_Num, srctype;
+#ifdef TWO_PHASES
+    int vizoutput = 0, order;
+#endif
+    int savefileflag = 1;
+    int Init_Node_Num, Init_Elem_Num;
     double v_star; // v/v_slump
     double nz_star; /* temporary... used for negligible velocity as stopping 
      criteria paper... plan to include in v_star implicitly 
      later */
+#ifdef TWO_PHASES
+    Read_data(myid, &matprops, &pileprops, &statprops, &timeprops, &fluxprops, &adapt, &vizoutput, &order,
+          &mapnames, &discharge, &outline);
+#else
+    process_input(&matprops, &pileprops, &statprops, &timeprops, &fluxprops,
+              &mapnames, &discharge, &outline);
+#endif
+
     
-    Read_data(myid, &matprops, &pileprops, &statprops, &timeprops, &fluxprops, &adaptflag, &viz_flag, &order_flag,
-              &mapnames, &discharge, &outline, &srctype);
-    
-    if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, &adaptflag, &order_flag,
+    if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, &adapt, &order,
                 &statprops, &discharge, &outline))
     {
         
@@ -162,7 +173,7 @@ int hpfem()
         AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -1.0);
         
         //initialize pile height and if appropriate perform initial adaptation
-        init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adaptflag, &matprops, &timeprops, &mapnames, &pileprops,
+        init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adapt, &matprops, &timeprops, &mapnames, &pileprops,
                    &fluxprops, &statprops);
     }
     else
@@ -187,7 +198,7 @@ int hpfem()
                    matprops.bedfrict[imat] * 180.0 / PI);
         
         printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", matprops.intfrict * 180.0 / PI,
-               matprops.epsilon, order_flag);
+               matprops.epsilon, order);
         printf("REFINE_LEVEL=%d\n", REFINE_LEVEL);
     }
     
@@ -200,18 +211,18 @@ int hpfem()
     if(myid == 0)
         output_summary(&timeprops, &statprops, savefileflag);
     
-    if(viz_flag & 1)
+    if(vizoutput & 1)
         tecplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
     
-    if(viz_flag & 2)
+    if(vizoutput & 2)
         meshplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
     
 #if HAVE_LIBHDF5
-    if(viz_flag & 4)
+    if(vizoutput & 4)
     xdmerr=write_xdmf(BT_Elem_Ptr,BT_Node_Ptr,&timeprops,&matprops,&mapnames,XDMF_NEW);
 #endif
     
-    if(viz_flag & 8)
+    if(vizoutput & 8)
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
@@ -260,7 +271,7 @@ int hpfem()
             update_topo(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &mapnames);
         }
         
-        if((adaptflag != 0) && (timeprops.iter % 5 == 4))
+        if((adapt != 0) && (timeprops.iter % 5 == 4))
         {
             AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -2.0);
             
@@ -292,7 +303,7 @@ int hpfem()
         
         t_start = MPI_Wtime();
         step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &pileprops, &fluxprops, &statprops,
-             &order_flag, &outline, &discharge, adaptflag);
+             &order, &outline, &discharge, adapt);
         titanTimings.stepTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
         
@@ -301,7 +312,7 @@ int hpfem()
          * save a restart file 
          */
         if(timeprops.ifsave())
-            saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adaptflag, order_flag,
+            saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adapt, order,
                     &statprops, &discharge, &outline, &savefileflag);
         
         /*
@@ -316,19 +327,19 @@ int hpfem()
             if(myid == 0)
                 output_summary(&timeprops, &statprops, savefileflag);
             
-            if(viz_flag & 1)
+            if(vizoutput & 1)
                 tecplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
             
-            if(viz_flag & 2)
+            if(vizoutput & 2)
                 meshplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
             
 #if HAVE_LIBHDF5
-            if(viz_flag & 4)
+            if(vizoutput & 4)
             xdmerr=write_xdmf(BT_Elem_Ptr, BT_Node_Ptr, &timeprops,
                     &matprops, &mapnames, XDMF_OLD);
 #endif
             
-            if(viz_flag & 8)
+            if(vizoutput & 8)
             {
                 if(myid == 0)
                     grass_sites_header_output(&timeprops);
@@ -381,7 +392,7 @@ int hpfem()
      * save a restart file 
      */
 
-    saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adaptflag, order_flag,
+    saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adapt, order,
             &statprops, &discharge, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -391,19 +402,19 @@ int hpfem()
     if(myid == 0)
         output_summary(&timeprops, &statprops, savefileflag);
     
-    if(viz_flag & 1)
+    if(vizoutput & 1)
         tecplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
     
-    if(viz_flag & 2)
+    if(vizoutput & 2)
         meshplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
     
 #if HAVE_LIBHDF5
-    if(viz_flag & 4)
+    if(vizoutput & 4)
     xdmerr=write_xdmf(BT_Elem_Ptr, BT_Node_Ptr, &timeprops,
             &matprops, &mapnames, XDMF_CLOSE);
 #endif
     
-    if(viz_flag & 8)
+    if(vizoutput & 8)
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
@@ -467,8 +478,11 @@ int hpfem()
 
 #ifdef TWO_PHASES
     MPI_Finalize();
+    return (0);
+#else
+    return;
 #endif
 
-    return (0);
     
+
 }

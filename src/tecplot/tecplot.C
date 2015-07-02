@@ -94,6 +94,28 @@ void tecplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
     
     int e_buckets = El_Table->get_no_of_buckets();
     
+    /*There are 2 ways to draw triangles
+     1) as a separate ZONE of triangles 
+     2) as quads with duplicate points
+     I chose the 2nd option.  Why?  Because I want all the elements
+     from a given processor to be in a single zone.  Also duplicate 
+     points for every element that uses them have been eliminated.
+     That makes the "boundary" option in tecplot work right, but 
+     more importantly the nodes the triangles use aren't repeated 
+     (you get the triangles for free apart from the element 
+     conectivity data) and nodes for quads are reduced by about a
+     factor of 4.  This reduces file the size by about a factor of 4 
+     when grid adaptation is used, and by about a factor of 3 when 
+     it's not.  
+
+     MODIFICATION: 20070115: Now Each And Every BUBBLE Node of Active 
+     and Ghost Elements are printed once in the order they appear in 
+     the Element HashTable.  This eliminates the need to sort (quick
+     or otherwise) the elements speeding up tecplot, at the cost of 
+     slightly increasing the file size on multiprocessor runs 
+     (adding BUBBLE nodes of GHOST elements along the right and upper
+     edges of the collection of elements this processor "owns")
+     */
     //move_data(numprocs, myid, El_Table, NodeTable,timeprops);
     
     if(myid == TARGETPROCA)

@@ -15,9 +15,12 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <mpi.h>
 #include "../header/titan_simulation.h"
 #include <math.h>
+#include "../header/constant.h"
+#include "../header/properties.h"
 
 cxxTitanPile::cxxTitanPile()
 {
@@ -238,34 +241,582 @@ int MaterialMap::get_material_count()
 {
     return name.size();
 }
+
 cxxTitanSimulation::cxxTitanSimulation()
 {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    
+
     gis_format = -1;
-    
+
     topomain = "";
     toposub = "";
     topomapset = "";
     topomap = "";
     topovector = "";
-    
+
     region_limits_set = false;
-    
+
     min_location_x = 0.0;
     max_location_x = 0.0;
     min_location_y = 0.0;
     max_location_y = 0.0;
-    
+
     MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanSimulation::~cxxTitanSimulation()
 {
-    
+
+}
+void cxxTitanSimulation::run()
+{
+
+}
+void cxxTitanSimulation::input_summary()
+{
+    if(myid != 0)
+    {
+        MPI_Barrier (MPI_COMM_WORLD);
+        return;
+    }
+
+    printf("GIS:\n");
+    printf("\tgis_format: %d\n", gis_format);
+
+    printf("\ttopomain: %s\n", topomain.c_str());
+    printf("\ttoposub: %s\n", toposub.c_str());
+    printf("\ttopomapset: %s\n", topomapset.c_str());
+    printf("\ttopomap: %s\n", topomap.c_str());
+    printf("\ttopovector: %s\n", topovector.c_str());
+
+    printf("\tregion_limits_set %d\n", (int) region_limits_set);
+
+    /*int i;
+    printf("Piles:\n");
+    printf("\tNumber of piles: %d\n", (int) piles.size());
+    for(i = 0; i < piles.size(); i++)
+    {
+        printf("\tPile %d:\n", i);
+        piles[i].print0();
+    }
+    printf("Flux sources:\n");
+    printf("\tNumber of flux sources: %d\n", (int) flux_sources.size());
+    for(i = 0; i < flux_sources.size(); i++)
+    {
+        printf("\tFlux_source %d:\n", i);
+        flux_sources[i].print0();
+    }
+    printf("Discharge planes:\n");
+    printf("\tNumber of discharge planes: %d\n", (int) discharge_planes.size());
+    for(i = 0; i < discharge_planes.size(); i++)
+    {
+        printf("\tDischarge plane %d:\n", i);
+        discharge_planes[i].print0();
+    }*/
+
+    MPI_Barrier (MPI_COMM_WORLD);
+}
+
+cxxTitanSinglePhase::cxxTitanSinglePhase() :
+        cxxTitanSimulation()
+{
+    MPI_Barrier (MPI_COMM_WORLD);
+}
+cxxTitanSinglePhase::~cxxTitanSinglePhase()
+{
+
+}
+
+
+void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
+               TimeProps* timeprops_ptr, FluxProps* fluxprops, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+{
+    /*************************************************************************/
+    //regular pile info input
+    //read in elliptical (in x-y coordinates) pile info
+
+    int numpiles = piles.size();  // the number of separate files to use
+    int no_of_sources = flux_sources.size();
+
+    int isrc;
+
+    if(numpiles>0)
+    {
+        pileprops_ptr->allocpiles(numpiles);
+
+        double rotang;
+        double doubleswap1, doubleswap2;
+#ifdef TWO_PHASES
+        double maxphi = 0.;
+        double minphi = HUGE_VAL;
+#endif
+        int imat;
+
+        for(isrc = 0; isrc < numpiles; isrc++)
+        {
+            pileprops_ptr->pileheight[isrc]=piles[isrc].height;  // pile height
+
+#ifdef TWO_PHASES
+            // solid-volume fraction
+            inD2 >> pileprops_ptr->vol_fract[isrc];
+            // search for min-max phi
+            if(pileprops_ptr->vol_fract[isrc] > maxphi)
+                maxphi = pileprops_ptr->vol_fract[isrc];
+            if(pileprops_ptr->vol_fract[isrc] < minphi)
+                minphi = pileprops_ptr->vol_fract[isrc];
+#endif
+
+            // pile x-center
+            pileprops_ptr->xCen[isrc]=piles[isrc].xcenter;
+            // pile y-center
+            pileprops_ptr->yCen[isrc]=piles[isrc].ycenter;
+            // pile "major axis" radius x-radius if no rotation
+            pileprops_ptr->majorrad[isrc]=piles[isrc].majradius;
+            // pile minor axis radius y-radius if no rotation
+            pileprops_ptr->minorrad[isrc]=piles[isrc].minradius;
+            // counter clockwise pile rotation angle
+            rotang=piles[isrc].orientation;
+            pileprops_ptr->cosrot[isrc] = cos(rotang * PI / 180.0);
+            pileprops_ptr->sinrot[isrc] = sin(rotang * PI / 180.0);
+
+            //flow speed
+            doubleswap1=piles[isrc].Vmagnitude;
+            //flow direction measured counter clockwise from x axis
+            doubleswap2= piles[isrc].Vdirection * PI / 180.0;
+
+            pileprops_ptr->initialVx[isrc] = doubleswap1 * cos(doubleswap2);
+            pileprops_ptr->initialVy[isrc] = doubleswap1 * sin(doubleswap2);
+
+        }
+#ifdef TWO_PHASES
+        // cut-off extremes
+        assert(minphi <= maxphi);
+        if(minphi < 0.2)
+            matprops_ptr->flow_type = FLUID_FLOW;
+        else if(maxphi > 0.9)
+            matprops_ptr->flow_type = DRY_FLOW;
+        else
+            matprops_ptr->flow_type = TWOPHASE;
+#endif
+    }
+    if(no_of_sources>0)
+    {
+        double rotang = 0;
+        double vel, vel_angle;
+        fluxprops->allocsrcs(no_of_sources);
+
+        for(isrc = 0; isrc < no_of_sources; isrc++)
+        {
+            fluxprops->influx[isrc]=flux_sources[isrc].influx;
+            fluxprops->start_time[isrc]=flux_sources[isrc].start_time;
+            fluxprops->end_time[isrc]=flux_sources[isrc].end_time;
+            fluxprops->xCen[isrc]=flux_sources[isrc].xcenter;
+            fluxprops->yCen[isrc]=flux_sources[isrc].ycenter;
+            fluxprops->majorrad[isrc]=flux_sources[isrc].majradius;
+            fluxprops->minorrad[isrc]=flux_sources[isrc].minradius;
+            rotang=flux_sources[isrc].orientation;
+            fluxprops->cosrot[isrc] = cos(rotang * PI / 180);
+            fluxprops->sinrot[isrc] = sin(rotang * PI / 180);
+            vel=flux_sources[isrc].Vmagnitude;
+            vel_angle=flux_sources[isrc].Vdirection * PI / 180.;
+            fluxprops->xVel[isrc] = vel * cos(vel_angle);
+            fluxprops->yVel[isrc] = vel * sin(vel_angle);
+
+        }
+
+    }
+    if(no_of_sources+numpiles==0)
+    {
+        printf("ERROR: No material source was defined");
+        exit(1);
+    }
+    int i;
+#ifdef STATISTICS_IS_NOT_TRANSFERED
+    /*************************************************************************/
+    //over ride regular input with statistical sample run data
+    FILE* fp;
+    int lhsref, lhsid, ifstatbed = 0;
+    double statbed, statint;  //friction angles
+    if((fp = fopen("statin.bed", "r")) != NULL)
+    {
+        ifstatbed = 1;
+        fscanf(fp, "%d%d%lf%lf", &(statprops_ptr->lhs.refnum), &(statprops_ptr->lhs.runid), &statbed, &statint);
+        fclose(fp);
+        statbed *= PI / 180.0;
+        statint *= PI / 180.0;
+    }
+    else if((fp = fopen("statin.vol", "r")) != NULL)
+    {
+        double volumescale;
+        fscanf(fp, "%d%d%lf%lf", &(statprops_ptr->lhs.refnum), &(statprops_ptr->lhs.runid), &volumescale);
+        fclose(fp);
+        volumescale = pow(volumescale, 1 / 3.0);
+
+        for(i = 0; i < numpiles; i++)
+        {
+            pileprops_ptr->pileheight[i] *= volumescale;
+            pileprops_ptr->majorrad[i] *= volumescale;
+            pileprops_ptr->minorrad[i] *= volumescale;
+        }
+    }
+
+    //PCQ
+    int isample = -1, ifpcqvolbed = 0;
+    double pcqbedfrict;
+    fp = fopen("sample.number", "r");
+    if(fp != NULL)
+    {
+        fscanf(fp, "%d", &isample);
+        fclose(fp);
+        statprops_ptr->lhs.runid = isample;
+        double volume;
+        int intswap;
+        char samplefilename[256];
+        sprintf(samplefilename, "dirfluxsample.%06d", isample);
+        fp = fopen(samplefilename, "r");
+        if(fp != NULL)
+        {
+            assert(fluxprops->no_of_sources);
+            fluxprops->no_of_sources = 1;
+
+            char stringswap[4096];
+            fgets(stringswap, 4096, fp);  //Nsample
+            fscanf(fp, "isample=%d\n", &intswap);
+            assert(intswap == isample);
+            fgets(stringswap, 4096, fp);  //weight
+            fgets(stringswap, 4096, fp);  //Nrand
+            fgets(stringswap, 4096, fp);  //Nvol
+            fgets(stringswap, 4096, fp);  //Ndir
+            fgets(stringswap, 4096, fp);  //randvar
+            fscanf(fp, "volume=%lf\n", &volume);
+            double vel = sqrt(fluxprops->xVel[0] * fluxprops->xVel[0] + fluxprops->yVel[0] * fluxprops->yVel[0]);
+            double vel_angle;
+            fscanf(fp, "direction=%lf\n", &vel_angle);
+            vel_angle *= PI / 180.;
+            fluxprops->xVel[0] = vel * cos(vel_angle);
+            fluxprops->yVel[0] = vel * sin(vel_angle);
+            fluxprops->start_time[0] = 0.0;
+            fscanf(fp, "flux duration=%lf\n", &(fluxprops->end_time[0]));
+            fscanf(fp, "init center flux=%lf\n", &(fluxprops->influx[0]));
+            printf("Vol=%g [m^3]\n", volume);
+        }
+    }
+#endif
+    statprops_ptr->runid = statprops_ptr->lhs.runid;
+
+    /*************************************************************************/
+    //scaling info
+    matprops_ptr->LENGTH_SCALE=length_scale;
+    //all height scaling now based on cube root of predicted volume, see below
+    matprops_ptr->HEIGHT_SCALE=height_scale;
+    matprops_ptr->GRAVITY_SCALE=gravity_scale;
+
+    double doubleswap;
+
+    //this is used in ../geoflow/stats.C ... might want to set
+    //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin
+    //layer control, need to reevaluate this, we should also
+    //reevaluate after we implement a "good" local stopping criteria
+    matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = matprops_ptr->HEIGHT_SCALE / 10000.0;
+
+    if(height_scale==0.0)
+    {
+        double totalvolume = 0.0;
+
+        if(pileprops_ptr->numpiles > 0)
+            for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+                totalvolume += 0.5 * PI * pileprops_ptr->pileheight[isrc] * pileprops_ptr->majorrad[isrc]
+                               * pileprops_ptr->minorrad[isrc];
+
+        if(fluxprops->no_of_sources > 0)
+            for(isrc = 0; isrc < fluxprops->no_of_sources; isrc++)
+                totalvolume += 0.5 * PI * fluxprops->influx[isrc] * fluxprops->majorrad[isrc] * fluxprops->minorrad[isrc]
+                               * 0.5 * (fluxprops->end_time[isrc] - //0.5 for linear decrease
+                                       fluxprops->start_time[isrc]);
+
+        doubleswap = pow(totalvolume, 1.0 / 3.0);
+
+        if((matprops_ptr->GRAVITY_SCALE != 1.0) || (matprops_ptr->LENGTH_SCALE != 1.0))
+            matprops_ptr->HEIGHT_SCALE = doubleswap;
+        else
+            matprops_ptr->HEIGHT_SCALE = 1.0;
+
+        matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = doubleswap / matprops_ptr->HEIGHT_SCALE / 10000.0;
+    }
+
+    matprops_ptr->epsilon = matprops_ptr->HEIGHT_SCALE / matprops_ptr->LENGTH_SCALE;
+
+    double TIME_SCALE = sqrt(matprops_ptr->LENGTH_SCALE / matprops_ptr->GRAVITY_SCALE);
+
+    //non-dimensionalize the inputs
+    double VELOCITY_SCALE = sqrt(matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE);
+
+#ifdef TWO_PHASES
+    double diameter = 0.005;
+    double vterm = pow(diameter, 2.) * (matprops_ptr->den_solid - matprops_ptr->den_fluid) * matprops_ptr->GRAVITY_SCALE
+            / (18. * matprops_ptr->viscosity);
+    matprops_ptr->v_terminal = vterm;
+#endif
+
+    double smallestpileradius = HUGE_VAL;
+
+    for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+    {
+        pileprops_ptr->pileheight[isrc] /= matprops_ptr->HEIGHT_SCALE;
+        pileprops_ptr->xCen[isrc] /= matprops_ptr->LENGTH_SCALE;
+        pileprops_ptr->yCen[isrc] /= matprops_ptr->LENGTH_SCALE;
+        pileprops_ptr->majorrad[isrc] /= matprops_ptr->LENGTH_SCALE;
+        pileprops_ptr->minorrad[isrc] /= matprops_ptr->LENGTH_SCALE;
+        pileprops_ptr->initialVx[isrc] /= VELOCITY_SCALE;
+        pileprops_ptr->initialVy[isrc] /= VELOCITY_SCALE;
+
+        if(smallestpileradius > pileprops_ptr->majorrad[isrc])
+            smallestpileradius = pileprops_ptr->majorrad[isrc];
+
+        if(smallestpileradius > pileprops_ptr->minorrad[isrc])
+            smallestpileradius = pileprops_ptr->minorrad[isrc];
+    }
+
+    for(isrc = 0; isrc < fluxprops->no_of_sources; isrc++)
+    {
+        fluxprops->influx[isrc] *= TIME_SCALE / (matprops_ptr->HEIGHT_SCALE);
+        fluxprops->start_time[isrc] /= TIME_SCALE;
+        fluxprops->end_time[isrc] /= TIME_SCALE;
+        fluxprops->xCen[isrc] /= matprops_ptr->LENGTH_SCALE;
+        fluxprops->yCen[isrc] /= matprops_ptr->LENGTH_SCALE;
+        fluxprops->majorrad[isrc] /= matprops_ptr->LENGTH_SCALE;
+        fluxprops->minorrad[isrc] /= matprops_ptr->LENGTH_SCALE;
+        fluxprops->xVel[isrc] /= VELOCITY_SCALE;
+        fluxprops->yVel[isrc] /= VELOCITY_SCALE;
+
+        if(smallestpileradius > fluxprops->majorrad[isrc])
+            smallestpileradius = fluxprops->majorrad[isrc];
+
+        if(smallestpileradius > fluxprops->minorrad[isrc])
+            smallestpileradius = fluxprops->minorrad[isrc];
+    }
+
+    matprops_ptr->smallest_axis = 2.0 * smallestpileradius;
+    matprops_ptr->number_of_cells_across_axis=number_of_cells_across_axis;
+
+#ifdef TWO_PHASES
+    /*************************************************************************/
+    /* the non-dimensional velocity stopping criteria is an idea that
+     didn't work for anything other than a slumping pile on a horizontal
+     surface, it's only still here because I didn't want to bother
+     with removing it.  --Keith Dalbey 2005.10.28
+
+     kappa is a to be determined constant, calculation stops when
+     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
+    double kappa = 1.0;   //should eventually move to a header file
+    double gravity = 9.8; //[m/s^2]
+    matprops_ptr->Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
+#endif
+
+    /*************************************************************************/
+    //time related info
+    timeprops_ptr->inittime(maxiter, maxtime, timeoutput, timesave, TIME_SCALE);
+
+    /*************************************************************************/
+
+    int extramaps=0;
+    if(use_gis_matmap)extramaps=1;
+
+    /*************************************************************************/
+    // read in GIS information
+    mapnames_ptr->assign(topomain.c_str(), toposub.c_str(), topomapset.c_str(), topomap.c_str(), gis_format, extramaps);
+    i = Initialize_GIS_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), topomap.c_str(), gis_format);
+    if(i != 0)
+    {
+        printf("Problem with GIS on processor %d\n", myid);
+        exit(1);
+    }
+
+#ifndef TWO_PHASES
+    /*************************************************************************
+     * Vslump doesn't mean it is related to slumping of pile
+     * It is simply the maximum hypothetical velocity from
+     * free fall of the pile.
+     ************************************************************************/
+    double gravity = 9.8; //[m/s^2]
+    double zmin, res;
+    // get DEM resolution from GIS
+    int ierr = Get_max_resolution(&res);
+    if(ierr == 0)
+    {
+        // Get minimum finite elevation from GIS
+        ierr = Get_elev_min(res, &zmin);
+        if(ierr != 0)
+            zmin = 0;
+    }
+    if(isnan (zmin) || (zmin < 0))
+        zmin = 0;
+
+    // search highest point amongst piles
+    double zcen = 0;
+    int j = 0;
+    for(i = 0; i < pileprops_ptr->numpiles; i++)
+    {
+        double xcen = matprops_ptr->LENGTH_SCALE * pileprops_ptr->xCen[i];
+        double ycen = matprops_ptr->LENGTH_SCALE * pileprops_ptr->yCen[i];
+        double ztemp = 0;
+        ierr = Get_elevation(res, xcen, ycen, &ztemp);
+        if(ierr != 0)
+            ztemp = 0;
+
+        if((ztemp + pileprops_ptr->pileheight[i]) > (zcen + pileprops_ptr->pileheight[i]))
+        {
+            zcen = ztemp;
+            j = i;
+        }
+    }
+
+    // calculate Vslump
+    double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
+    matprops_ptr->Vslump = sqrt(gravity * hscale);
+#endif
+    /*************************************************************************/
+    //test point information
+    statprops_ptr->hxyminmax=edge_height;
+    if(statprops_ptr->hxyminmax == -1)
+        statprops_ptr->hxyminmax = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
+    else if(statprops_ptr->hxyminmax <= 0.0)
+    {
+        printf("bogus edge height=%g read in from simulation.data\n \
+            (edge height = -1 is the flag for using the default height)\n \
+            Exitting!!\n",
+               statprops_ptr->hxyminmax);
+        exit(1);
+    }
+    statprops_ptr->hxyminmax /= matprops_ptr->HEIGHT_SCALE;
+
+    statprops_ptr->heightifreach=test_height;
+    char chargarb1[64], chargarb2[64];
+    if(statprops_ptr->heightifreach != -2)
+    {
+
+        //default test height is 10 time the maximum negligible height
+        if(statprops_ptr->heightifreach == -1)
+            statprops_ptr->heightifreach = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
+
+        statprops_ptr->heightifreach /= matprops_ptr->HEIGHT_SCALE;
+
+        statprops_ptr->xyifreach[0]=test_location_x/matprops_ptr->LENGTH_SCALE;
+        statprops_ptr->xyifreach[1]=test_location_y/matprops_ptr->LENGTH_SCALE;
+    }
+    else
+    {
+        statprops_ptr->heightifreach = statprops_ptr->xyifreach[0] = statprops_ptr->xyifreach[1] =
+        HUGE_VAL;
+    }
+
+    //to get rid on uninitiallized memory error in saverun() (restart.C)
+    statprops_ptr->forceint = statprops_ptr->forcebed = 0.0;
+
+    /*************************************************************************/
+    //the discharge plane section starts here
+    int iplane, num_planes;
+    double **planes;
+    num_planes=discharge_planes.size();
+
+    if(num_planes > 0)
+    {
+        planes = CAllocD2(num_planes, 4);
+        for(iplane = 0; iplane < num_planes; iplane++)
+        {
+            planes[iplane][0]=discharge_planes[iplane].x_a/matprops_ptr->LENGTH_SCALE;
+            planes[iplane][1]=discharge_planes[iplane].y_a/matprops_ptr->LENGTH_SCALE;
+            planes[iplane][2]=discharge_planes[iplane].x_b/matprops_ptr->LENGTH_SCALE;
+            planes[iplane][3]=discharge_planes[iplane].y_b/matprops_ptr->LENGTH_SCALE;
+        }
+    }
+
+    discharge_ptr->init(num_planes, planes);
+
+    if(num_planes > 0)
+        CDeAllocD2(planes);
+    //the discharge plane section ends here
+    /*************************************************************************/
+
+    //read in material properties
+    matprops_ptr->material_count=material_map.get_material_count();
+
+    matprops_ptr->matnames = (char **) malloc((matprops_ptr->material_count + 1) * sizeof(char *));
+    matprops_ptr->bedfrict = CAllocD1(matprops_ptr->material_count + 1);
+    matprops_ptr->tanbedfrict = CAllocD1(matprops_ptr->material_count + 1);
+    int imat;
+
+    for(imat = 1; imat <= matprops_ptr->material_count; imat++)
+    {
+        matprops_ptr->matnames[imat] = allocstrcpy(material_map.name[imat-1].c_str());
+
+        doubleswap=material_map.intfrict[imat-1];
+        matprops_ptr->bedfrict[imat]=material_map.bedfrict[imat-1];
+        matprops_ptr->bedfrict[imat] *= PI / 180.0;
+        matprops_ptr->tanbedfrict[imat] = tan(matprops_ptr->intfrict);
+
+        if(imat == 1)
+        {
+            matprops_ptr->intfrict = doubleswap * PI / 180.0;
+            matprops_ptr->tanintfrict = tan(matprops_ptr->intfrict);
+        }
+    }
+
+    if(matprops_ptr->material_count > 1)
+    {
+        char *gis_matmap = (char *) malloc((topomap.size() + 5) * sizeof(char));
+        strcpy(gis_matmap, topomap.c_str());
+        strcat(gis_matmap + strlen(topomap.c_str()), "_Mat");
+
+        if(Initialize_Raster_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), gis_matmap))
+        {
+            printf("Problem with GIS Material on processor %d\n", myid);
+            exit(1);
+        }
+        free(gis_matmap);
+
+        int nummat;
+        Get_raster_categories(&nummat);
+        if(nummat != matprops_ptr->material_count)
+        {
+            printf("frict.data has %d materials but material map has %d, aborting\n", matprops_ptr->material_count,
+                   nummat);
+            exit(1);
+        }
+    }
+
+    /* physically we don't know how to specify a changing internal friction
+     angle, we don't know how the contents of an avalanche changes as it
+     picks up new material.  We don't know how to keep track of the material
+     it picks up.  So we say that the internal friction angle is a constant
+     */
+#ifdef STATISTICS_IS_NOT_TRANSFERED
+    //replace frict.data values of bed friction with ones from a
+    //statistics sample run file read in above
+    if(ifstatbed)
+    {
+        matprops_ptr->intfrict = statint;
+        for(int imat = 1; imat <= matprops_ptr->material_count; imat++)
+            matprops_ptr->bedfrict[imat] = statbed;
+    }
+
+    if(ifpcqvolbed)
+    { //printf("PCQ bedfrict yada\n");
+        matprops_ptr->bedfrict[1] = pcqbedfrict * PI / 180.0;
+
+        double doubleswap = sqrt(tan(matprops_ptr->bedfrict[1]));
+        for(int imat = 2; imat <= matprops_ptr->material_count; imat++)
+        {
+            matprops_ptr->bedfrict[imat] = matprops_ptr->bedfrict[1];
+        }
+    }
+#endif
+    /*************************************************************************/
+    //to read in outline parameters here when it has been added
+    return;
 }
 int hpfem();
-void cxxTitanSimulation::run()
+void cxxTitanSinglePhase::run()
 {
     printf("cxxTitanSimulation::run %d\n", myid);
     MPI_Barrier (MPI_COMM_WORLD);
@@ -277,7 +828,7 @@ void cxxTitanSimulation::run()
     
 }
 
-void cxxTitanSimulation::input_summary()
+void cxxTitanSinglePhase::input_summary()
 {
     if(myid != 0)
     {
@@ -321,3 +872,4 @@ void cxxTitanSimulation::input_summary()
     
     MPI_Barrier (MPI_COMM_WORLD);
 }
+

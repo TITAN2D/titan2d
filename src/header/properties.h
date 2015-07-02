@@ -270,8 +270,8 @@ struct MapNames
     }
     
     //! this function allocates space for and assigns the information about the GIS map
-    void assign(char *gis_main_in, char *gis_sub_in, char *gis_mapset_in, char *gis_map_in, int format,
-                int extramaps_in)
+    void assign(const char *gis_main_in, const char *gis_sub_in, const char *gis_mapset_in, const char *gis_map_in, const int format,
+                const int extramaps_in)
     {
         gis_main = allocstrcpy(gis_main_in);
         gis_sub = allocstrcpy(gis_sub_in);

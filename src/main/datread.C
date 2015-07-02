@@ -35,8 +35,7 @@ extern "C" void INITIAL(int*, double*, double*);
 
 void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
                TimeProps* timeprops_ptr, FluxProps* fluxprops, int* adaptflag_ptr, int* viz_flag_ptr,
-               int* order_flag_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr,
-               int *srctype)
+               int* order_flag_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
 {
     /*************************************************************************/
     //regular pile info input
@@ -47,17 +46,18 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
         printf("can't find simulation.data file\n");
         exit(0);
     }
-    inD2 >> *srctype; // is it a flux source or pile source?
+    int srctype;
+    inD2 >> srctype; // is it a flux source or pile source?
     int numpiles = 0;  // the number of separate files to use
     int no_of_sources = 0;
     int isrc;
     
-    if((*srctype) & 0x1)
+    if((srctype) & 0x1)
         inD2 >> numpiles;
-    if((*srctype) & 0x2)
+    if((srctype) & 0x2)
         inD2 >> no_of_sources;
     
-    if((*srctype) & 0x1)
+    if((srctype) & 0x1)
     {
         pileprops_ptr->allocpiles(numpiles);
         
@@ -111,7 +111,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
             matprops_ptr->flow_type = TWOPHASE;
 #endif
     }
-    if((*srctype) & 0x2)
+    if((srctype) & 0x2)
     {
         double rotang = 0;
         double vel, vel_angle;
@@ -138,7 +138,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
         }
         
     }
-    if(!srctype)
+    if(srctype==0)
     {
         printf("ERROR: No material source was defined");
         exit(1);
@@ -236,6 +236,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     }
     inscale.close();
 
+    double doubleswap;
 #ifndef TWO_PHASES
     double totalvolume = 0.0;
     
@@ -250,7 +251,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
                            * 0.5 * (fluxprops->end_time[isrc] - //0.5 for linear decrease
                                    fluxprops->start_time[isrc]);
     
-    double doubleswap = pow(totalvolume, 1.0 / 3.0);
+    doubleswap = pow(totalvolume, 1.0 / 3.0);
     
     if((matprops_ptr->GRAVITY_SCALE != 1.0) || (matprops_ptr->LENGTH_SCALE != 1.0))
         matprops_ptr->HEIGHT_SCALE = doubleswap;
@@ -513,9 +514,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     matprops_ptr->tanbedfrict = CAllocD1(matprops_ptr->material_count + 1);
     char stringswap[512];
     int imat;
-#ifdef TWO_PHASES
-    double doubleswap;
-#endif
+
     for(imat = 1; imat <= matprops_ptr->material_count; imat++)
     {
         fgets(stringswap, 512, fp);
