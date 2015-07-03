@@ -294,10 +294,10 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     for(isrc = 0; isrc < numpiles; isrc++)
     {
         // search for min-max phi
-        if(pileprops.vol_fract[isrc] > maxphi)
-            maxphi = pileprops.vol_fract[isrc];
-        if(pileprops.vol_fract[isrc] < minphi)
-            minphi = pileprops.vol_fract[isrc];
+        if(pileprops_ptr->vol_fract[isrc] > maxphi)
+            maxphi = pileprops_ptr->vol_fract[isrc];
+        if(pileprops_ptr->vol_fract[isrc] < minphi)
+            minphi = pileprops_ptr->vol_fract[isrc];
     }
     // cut-off extremes
     assert(minphi <= maxphi);
@@ -336,7 +336,7 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
         }
 
     }
-    if(no_of_sources+pileprops.numpiles==0)
+    if(no_of_sources+pileprops_ptr->numpiles==0)
     {
         printf("ERROR: No material source was defined");
         exit(1);
@@ -365,9 +365,9 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
 
         for(i = 0; i < numpiles; i++)
         {
-            pileprops.pileheight[i] *= volumescale;
-            pileprops.majorrad[i] *= volumescale;
-            pileprops.minorrad[i] *= volumescale;
+            pileprops_ptr->pileheight[i] *= volumescale;
+            pileprops_ptr->majorrad[i] *= volumescale;
+            pileprops_ptr->minorrad[i] *= volumescale;
         }
     }
 
@@ -424,7 +424,7 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
 
     double doubleswap;
 
-    PileProps* pileprops_ptr=&pileprops;
+    PileProps* pileprops_ptr=get_pileprops();
 
     //this is used in ../geoflow/stats.C ... might want to set
     //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin
@@ -436,10 +436,10 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     {
         double totalvolume = 0.0;
 
-        if(pileprops.numpiles > 0)
-            for(isrc = 0; isrc < pileprops.numpiles; isrc++)
-                totalvolume += 0.5 * PI * pileprops.pileheight[isrc] * pileprops.majorrad[isrc]
-                               * pileprops.minorrad[isrc];
+        if(pileprops_ptr->numpiles > 0)
+            for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+                totalvolume += 0.5 * PI * pileprops_ptr->pileheight[isrc] * pileprops_ptr->majorrad[isrc]
+                               * pileprops_ptr->minorrad[isrc];
 
         if(fluxprops->no_of_sources > 0)
             for(isrc = 0; isrc < fluxprops->no_of_sources; isrc++)
@@ -473,9 +473,9 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
 
     double smallestpileradius;
 
-    pileprops.scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
+    pileprops_ptr->scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
 
-    smallestpileradius=pileprops.get_smallest_pile_radius();
+    smallestpileradius=pileprops_ptr->get_smallest_pile_radius();
 
     for(isrc = 0; isrc < fluxprops->no_of_sources; isrc++)
     {
@@ -555,16 +555,16 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     // search highest point amongst piles
     double zcen = 0;
     int j = 0;
-    for(i = 0; i < pileprops.numpiles; i++)
+    for(i = 0; i < pileprops_ptr->numpiles; i++)
     {
-        double xcen = matprops_ptr->LENGTH_SCALE * pileprops.xCen[i];
-        double ycen = matprops_ptr->LENGTH_SCALE * pileprops.yCen[i];
+        double xcen = matprops_ptr->LENGTH_SCALE * pileprops_ptr->xCen[i];
+        double ycen = matprops_ptr->LENGTH_SCALE * pileprops_ptr->yCen[i];
         double ztemp = 0;
         ierr = Get_elevation(res, xcen, ycen, &ztemp);
         if(ierr != 0)
             ztemp = 0;
 
-        if((ztemp + pileprops.pileheight[i]) > (zcen + pileprops.pileheight[i]))
+        if((ztemp + pileprops_ptr->pileheight[i]) > (zcen + pileprops_ptr->pileheight[i]))
         {
             zcen = ztemp;
             j = i;
@@ -572,7 +572,7 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     }
 
     // calculate Vslump
-    double hscale = (zcen - zmin) + pileprops.pileheight[j];
+    double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
     matprops_ptr->Vslump = sqrt(gravity * hscale);
 #endif
     /*************************************************************************/
@@ -748,7 +748,7 @@ void cxxTitanSinglePhase::input_summary()
     printf("\tregion_limits_set %d\n", (int) region_limits_set);
     
     int i;
-    pileprops.print0();
+    get_pileprops()->print0();
 
     printf("Flux sources:\n");
     printf("\tNumber of flux sources: %d\n", (int) flux_sources.size());
@@ -768,3 +768,12 @@ void cxxTitanSinglePhase::input_summary()
     MPI_Barrier (MPI_COMM_WORLD);
 }
 
+cxxTitanTwoPhases::cxxTitanTwoPhases() :
+        cxxTitanSinglePhase()
+{
+    MPI_Barrier (MPI_COMM_WORLD);
+}
+cxxTitanTwoPhases::~cxxTitanTwoPhases()
+{
+
+}

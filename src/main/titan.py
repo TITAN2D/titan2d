@@ -102,7 +102,7 @@ class TitanDischargePlane(cxxTitanDischargePlane):
         #self.y_b = float(y_b)
 
 
-class TitanSimulation(cxxTitanSimulation):
+class TitanSimulation(object):
     possible_vizoutputs={
         'tecplotxxxx.tec':1, # first bit flag
         'mshplotxxxx.tec':2, # second bit flag
@@ -117,9 +117,13 @@ class TitanSimulation(cxxTitanSimulation):
         'GDAL':cxxTitanSimulation.GDAL
     }
     possible_orders={'First':1,'Second':2}
-    def __init__():
-        pass
-class TitanSinglePhase(cxxTitanSinglePhase):
+    def __init__(self):
+        self.sim=None
+    def input_summary(self):
+        if self.sim!=None:
+            self.sim.input_summary()
+        
+class TitanSinglePhase(TitanSimulation):
     def __init__(self,
                  maxiter=100,
                  maxtime=1.5,
@@ -137,88 +141,89 @@ class TitanSinglePhase(cxxTitanSinglePhase):
                  test_location=None
                  ):
         super(TitanSinglePhase, self).__init__()
+        self.sim=cxxTitanSinglePhase()
         #init values
         
         #Number of Processors
-        numprocs=self.numprocs
+        numprocs=self.sim.numprocs
         if numprocs <= 0:
             raise ValueError('numprocs must be greater than 0, it is ' + str(numprocs))
         if numprocs not in (1,2,4,8,12,128,256,512):
             raise ValueError('wrong amount of processors!')
         
         #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
-        self.number_of_cells_across_axis = int(number_of_cells_across_axis)
-        if self.number_of_cells_across_axis<=0:
+        self.sim.number_of_cells_across_axis = int(number_of_cells_across_axis)
+        if self.sim.number_of_cells_across_axis<=0:
             raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
         
         #Length Scale [m]
-        self.length_scale = float(length_scale)
-        if self.length_scale<=0.0:
+        self.sim.length_scale = float(length_scale)
+        if self.sim.length_scale<=0.0:
             raise ValueError("TitanSimulation::length_scale should be positive")
         #gravity scaling factor [m/s^2]
-        self.gravity_scale = float(gravity_scale)
-        if self.gravity_scale<=0.0:
+        self.sim.gravity_scale = float(gravity_scale)
+        if self.sim.gravity_scale<=0.0:
             raise ValueError("TitanSimulation::gravity_scale should be positive")
         #height scaling factor
         if height_scale==None:
-            self.height_scale=0.0
+            self.sim.height_scale=0.0
         else:
-            self.height_scale = float(height_scale)
-            if self.height_scale<=0.0:
+            self.sim.height_scale = float(height_scale)
+            if self.sim.height_scale<=0.0:
                 raise ValueError("TitanSimulation::height_scale should be positive")
             
         
         #Maximum Number of Time Steps
-        self.maxiter = int(maxiter)
-        if self.maxiter<=0:
+        self.sim.maxiter = int(maxiter)
+        if self.sim.maxiter<=0:
             raise ValueError("TitanSimulation::maxiter should be positive")
         #Maximum Time [sec]
-        self.maxtime = float(maxtime)
-        if self.maxtime<=0.0:
+        self.sim.maxtime = float(maxtime)
+        if self.sim.maxtime<=0.0:
             raise ValueError("TitanSimulation::maxtime should be positive")
         #Time [sec] between Results Output
-        self.timeoutput = float(timeoutput)
-        if self.timeoutput<=0.0:
+        self.sim.timeoutput = float(timeoutput)
+        if self.sim.timeoutput<=0.0:
             raise ValueError("TitanSimulation::timeoutput should be positive")
         #Time [sec] between Saves
         if timesave == None:
-            self.timesave = -1.0
+            self.sim.timesave = -1.0
         else:
-            self.timesave = float(timesave)
-            if self.timesave<=0.0:
+            self.sim.timesave = float(timesave)
+            if self.sim.timesave<=0.0:
                 raise ValueError("TitanSimulation::timesave should be positive or None")
             
         #Adapt the Grid?
         if adapt:
-            self.adapt = 1
+            self.sim.adapt = 1
         else:
-            self.adapt = 0
+            self.sim.adapt = 0
         #Visualization Output
         if vizoutput in TitanSimulation.possible_vizoutputs:
-            self.vizoutput = TitanSimulation.possible_vizoutputs[vizoutput]
+            self.sim.vizoutput = TitanSimulation.possible_vizoutputs[vizoutput]
         else:
             raise ValueError("Unknown vizoutput "+str(vizoutput)+". Possible formats: "+str(possible_vizoutputs.keys()))
         
         #First/Second Order Method
         if order in TitanSimulation.possible_orders:
-            self.order = TitanSimulation.possible_orders[order]
+            self.sim.order = TitanSimulation.possible_orders[order]
         else:
             raise ValueError("Unknown order "+str(order)+". Possible formats: "+str(possible_orders.keys()))
         
         #Test if flow reaches height [m] ...
         if edge_height == None:
-            self.edge_height = -1.0
+            self.sim.edge_height = -1.0
         else:
-            self.edge_height = float(edge_height)
-            if self.edge_height <= 0:
+            self.sim.edge_height = float(edge_height)
+            if self.sim.edge_height <= 0:
                 raise ValueError('TitanSimulation::edge_height should be positive or None\n')
         
         #Height used to define flow outline (>0) [m]
         
         if test_height == None:
-            self.test_height = -2.0
+            self.sim.test_height = -2.0
         else:
-            self.test_height =float(test_height)
+            self.sim.test_height =float(test_height)
             if test_height <= 0:
                 raise ValueError('TitanSimulation::test_height should be positive or None\n') 
         
@@ -226,19 +231,19 @@ class TitanSinglePhase(cxxTitanSinglePhase):
         if test_location==None:
             if test_height!=None:
                 raise ValueError('TitanSimulation::test_location should be set if test_height>0\n') 
-            self.test_location_x = 0.0
-            self.test_location_y = 0.0
+            self.sim.test_location_x = 0.0
+            self.sim.test_location_y = 0.0
         else:
             if not isinstance(test_location, (list, tuple)):
                 raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
             if len(test_location)!=2:
                 raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
-            self.test_location_x = float(test_location[0])
-            self.test_location_y = float(test_location[1])
+            self.sim.test_location_x = float(test_location[0])
+            self.sim.test_location_y = float(test_location[1])
         
         #other inits
-        self.flux_sourcesHelper=[]
-        self.discharge_planesHelper=[]
+        self.sim.flux_sourcesHelper=[]
+        self.sim.discharge_planesHelper=[]
 
     def setTopo(self,gis_format='GIS_GRASS',
                  topomain=None,
@@ -252,70 +257,69 @@ class TitanSinglePhase(cxxTitanSinglePhase):
                  max_location_y=None):
         
         if gis_format in TitanSimulation.possible_gis_formats:
-            self.gis_format = TitanSimulation.possible_gis_formats[gis_format]
-            print "gis_format",gis_format,self.gis_format,TitanSimulation.possible_gis_formats[gis_format]
+            self.sim.gis_format = TitanSimulation.possible_gis_formats[gis_format]
         else:
             raise ValueError("Unknown gis format "+str(gis_format)+". Possible formats: "+str(gis_formats[1:]))
         #GIS Information Main Directory
-        self.topomain = topomain if topomain!=None else ''
+        self.sim.topomain = topomain if topomain!=None else ''
         #GIS Sub-Directory
-        self.toposub = toposub if toposub!=None else ''
+        self.sim.toposub = toposub if toposub!=None else ''
         #GIS Map Set
-        self.topomapset = topomapset if topomapset!=None else ''
+        self.sim.topomapset = topomapset if topomapset!=None else ''
         #GIS Map
-        self.topomap = topomap if topomap!=None else ''
+        self.sim.topomap = topomap if topomap!=None else ''
         #GIS Vector
-        self.topovector = topovector if topovector!=None else ''
+        self.sim.topovector = topovector if topovector!=None else ''
         
         if min_location_x!=None and min_location_y!=None and \
             max_location_x!=None and max_location_y!=None:
-            self.region_limits_set=True
+            self.sim.region_limits_set=True
             #Minimum x and y location (UTM E, UTM N)
-            self.min_location_x = min_location_x
-            self.min_location_y = min_location_y
+            self.sim.min_location_x = min_location_x
+            self.sim.min_location_y = min_location_y
             #Maximum x and y location (UTM E, UTM N)
-            self.max_location_x = max_location_x
-            self.max_location_y = max_location_y
+            self.sim.max_location_x = max_location_x
+            self.sim.max_location_y = max_location_y
         else:
-            self.region_limits_set=False
+            self.sim.region_limits_set=False
             #Minimum x and y location (UTM E, UTM N)
-            self.min_location_x = 0.0
-            self.min_location_y = 0.0
+            self.sim.min_location_x = 0.0
+            self.sim.min_location_y = 0.0
             #Maximum x and y location (UTM E, UTM N)
-            self.max_location_x = 0.0
-            self.max_location_y = 0.0
+            self.sim.max_location_x = 0.0
+            self.sim.max_location_y = 0.0
         
         
         
         #here should be validator
         # if there is no topo file, quit
-        if self.gis_format == 1:
+        if self.sim.gis_format == 1:
             errmsg='Missing GIS information.  No job will be run.'
-            if self.topomain == '' or self.toposub == '' or self.topomapset == '' or self.topomap == '':
+            if self.sim.topomain == '' or self.sim.toposub == '' or self.sim.topomapset == '' or self.sim.topomap == '':
                 raise ValueError(errmsg)
-            if self.topomain == None or self.toposub == None or self.topomapset == None or self.topomap == None:
+            if self.sim.topomain == None or self.sim.toposub == None or self.sim.topomapset == None or self.sim.topomap == None:
                 raise ValueError(errmsg)
-            if (not isinstance(self.topomain, basestring)) or (not isinstance(self.toposub, basestring)) or \
-                    (not isinstance(self.topomapset, basestring)) or (not isinstance(self.topomap, basestring)):
+            if (not isinstance(self.sim.topomain, basestring)) or (not isinstance(self.sim.toposub, basestring)) or \
+                    (not isinstance(self.sim.topomapset, basestring)) or (not isinstance(self.sim.topomap, basestring)):
                 raise ValueError(errmsg)
             
             p=""
-            for dirname in (self.topomain,self.toposub,self.topomapset):
+            for dirname in (self.sim.topomain,self.sim.toposub,self.sim.topomapset):
                 p=os.path.join(p,dirname)
                 print p
                 if not os.path.isdir(p):
                     raise ValueError(errmsg+". "+p+" does not exist!")
-            #self.topomap?
-        elif  self.gis_format == 2:
-            if (self.topomap == '') or (self.topomap == None) or (not isinstance(self.topomap, basestring)) or \
-                    (not os.path.isdir(self.topomap)):
+            #self.sim.topomap?
+        elif  self.sim.gis_format == 2:
+            if (self.sim.topomap == '') or (self.sim.topomap == None) or (not isinstance(self.sim.topomap, basestring)) or \
+                    (not os.path.isdir(self.sim.topomap)):
                 raise ValueError(errmsg)
             
     def setMatMap(self,
             use_gis_matmap=False,
             matmap=None):
         #Use GIS Material Map?        
-        self.use_gis_matmap = use_gis_matmap
+        self.sim.use_gis_matmap = use_gis_matmap
         if matmap==None:
             matmap=[{'intfrict':30.0,'bedfrict':15.0}]
         
@@ -329,11 +333,11 @@ class TitanSinglePhase(cxxTitanSinglePhase):
         previntfrict = 0.
         prevbedfrict = 0.
         
-        if self.use_gis_matmap == False:
-            self.material_map.name.push_back("all materials")
-            self.material_map.intfrict.push_back(matmap[0]['intfrict'])
-            self.material_map.bedfrict.push_back(matmap[0]['bedfrict'])
-            #self.material_map.print0()
+        if self.sim.use_gis_matmap == False:
+            self.sim.material_map.name.push_back("all materials")
+            self.sim.material_map.intfrict.push_back(matmap[0]['intfrict'])
+            self.sim.material_map.bedfrict.push_back(matmap[0]['bedfrict'])
+            #self.sim.material_map.print0()
         else:  #if they did want to use a GIS material map...
             raise Exception("GIS material map Not implemented yet")
         #m.print0()
@@ -342,7 +346,7 @@ class TitanSinglePhase(cxxTitanSinglePhase):
 
         #if they didn't want to use a GIS material map, get the material
         #properties once up front
-        if self.use_gis_matmap == False:
+        if self.sim.use_gis_matmap == False:
             nummat=1
             fout.write(str(nummat)+'\n')
             matname = 'all materials'
@@ -368,14 +372,14 @@ class TitanSinglePhase(cxxTitanSinglePhase):
         if out['height'] < 0.0:
             raise ValueError('TitanPile::height should be non negative')
         
-        if kwargs['center']!=None:
+        if 'center' in kwargs and kwargs['center']!=None:
             out['xcenter'] = float(kwargs['center'][0])
             out['ycenter'] = float(kwargs['center'][1])
         else:
             out['xcenter'] = 1.0
             out['ycenter'] = 1.0
             
-        if kwargs['radii']!=None:
+        if 'radii' in kwargs and kwargs['radii']!=None:
             out['majradius'] = float(kwargs['radii'][0])
             out['minradius'] = float(kwargs['radii'][1])
         else:
@@ -407,48 +411,48 @@ class TitanSinglePhase(cxxTitanSinglePhase):
         
         pile=self.validatePile(**kwargs)
         if pile!=None:
-            self.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+            self.sim.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
                                    pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'])
             
         
     def addFluxSource(self,**kwargs):
         fluxSource=TitanFluxSource(**kwargs)
         if fluxSource!=None:
-            self.flux_sources.push_back(fluxSource)
-            self.flux_sourcesHelper.append(fluxSource)
+            self.sim.flux_sources.push_back(fluxSource)
+            self.sim.flux_sourcesHelper.append(fluxSource)
     
     def addDischargePlane(self,*args):
         dischargePlane=TitanDischargePlane(*args)
         if dischargePlane!=None:
-            self.discharge_planes.push_back(dischargePlane)
-            self.discharge_planesHelper.append(dischargePlane)
+            self.sim.discharge_planes.push_back(dischargePlane)
+            self.sim.discharge_planesHelper.append(dischargePlane)
         
     def preproc(self):
-        if self.myid==0:
-            preproc=TitanPreproc(self)
+        if self.sim.myid==0:
+            preproc=TitanPreproc(self.sim)
             preproc.validate();
             preproc.run();
         
     def run(self):
         max_height=0.0
-        for iPile in range(self.pileprops.numpiles):
-            if self.pileprops.pileheight[iPile] > max_height:
-                max_height = self.pileprops.pileheight[iPile]
+        for iPile in range(self.sim.pileprops.numpiles):
+            if self.sim.pileprops.pileheight[iPile] > max_height:
+                max_height = self.sim.pileprops.pileheight[iPile]
         heightscale = max_height
-        for i in range(len(self.flux_sourcesHelper)):
-            self.flux_sourcesHelper[i].done(f_p)
-            effective_height=self.flux_sources[i].get_effective_height()
+        for i in range(len(self.sim.flux_sourcesHelper)):
+            self.sim.flux_sourcesHelper[i].done(f_p)
+            effective_height=self.sim.flux_sources[i].get_effective_height()
             if effective_height > max_height:
                 max_height = effective_height
         #scaling stuff
         if max_height <= 0.:max_height = 1.
         if heightscale <= 0.:heightscale = 1.
         
-        if self.myid==0:
+        if self.sim.myid==0:
             print 'max height is ' + str(max_height)
             print 'heightscale is ' + str(heightscale)
         
-        if self.myid==0:
+        if self.sim.myid==0:
             # run preproc.x to create the fem grid, if it is not already there
             #if os.access('PRE/preproc.x',os.X_OK)==0:
             #    os.system('cd PRE;gmake')
@@ -458,17 +462,18 @@ class TitanSinglePhase(cxxTitanSinglePhase):
             print "\npreproc..."
             self.preproc()
     
-            if self.topovector != "":
+            if self.sim.topovector != "":
                 print "\nvectordatpreproc..."
-                vectordatpreproc(self.topomain, self.toposub, self.topomapset, self.topomap, self.topovector)
+                vectordatpreproc(self.sim.topomain, self.sim.toposub, self.sim.topomapset, self.sim.topomap, self.sim.topovector)
             print
         
-        super(TitanSinglePhase, self).run()
+        self.sim.run()
 
 class TitanTwoPhases(TitanSinglePhase):
-    def __init__(self):
-        super(TitanSinglePhase, self).__init__()
-        self.pileprops2=PilePropsTwoPhases()
+    def __init__(self, **kwargs):
+        super(TitanTwoPhases, self).__init__(**kwargs)
+        self.sim=cxxTitanTwoPhases()
+        
     def validatePile(self, **kwargs):
         out=super(TitanTwoPhases, self).validatePile(**kwargs)
         out['vol_fract'] = float(kwargs['vol_fract'])
@@ -497,6 +502,6 @@ class TitanTwoPhases(TitanSinglePhase):
         
         pile=self.validatePile(**kwargs)
         if pile!=None:
-            self.pileprops2.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+            self.sim.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
                                    pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['vol_fract'])
     

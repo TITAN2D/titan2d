@@ -196,6 +196,8 @@ public:
     virtual void hpfem(){}
     virtual void run();
     virtual void input_summary();
+
+    virtual PileProps* get_pileprops(){return NULL;}
 };
 
 /**
@@ -214,6 +216,8 @@ public:
     virtual void run();
     virtual void input_summary();
 
+    virtual PileProps* get_pileprops(){return &pileprops;}
+
 
 
     //!>Piles
@@ -229,10 +233,15 @@ public:
     MaterialMap material_map;
 };
 
-/*class cxxTitanTwoPhases:public cxxTitanSinglePhase
+class cxxTitanTwoPhases:public cxxTitanSinglePhase
 {
 public:
-    cxxTitanSinglePhase();
-    ~cxxTitanSinglePhase();
-}*/
+    cxxTitanTwoPhases();
+    ~cxxTitanTwoPhases();
+
+    //!>Piles
+    PilePropsTwoPhases pileprops;
+
+    virtual PileProps* get_pileprops(){return &pileprops;}
+};
 #endif
