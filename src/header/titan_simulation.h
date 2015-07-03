@@ -25,42 +25,6 @@
 
 
 /**
- * cxxTitanFluxSource
- */
-class cxxTitanFluxSource
-{
-public:
-    cxxTitanFluxSource();
-    ~cxxTitanFluxSource();
-
-    cxxTitanFluxSource& operator=(const cxxTitanFluxSource& other);
-
-    //! Extrusion flux rate [m/s]
-    double influx;
-
-    //! Active Time [s], start, end
-    double start_time;
-    double end_time;
-    //! Center of Initial Volume, xc, yc (UTM E, UTM N)
-    double xcenter;
-    double ycenter;
-    //! Major and Minor Extent, majorR, minorR (m, m)
-    double majradius;
-    double minradius;
-    //! Orientation (angle [degrees] from X axis to major axis)
-    double orientation;
-    //! Initial speed [m/s]
-    double Vmagnitude;
-    //! Initial direction ([degrees] from X axis)
-    double Vdirection;
-
-
-
-    double get_effective_height();
-    void print0();
-};
-
-/**
  * cxxTitanDischargePlane
  */
 class cxxTitanDischargePlane
@@ -190,7 +154,7 @@ public:
 
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
-                               TimeProps* timeprops_ptr, FluxProps* fluxprops, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
     {}
 
     virtual void hpfem(){}
@@ -211,7 +175,7 @@ public:
 
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
-                               TimeProps* timeprops_ptr, FluxProps* fluxprops, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr);
+                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr);
     virtual void hpfem();
     virtual void run();
     virtual void input_summary();
@@ -224,7 +188,7 @@ public:
     PileProps pileprops;
 
     //!>Flux sources
-    std::vector<cxxTitanFluxSource> flux_sources;
+    FluxProps fluxprops;
 
     //!>Discharge planes
     std::vector<cxxTitanDischargePlane> discharge_planes;

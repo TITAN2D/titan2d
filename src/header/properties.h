@@ -1274,65 +1274,183 @@ struct DISCHARGE
 };
 
 //! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance. 
-struct FluxProps
+class FluxProps
 {
+public:
     //! number of extrusion flux sources
     int no_of_sources;
 
     //! array holding the influx rates for all extrusion flux sources, if calculation is not scaled this quantity has units of [m/s]
-    double *influx;
+    std::vector<double> influx;
 
     //! array holding the activation time for all extrusion flux sources
-    double *start_time;
+    std::vector<double> start_time;
 
     //! array holding the deactivation time for all extrusion flux sources
-    double *end_time;
+    std::vector<double> end_time;
 
     //! array holding the x coordinate of the center of each the extrusion flux source
-    double *xCen;
+    std::vector<double> xCen;
 
     //! array holding the y coordinate of the center of each the extrusion flux source
-    double *yCen;
+    std::vector<double> yCen;
 
     //! array holding the radius along the major axis of each the extrusion flux source, the 2D pile shape is elliptical, in 3D it's a paraboloid
-    double *majorrad;
+    std::vector<double> majorrad;
 
     //! array holding the radius along the minor axis of each the extrusion flux source, the 2D pile shape is elliptical, in 3D it's a paraboloid
-    double *minorrad;
+    std::vector<double> minorrad;
 
     //! array holding the cosine of the rotation angle of each the extrusion flux source, the 2D pile shape is elliptical, and the ellipse's major axis does not have to be aligned with the x axis.
-    double *cosrot;
+    std::vector<double> cosrot;
 
     //! array holding the sine of the rotation angle of each the extrusion flux source, the 2D pile shape is elliptical, and the ellipse's major axis does not have to be aligned with the x axis.
-    double *sinrot;
+    std::vector<double> sinrot;
 
     //! array holding the x component of velocity of material extruding from each flux source
-    double *xVel;
+    std::vector<double> xVel;
 
     //! array holding the y component of velocity of material extruding from each flux source
-    double *yVel;
+    std::vector<double> yVel;
 
     FluxProps()
     {
         no_of_sources = 0;
     }
+    ~FluxProps(){}
     //! this function allocates space for all the extrusion rate fluxes, Dinesh Kumar added it, Keith modified it slightly
     void allocsrcs(int nsrcs)
     {
         no_of_sources = nsrcs;
-        influx = new double[nsrcs];
-        xCen = new double[nsrcs];
-        yCen = new double[nsrcs];
-        majorrad = new double[nsrcs];
-        minorrad = new double[nsrcs];
-        cosrot = new double[nsrcs];
-        sinrot = new double[nsrcs];
-        start_time = new double[nsrcs];
-        end_time = new double[nsrcs];
-        xVel = new double[nsrcs];
-        yVel = new double[nsrcs];
+        influx.resize(nsrcs);
+        xCen.resize(nsrcs);
+        yCen.resize(nsrcs);
+        majorrad.resize(nsrcs);
+        minorrad.resize(nsrcs);
+        cosrot.resize(nsrcs);
+        sinrot.resize(nsrcs);
+        start_time.resize(nsrcs);
+        end_time.resize(nsrcs);
+        xVel.resize(nsrcs);
+        yVel.resize(nsrcs);
     }
-    
+    //! add flux source
+    virtual void addFluxSource(double m_influx, double m_start_time, double m_end_time, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection)
+    {
+        no_of_sources++;
+        influx.push_back(m_influx);
+        xCen.push_back(xcenter);
+        yCen.push_back(ycenter);
+        majorrad.push_back(majradius);
+        minorrad.push_back(minradius);
+        cosrot.push_back(cos(orientation * PI / 180.0));
+        sinrot.push_back(sin(orientation * PI / 180.0));
+        start_time.push_back(m_start_time);
+        end_time.push_back(m_end_time);
+        xVel.push_back(Vmagnitude * cos(Vdirection * PI / 180.0));
+        yVel.push_back(Vmagnitude * sin(Vdirection * PI / 180.0));
+    }
+    virtual void scale(double length_scale,double height_scale,double gravity_scale)
+    {
+        //non-dimensionalize the inputs
+        double time_scale = sqrt(length_scale / gravity_scale);
+        double velocity_scale = sqrt(length_scale * gravity_scale);
+        int isrc;
+        for(isrc = 0; isrc < no_of_sources; isrc++)
+        {
+            influx[isrc] *= time_scale / height_scale;
+            start_time[isrc] /= time_scale;
+            end_time[isrc] /= time_scale;
+            xCen[isrc] /= length_scale;
+            yCen[isrc] /= length_scale;
+            majorrad[isrc] /= length_scale;
+            minorrad[isrc] /= length_scale;
+            xVel[isrc] /= velocity_scale;
+            yVel[isrc] /= velocity_scale;
+        }
+    }
+    double get_smallest_source_radius()
+    {
+        double smallest_source_radius = HUGE_VAL;
+        int isrc;
+        for(isrc = 0; isrc < no_of_sources; isrc++)
+        {
+            if(smallest_source_radius > majorrad[isrc])
+                smallest_source_radius = majorrad[isrc];
+
+            if(smallest_source_radius > minorrad[isrc])
+                smallest_source_radius = minorrad[isrc];
+        }
+        return smallest_source_radius;
+    }
+    double get_effective_height(int i)
+    {
+        //approx: h=influx*t-0.5*a*t^2
+        //if no s => t1=N*(2*h/g)^0.5  N is a empirical constant,
+        //for cylindrical piles of aspect ratio (height/radius) of approx 1
+        //2<=N<=3 (closer to 2) but there are 3 reasons we should increase N
+        //(1) cylindrical pile does not collapse the whole way, shorter
+        //distance means decreased acceleration means increased time, N
+        //(2) paraboloid piles are closer to conical than cylinder so it
+        //should collapse even less, so increase N
+        //(3) "influx" is a constant source "velocity" not an initial
+        //velocity which should increase h in "approx: h=..." equation, so
+        //as a fudge factor increase N some more
+        //calibrated on a single starting condition at tungaruhau says
+        //N=3.21   N=X
+        //anyway a=2*h/t1^2 = g/N^2
+        //approx: v=influx-a*t2 at hmax v=0 => t2=influx/a = N^2*influx/g
+        //t3=min(t2,end_time-start_time)
+        //plug int first equation
+        //approx hmax=influx*t3-0.5*a*t3^2
+        //if t3==t2=> hmax= N^2/2*s^2/g
+        //DEM: tungfla2
+        //influx 12 m/s (vel 50 m/s at +35 degrees cc from +x direction
+        //starts in filled crater which means this velocity points up hill
+        //so pile is mostly stationary while flux source is active, 50 m/s
+        //is just short of what is needed to top the crater)
+        //end_time-start_time=20 gives actual hmax=75.6 m
+        //g=9.8 m/s^2, N=3.21, t3=t2=12.62<20 s => computed hmax=75.7 m
+        double X = 3.21;
+        double g = 9.8;
+        double a = g / X / X;
+        double t3 = X * X * influx[i] / g;
+        if(t3 > (end_time[i] - start_time[i]))
+            t3 = (end_time[i] - start_time[i]);
+        return influx[i] * t3 - 0.5 * a * t3 * t3;
+    }
+    virtual void print_source(int i)
+    {
+        printf("\tFlux_source %d:\n", i);
+
+        printf("\t\tExtrusion flux rate [m/s]:%f\n", influx[i]);
+        printf("\t\tActive Time [s], start, end: %f %f\n", start_time[i], end_time[i]);
+
+        printf("\t\tCenter of Initial Volume, xc, yc (UTM E, UTM N): %f %f\n", xCen[i], yCen[i]);
+        printf("\t\tMajor and Minor Extent, majorR, minorR (m, m): %f %f\n", majorrad[i], minorrad[i]);
+        double orientation=atan2(sinrot[i],cosrot[i])*180.0/PI;
+        printf("\t\tOrientation (angle [degrees] from X axis to major axis): %f\n", orientation);
+        double Vmagnitude=sqrt(xVel[i]*xVel[i]+yVel[i]*yVel[i]);
+        double Vdirection=atan2(yVel[i],xVel[i])*180.0/PI;
+        printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude);
+        printf("\t\tInitial direction ([degrees] from X axis): %f\n", Vdirection);
+        printf("\t\tEffective Thickness, P (m):%f\n", get_effective_height(i));
+    }
+    virtual void print0()
+    {
+        int i;
+        if(no_of_sources>0)
+        {
+            printf("Flux sources:    (Number of flux sources: %d)\n", no_of_sources);
+            for(i = 0; i < no_of_sources; i++)
+                print_source(i);
+        }
+        else
+        {
+            printf("Flux sources:    there is no flux sources\n");
+        }
+    }
     //! this function returns 1 if any flux sources become active during the current timestep, this is used to trigger "initial adaptation" of the flux source area, Keith wrote this function
     int IfAnyStart(TimeProps *timeprops_ptr)
     {

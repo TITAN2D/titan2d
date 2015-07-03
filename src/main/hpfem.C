@@ -122,7 +122,6 @@ void cxxTitanSinglePhase::hpfem()
     timeprops.starttime = time(NULL);
     
     MapNames mapnames;
-    FluxProps fluxprops;
     OutLine outline;
     DISCHARGE discharge;
 #ifdef TWO_PHASES
@@ -154,7 +153,7 @@ void cxxTitanSinglePhase::hpfem()
     Read_data(myid, &matprops, &statprops, &timeprops, &fluxprops, &adapt, &vizoutput, &order,
           &mapnames, &discharge, &outline);
 #else
-    process_input(&matprops, &statprops, &timeprops, &fluxprops,
+    process_input(&matprops, &statprops, &timeprops,
               &mapnames, &discharge, &outline);
 #endif
 

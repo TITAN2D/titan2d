@@ -21,74 +21,6 @@ from cxxtitan import *
 #cxxTitanSimulation,TitanPreproc,cxxTitanPile,cxxTitanFluxSource,MaterialMap,vectordatpreproc
 
 
-class TitanFluxSource(cxxTitanFluxSource):
-    def __init__(self,influx,start_time,end_time,center=None,radii=None,
-                 orientation=0.0,
-                 Vmagnitude=0.0,
-                 Vdirection=0.0):
-        super(TitanFluxSource, self).__init__()
-        #Extrusion flux rate [m/s]
-        self.influx = float(influx)
-        
-        #Active Time [s], start, end
-        self.start_time = float(start_time)
-        self.end_time   = float(end_time)
-        #Center of the source, xc, yc (UTM E, UTM N):
-        if center!=None:
-            self.xcenter = float(center[0])
-            self.ycenter = float(center[1])
-        else:
-            self.xcenter = 1.0
-            self.ycenter = 1.0
-        #Major and Minor Extent, majorR, minorR (m, m)
-        if radii!=None:
-            self.majradius = float(radii[0])
-            self.minradius = float(radii[1])
-        else:
-            self.majradius = 1.0
-            self.minradius = 1.0
-        #Orientation (angle [degrees] from X axis to major axis):
-        self.orientation = float(orientation)
-        #Initial speed [m/s]:
-        self.Vmagnitude = float(Vmagnitude)
-        #Initial direction ([degrees] from X axis):
-        self.Vdirection = float(Vdirection)
-        
-        self.validateValues()
-    def validateValues(self):
-        if self.influx < 0.0:
-            raise ValueError('TitanFluxSource::influx should be non negative')
-        if self.start_time < 0.0:
-            raise ValueError('TitanFluxSource::start_time should be non negative')
-        if self.end_time < 0.0:
-            raise ValueError('TitanFluxSource::start_time should be non negative')
-    def done(self,filename):
-        file = open(filename, "a+", 0)
-        file.write( str(self.influx) + '\n' + \
-                    str(self.start_time) + '\n' + str(self.end_time) + '\n' + \
-                    str(self.xcenter) + '\n' + str(self.ycenter) + '\n' + \
-                    str(self.majradius) + '\n' +str(self.minradius) + '\n' + \
-                    str(self.orientation) + '\n' + \
-                    str(self.Vmagnitude) + '\n' + \
-                    str(self.Vdirection) + '\n')
-        file.close
-        
-       
-
-        self.input_flag = 1
-        #write to the python_input.data file
-        file = open('python_input.data', "a+", 0)
-        python_data = """ Mean Flux  (kg/(m^2-s)): """+ str(self.influx) +"""
-Active duration of source (start time, end time) (s) " """ + str(self.start_time) + """ """+ str(self.end_time) +"""
-Center of the Source, xc, yc (UTM E, UTM N): """ + str(self.xcenter) + """ """+str(self.ycenter)+"""
-Major and Minor Extent, majorR, minorR (m, m): """ + str(self.majradius)+ """ """ +str(self.minradius)+"""
-Angle from X axis to major axis (degrees): """ +str(self.orientation)+"""
-Initial speed [m/s]: """ + str(self.Vmagnitude) + """
-Initial direction ([degrees] from X axis): """ + str(self.Vdirection)+"""
-"""
-        file.write(python_data)
-        file.close
-
 class TitanDischargePlane(cxxTitanDischargePlane):
 
     def __init__(self,x_a,y_a,x_b,y_b):
@@ -414,12 +346,55 @@ class TitanSinglePhase(TitanSimulation):
             self.sim.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
                                    pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'])
             
+    
+    def validateFluxSource(self,influx,start_time,end_time,center,radii,
+                 orientation,
+                 Vmagnitude,
+                 Vdirection):
+        out={}
+        #Extrusion flux rate [m/s]
+        out['influx'] = float(influx)
         
-    def addFluxSource(self,**kwargs):
-        fluxSource=TitanFluxSource(**kwargs)
-        if fluxSource!=None:
-            self.sim.flux_sources.push_back(fluxSource)
-            self.sim.flux_sourcesHelper.append(fluxSource)
+        #Active Time [s], start, end
+        out['start_time'] = float(start_time)
+        out['end_time']   = float(end_time)
+        #Center of the source, xc, yc (UTM E, UTM N):
+        if center!=None:
+            out['xcenter'] = float(center[0])
+            out['ycenter'] = float(center[1])
+        else:
+            out['xcenter'] = 1.0
+            out['ycenter'] = 1.0
+        #Major and Minor Extent, majorR, minorR (m, m)
+        if radii!=None:
+            out['majradius'] = float(radii[0])
+            out['minradius'] = float(radii[1])
+        else:
+            out['majradius'] = 1.0
+            out['minradius'] = 1.0
+        #Orientation (angle [degrees] from X axis to major axis):
+        out['orientation'] = float(orientation)
+        #Initial speed [m/s]:
+        out['Vmagnitude'] = float(Vmagnitude)
+        #Initial direction ([degrees] from X axis):
+        out['Vdirection'] = float(Vdirection)
+        
+        if out['influx'] < 0.0:
+            raise ValueError('TitanFluxSource::influx should be non negative')
+        if out['start_time'] < 0.0:
+            raise ValueError('TitanFluxSource::start_time should be non negative')
+        if out['end_time'] < 0.0:
+            raise ValueError('TitanFluxSource::start_time should be non negative')    
+        return out
+    def addFluxSource(self,influx,start_time,end_time,center=None,radii=None,
+                 orientation=0.0,
+                 Vmagnitude=0.0,
+                 Vdirection=0.0):
+        out=self.validateFluxSource(influx,start_time,end_time,center,radii,
+                 orientation, Vmagnitude, Vdirection)
+        if out!=None:
+            self.sim.fluxprops.addFluxSource(out['influx'],out['start_time'],out['end_time'], out['xcenter'],out['ycenter'],
+                                             out['majradius'],out['minradius'],out['orientation'],out['Vmagnitude'],out['Vdirection'])
     
     def addDischargePlane(self,*args):
         dischargePlane=TitanDischargePlane(*args)

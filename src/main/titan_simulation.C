@@ -22,91 +22,6 @@
 #include "../header/constant.h"
 #include "../header/properties.h"
 
-cxxTitanFluxSource::cxxTitanFluxSource()
-{
-    influx = 0.0;
-    start_time = 0.0;
-    end_time = 0.0;
-    xcenter = 1.0;
-    ycenter = 1.0;
-    majradius = 1.0;
-    minradius = 1.0;
-    orientation = 0.0;
-    Vmagnitude = 0.0;
-    Vdirection = 0.0;
-}
-cxxTitanFluxSource::~cxxTitanFluxSource()
-{
-    
-}
-double cxxTitanFluxSource::get_effective_height()
-{
-    //approx: h=influx*t-0.5*a*t^2
-    //if no s => t1=N*(2*h/g)^0.5  N is a empirical constant,
-    //for cylindrical piles of aspect ratio (height/radius) of approx 1
-    //2<=N<=3 (closer to 2) but there are 3 reasons we should increase N
-    //(1) cylindrical pile does not collapse the whole way, shorter
-    //distance means decreased acceleration means increased time, N
-    //(2) paraboloid piles are closer to conical than cylinder so it
-    //should collapse even less, so increase N
-    //(3) "influx" is a constant source "velocity" not an initial
-    //velocity which should increase h in "approx: h=..." equation, so
-    //as a fudge factor increase N some more
-    //calibrated on a single starting condition at tungaruhau says
-    //N=3.21   N=X
-    //anyway a=2*h/t1^2 = g/N^2
-    //approx: v=influx-a*t2 at hmax v=0 => t2=influx/a = N^2*influx/g
-    //t3=min(t2,end_time-start_time)
-    //plug int first equation
-    //approx hmax=influx*t3-0.5*a*t3^2
-    //if t3==t2=> hmax= N^2/2*s^2/g
-    //DEM: tungfla2
-    //influx 12 m/s (vel 50 m/s at +35 degrees cc from +x direction
-    //starts in filled crater which means this velocity points up hill
-    //so pile is mostly stationary while flux source is active, 50 m/s
-    //is just short of what is needed to top the crater)
-    //end_time-start_time=20 gives actual hmax=75.6 m
-    //g=9.8 m/s^2, N=3.21, t3=t2=12.62<20 s => computed hmax=75.7 m
-    double X = 3.21;
-    double g = 9.8;
-    double a = g / X / X;
-    double t3 = X * X * influx / g;
-    if(t3 > (end_time - start_time))
-        t3 = (end_time - start_time);
-    return influx * t3 - 0.5 * a * t3 * t3;
-}
-cxxTitanFluxSource& cxxTitanFluxSource::operator=(const cxxTitanFluxSource& other)
-{
-    if(this != &other)
-    {
-        influx = other.influx;
-        start_time = other.start_time;
-        end_time = other.end_time;
-        xcenter = other.xcenter;
-        ycenter = other.ycenter;
-        majradius = other.majradius;
-        minradius = other.minradius;
-        orientation = other.orientation;
-        Vmagnitude = other.Vmagnitude;
-        Vdirection = other.Vdirection;
-    }
-    return *this;
-}
-void cxxTitanFluxSource::print0()
-{
-    int i;
-    //printf("Pile:\n");
-    printf("\t\tExtrusion flux rate [m/s]:%f\n", influx);
-    printf("\t\tActive Time [s], start, end: %f %f\n", start_time, end_time);
-    
-    printf("\t\tCenter of Initial Volume, xc, yc (UTM E, UTM N): %f %f\n", xcenter, ycenter);
-    printf("\t\tMajor and Minor Extent, majorR, minorR (m, m): %f %f\n", majradius, minradius);
-    printf("\t\tOrientation (angle [degrees] from X axis to major axis): %f\n", orientation);
-    printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude);
-    printf("\t\tInitial direction ([degrees] from X axis): %f\n", Vdirection);
-    printf("\t\tEffective Thickness, P (m):%f\n", get_effective_height());
-}
-
 cxxTitanDischargePlane::cxxTitanDischargePlane()
 {
     x_a = 0.0;
@@ -282,10 +197,15 @@ cxxTitanSinglePhase::~cxxTitanSinglePhase()
 
 
 void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
-               TimeProps* timeprops_ptr, FluxProps* fluxprops, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
 {
+
+    int i;
     int isrc;
     /*************************************************************************/
+
+
+    PileProps* pileprops_ptr=get_pileprops();
 
 
 #ifdef TWO_PHASES
@@ -309,39 +229,13 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
         matprops_ptr->flow_type = TWOPHASE;
 #endif
 
-    int no_of_sources = flux_sources.size();
-    if(no_of_sources>0)
-    {
-        double rotang = 0;
-        double vel, vel_angle;
-        fluxprops->allocsrcs(no_of_sources);
-
-        for(isrc = 0; isrc < no_of_sources; isrc++)
-        {
-            fluxprops->influx[isrc]=flux_sources[isrc].influx;
-            fluxprops->start_time[isrc]=flux_sources[isrc].start_time;
-            fluxprops->end_time[isrc]=flux_sources[isrc].end_time;
-            fluxprops->xCen[isrc]=flux_sources[isrc].xcenter;
-            fluxprops->yCen[isrc]=flux_sources[isrc].ycenter;
-            fluxprops->majorrad[isrc]=flux_sources[isrc].majradius;
-            fluxprops->minorrad[isrc]=flux_sources[isrc].minradius;
-            rotang=flux_sources[isrc].orientation;
-            fluxprops->cosrot[isrc] = cos(rotang * PI / 180);
-            fluxprops->sinrot[isrc] = sin(rotang * PI / 180);
-            vel=flux_sources[isrc].Vmagnitude;
-            vel_angle=flux_sources[isrc].Vdirection * PI / 180.;
-            fluxprops->xVel[isrc] = vel * cos(vel_angle);
-            fluxprops->yVel[isrc] = vel * sin(vel_angle);
-
-        }
-
-    }
-    if(no_of_sources+pileprops_ptr->numpiles==0)
+    int no_of_sources = fluxprops.no_of_sources;
+    if(fluxprops.no_of_sources+pileprops_ptr->numpiles==0)
     {
         printf("ERROR: No material source was defined");
         exit(1);
     }
-    int i;
+
 #ifdef STATISTICS_IS_NOT_TRANSFERED
     /*************************************************************************/
     //over ride regular input with statistical sample run data
@@ -387,8 +281,8 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
         fp = fopen(samplefilename, "r");
         if(fp != NULL)
         {
-            assert(fluxprops->no_of_sources);
-            fluxprops->no_of_sources = 1;
+            assert(fluxprops.no_of_sources);
+            fluxprops.no_of_sources = 1;
 
             char stringswap[4096];
             fgets(stringswap, 4096, fp);  //Nsample
@@ -400,15 +294,15 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
             fgets(stringswap, 4096, fp);  //Ndir
             fgets(stringswap, 4096, fp);  //randvar
             fscanf(fp, "volume=%lf\n", &volume);
-            double vel = sqrt(fluxprops->xVel[0] * fluxprops->xVel[0] + fluxprops->yVel[0] * fluxprops->yVel[0]);
+            double vel = sqrt(fluxprops.xVel[0] * fluxprops.xVel[0] + fluxprops.yVel[0] * fluxprops.yVel[0]);
             double vel_angle;
             fscanf(fp, "direction=%lf\n", &vel_angle);
             vel_angle *= PI / 180.;
-            fluxprops->xVel[0] = vel * cos(vel_angle);
-            fluxprops->yVel[0] = vel * sin(vel_angle);
-            fluxprops->start_time[0] = 0.0;
-            fscanf(fp, "flux duration=%lf\n", &(fluxprops->end_time[0]));
-            fscanf(fp, "init center flux=%lf\n", &(fluxprops->influx[0]));
+            fluxprops.xVel[0] = vel * cos(vel_angle);
+            fluxprops.yVel[0] = vel * sin(vel_angle);
+            fluxprops.start_time[0] = 0.0;
+            fscanf(fp, "flux duration=%lf\n", &(fluxprops.end_time[0]));
+            fscanf(fp, "init center flux=%lf\n", &(fluxprops.influx[0]));
             printf("Vol=%g [m^3]\n", volume);
         }
     }
@@ -424,7 +318,6 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
 
     double doubleswap;
 
-    PileProps* pileprops_ptr=get_pileprops();
 
     //this is used in ../geoflow/stats.C ... might want to set
     //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin
@@ -441,11 +334,11 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
                 totalvolume += 0.5 * PI * pileprops_ptr->pileheight[isrc] * pileprops_ptr->majorrad[isrc]
                                * pileprops_ptr->minorrad[isrc];
 
-        if(fluxprops->no_of_sources > 0)
-            for(isrc = 0; isrc < fluxprops->no_of_sources; isrc++)
-                totalvolume += 0.5 * PI * fluxprops->influx[isrc] * fluxprops->majorrad[isrc] * fluxprops->minorrad[isrc]
-                               * 0.5 * (fluxprops->end_time[isrc] - //0.5 for linear decrease
-                                       fluxprops->start_time[isrc]);
+        if(fluxprops.no_of_sources > 0)
+            for(isrc = 0; isrc < fluxprops.no_of_sources; isrc++)
+                totalvolume += 0.5 * PI * fluxprops.influx[isrc] * fluxprops.majorrad[isrc] * fluxprops.minorrad[isrc]
+                               * 0.5 * (fluxprops.end_time[isrc] - //0.5 for linear decrease
+                                       fluxprops.start_time[isrc]);
 
         doubleswap = pow(totalvolume, 1.0 / 3.0);
 
@@ -474,27 +367,9 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     double smallestpileradius;
 
     pileprops_ptr->scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
+    fluxprops.scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
 
-    smallestpileradius=pileprops_ptr->get_smallest_pile_radius();
-
-    for(isrc = 0; isrc < fluxprops->no_of_sources; isrc++)
-    {
-        fluxprops->influx[isrc] *= TIME_SCALE / (matprops_ptr->HEIGHT_SCALE);
-        fluxprops->start_time[isrc] /= TIME_SCALE;
-        fluxprops->end_time[isrc] /= TIME_SCALE;
-        fluxprops->xCen[isrc] /= matprops_ptr->LENGTH_SCALE;
-        fluxprops->yCen[isrc] /= matprops_ptr->LENGTH_SCALE;
-        fluxprops->majorrad[isrc] /= matprops_ptr->LENGTH_SCALE;
-        fluxprops->minorrad[isrc] /= matprops_ptr->LENGTH_SCALE;
-        fluxprops->xVel[isrc] /= VELOCITY_SCALE;
-        fluxprops->yVel[isrc] /= VELOCITY_SCALE;
-
-        if(smallestpileradius > fluxprops->majorrad[isrc])
-            smallestpileradius = fluxprops->majorrad[isrc];
-
-        if(smallestpileradius > fluxprops->minorrad[isrc])
-            smallestpileradius = fluxprops->minorrad[isrc];
-    }
+    smallestpileradius=min(pileprops_ptr->get_smallest_pile_radius(),fluxprops.get_smallest_source_radius());
 
     matprops_ptr->smallest_axis = 2.0 * smallestpileradius;
     matprops_ptr->number_of_cells_across_axis=number_of_cells_across_axis;
@@ -750,13 +625,10 @@ void cxxTitanSinglePhase::input_summary()
     int i;
     get_pileprops()->print0();
 
-    printf("Flux sources:\n");
-    printf("\tNumber of flux sources: %d\n", (int) flux_sources.size());
-    for(i = 0; i < flux_sources.size(); i++)
-    {
-        printf("\tFlux_source %d:\n", i);
-        flux_sources[i].print0();
-    }
+    fluxprops.print0();
+
+
+
     printf("Discharge planes:\n");
     printf("\tNumber of discharge planes: %d\n", (int) discharge_planes.size());
     for(i = 0; i < discharge_planes.size(); i++)
