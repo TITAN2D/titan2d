@@ -35,7 +35,7 @@ extern "C" void INITIAL(int*, double*, double*);
 
 void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
                TimeProps* timeprops_ptr, FluxProps* fluxprops, int* adaptflag_ptr, int* viz_flag_ptr,
-               int* order_flag_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+               int* order_flag_ptr, MapNames *mapnames_ptr, DischargePlanes* discharge_ptr, OutLine* outline_ptr)
 {
     /*************************************************************************/
     //regular pile info input

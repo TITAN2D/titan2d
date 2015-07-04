@@ -18,21 +18,6 @@
 import sys,os,math,string,re,socket
 
 from cxxtitan import *
-#cxxTitanSimulation,TitanPreproc,cxxTitanPile,cxxTitanFluxSource,MaterialMap,vectordatpreproc
-
-
-class TitanDischargePlane(cxxTitanDischargePlane):
-
-    def __init__(self,x_a,y_a,x_b,y_b):
-        super(TitanDischargePlane, self).__init__(float(x_a), float(y_a), float(x_b), float(y_b))
-        #Enter Discharge Plane
-        #Point A (UTM E, UTM N):
-        #self.x_a = float(x_a)
-        #self.y_a = float(y_a)
-        #Point B (UTM E, UTM N):
-        #self.x_b = float(x_b)
-        #self.y_b = float(y_b)
-
 
 class TitanSimulation(object):
     possible_vizoutputs={
@@ -396,11 +381,8 @@ class TitanSinglePhase(TitanSimulation):
             self.sim.fluxprops.addFluxSource(out['influx'],out['start_time'],out['end_time'], out['xcenter'],out['ycenter'],
                                              out['majradius'],out['minradius'],out['orientation'],out['Vmagnitude'],out['Vdirection'])
     
-    def addDischargePlane(self,*args):
-        dischargePlane=TitanDischargePlane(*args)
-        if dischargePlane!=None:
-            self.sim.discharge_planes.push_back(dischargePlane)
-            self.sim.discharge_planesHelper.append(dischargePlane)
+    def addDischargePlane(self,x_a,y_a,x_b,y_b):
+        self.sim.discharge_planes.addDischargePlane(float(x_a), float(y_a), float(x_b), float(y_b))
         
     def preproc(self):
         if self.sim.myid==0:

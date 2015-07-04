@@ -61,7 +61,7 @@ void output_stoch_stats(MatProps* matprops, StatProps* statprops)
     return;
 }
 
-void output_discharge(MatProps* matprops, TimeProps* timeprops, DISCHARGE* discharge, int myid)
+void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes* discharge, int myid)
 {
     double *send, *receive, doubleswap;
     int iplane, num_planes = discharge->num_planes;

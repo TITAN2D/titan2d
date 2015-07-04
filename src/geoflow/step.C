@@ -26,7 +26,7 @@
 
 void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
           TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
-          int* order_flag, OutLine* outline_ptr, DISCHARGE* discharge, int adaptflag)
+          int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag)
 {
     double t_start;
     

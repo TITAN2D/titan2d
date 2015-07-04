@@ -22,46 +22,6 @@
 #include "../header/constant.h"
 #include "../header/properties.h"
 
-cxxTitanDischargePlane::cxxTitanDischargePlane()
-{
-    x_a = 0.0;
-    y_a = 0.0;
-    x_b = 0.0;
-    y_b = 0.0;
-}
-
-cxxTitanDischargePlane::cxxTitanDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b,
-                                               const double m_y_b)
-{
-    x_a = m_x_a;
-    y_a = m_y_a;
-    x_b = m_x_b;
-    y_b = m_y_b;
-}
-cxxTitanDischargePlane::~cxxTitanDischargePlane()
-{
-    
-}
-
-cxxTitanDischargePlane& cxxTitanDischargePlane::operator=(const cxxTitanDischargePlane& other)
-{
-    
-    if(this != &other)
-    {
-        x_a = other.x_a;
-        y_a = other.y_a;
-        x_b = other.x_b;
-        y_b = other.y_b;
-    }
-    return *this;
-}
-
-void cxxTitanDischargePlane::print0()
-{
-    printf("\t\tPoint A (UTM E, UTM N): %f, %f\n", x_a, y_a);
-    printf("\t\tPoint B (UTM E, UTM N): %f, %f\n", x_b, y_b);
-}
-
 MaterialMap::MaterialMap()
 {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -197,7 +157,7 @@ cxxTitanSinglePhase::~cxxTitanSinglePhase()
 
 
 void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
-               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
 {
 
     int i;
@@ -491,25 +451,9 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     /*************************************************************************/
     //the discharge plane section starts here
     int iplane, num_planes;
-    double **planes;
-    num_planes=discharge_planes.size();
+    num_planes=discharge_planes.num_planes;
+    discharge_planes.scale(matprops_ptr->LENGTH_SCALE);
 
-    if(num_planes > 0)
-    {
-        planes = CAllocD2(num_planes, 4);
-        for(iplane = 0; iplane < num_planes; iplane++)
-        {
-            planes[iplane][0]=discharge_planes[iplane].x_a/matprops_ptr->LENGTH_SCALE;
-            planes[iplane][1]=discharge_planes[iplane].y_a/matprops_ptr->LENGTH_SCALE;
-            planes[iplane][2]=discharge_planes[iplane].x_b/matprops_ptr->LENGTH_SCALE;
-            planes[iplane][3]=discharge_planes[iplane].y_b/matprops_ptr->LENGTH_SCALE;
-        }
-    }
-
-    discharge_ptr->init(num_planes, planes);
-
-    if(num_planes > 0)
-        CDeAllocD2(planes);
     //the discharge plane section ends here
     /*************************************************************************/
 
@@ -627,16 +571,10 @@ void cxxTitanSinglePhase::input_summary()
 
     fluxprops.print0();
 
+    discharge_planes.print0();
 
-
-    printf("Discharge planes:\n");
-    printf("\tNumber of discharge planes: %d\n", (int) discharge_planes.size());
-    for(i = 0; i < discharge_planes.size(); i++)
-    {
-        printf("\tDischarge plane %d:\n", i);
-        discharge_planes[i].print0();
-    }
     
+
     MPI_Barrier (MPI_COMM_WORLD);
 }
 

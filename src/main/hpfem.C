@@ -123,7 +123,6 @@ void cxxTitanSinglePhase::hpfem()
     
     MapNames mapnames;
     OutLine outline;
-    DISCHARGE discharge;
 #ifdef TWO_PHASES
     int adapt;
 #endif
@@ -154,12 +153,12 @@ void cxxTitanSinglePhase::hpfem()
           &mapnames, &discharge, &outline);
 #else
     process_input(&matprops, &statprops, &timeprops,
-              &mapnames, &discharge, &outline);
+              &mapnames, &outline);
 #endif
 
     
     if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, &adapt, &order,
-                &statprops, &discharge, &outline))
+                &statprops, &discharge_planes, &outline))
     {
         
         Read_grid(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &outline);
@@ -186,7 +185,7 @@ void cxxTitanSinglePhase::hpfem()
      by doing a diff on the files.
      saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, 
      &matprops, &timeprops, &mapnames, adaptflag, order_flag, 
-     &statprops, &discharge, &outline, &savefileflag);
+     &statprops, &discharge_planes, &outline, &savefileflag);
      */
 
     if(myid == 0)
@@ -201,9 +200,9 @@ void cxxTitanSinglePhase::hpfem()
     }
     
     MPI_Barrier (MPI_COMM_WORLD);
-    calc_stats(BT_Elem_Ptr, BT_Node_Ptr, myid, &matprops, &timeprops, &statprops, &discharge, 0.0);
+    calc_stats(BT_Elem_Ptr, BT_Node_Ptr, myid, &matprops, &timeprops, &statprops, &discharge_planes, 0.0);
     
-    output_discharge(&matprops, &timeprops, &discharge, myid);
+    output_discharge(&matprops, &timeprops, &discharge_planes, myid);
     
     move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
     if(myid == 0)
@@ -301,7 +300,7 @@ void cxxTitanSinglePhase::hpfem()
         
         t_start = MPI_Wtime();
         step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &pileprops, &fluxprops, &statprops,
-             &order, &outline, &discharge, adapt);
+             &order, &outline, &discharge_planes, adapt);
         titanTimings.stepTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
         
@@ -311,7 +310,7 @@ void cxxTitanSinglePhase::hpfem()
          */
         if(timeprops.ifsave())
             saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adapt, order,
-                    &statprops, &discharge, &outline, &savefileflag);
+                    &statprops, &discharge_planes, &outline, &savefileflag);
         
         /*
          * output results to file 
@@ -320,7 +319,7 @@ void cxxTitanSinglePhase::hpfem()
         {
             move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
             
-            output_discharge(&matprops, &timeprops, &discharge, myid);
+            output_discharge(&matprops, &timeprops, &discharge_planes, myid);
             
             if(myid == 0)
                 output_summary(&timeprops, &statprops, savefileflag);
@@ -391,10 +390,10 @@ void cxxTitanSinglePhase::hpfem()
      */
 
     saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adapt, order,
-            &statprops, &discharge, &outline, &savefileflag);
+            &statprops, &discharge_planes, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
     
-    output_discharge(&matprops, &timeprops, &discharge, myid);
+    output_discharge(&matprops, &timeprops, &discharge_planes, myid);
     MPI_Barrier(MPI_COMM_WORLD);
     
     if(myid == 0)

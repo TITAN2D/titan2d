@@ -27,7 +27,7 @@
 #define STAT_VOL_FRAC 0.95
 
 void calc_stats(HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
-                StatProps* statprops, DISCHARGE* discharge, double d_time)
+                StatProps* statprops, DischargePlanes* discharge, double d_time)
 {
     int i, iproc;
     double area = 0.0, max_height = 0.0;

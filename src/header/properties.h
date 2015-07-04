@@ -1019,80 +1019,123 @@ struct OutLine
 
 /**********************************************************************/
 //! this structure is for the calculation of volume that flows through user specified discharge planes.  The sign of the volume indicates which direction the flow went and follows the right hand rule convention.  velocity cross (point b-point a) is the sign of the flow through planes.  This means if you surround the only pile, specify the points defining the discharge planes in counter clockwise order, the flow "out of the box" will be positive.  if you specify the points in clockwise order flow "out of the box" will be negative.
-struct DISCHARGE
+class DischargePlanes
 {
-    
+public:
     //! the number of discharge planes
     int num_planes;
 
     //! the discharge planes are lines (with planes normal to the surface intersecting the surface passing through the lines), this holds a lot of information associated with each planes, a lot of precomputed quantities to make updating the flux through the planes fast.
-    double **planes;
+    //double **planes;
+    std::vector< std::vector<double> > planes;
 
     //! this constructor initializes the number of planes to zero
-    DISCHARGE()
+    DischargePlanes()
     {
         num_planes = 0;
         return;
     }
     
     //! this destructor deallocates the planes information
-    ~DISCHARGE()
+    ~DischargePlanes()
     {
-        if(num_planes > 0)
-            CDeAllocD2(planes);
         return;
     }
+    void allocate(int m_num_planes)
+    {
+        num_planes = m_num_planes;
+        planes.resize(num_planes);// = CAllocD2(num_planes, 10);
+        for(int iplane = 0; iplane < num_planes; iplane++)
+        {
+            planes[iplane].resize(10);
+        }
+    }
+private:
+    void calculateDerivativeProps(int i)
+    {
+        planes[i][4] = planes[i][1] - planes[i][0]; //xb-xa
+        planes[i][5] = planes[i][3] - planes[i][2]; //yb-ya
+        planes[i][6] = //(xb-xa)^2+(yb-ya)^2
+                planes[i][4] * planes[i][4] + planes[i][5] * planes[i][5];
+        planes[i][7] = //ya*(xb-xa)-xa*(yb-ya)
+                planes[i][3] * planes[i][4] - planes[i][1] * planes[i][5];
+        planes[i][8] = ((fabs(planes[i][4]) + fabs(planes[i][5]))
+                * (fabs(planes[i][4]) + fabs(planes[i][5])))
+                            / planes[i][6];
+        planes[i][9] = 0.0; //discharge through the planes[i]
+    }
+public:
+    //! this function add plane and initializes the planes information (to zero flux through the planes) and precomputes a number of quantities to make updating the flux through the planes fast
+
+    void addDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b,
+                           const double m_y_b)
+    {
+        std::vector<double> plane;
+        plane.resize(10);
+
+        plane[0] = m_x_a; //xa
+        plane[1] = m_y_a; //xb
+        plane[2] = m_x_b; //ya
+        plane[3] = m_y_b; //yb
+
+        //printf("plane %d: (%16.10g,%16.10g) (%16.10g,%16.10g)\n",iplane,planes[iplane][0],planes[iplane][2],planes[iplane][1],planes[iplane][3]);
+
+        planes.push_back(plane);
+        num_planes=planes.size();
+        calculateDerivativeProps(num_planes-1);
+    }
+
     
     //reinitialized in load_run()
-    //! this function initializes the planes information (to zero flux through the planes) and precomputes a number of quantities to make updating the flux through the planes fast
     void init(int num_planes_in, double **planes_in)
     {
         double planestemp[4];
         
         //printf("num_planes_in=%d   num_planes=%d\n",num_planes_in,num_planes);
-        num_planes = num_planes_in;
+        allocate(0);
         //printf("num_planes_in=%d   num_planes=%d\n",num_planes_in,num_planes);
-        if(num_planes > 0)
+        if(num_planes_in > 0)
         {
-            planes = CAllocD2(num_planes, 10);
-            
-            for(int iplane = 0; iplane < num_planes; iplane++)
+            for(int iplane = 0; iplane < num_planes_in; iplane++)
             {
-                /*      if((planes_in[iplane][1]<planes_in[iplane][0])||
-                 ((planes_in[iplane][1]==planes_in[iplane][0])&&
-                 (planes_in[iplane][3]<planes_in[iplane][2]))) {
-                 planestemp[0]=planes_in[iplane][1];
-                 planestemp[1]=planes_in[iplane][0];
-                 planestemp[2]=planes_in[iplane][3];
-                 planestemp[3]=planes_in[iplane][2];}
-                 else{ */
-                planestemp[0] = planes_in[iplane][0];
-                planestemp[1] = planes_in[iplane][1];
-                planestemp[2] = planes_in[iplane][2];
-                planestemp[3] = planes_in[iplane][3];
-                //}
-                
-                planes[iplane][0] = planestemp[0]; //xa
-                planes[iplane][1] = planestemp[1]; //xb
-                planes[iplane][2] = planestemp[2]; //ya
-                planes[iplane][3] = planestemp[3]; //yb
-                planes[iplane][4] = planes[iplane][1] - planes[iplane][0]; //xb-xa
-                planes[iplane][5] = planes[iplane][3] - planes[iplane][2]; //yb-ya
-                planes[iplane][6] = //(xb-xa)^2+(yb-ya)^2
-                        planes[iplane][4] * planes[iplane][4] + planes[iplane][5] * planes[iplane][5];
-                planes[iplane][7] = //ya*(xb-xa)-xa*(yb-ya)
-                        planes[iplane][3] * planes[iplane][4] - planes[iplane][1] * planes[iplane][5];
-                planes[iplane][8] = ((fabs(planes[iplane][4]) + fabs(planes[iplane][5]))
-                        * (fabs(planes[iplane][4]) + fabs(planes[iplane][5])))
-                                    / planes[iplane][6];
-                
-                planes[iplane][9] = 0.0; //discharge through the plane
-                        
-                //printf("plane %d: (%16.10g,%16.10g) (%16.10g,%16.10g)\n",iplane,planes[iplane][0],planes[iplane][2],planes[iplane][1],planes[iplane][3]);
-                
+                addDischargePlane(planes_in[iplane][0], planes_in[iplane][1], planes_in[iplane][2], planes_in[iplane][3]);
             }
         }
         return;
+    }
+
+    void scale(double length_scale)
+    {
+            for(int i = 0; i < num_planes; i++)
+            {
+                planes[i][0]/=length_scale;
+                planes[i][1]/=length_scale;
+                planes[i][2]/=length_scale;
+                planes[i][3]/=length_scale;
+                calculateDerivativeProps(i);
+            }
+    }
+
+    void print_discharge_plane(int i)
+    {
+        printf("\tDischarge plane %d:\n", i);
+        printf("\t\tPoint A (UTM E, UTM N): %f, %f\n", planes[i][0], planes[i][1]);
+        printf("\t\tPoint B (UTM E, UTM N): %f, %f\n", planes[i][2], planes[i][3]);
+    }
+
+    void print0()
+    {
+        int i;
+        if(num_planes>0)
+        {
+            printf("Discharge planes:    (Number of discharge planes: %d)\n", num_planes);
+            for(i = 0; i < num_planes; i++)
+                print_discharge_plane(i);
+        }
+        else
+        {
+            printf("Discharge planes:    there is no discharge planes\n");
+        }
     }
     
     //! this function updates the flux through the discharge planes
@@ -1268,7 +1311,7 @@ struct DISCHARGE
     void dealloc()
     {
         num_planes = 0;
-        CDeAllocD2(planes);
+        planes.resize(0);
         return;
     }
 };

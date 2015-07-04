@@ -22,7 +22,7 @@
 
 int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
             TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int *adaptflag_ptr, int *order_flag_ptr,
-            StatProps* statprops_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+            StatProps* statprops_ptr, DischargePlanes* discharge_ptr, OutLine* outline_ptr)
 /* need to handle StatProps and DISCHARGE (should be able to reload the outline from the outline file, not yet programmed in final form)
  */
 
@@ -381,11 +381,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     //DISCHARGE PLANES
     for(itemp = 0; itemp < 4; itemp++)
         temp4.c[itemp] = header[Itemp++];
-    discharge_ptr->num_planes = temp4.i;
-    
-    if(discharge_ptr->num_planes > 0)
-        CDeAllocD2(discharge_ptr->planes); //was initialized in Read_data
-    discharge_ptr->planes = CAllocD2(discharge_ptr->num_planes, 10);
+    discharge_ptr->allocate(temp4.i);
     
     int iplane, icol;
     for(iplane = 0; iplane < discharge_ptr->num_planes; iplane++)
@@ -609,7 +605,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
 
 void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
              TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int adaptflag, int order_flag, StatProps *statprops_ptr,
-             DISCHARGE *discharge_ptr, OutLine* outline_ptr, int *savefileflag)
+             DischargePlanes *discharge_ptr, OutLine* outline_ptr, int *savefileflag)
 {
     
     move_data(numprocs, myid, *ElemTable, *NodeTable, timeprops_ptr);

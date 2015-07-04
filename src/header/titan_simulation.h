@@ -23,24 +23,6 @@
 
 #include "properties.h"
 
-
-/**
- * cxxTitanDischargePlane
- */
-class cxxTitanDischargePlane
-{
-public:
-    cxxTitanDischargePlane();
-    cxxTitanDischargePlane::cxxTitanDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b,
-                                                   const double m_y_b);
-    ~cxxTitanDischargePlane();
-
-    cxxTitanDischargePlane& operator=(const cxxTitanDischargePlane& other);
-
-    double x_a, y_a, x_b, y_b;
-    void print0();
-};
-
 /**
  * MaterialMap
  */
@@ -154,7 +136,7 @@ public:
 
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
-                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr)
+                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
     {}
 
     virtual void hpfem(){}
@@ -175,7 +157,7 @@ public:
 
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
-                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, DISCHARGE* discharge_ptr, OutLine* outline_ptr);
+                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr);
     virtual void hpfem();
     virtual void run();
     virtual void input_summary();
@@ -191,7 +173,8 @@ public:
     FluxProps fluxprops;
 
     //!>Discharge planes
-    std::vector<cxxTitanDischargePlane> discharge_planes;
+    DischargePlanes discharge_planes;
+    //std::vector<cxxTitanDischargePlane> discharge_planes;
 
 
     MaterialMap material_map;
