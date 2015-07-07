@@ -34,6 +34,7 @@ using namespace std;
 #include "node_preproc.h"
 #include "useful_lib.h"
 
+#include "../header/properties.h"
 #include "preproc.h"
 
 //load has to be applied on the middle node of the face!!!
@@ -108,7 +109,8 @@ TitanPreproc::TitanPreproc(cxxTitanSinglePhase *tSim)
     topomapset = tSim->topomapset;
     topomap = tSim->topomap;
     
-    material_map = tSim->material_map;
+    //material_map = tSim->material_map;
+    matprops=&(tSim->matprops);
     
     min_location_x = tSim->min_location_x;
     max_location_x = tSim->max_location_x;
@@ -565,11 +567,11 @@ void Read_boundary_data(int* fc, int* cc, NodePreproc n[], BoundaryPreproc b[], 
 void TitanPreproc::Read_material_data(int *material_count, char ***materialnames, double **lambda, double **mu)
 {
     
-    material_map.print0();
+    //material_map.print0();
     //read in the material names and properties from file "frict.data"
     //FILE *fp = fopen("frict.data", "r");
     //fscanf(fp, "%d", material_count); //number of materials
-    *material_count = material_map.get_material_count();
+    *material_count = matprops->material_count;
     
     //material id tags/indices start from 1
     *lambda = CAllocD1(*material_count + 1); //internal friction angle
@@ -584,11 +586,11 @@ void TitanPreproc::Read_material_data(int *material_count, char ***materialnames
         //fgets(tempstring, 200, fp); //read the material name
         //replace newline with null character
         //tempstring[strlen(tempstring) - 1] = '\0';
-        (*materialnames)[imat] = allocstrcpy(material_map.name[imat - 1].c_str());
+        (*materialnames)[imat] = allocstrcpy(matprops->matnames[imat ].c_str());
         
         //read in internal and bed friction angles
-        (*lambda)[imat] = material_map.intfrict[imat - 1];
-        (*mu)[imat] = material_map.bedfrict[imat - 1];
+        (*lambda)[imat] = matprops->intfrict;
+        (*mu)[imat] = matprops->bedfrict[imat];
         //fscanf(fp, "%lf", &((*lambda)[imat]));
         //fscanf(fp, "%lf", &((*mu)[imat]));
     }

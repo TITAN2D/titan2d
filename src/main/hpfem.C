@@ -100,14 +100,14 @@ void cxxTitanSinglePhase::hpfem()
      code and then initialize element 
      stiffness routines info */
 
-    int material_count = 0;
-    double epsilon = 1., intfrictang = 1, *bedfrictang = NULL, gamma = 1;
+    //int material_count = 0;
+    //double epsilon = 1., intfrictang = 1, *bedfrictang = NULL, gamma = 1;
 #ifdef TWO_PHASES
-    double frict_tiny = 0.1, mu = 0.1, rho = 2700, rhof = 1200, porosity = 1;
+    //double frict_tiny = 0.1, mu = 0.1, rho = 2700, rhof = 1200, porosity = 1;
 #else
-    double frict_tiny = 0.1, mu = .0001, rho = 2200, porosity = 1;
+    //double frict_tiny = 0.1, mu = .0001, rho = 2200, porosity = 1;
 #endif
-    char **matnames = NULL;
+    //char **matnames = NULL;
     int xdmerr;
 
     StatProps statprops;
@@ -115,8 +115,9 @@ void cxxTitanSinglePhase::hpfem()
     MatProps matprops(material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, rhof, epsilon, gamma,
                       frict_tiny, 1.0, 1.0, 1.0);
 #else
-    MatProps matprops(material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, epsilon, gamma, frict_tiny,
-                      1.0, 1.0, 1.0);
+    //MatProps matprops;//material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, epsilon, gamma, frict_tiny,
+                      //1.0, 1.0, 1.0);
+
 #endif
     TimeProps timeprops;
     timeprops.starttime = time(NULL);
@@ -152,7 +153,7 @@ void cxxTitanSinglePhase::hpfem()
     Read_data(myid, &matprops, &statprops, &timeprops, &fluxprops, &adapt, &vizoutput, &order,
           &mapnames, &discharge, &outline);
 #else
-    process_input(&matprops, &statprops, &timeprops,
+    process_input(&statprops, &timeprops,
               &mapnames, &outline);
 #endif
 

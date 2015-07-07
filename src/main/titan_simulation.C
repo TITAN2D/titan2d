@@ -22,54 +22,6 @@
 #include "../header/constant.h"
 #include "../header/properties.h"
 
-MaterialMap::MaterialMap()
-{
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-}
-MaterialMap::~MaterialMap()
-{
-    
-}
-MaterialMap& MaterialMap::operator=(const MaterialMap& other)
-{
-    if(this != &other)
-    {
-        int i;
-        name.resize(other.name.size());
-        intfrict.resize(other.intfrict.size());
-        bedfrict.resize(other.bedfrict.size());
-        for(i = 0; i < other.name.size(); i++)
-        {
-            name[i] = other.name[i];
-            intfrict[i] = other.intfrict[i];
-            bedfrict[i] = other.bedfrict[i];
-        }
-    }
-    return *this;
-}
-void MaterialMap::print0()
-{
-    if(myid != 0)
-    {
-        //MPI_Barrier(MPI_COMM_WORLD);
-        return;
-    }
-    
-    int i;
-    printf("Material map:\n");
-    for(i = 0; i < name.size(); i++)
-    {
-        printf("%d %s %f %f\n", i, name[i].c_str(), intfrict[i], bedfrict[i]);
-    }
-    
-    //MPI_Barrier(MPI_COMM_WORLD);
-}
-int MaterialMap::get_material_count()
-{
-    return name.size();
-}
-
 cxxTitanSimulation::cxxTitanSimulation()
 {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -156,38 +108,18 @@ cxxTitanSinglePhase::~cxxTitanSinglePhase()
 }
 
 
-void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
+void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
 {
 
     int i;
     int isrc;
+    double doubleswap;
+
     /*************************************************************************/
 
 
     PileProps* pileprops_ptr=get_pileprops();
-
-
-#ifdef TWO_PHASES
-    double maxphi = 0.;
-    double minphi = HUGE_VAL;
-    for(isrc = 0; isrc < numpiles; isrc++)
-    {
-        // search for min-max phi
-        if(pileprops_ptr->vol_fract[isrc] > maxphi)
-            maxphi = pileprops_ptr->vol_fract[isrc];
-        if(pileprops_ptr->vol_fract[isrc] < minphi)
-            minphi = pileprops_ptr->vol_fract[isrc];
-    }
-    // cut-off extremes
-    assert(minphi <= maxphi);
-    if(minphi < 0.2)
-        matprops_ptr->flow_type = FLUID_FLOW;
-    else if(maxphi > 0.9)
-        matprops_ptr->flow_type = DRY_FLOW;
-    else
-        matprops_ptr->flow_type = TWOPHASE;
-#endif
 
     int no_of_sources = fluxprops.no_of_sources;
     if(fluxprops.no_of_sources+pileprops_ptr->numpiles==0)
@@ -270,84 +202,47 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     statprops_ptr->runid = statprops_ptr->lhs.runid;
 
     /*************************************************************************/
-    //scaling info
-    matprops_ptr->LENGTH_SCALE=length_scale;
-    //all height scaling now based on cube root of predicted volume, see below
-    matprops_ptr->HEIGHT_SCALE=height_scale;
-    matprops_ptr->GRAVITY_SCALE=gravity_scale;
+    MatProps *matprops_ptr=get_matprops();
 
-    double doubleswap;
+    /*************************************************************************/
+    matprops_ptr->set_scale(length_scale, height_scale, gravity_scale);
+    matprops_ptr->process_input();
 
-
-    //this is used in ../geoflow/stats.C ... might want to set
-    //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin
-    //layer control, need to reevaluate this, we should also
-    //reevaluate after we implement a "good" local stopping criteria
-    matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = matprops_ptr->HEIGHT_SCALE / 10000.0;
-
-    if(height_scale==0.0)
-    {
-        double totalvolume = 0.0;
-
-        if(pileprops_ptr->numpiles > 0)
-            for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
-                totalvolume += 0.5 * PI * pileprops_ptr->pileheight[isrc] * pileprops_ptr->majorrad[isrc]
-                               * pileprops_ptr->minorrad[isrc];
-
-        if(fluxprops.no_of_sources > 0)
-            for(isrc = 0; isrc < fluxprops.no_of_sources; isrc++)
-                totalvolume += 0.5 * PI * fluxprops.influx[isrc] * fluxprops.majorrad[isrc] * fluxprops.minorrad[isrc]
-                               * 0.5 * (fluxprops.end_time[isrc] - //0.5 for linear decrease
-                                       fluxprops.start_time[isrc]);
-
-        doubleswap = pow(totalvolume, 1.0 / 3.0);
-
-        if((matprops_ptr->GRAVITY_SCALE != 1.0) || (matprops_ptr->LENGTH_SCALE != 1.0))
-            matprops_ptr->HEIGHT_SCALE = doubleswap;
-        else
-            matprops_ptr->HEIGHT_SCALE = 1.0;
-
-        matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = doubleswap / matprops_ptr->HEIGHT_SCALE / 10000.0;
-    }
-
-    matprops_ptr->epsilon = matprops_ptr->HEIGHT_SCALE / matprops_ptr->LENGTH_SCALE;
-
-    double TIME_SCALE = sqrt(matprops_ptr->LENGTH_SCALE / matprops_ptr->GRAVITY_SCALE);
-
+    double TIME_SCALE = matprops_ptr->get_TIME_SCALE();
     //non-dimensionalize the inputs
-    double VELOCITY_SCALE = sqrt(matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE);
+    double VELOCITY_SCALE = matprops_ptr->get_VELOCITY_SCALE();
 
-#ifdef TWO_PHASES
-    double diameter = 0.005;
-    double vterm = pow(diameter, 2.) * (matprops_ptr->den_solid - matprops_ptr->den_fluid) * matprops_ptr->GRAVITY_SCALE
-            / (18. * matprops_ptr->viscosity);
-    matprops_ptr->v_terminal = vterm;
-#endif
-
-    double smallestpileradius;
 
     pileprops_ptr->scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
     fluxprops.scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
 
-    smallestpileradius=min(pileprops_ptr->get_smallest_pile_radius(),fluxprops.get_smallest_source_radius());
+    double smallestpileradius=min(pileprops_ptr->get_smallest_pile_radius(),fluxprops.get_smallest_source_radius());
 
     matprops_ptr->smallest_axis = 2.0 * smallestpileradius;
-    matprops_ptr->number_of_cells_across_axis=number_of_cells_across_axis;
 
-#ifdef TWO_PHASES
-    /*************************************************************************/
-    /* the non-dimensional velocity stopping criteria is an idea that
-     didn't work for anything other than a slumping pile on a horizontal
-     surface, it's only still here because I didn't want to bother
-     with removing it.  --Keith Dalbey 2005.10.28
+    //read in material map
+    if(matprops_ptr->material_count > 1)
+    {
+        char *gis_matmap = (char *) malloc((topomap.size() + 5) * sizeof(char));
+        strcpy(gis_matmap, topomap.c_str());
+        strcat(gis_matmap + strlen(topomap.c_str()), "_Mat");
 
-     kappa is a to be determined constant, calculation stops when
-     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
-    double kappa = 1.0;   //should eventually move to a header file
-    double gravity = 9.8; //[m/s^2]
-    matprops_ptr->Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
-#endif
+        if(Initialize_Raster_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), gis_matmap))
+        {
+            printf("Problem with GIS Material on processor %d\n", myid);
+            exit(1);
+        }
+        free(gis_matmap);
 
+        int nummat;
+        Get_raster_categories(&nummat);
+        if(nummat != matprops_ptr->material_count)
+        {
+            printf("frict.data has %d materials but material map has %d, aborting\n", matprops_ptr->material_count,
+                   nummat);
+            exit(1);
+        }
+    }
     /*************************************************************************/
     //time related info
     timeprops_ptr->inittime(maxiter, maxtime, timeoutput, timesave, TIME_SCALE);
@@ -367,6 +262,19 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
         exit(1);
     }
 
+#ifdef TWO_PHASES
+    /*************************************************************************/
+    /* the non-dimensional velocity stopping criteria is an idea that
+     didn't work for anything other than a slumping pile on a horizontal
+     surface, it's only still here because I didn't want to bother
+     with removing it.  --Keith Dalbey 2005.10.28
+
+     kappa is a to be determined constant, calculation stops when
+     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
+    double kappa = 1.0;   //should eventually move to a header file
+    double gravity = 9.8; //[m/s^2]
+    matprops_ptr->Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
+#endif
 #ifndef TWO_PHASES
     /*************************************************************************
      * Vslump doesn't mean it is related to slumping of pile
@@ -457,52 +365,7 @@ void cxxTitanSinglePhase::process_input(MatProps* matprops_ptr, StatProps* statp
     //the discharge plane section ends here
     /*************************************************************************/
 
-    //read in material properties
-    matprops_ptr->material_count=material_map.get_material_count();
 
-    matprops_ptr->matnames = (char **) malloc((matprops_ptr->material_count + 1) * sizeof(char *));
-    matprops_ptr->bedfrict = CAllocD1(matprops_ptr->material_count + 1);
-    matprops_ptr->tanbedfrict = CAllocD1(matprops_ptr->material_count + 1);
-    int imat;
-
-    for(imat = 1; imat <= matprops_ptr->material_count; imat++)
-    {
-        matprops_ptr->matnames[imat] = allocstrcpy(material_map.name[imat-1].c_str());
-
-        doubleswap=material_map.intfrict[imat-1];
-        matprops_ptr->bedfrict[imat]=material_map.bedfrict[imat-1];
-        matprops_ptr->bedfrict[imat] *= PI / 180.0;
-        matprops_ptr->tanbedfrict[imat] = tan(matprops_ptr->intfrict);
-
-        if(imat == 1)
-        {
-            matprops_ptr->intfrict = doubleswap * PI / 180.0;
-            matprops_ptr->tanintfrict = tan(matprops_ptr->intfrict);
-        }
-    }
-
-    if(matprops_ptr->material_count > 1)
-    {
-        char *gis_matmap = (char *) malloc((topomap.size() + 5) * sizeof(char));
-        strcpy(gis_matmap, topomap.c_str());
-        strcat(gis_matmap + strlen(topomap.c_str()), "_Mat");
-
-        if(Initialize_Raster_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), gis_matmap))
-        {
-            printf("Problem with GIS Material on processor %d\n", myid);
-            exit(1);
-        }
-        free(gis_matmap);
-
-        int nummat;
-        Get_raster_categories(&nummat);
-        if(nummat != matprops_ptr->material_count)
-        {
-            printf("frict.data has %d materials but material map has %d, aborting\n", matprops_ptr->material_count,
-                   nummat);
-            exit(1);
-        }
-    }
 
     /* physically we don't know how to specify a changing internal friction
      angle, we don't know how the contents of an avalanche changes as it
@@ -572,6 +435,8 @@ void cxxTitanSinglePhase::input_summary()
     fluxprops.print0();
 
     discharge_planes.print0();
+
+    matprops.print0();
 
     
 

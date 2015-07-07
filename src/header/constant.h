@@ -91,12 +91,12 @@ const int NUM_STATE_VARS = 3;
 #define GEOFLOW_TINY 0.0001
 #define GEOFLOW_SHORT 0.01
 
-#ifdef TWO_PHASES
+
 /* two-phase stuff */
 const int TWOPHASE = 0;
 const int DRY_FLOW = 1;
 const int FLUID_FLOW = 2;
-#endif
+
 
 const int GHOST = -9876; //"refined" GHOST CELL FLAG
 

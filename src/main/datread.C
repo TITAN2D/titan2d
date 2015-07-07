@@ -33,6 +33,7 @@ extern "C" void initial(int*, double*, double*);
 extern "C" void INITIAL(int*, double*, double*);
 #endif
 
+#if 0
 void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatProps* statprops_ptr,
                TimeProps* timeprops_ptr, FluxProps* fluxprops, int* adaptflag_ptr, int* viz_flag_ptr,
                int* order_flag_ptr, MapNames *mapnames_ptr, DischargePlanes* discharge_ptr, OutLine* outline_ptr)
@@ -583,7 +584,7 @@ void Read_data(int myid, MatProps* matprops_ptr, PileProps* pileprops_ptr, StatP
     //to read in outline parameters here when it has been added
     return;
 }
-
+#endif
 /*************************************************************************/
 /*************************************************************************/
 /*************************************************************************/

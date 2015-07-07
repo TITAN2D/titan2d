@@ -34,6 +34,8 @@
 
 #include "constant.h"
 
+class FluxProps;
+
 //! LHS stands for Latin Hypercube Sampling, it is a constrained sampling method whose convergence can be much faster than monte carlo 
 struct LHS_Props
 {
@@ -228,7 +230,7 @@ public:
         initialVx.push_back(Vmagnitude * cos(Vdirection * PI / 180.0));
         initialVy.push_back(Vmagnitude * sin(Vdirection * PI / 180.0));
     }
-    virtual double get_volume(int i)
+    virtual double get_volume(int i) const
     {
         return PI * pileheight[i] * majorrad[i] * minorrad[i] / 2.0;
     }
@@ -394,23 +396,23 @@ struct MapNames
 //! this structure holds all the information about time and timestepping
 struct TimeProps
 {
-    
-    //! the maximum # of iterations (a.k.a. time steps) before the simulation ends 
+
+    //! the maximum # of iterations (a.k.a. time steps) before the simulation ends
     int maxiter;
 
     //! the current number of iterations
     int iter;
 
-    //! the maximum amount of time (in seconds) before the simulation ends 
+    //! the maximum amount of time (in seconds) before the simulation ends
     double maxtime;
 
     //! the non-dimensional maxtime
     double ndmaxtime;
 
-    //! the amount of time (in seconds) between subsequent outputs (with one exception... when the simulation ends one final output is performed and that one will be less than "timeoutput" seconds after the previous one 
+    //! the amount of time (in seconds) between subsequent outputs (with one exception... when the simulation ends one final output is performed and that one will be less than "timeoutput" seconds after the previous one
     double timeoutput;
 
-    //! the amount of time (in seconds) between subsequent saves (with one exception... when the simulation ends one final save is performed and that one will be less than "timeoutput" seconds after the previous one 
+    //! the amount of time (in seconds) between subsequent saves (with one exception... when the simulation ends one final save is performed and that one will be less than "timeoutput" seconds after the previous one
     double timesave;
 
     //! count of the number of times output has been done
@@ -422,7 +424,7 @@ struct TimeProps
     //! the non-dimensional time at which the next output should occur
     double ndnextoutput;
 
-    //! the non-dimensional time at which the next save should occur 
+    //! the non-dimensional time at which the next save should occur
     double ndnextsave;
 
     //! the value used to nondimensionalize time
@@ -434,7 +436,7 @@ struct TimeProps
     //! the non-dimensional time step
     double dtime;
 
-    //! velocity measure/Vslump used as a STOPPING CRITERIA,which is while it's stored under TimeProps (also members of MatProps are assigned once, are permanent for the run), see MatProps struct below for Vslump, see ../main/datread.C for initialization of Vslump     
+    //! velocity measure/Vslump used as a STOPPING CRITERIA,which is while it's stored under TimeProps (also members of MatProps are assigned once, are permanent for the run), see MatProps struct below for Vslump, see ../main/datread.C for initialization of Vslump
     double vstarmax;
 
     //! wallclock time shortly after titan starts running
@@ -458,7 +460,7 @@ struct TimeProps
         dtime = 0.0;
         vstarmax = 0.0;
     }
-    
+
     //! this function increments the time step, after, if neccessary, decreasing the time step to land evenly on the next time to output save or end the simulation
     void incrtime(double *dt)
     {
@@ -474,7 +476,7 @@ struct TimeProps
         time += *dt;
         iter++;
     }
-    
+
     int ifstart()
     {
         return (iter == 0);
@@ -483,7 +485,7 @@ struct TimeProps
     {
         return (iter == 1);
     } //! checks if it's at first time step
-    
+
     //! checks if the simulation should end due to running out of time, running out of timesteps or meeting a legacy "stopped" criteria
     int ifend(double vstar)
     {
@@ -491,13 +493,13 @@ struct TimeProps
             vstarmax = vstar;
         return ((time >= ndmaxtime) || (iter > maxiter) || ((vstarmax > 2.0) && !(vstar > 1.0)));
     }
-    
+
     //! checks if the simulation has passed 1/10th of the maximum time allowed
     int ifcheckstop()
     {
         return (time > ndmaxtime / 10.0);
     }
-    
+
     //! checks if the restart file should be saved now
     int ifsave()
     {
@@ -510,7 +512,7 @@ struct TimeProps
         else
             return (0);
     }
-    
+
     //! checks if the output files should be written now
     int ifoutput()
     {
@@ -523,7 +525,7 @@ struct TimeProps
         else
             return (0);
     }
-    
+
     //! chunk simulated time into hours minutes and seconds
     void chunktime(int *hours, int *minutes, double *seconds)
     {
@@ -532,20 +534,21 @@ struct TimeProps
         *minutes = (((int) dimtime) % 3600) / 60;
         *seconds = dimtime - (double) (*hours * 3600 + *minutes * 60);
     }
-    
+
     //! return the simulated time in seconds
     double timesec()
     {
         return (time * TIME_SCALE);
     }
-    
+
 };
 
 /*****************************************************************************/
 //! this struct holds constants for material properties as well as other constants note that the material id tag (used as the indice for material properties... matname, bedfrict) as returned by Get_raster_id() (a GIS function call) starts from 1 and not from 0 so arrays must be one element larger
 /*****************************************************************************/
-struct MatProps
+class MatProps
 {
+public:
     //! the "maximum" number of cells across the smallest pile/flux-source minor axis
     int number_of_cells_across_axis;
 
@@ -556,7 +559,7 @@ struct MatProps
     int material_count;
 
     //! the names of each material
-    char **matnames;
+    std::vector<std::string> matnames;
 
     //! phi_{int}, the internal friction angle (must be GREATER than the bedfriction angle)
     double intfrict;
@@ -565,44 +568,25 @@ struct MatProps
     double tanintfrict;
 
     //! phi_{bed}, the bed friction angle, must be LESS than the internal friction angle and should be greater than about 8 degrees, this minimum angle may change once Keith's local stopping criteria is enforced
-    double *bedfrict;
+    std::vector<double> bedfrict;
 
     //! tan(phi_{bed}), tangent of the bed friction angle
-    double *tanbedfrict;
+    std::vector<double> tanbedfrict;
 
     //! v_f, legacy not used
     double porosity;
 
-#ifdef TWO_PHASES
-    //! density
-    double den_solid;
-
-    //! fluid density
-    double den_fluid;
-
-    //! fluid viscosity
-    double viscosity;
-
-    //! terminal velocity of a single solid particle in fluid medium
-    double v_terminal;
-#else
     //! pore fluid viscosity, legacy not used
-    double mu;
+    double mu;//is it same as viscosity?
 
     //! density
     double rho;
-#endif
 
     //! scaling value, ratio of HEIGHT_SCALE to LENGTH_SCALE
     double epsilon;
 
     //! slope limiting stuff
     double gamma;
-
-#ifdef TWO_PHASES
-    //! Flow type flag
-    int flow_type;
-#endif
 
     //! length scaling factor
     double LENGTH_SCALE;
@@ -623,66 +607,116 @@ struct MatProps
     double frict_tiny;
 
     //! this constructor allocates initial properties unfortunately the properties aren't known at the time this is called so dummy values are fed in instead for many if not all of these
-#ifdef TWO_PHASES
-    MatProps(int material_countin, char **matnamesin, double intfrictin, double *bedfrictin, double porosityin,
-             double muin, double rhoin, double rhofin, double epsilonin, double gammain, double frict_tinyin,
-             double lscale, double hscale, double gscale)
-#else
-    MatProps(int material_countin, char **matnamesin, double intfrictin, double *bedfrictin, double porosityin,
-             double muin, double rhoin, double epsilonin, double gammain, double frict_tinyin, double lscale,
-             double hscale, double gscale)
-#endif
+    MatProps()
     {
-        
-        material_count = material_countin;
-        
-        if(material_count > 0)
-        {
-            //dynamic memory allocation... see useful_lib.C for CAlloc?#()
-            matnames = (char **) malloc((material_count + 1) * sizeof(char *));
-            bedfrict = CAllocD1(material_count + 1);
-            tanbedfrict = CAllocD1(material_count + 1);
-            
-            for(int imat = 1; imat <= material_count; imat++)
-            {
-                matnames[imat] = allocstrcpy(matnamesin[imat]);  //see useful_lib.C
-                bedfrict[imat] = bedfrictin[imat];
-                tanbedfrict[imat] = tan(bedfrict[imat]);
-            }
-        }
-        
-        intfrict = intfrictin;
+        number_of_cells_across_axis=0;
+        smallest_axis=0.0;
+        material_count = 0;
+        intfrict = 1.0;
         tanintfrict = tan(intfrict);
-        porosity = porosityin;
-#ifdef TWO_PHASES
-        viscosity = muin;
-        den_solid = rhoin;
-        den_fluid = rhofin;
-#else
-        mu = muin;
-        rho = rhoin;
-#endif
-        epsilon = epsilonin;
-        gamma = gammain;
-        frict_tiny = frict_tinyin;
-        LENGTH_SCALE = lscale;
-        HEIGHT_SCALE = hscale;
-        GRAVITY_SCALE = gscale;
+        porosity = 1.0;
+
+        mu = 0.1;
+        rho = 2200.0;
+
+        epsilon = 1.0;
+        gamma = 1.0;
+        LENGTH_SCALE = 1.0;
+        HEIGHT_SCALE = 1.0;
+        GRAVITY_SCALE = 1.0;
+        MAX_NEGLIGIBLE_HEIGHT = 0.0;
+        Vslump = 0.0;
+        frict_tiny = 0.1;
+        
+        //something somewhere counting from 1, so add dummy values
+        matnames.push_back("nothing");
+        bedfrict.push_back(12.0);
     }
-    
     //! this destructor deallocates the arrays of bed friction angles and their tangents
-    ~MatProps()
+    virtual ~MatProps()
     {
-        if(material_count > 0)
-        {
-            CDeAllocD1(bedfrict);
-            CDeAllocD1(tanbedfrict);
-            for(int imat = 1; imat <= material_count; imat++)
-                free(matnames[imat]);
-            free(matnames);
-        }
-        return;
     }
+    virtual void process_input()
+    {
+        int imat;
+        intfrict = intfrict * PI / 180.0;
+        tanintfrict = tan(intfrict);
+
+        tanbedfrict.resize(bedfrict.size());
+        for(imat = 1; imat <= material_count; imat++)
+        {
+            bedfrict[imat] *= PI / 180.0;
+            tanbedfrict[imat] = tan(intfrict);
+        }
+    }
+
+
+    virtual inline void set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr=NULL,const FluxProps *fluxprops_ptr=NULL);
+    double get_TIME_SCALE()
+    {
+        return sqrt(LENGTH_SCALE / GRAVITY_SCALE);
+    }
+    //non-dimensionalize the inputs
+    double get_VELOCITY_SCALE()
+    {
+        return sqrt(LENGTH_SCALE * GRAVITY_SCALE);
+    }
+
+    virtual void print0()
+    {
+        int i;
+        printf("Material properties:\n");
+        printf("\tNumber of cells across axis: %d\n",number_of_cells_across_axis);
+        printf("\tInternal friction: %f\n",intfrict * 180.0 / PI);
+        printf("\tBed friction:\n");
+        for(i = 0; i < matnames.size(); i++)
+        {
+            printf("%d %s %f\n", i, matnames[i].c_str(), bedfrict[i] * 180.0 / PI);
+        }
+    }
+
+};
+
+class MatPropsTwoPhases:public MatProps
+{
+public:
+    MatPropsTwoPhases() :
+            MatProps()
+    {
+        den_solid=2700.0;
+        den_fluid=2200.0;
+        viscosity=0.0001;
+        v_terminal=0.0;
+
+        flow_type=0;
+    }
+    virtual ~MatPropsTwoPhases() {}
+
+    //! density
+    double den_solid;
+
+    //! fluid density
+    double den_fluid;
+
+    //! fluid viscosity
+    double viscosity;
+
+    //! terminal velocity of a single solid particle in fluid medium
+    double v_terminal;
+
+    //! Flow type flag
+    int flow_type;
+
+    virtual void process_input()
+    {
+        MatProps::process_input();
+
+
+        double diameter = 0.005;
+        v_terminal = pow(diameter, 2.) * (den_solid - den_fluid) * GRAVITY_SCALE
+                / (18. * viscosity);
+    }
+    virtual inline void set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr=NULL,const FluxProps *fluxprops_ptr=NULL);
 };
 
 //! the OutLine Structure holds the maximum throughout time flow depth at every spatial point
@@ -1316,7 +1350,7 @@ public:
     }
 };
 
-//! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance. 
+//! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance.
 class FluxProps
 {
 public:
@@ -1463,6 +1497,12 @@ public:
             t3 = (end_time[i] - start_time[i]);
         return influx[i] * t3 - 0.5 * a * t3 * t3;
     }
+    double get_volume(int isrc) const
+    {
+        return 0.5 * PI * influx[isrc] * majorrad[isrc]
+                                               * minorrad[isrc] * 0.5 * (end_time[isrc] - //0.5 for linear decrease
+                                                       start_time[isrc]);
+    }
     virtual void print_source(int i)
     {
         printf("\tFlux_source %d:\n", i);
@@ -1497,21 +1537,21 @@ public:
     //! this function returns 1 if any flux sources become active during the current timestep, this is used to trigger "initial adaptation" of the flux source area, Keith wrote this function
     int IfAnyStart(TimeProps *timeprops_ptr)
     {
-        
+
         for(int isrc = 0; isrc < no_of_sources; isrc++)
             if(((timeprops_ptr->time - timeprops_ptr->dtime <= start_time[isrc]) && (start_time[isrc]
                     < timeprops_ptr->time))
                || ((timeprops_ptr->iter == 0) && (start_time[isrc] == 0.0)))
                 return (1);
-        
+
         return (0);
     }
-    
+
     //! this function returns the maximum of all currently active extrusion fluxes, Keith wrote this function
     double MaxInfluxNow(MatProps *matprops_ptr, TimeProps *timeprops_ptr)
     {
         double tempinflux, maxinflux = 0.0;
-        
+
         for(int isrc = 0; isrc < no_of_sources; isrc++)
             if(((start_time[isrc] <= timeprops_ptr->time) && (timeprops_ptr->time <= end_time[isrc])) || ((timeprops_ptr
                     ->iter
@@ -1524,10 +1564,78 @@ public:
                 if(tempinflux > maxinflux)
                     maxinflux = tempinflux;
             }
-        
+
         return (maxinflux);
     }
-    
+
 };
+
+inline void MatProps::set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr)
+{
+    //scaling info
+    LENGTH_SCALE = length_scale;
+    //all height scaling now based on cube root of predicted volume, see below
+    HEIGHT_SCALE = height_scale;
+    GRAVITY_SCALE = gravity_scale;
+
+    int isrc;
+    double doubleswap;
+
+    //this is used in ../geoflow/stats.C ... might want to set
+    //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin
+    //layer control, need to reevaluate this, we should also
+    //reevaluate after we implement a "good" local stopping criteria
+    MAX_NEGLIGIBLE_HEIGHT = HEIGHT_SCALE / 10000.0;
+
+    if(height_scale == 0.0)
+    {
+        double totalvolume = 0.0;
+
+
+        if(pileprops_ptr != NULL)
+            for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+                totalvolume += pileprops_ptr->get_volume(isrc);
+        if(fluxprops_ptr != NULL)
+            for(isrc = 0; isrc < fluxprops_ptr->no_of_sources; isrc++)
+                totalvolume +=fluxprops_ptr->get_volume(isrc);
+
+        doubleswap = pow(totalvolume, 1.0 / 3.0);
+
+        if((GRAVITY_SCALE != 1.0) || (LENGTH_SCALE != 1.0))
+            HEIGHT_SCALE = doubleswap;
+        else
+            HEIGHT_SCALE = 1.0;
+
+        MAX_NEGLIGIBLE_HEIGHT = doubleswap / HEIGHT_SCALE / 10000.0;
+    }
+
+    epsilon = HEIGHT_SCALE / LENGTH_SCALE;
+}
+inline void MatPropsTwoPhases::set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops1_ptr,const FluxProps *fluxprops_ptr)
+{
+    MatProps::set_scale(length_scale, height_scale, gravity_scale, pileprops1_ptr, fluxprops_ptr);
+
+    PilePropsTwoPhases *pileprops_ptr=(PilePropsTwoPhases*)pileprops1_ptr;
+
+    int isrc;
+    double maxphi = 0.;
+    double minphi = HUGE_VAL;
+    for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+    {
+        // search for min-max phi
+        if(pileprops_ptr->vol_fract[isrc] > maxphi)
+            maxphi = pileprops_ptr->vol_fract[isrc];
+        if(pileprops_ptr->vol_fract[isrc] < minphi)
+            minphi = pileprops_ptr->vol_fract[isrc];
+    }
+    // cut-off extremes
+    //assert(minphi <= maxphi);
+    if(minphi < 0.2)
+        flow_type = FLUID_FLOW;
+    else if(maxphi > 0.9)
+        flow_type = DRY_FLOW;
+    else
+        flow_type = TWOPHASE;
+}
 
 #endif

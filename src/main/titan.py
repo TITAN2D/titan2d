@@ -46,7 +46,6 @@ class TitanSinglePhase(TitanSimulation):
                  maxtime=1.5,
                  timeoutput=10.0,
                  timesave=None,
-                 number_of_cells_across_axis=20,
                  length_scale=1.0,
                  gravity_scale=9.8,
                  height_scale=None,
@@ -68,10 +67,7 @@ class TitanSinglePhase(TitanSimulation):
         if numprocs not in (1,2,4,8,12,128,256,512):
             raise ValueError('wrong amount of processors!')
         
-        #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
-        self.sim.number_of_cells_across_axis = int(number_of_cells_across_axis)
-        if self.sim.number_of_cells_across_axis<=0:
-            raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
+        
         
         #Length Scale [m]
         self.sim.length_scale = float(length_scale)
@@ -234,55 +230,36 @@ class TitanSinglePhase(TitanSimulation):
             
     def setMatMap(self,
             use_gis_matmap=False,
-            matmap=None):
+            number_of_cells_across_axis=20,
+            intfrict=30.0,
+            bedfrict=15.0,
+            mat_names=None):
         #Use GIS Material Map?        
         self.sim.use_gis_matmap = use_gis_matmap
-        if matmap==None:
-            matmap=[{'intfrict':30.0,'bedfrict':15.0}]
+        #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
+        self.sim.matprops.number_of_cells_across_axis = int(number_of_cells_across_axis)
+        if self.sim.matprops.number_of_cells_across_axis<=0:
+            raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
         
-        #get (then write) list of material names and properties
-
-        #if you don't enter a value for the current material it
-        #defaults to the value for the previous material, so must
-        #provide some previous value for the first material
-        #since there is value checking in QuestionTemplate3, any
-        #values can be used here
-        previntfrict = 0.
-        prevbedfrict = 0.
         
+        if not isinstance(bedfrict, (list, tuple)):
+            bedfrict=[bedfrict]
+        
+        self.sim.matprops.intfrict=float(intfrict)
         if self.sim.use_gis_matmap == False:
-            self.sim.material_map.name.push_back("all materials")
-            self.sim.material_map.intfrict.push_back(matmap[0]['intfrict'])
-            self.sim.material_map.bedfrict.push_back(matmap[0]['bedfrict'])
+            self.sim.matprops.material_count=1
+            self.sim.matprops.matnames.push_back("all materials")
+            self.sim.matprops.bedfrict.push_back(float(bedfrict[0]))
             #self.sim.material_map.print0()
         else:  #if they did want to use a GIS material map...
+            self.sim.matprops.material_count=len(mat_names)
+            if len(bedfrict)!=len(mat_names):
+                raise Exception("number of mat_names does not match number of bedfrict")
+            for i in range(len(bedfrict)):
+                self.sim.matprops.matnames.push_back(mat_names[i])
+                self.sim.matprops.bedfrict.push_back(float(bedfrict[i]))
             raise Exception("GIS material map Not implemented yet")
-        #m.print0()
-
-        fout=open("frict.data","w",0)
-
-        #if they didn't want to use a GIS material map, get the material
-        #properties once up front
-        if self.sim.use_gis_matmap == False:
-            nummat=1
-            fout.write(str(nummat)+'\n')
-            matname = 'all materials'
-            
-            # check values and store them
-            intfrict=float(matmap[0]['intfrict'])
-            bedfrict=float(matmap[0]['bedfrict'])
-            
-            if intfrict <= 0.0 :
-                raise ValueError('intfrict can not be negative')
-            if bedfrict <= 0.0 :
-                raise ValueError('bedfrict can not be negative')
-            
-            fout.write(matname+'\n')
-            fout.write(str(intfrict)+' '+str(bedfrict)+'\n')
-            
-        else:  #if they did want to use a GIS material map...
-            raise Exception("Not implemented as there were no suitable example")
-        fout.close
+        
     def validatePile(self, **kwargs):
         out={}
         out['height']=float(kwargs['height'])

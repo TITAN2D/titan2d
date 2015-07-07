@@ -23,6 +23,7 @@
 class NodePreproc;
 class ElementPreproc;
 class BoundaryPreproc;
+class MatProps;
 
 #include "../header/titan_simulation.h"
 
@@ -71,7 +72,8 @@ public:
     //!>the raster map name, used for Gdal too
     std::string topomap;
 
-    MaterialMap material_map;
+    //MaterialMap material_map;
+    MatProps *matprops;
 
     //If using Gdal data format:
     //raster map subdirectory, mapname

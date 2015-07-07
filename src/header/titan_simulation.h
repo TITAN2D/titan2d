@@ -23,27 +23,6 @@
 
 #include "properties.h"
 
-/**
- * MaterialMap
- */
-class MaterialMap
-{
-public:
-    MaterialMap();
-    ~MaterialMap();
-
-    MaterialMap& operator=(const MaterialMap& other);
-private:
-    int myid;
-    int numprocs;
-public:
-    std::vector<std::string> name;
-    std::vector<double> intfrict;
-    std::vector<double> bedfrict;
-
-    void print0();
-    int get_material_count();
-};
 
 /**
  * cxxTitanSimulation
@@ -93,9 +72,6 @@ public:
     //! gravity scaling factor
     double gravity_scale;
 
-    //! the "maximum" number of cells across the smallest pile/flux-source minor axis
-    int number_of_cells_across_axis;
-
     //! the maximum # of iterations (a.k.a. time steps) before the simulation ends
     int maxiter;
     //! the maximum amount of time (in seconds) before the simulation ends
@@ -135,7 +111,7 @@ public:
 
 
     //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
+    virtual void process_input(StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
     {}
 
@@ -156,7 +132,7 @@ public:
     ~cxxTitanSinglePhase();
 
     //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input(MatProps* matprops_ptr, StatProps* statprops_ptr,
+    virtual void process_input(StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr);
     virtual void hpfem();
     virtual void run();
@@ -176,8 +152,9 @@ public:
     DischargePlanes discharge_planes;
     //std::vector<cxxTitanDischargePlane> discharge_planes;
 
+    MatProps matprops;
 
-    MaterialMap material_map;
+    virtual MatProps* get_matprops(){return &matprops;}
 };
 
 class cxxTitanTwoPhases:public cxxTitanSinglePhase
@@ -188,6 +165,8 @@ public:
 
     //!>Piles
     PilePropsTwoPhases pileprops;
+
+    MatPropsTwoPhases matprops;
 
     virtual PileProps* get_pileprops(){return &pileprops;}
 };

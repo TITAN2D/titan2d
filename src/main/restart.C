@@ -777,13 +777,13 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
     for(imat = 1; imat <= matprops_ptr->material_count; imat++)
     {
         //count and save the NUMBER of characters in this name
-        temp4.i = strlen(matprops_ptr->matnames[imat]);
+        temp4.i = strlen(matprops_ptr->matnames[imat].c_str());
         for(itemp = 0; itemp < 4; itemp++)
             header[Itemp++] = temp4.c[itemp];
         
         //save the characters in this name
         for(itemp = 0; itemp < temp4.i; itemp++)
-            header[Itemp++] = matprops_ptr->matnames[imat][itemp];
+            header[Itemp++] = matprops_ptr->matnames[imat].c_str()[itemp];
         
 #ifdef DEBUGSAVEHEADER
         fprintf(fp3,"material %d: %d: \"%s\"\n",imat,temp4.i,matprops_ptr->matnames[imat]);
