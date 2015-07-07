@@ -23,10 +23,20 @@
 
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
+
+#ifdef TWO_PHASES
+void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr2, FluxProps *fluxprops,
+             TimeProps *timeprops, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
+             double *deposited)
+#else
 void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
              TimeProps *timeprops, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
              double *deposited)
+#endif
 {
+#ifdef TWO_PHASES
+    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
+#endif
     Element *EmTemp = (Element *) EmTemp_in;
     double *dx = EmTemp->get_dx();
     double dtdx = dt / dx[0];

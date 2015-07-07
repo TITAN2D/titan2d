@@ -36,6 +36,7 @@
 
 class FluxProps;
 
+#ifndef SWIG
 //! LHS stands for Latin Hypercube Sampling, it is a constrained sampling method whose convergence can be much faster than monte carlo 
 struct LHS_Props
 {
@@ -159,7 +160,7 @@ struct StatProps
     }
     
 };
-
+#endif
 //! the PileProps structure holds the pile properties read in in Read_data() so the pile can be placed at the proper locations shortly thereafter in init_piles() 
 class PileProps
 {
@@ -721,6 +722,7 @@ public:
     virtual inline void calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr);
 };
 
+#ifndef SWIG
 //! the OutLine Structure holds the maximum throughout time flow depth at every spatial point
 struct OutLine
 {
@@ -1052,6 +1054,7 @@ struct OutLine
     }
     
 };
+#endif
 
 /**********************************************************************/
 //! this structure is for the calculation of volume that flows through user specified discharge planes.  The sign of the volume indicates which direction the flow went and follows the right hand rule convention.  velocity cross (point b-point a) is the sign of the flow through planes.  This means if you surround the only pile, specify the points defining the discharge planes in counter clockwise order, the flow "out of the box" will be positive.  if you specify the points in clockwise order flow "out of the box" will be negative.

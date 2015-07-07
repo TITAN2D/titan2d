@@ -72,11 +72,19 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
 
 void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops_ptr, PileProps* pileprops_ptr);
 
+#ifdef TWO_PHASES
+void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int adaptflag,
+                MatProps* matprops, TimeProps* timeprops_ptr, MapNames* mapnames, PileProps* pileprops2,
+                FluxProps *fluxprops, StatProps* statprops)
+#else
 void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int adaptflag,
                 MatProps* matprops, TimeProps* timeprops_ptr, MapNames* mapnames, PileProps* pileprops,
                 FluxProps *fluxprops, StatProps* statprops)
+#endif
 {
-    
+#ifdef TWO_PHASES
+    PilePropsTwoPhases* pileprops=(PilePropsTwoPhases*)pileprops2;
+#endif
     unsigned nodes[9][KEYLENGTH], *node_key;
     int num_buckets = HT_Elem_Ptr->get_no_of_buckets();
     
@@ -236,9 +244,15 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
 /* the pile can be either parabolic (in the z direction) or be     */
 /* cylindrical (have uniform pile height)                          */
 /*******************************************************************/
+#ifdef TWO_PHASES
+void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, PileProps* pileprops2)
+#else
 void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, PileProps* pileprops)
+#endif
 {
-    
+#ifdef TWO_PHASES
+    PilePropsTwoPhases* pileprops=(PilePropsTwoPhases*)pileprops2;
+#endif
     unsigned nodes[9][2];
     
     //get corner and edge nodes

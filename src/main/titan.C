@@ -38,7 +38,7 @@
 #include "../header/titan_simulation.h"
 
 extern "C" void init_cxxtitan();
-#ifndef TWO_PHASES
+//#ifndef TWO_PHASES
 int main(int argc, char *argv[])
 {
     int myid, master, numprocs;
@@ -98,5 +98,5 @@ int main(int argc, char *argv[])
     MPI_Finalize();
     return 0;
 }
-#endif
+//#endif
 

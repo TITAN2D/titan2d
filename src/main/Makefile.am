@@ -21,7 +21,7 @@ titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/li
 #titan_simulation_CXXFLAGS = -fpic
 
 cxxtitan_wrap.cxx:cxxtitan.i ../header/properties.h ../header/titan_simulation.h ../preproc/preproc.h
-	@SWIG@ -c++ -v -python -o $(srcdir)/cxxtitan_wrap.cxx -oh $(srcdir)/cxxtitan.py $(srcdir)/cxxtitan.i
+	@SWIG@ $(CPPFLAGS) -c++ -v -python -o $(srcdir)/cxxtitan_wrap.cxx -oh $(srcdir)/cxxtitan.py $(srcdir)/cxxtitan.i
 
 
 

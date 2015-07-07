@@ -1910,9 +1910,10 @@ double Element::convect_dryline(double VxVy[2], double dt)
 }
 #ifdef TWO_PHASES
 //x direction flux in current cell
-void Element::xdirflux(MatProps* matprops_ptr, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
+void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
                        double hrfv[3][NUM_STATE_VARS])
 {
+    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
     int i, j;
     double a, Vel[4]; // Vel[0:1]: solid-vel, Vel[2:3]: fluid-vel
     double volf = 0.;
@@ -2060,9 +2061,10 @@ void Element::xdirflux(MatProps* matprops_ptr, double dz, double wetnessfactor, 
 }
 
 //y direction flux in current cell
-void Element::ydirflux(MatProps* matprops_ptr, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
+void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
                        double hrfv[3][NUM_STATE_VARS])
 {
+    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
     int i, j;
     double Vel[4], a;
     double volf = 0.;

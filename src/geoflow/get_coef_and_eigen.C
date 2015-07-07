@@ -23,9 +23,17 @@
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
 
+#ifdef TWO_PHASES
+double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr2, FluxProps* fluxprops_ptr,
+                          TimeProps* timeprops_ptr, int ghost_flag)
+#else
 double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
                           TimeProps* timeprops_ptr, int ghost_flag)
+#endif
 {
+#ifdef TWO_PHASES
+    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
+#endif
     int myid;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     double min_distance = 1000000, max_evalue = GEOFLOW_TINY, doubleswap;

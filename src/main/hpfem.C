@@ -64,11 +64,11 @@ void checkelemnode2(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *f
 }
 #endif
 
-#ifdef TWO_PHASES
-int main(int argc, char *argv[])
-#else
+//#ifdef TWO_PHASES
+//int main(int argc, char *argv[])
+//#else
 void cxxTitanSinglePhase::hpfem()
-#endif
+//#endif
 {
     int i; //-- counters
     
@@ -80,10 +80,6 @@ void cxxTitanSinglePhase::hpfem()
     int namelen;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Status status;
-    
-#ifdef TWO_PHASES
-    MPI_Init(&argc, &argv);
-#endif
     
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
@@ -133,20 +129,24 @@ void cxxTitanSinglePhase::hpfem()
               &mapnames, &outline);
     input_summary();
     
-    if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, &adapt, &order,
+    MatProps *matprops_ptr=get_matprops();
+    PileProps* pileprops_ptr=get_pileprops();
+
+
+    if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
                 &statprops, &discharge_planes, &outline))
     {
         
-        Read_grid(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &outline);
+        Read_grid(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &outline);
         
-        setup_geoflow(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops);
+        setup_geoflow(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops);
         
         move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
         
         AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -1.0);
         
         //initialize pile height and if appropriate perform initial adaptation
-        init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adapt, &matprops, &timeprops, &mapnames, &pileprops,
+        init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adapt, matprops_ptr, &timeprops, &mapnames, pileprops_ptr,
                    &fluxprops, &statprops);
     }
     else
@@ -160,46 +160,46 @@ void cxxTitanSinglePhase::hpfem()
     /* for debug only, to check if exactly what's loaded will be saved again
      by doing a diff on the files.
      saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, 
-     &matprops, &timeprops, &mapnames, adaptflag, order_flag, 
+     matprops_ptr, &timeprops, &mapnames, adaptflag, order_flag,
      &statprops, &discharge_planes, &outline, &savefileflag);
      */
 
     if(myid == 0)
     {
-        for(int imat = 1; imat <= matprops.material_count; imat++)
-            printf("bed friction angle for \"%s\" is %g\n", matprops.matnames[imat],
-                   matprops.bedfrict[imat] * 180.0 / PI);
+        for(int imat = 1; imat <= matprops_ptr->material_count; imat++)
+            printf("bed friction angle for \"%s\" is %g\n", matprops_ptr->matnames[imat],
+                   matprops_ptr->bedfrict[imat] * 180.0 / PI);
         
-        printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", matprops.intfrict * 180.0 / PI,
-               matprops.epsilon, order);
+        printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", matprops_ptr->intfrict * 180.0 / PI,
+               matprops_ptr->epsilon, order);
         printf("REFINE_LEVEL=%d\n", REFINE_LEVEL);
     }
     
     MPI_Barrier (MPI_COMM_WORLD);
-    calc_stats(BT_Elem_Ptr, BT_Node_Ptr, myid, &matprops, &timeprops, &statprops, &discharge_planes, 0.0);
+    calc_stats(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
     
-    output_discharge(&matprops, &timeprops, &discharge_planes, myid);
+    output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
     
     move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
     if(myid == 0)
         output_summary(&timeprops, &statprops, savefileflag);
     
     if(vizoutput & 1)
-        tecplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
     
     if(vizoutput & 2)
-        meshplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
     
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
-    xdmerr=write_xdmf(BT_Elem_Ptr,BT_Node_Ptr,&timeprops,&matprops,&mapnames,XDMF_NEW);
+    xdmerr=write_xdmf(BT_Elem_Ptr,BT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
 #endif
     
     if(vizoutput & 8)
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, &matprops, &timeprops);
+        grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops);
     }
     
     /*
@@ -234,25 +234,25 @@ void cxxTitanSinglePhase::hpfem()
         double UNREFINE_TARGET = .01;
         int h_count = 0;
         if(timeprops.iter < 50)
-            matprops.frict_tiny = 0.1;
+            matprops_ptr->frict_tiny = 0.1;
         else
-            matprops.frict_tiny = 0.000000001;
+            matprops_ptr->frict_tiny = 0.000000001;
         
         //check for changes in topography and update if necessary
         if(timeprops.iter == 200)
         {
-            update_topo(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &mapnames);
+            update_topo(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
         }
         
         if((adapt != 0) && (timeprops.iter % 5 == 4))
         {
             AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -2.0);
             
-            H_adapt(BT_Elem_Ptr, BT_Node_Ptr, h_count, TARGET, &matprops, &fluxprops, &timeprops, 5);
+            H_adapt(BT_Elem_Ptr, BT_Node_Ptr, h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
             
             move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
             
-            unrefine(BT_Elem_Ptr, BT_Node_Ptr, UNREFINE_TARGET, myid, numprocs, &timeprops, &matprops);
+            unrefine(BT_Elem_Ptr, BT_Node_Ptr, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
             
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
             move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
@@ -275,7 +275,7 @@ void cxxTitanSinglePhase::hpfem()
         titanTimingsAlongSimulation.meshAdaptionTime += MPI_Wtime() - t_start;
         
         t_start = MPI_Wtime();
-        step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, &matprops, &timeprops, &pileprops, &fluxprops, &statprops,
+        step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
              &order, &outline, &discharge_planes, adapt);
         titanTimings.stepTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
@@ -285,7 +285,7 @@ void cxxTitanSinglePhase::hpfem()
          * save a restart file 
          */
         if(timeprops.ifsave())
-            saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adapt, order,
+            saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
                     &statprops, &discharge_planes, &outline, &savefileflag);
         
         /*
@@ -295,28 +295,28 @@ void cxxTitanSinglePhase::hpfem()
         {
             move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
             
-            output_discharge(&matprops, &timeprops, &discharge_planes, myid);
+            output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
             
             if(myid == 0)
                 output_summary(&timeprops, &statprops, savefileflag);
             
             if(vizoutput & 1)
-                tecplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
+                tecplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
             
             if(vizoutput & 2)
-                meshplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
+                meshplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
             
 #if HAVE_LIBHDF5
             if(vizoutput & 4)
             xdmerr=write_xdmf(BT_Elem_Ptr, BT_Node_Ptr, &timeprops,
-                    &matprops, &mapnames, XDMF_OLD);
+                    matprops_ptr, &mapnames, XDMF_OLD);
 #endif
             
             if(vizoutput & 8)
             {
                 if(myid == 0)
                     grass_sites_header_output(&timeprops);
-                grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, &matprops, &timeprops);
+                grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops);
             }
         }
         
@@ -365,39 +365,39 @@ void cxxTitanSinglePhase::hpfem()
      * save a restart file 
      */
 
-    saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, adapt, order,
+    saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
             &statprops, &discharge_planes, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
     
-    output_discharge(&matprops, &timeprops, &discharge_planes, myid);
+    output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
     MPI_Barrier(MPI_COMM_WORLD);
     
     if(myid == 0)
         output_summary(&timeprops, &statprops, savefileflag);
     
     if(vizoutput & 1)
-        tecplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
     
     if(vizoutput & 2)
-        meshplotter(BT_Elem_Ptr, BT_Node_Ptr, &matprops, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
     
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
     xdmerr=write_xdmf(BT_Elem_Ptr, BT_Node_Ptr, &timeprops,
-            &matprops, &mapnames, XDMF_CLOSE);
+            matprops_ptr, &mapnames, XDMF_CLOSE);
 #endif
     
     if(vizoutput & 8)
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, &matprops, &timeprops);
+        grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops);
     }
     
     MPI_Barrier(MPI_COMM_WORLD);
     
     // write out ending warning, maybe flow hasn't finished moving
-    sim_end_warning(BT_Elem_Ptr, &matprops, &timeprops, statprops.vstar);
+    sim_end_warning(BT_Elem_Ptr, matprops_ptr, &timeprops, statprops.vstar);
     MPI_Barrier(MPI_COMM_WORLD);
     
     //write out the final pile statistics (and run time)
@@ -408,7 +408,7 @@ void cxxTitanSinglePhase::hpfem()
     
     //write out stochastic simulation statistics
     if(myid == 0)
-        output_stoch_stats(&matprops, &statprops);
+        output_stoch_stats(matprops_ptr, &statprops);
     MPI_Barrier(MPI_COMM_WORLD);
     
     //output maximum flow depth a.k.a. flow outline
@@ -428,10 +428,10 @@ void cxxTitanSinglePhase::hpfem()
         MPI_Reduce(*(outline.cum_kinergy), *(outline2.cum_kinergy), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #endif
         if(myid == 0)
-            outline2.output(&matprops, &statprops);
+            outline2.output(matprops_ptr, &statprops);
     }
     else
-        outline.output(&matprops, &statprops);
+        outline.output(matprops_ptr, &statprops);
     
 #ifdef PERFTEST  
     long m = element_counter, ii;
@@ -449,13 +449,5 @@ void cxxTitanSinglePhase::hpfem()
     if(myid == 0)
         titanTimings.print();
 
-#ifdef TWO_PHASES
-    MPI_Finalize();
-    return (0);
-#else
     return;
-#endif
-
-    
-
 }
