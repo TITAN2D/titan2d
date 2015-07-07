@@ -616,7 +616,7 @@ public:
         tanintfrict = tan(intfrict);
         porosity = 1.0;
 
-        mu = 0.1;
+        mu = 0.0001;
         rho = 2200.0;
 
         epsilon = 1.0;
@@ -652,6 +652,7 @@ public:
 
 
     virtual inline void set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr=NULL,const FluxProps *fluxprops_ptr=NULL);
+    virtual inline void calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr);
     double get_TIME_SCALE()
     {
         return sqrt(LENGTH_SCALE / GRAVITY_SCALE);
@@ -669,9 +670,9 @@ public:
         printf("\tNumber of cells across axis: %d\n",number_of_cells_across_axis);
         printf("\tInternal friction: %f\n",intfrict * 180.0 / PI);
         printf("\tBed friction:\n");
-        for(i = 0; i < matnames.size(); i++)
+        for(i = 1; i <= material_count; i++)
         {
-            printf("%d %s %f\n", i, matnames[i].c_str(), bedfrict[i] * 180.0 / PI);
+            printf("\t\t%d %s %f\n", i, matnames[i].c_str(), bedfrict[i] * 180.0 / PI);
         }
     }
 
@@ -717,6 +718,7 @@ public:
                 / (18. * viscosity);
     }
     virtual inline void set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr=NULL,const FluxProps *fluxprops_ptr=NULL);
+    virtual inline void calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr);
 };
 
 //! the OutLine Structure holds the maximum throughout time flow depth at every spatial point
@@ -1611,6 +1613,51 @@ inline void MatProps::set_scale(const double length_scale,const double height_sc
 
     epsilon = HEIGHT_SCALE / LENGTH_SCALE;
 }
+inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr)
+{
+    /*************************************************************************
+     * Vslump doesn't mean it is related to slumping of pile
+     * It is simply the maximum hypothetical velocity from
+     * free fall of the pile.
+     ************************************************************************/
+    int i;
+    double gravity = 9.8; //[m/s^2]
+    double zmin, res;
+    // get DEM resolution from GIS
+    int ierr = Get_max_resolution(&res);
+    if(ierr == 0)
+    {
+        // Get minimum finite elevation from GIS
+        ierr = Get_elev_min(res, &zmin);
+        if(ierr != 0)
+            zmin = 0;
+    }
+    if(isnan (zmin) || (zmin < 0))
+        zmin = 0;
+
+    // search highest point amongst piles
+    double zcen = 0;
+    int j = 0;
+    for(i = 0; i < pileprops_ptr->numpiles; i++)
+    {
+        double xcen = LENGTH_SCALE * pileprops_ptr->xCen[i];
+        double ycen = LENGTH_SCALE * pileprops_ptr->yCen[i];
+        double ztemp = 0;
+        ierr = Get_elevation(res, xcen, ycen, &ztemp);
+        if(ierr != 0)
+            ztemp = 0;
+
+        if((ztemp + pileprops_ptr->pileheight[i]) > (zcen + pileprops_ptr->pileheight[i]))
+        {
+            zcen = ztemp;
+            j = i;
+        }
+    }
+
+    // calculate Vslump
+    double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
+    Vslump = sqrt(gravity * hscale);
+}
 inline void MatPropsTwoPhases::set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops1_ptr,const FluxProps *fluxprops_ptr)
 {
     MatProps::set_scale(length_scale, height_scale, gravity_scale, pileprops1_ptr, fluxprops_ptr);
@@ -1637,5 +1684,18 @@ inline void MatPropsTwoPhases::set_scale(const double length_scale,const double 
     else
         flow_type = TWOPHASE;
 }
+inline void MatPropsTwoPhases::calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr)
+{
+    /*************************************************************************/
+    /* the non-dimensional velocity stopping criteria is an idea that
+     didn't work for anything other than a slumping pile on a horizontal
+     surface, it's only still here because I didn't want to bother
+     with removing it.  --Keith Dalbey 2005.10.28
 
+     kappa is a to be determined constant, calculation stops when
+     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
+    double kappa = 1.0;   //should eventually move to a header file
+    double gravity = 9.8; //[m/s^2]
+    Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
+}
 #endif

@@ -400,7 +400,7 @@ class TitanSinglePhase(TitanSimulation):
                 print "\nvectordatpreproc..."
                 vectordatpreproc(self.sim.topomain, self.sim.toposub, self.sim.topomapset, self.sim.topomap, self.sim.topovector)
             print
-        
+        #self.sim.input_summary()
         self.sim.run()
 
 class TitanTwoPhases(TitanSinglePhase):

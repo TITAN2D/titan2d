@@ -100,33 +100,15 @@ void cxxTitanSinglePhase::hpfem()
      code and then initialize element 
      stiffness routines info */
 
-    //int material_count = 0;
-    //double epsilon = 1., intfrictang = 1, *bedfrictang = NULL, gamma = 1;
-#ifdef TWO_PHASES
-    //double frict_tiny = 0.1, mu = 0.1, rho = 2700, rhof = 1200, porosity = 1;
-#else
-    //double frict_tiny = 0.1, mu = .0001, rho = 2200, porosity = 1;
-#endif
-    //char **matnames = NULL;
     int xdmerr;
 
     StatProps statprops;
-#ifdef TWO_PHASES
-    MatProps matprops(material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, rhof, epsilon, gamma,
-                      frict_tiny, 1.0, 1.0, 1.0);
-#else
-    //MatProps matprops;//material_count, matnames, intfrictang, bedfrictang, porosity, mu, rho, epsilon, gamma, frict_tiny,
-                      //1.0, 1.0, 1.0);
-
-#endif
     TimeProps timeprops;
     timeprops.starttime = time(NULL);
     
     MapNames mapnames;
     OutLine outline;
-#ifdef TWO_PHASES
-    int adapt;
-#endif
+
     double end_time = 10000.0;
     /*
      * viz_flag is used to determine which viz output to use
@@ -140,23 +122,16 @@ void cxxTitanSinglePhase::hpfem()
      */
 
     //savefileflag will be flipped so first savefile will end in 0
-#ifdef TWO_PHASES
-    int vizoutput = 0, order;
-#endif
     int savefileflag = 1;
     int Init_Node_Num, Init_Elem_Num;
     double v_star; // v/v_slump
     double nz_star; /* temporary... used for negligible velocity as stopping 
      criteria paper... plan to include in v_star implicitly 
      later */
-#ifdef TWO_PHASES
-    Read_data(myid, &matprops, &statprops, &timeprops, &fluxprops, &adapt, &vizoutput, &order,
-          &mapnames, &discharge, &outline);
-#else
+
     process_input(&statprops, &timeprops,
               &mapnames, &outline);
-#endif
-
+    input_summary();
     
     if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, &matprops, &timeprops, &mapnames, &adapt, &order,
                 &statprops, &discharge_planes, &outline))

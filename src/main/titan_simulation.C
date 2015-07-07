@@ -205,7 +205,7 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
     MatProps *matprops_ptr=get_matprops();
 
     /*************************************************************************/
-    matprops_ptr->set_scale(length_scale, height_scale, gravity_scale);
+    matprops_ptr->set_scale(length_scale, height_scale, gravity_scale,pileprops_ptr,&fluxprops);
     matprops_ptr->process_input();
 
     double TIME_SCALE = matprops_ptr->get_TIME_SCALE();
@@ -262,62 +262,7 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
         exit(1);
     }
 
-#ifdef TWO_PHASES
-    /*************************************************************************/
-    /* the non-dimensional velocity stopping criteria is an idea that
-     didn't work for anything other than a slumping pile on a horizontal
-     surface, it's only still here because I didn't want to bother
-     with removing it.  --Keith Dalbey 2005.10.28
-
-     kappa is a to be determined constant, calculation stops when
-     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
-    double kappa = 1.0;   //should eventually move to a header file
-    double gravity = 9.8; //[m/s^2]
-    matprops_ptr->Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
-#endif
-#ifndef TWO_PHASES
-    /*************************************************************************
-     * Vslump doesn't mean it is related to slumping of pile
-     * It is simply the maximum hypothetical velocity from
-     * free fall of the pile.
-     ************************************************************************/
-    double gravity = 9.8; //[m/s^2]
-    double zmin, res;
-    // get DEM resolution from GIS
-    int ierr = Get_max_resolution(&res);
-    if(ierr == 0)
-    {
-        // Get minimum finite elevation from GIS
-        ierr = Get_elev_min(res, &zmin);
-        if(ierr != 0)
-            zmin = 0;
-    }
-    if(isnan (zmin) || (zmin < 0))
-        zmin = 0;
-
-    // search highest point amongst piles
-    double zcen = 0;
-    int j = 0;
-    for(i = 0; i < pileprops_ptr->numpiles; i++)
-    {
-        double xcen = matprops_ptr->LENGTH_SCALE * pileprops_ptr->xCen[i];
-        double ycen = matprops_ptr->LENGTH_SCALE * pileprops_ptr->yCen[i];
-        double ztemp = 0;
-        ierr = Get_elevation(res, xcen, ycen, &ztemp);
-        if(ierr != 0)
-            ztemp = 0;
-
-        if((ztemp + pileprops_ptr->pileheight[i]) > (zcen + pileprops_ptr->pileheight[i]))
-        {
-            zcen = ztemp;
-            j = i;
-        }
-    }
-
-    // calculate Vslump
-    double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
-    matprops_ptr->Vslump = sqrt(gravity * hscale);
-#endif
+    matprops_ptr->calc_Vslump(pileprops_ptr,&fluxprops);
     /*************************************************************************/
     //test point information
     statprops_ptr->hxyminmax=edge_height;
@@ -400,9 +345,9 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
 int hpfem();
 void cxxTitanSinglePhase::run()
 {
-    printf("cxxTitanSimulation::run %d\n", myid);
+    //printf("cxxTitanSimulation::run %d\n", myid);
     MPI_Barrier (MPI_COMM_WORLD);
-    printf("cxxTitanSimulation::run::let's go %d\n", myid);
+    //printf("cxxTitanSimulation::run::let's go %d\n", myid);
 #ifndef TWO_PHASES
     hpfem();
 #endif
