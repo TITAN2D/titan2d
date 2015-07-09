@@ -114,8 +114,6 @@ public:
     virtual void process_input(StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
     {}
-
-    virtual void hpfem(){}
     virtual void run();
     virtual void input_summary();
 
@@ -135,7 +133,7 @@ public:
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr);
-    virtual void hpfem();
+
     virtual void run();
     virtual void input_summary();
 
