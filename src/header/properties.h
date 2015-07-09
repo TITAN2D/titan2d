@@ -35,8 +35,9 @@
 #include "constant.h"
 
 class FluxProps;
+class MatProps;
 
-#ifndef SWIG
+
 //! LHS stands for Latin Hypercube Sampling, it is a constrained sampling method whose convergence can be much faster than monte carlo 
 struct LHS_Props
 {
@@ -56,8 +57,9 @@ struct LHS_Props
 };
 
 //! the StatProps structure holds statistics about the flow
-struct StatProps
+class StatProps
 {
+public:
     //note all means are mass/volume averages
     
     //! job number for monte carlo or lhs simulations
@@ -148,19 +150,12 @@ struct StatProps
     LHS_Props lhs;
 
     //! the constructor initializes a few statistics
-    StatProps()
-    {
-        timereached = -1.0;
-        xcen = ycen = xvar = yvar = rmean = area = vmean = vxmean = vymean = slopemean = vstar = 0.0;
-        realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
-        piler = hmax = vmax = forceint = forcebed = 0.0;
-        heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
-        xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
-        lhs.refnum = lhs.runid = -1;
-    }
+    StatProps();
+    ~StatProps();
+    void set(const double edge_height, const double test_height, const double test_location_x, const double test_location_y);
+    void scale(const MatProps* matprops_ptr);
     
 };
-#endif
 //! the PileProps structure holds the pile properties read in in Read_data() so the pile can be placed at the proper locations shortly thereafter in init_piles() 
 class PileProps
 {
@@ -205,14 +200,14 @@ public:
     virtual ~PileProps();
     //! function allocates space for the pile data
     virtual void allocpiles(int numpiles_in);
-    
+
     virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
                          double orientation, double Vmagnitude, double Vdirection);
     virtual double get_volume(int i) const
     {
         return PI * pileheight[i] * majorrad[i] * minorrad[i] / 2.0;
     }
-    virtual void scale(double length_scale,double height_scale,double gravity_scale);
+    virtual void scale(double length_scale, double height_scale, double gravity_scale);
     double get_smallest_pile_radius();
     virtual void print_pile(int i);
     virtual void print0();
@@ -226,7 +221,7 @@ public:
     std::vector<double> vol_fract;
 
     PilePropsTwoPhases();
-    virtual  ~PilePropsTwoPhases();
+    virtual ~PilePropsTwoPhases();
 
     virtual void allocpiles(int numpiles_in);
 #ifndef SWIG
@@ -277,10 +272,11 @@ public:
 
     MapNames();
     ~MapNames();
-    
+
     //! this function allocates space for and assigns the information about the GIS map
-    void set(const int format, const std::string gis_main_in, const std::string gis_sub_in, const std::string gis_mapset_in, const std::string gis_map_in, const std::string gis_vector_in,
-                const int extramaps_in);
+    void set(const int format, const std::string gis_main_in, const std::string gis_sub_in,
+             const std::string gis_mapset_in, const std::string gis_map_in, const std::string gis_vector_in,
+             const int extramaps_in);
     void set_region_limits(double min_location_x, double min_location_y, double max_location_x, double max_location_y);
     void print0();
 };
@@ -339,9 +335,10 @@ public:
     //! wallclock time shortly after titan starts running
     time_t starttime;
 
-    TimeProps(){
+    TimeProps()
+    {
         starttime = time(NULL);
-        TIME_SCALE=1.0;
+        TIME_SCALE = 1.0;
         set_time(0, 0.0, 0.0, 0.0);
     }
     ~TimeProps()
@@ -489,7 +486,7 @@ public:
     double porosity;
 
     //! pore fluid viscosity, legacy not used
-    double mu;//is it same as viscosity?
+    double mu; //is it same as viscosity?
 
     //! density
     double rho;
@@ -521,8 +518,8 @@ public:
     //! this constructor allocates initial properties unfortunately the properties aren't known at the time this is called so dummy values are fed in instead for many if not all of these
     MatProps()
     {
-        number_of_cells_across_axis=0;
-        smallest_axis=0.0;
+        number_of_cells_across_axis = 0;
+        smallest_axis = 0.0;
         material_count = 0;
         intfrict = 1.0;
         tanintfrict = tan(intfrict);
@@ -562,9 +559,9 @@ public:
         }
     }
 
-
-    virtual inline void set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr=NULL,const FluxProps *fluxprops_ptr=NULL);
-    virtual inline void calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr);
+    virtual inline void set_scale(const double length_scale, const double height_scale, const double gravity_scale,
+                                  const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
+    virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
     double get_TIME_SCALE()
     {
         return sqrt(LENGTH_SCALE / GRAVITY_SCALE);
@@ -579,8 +576,8 @@ public:
     {
         int i;
         printf("Material properties:\n");
-        printf("\tNumber of cells across axis: %d\n",number_of_cells_across_axis);
-        printf("\tInternal friction: %f\n",intfrict * 180.0 / PI);
+        printf("\tNumber of cells across axis: %d\n", number_of_cells_across_axis);
+        printf("\tInternal friction: %f\n", intfrict * 180.0 / PI);
         printf("\tBed friction:\n");
         for(i = 1; i <= material_count; i++)
         {
@@ -590,7 +587,7 @@ public:
 
 };
 
-class MatPropsTwoPhases:public MatProps
+class MatPropsTwoPhases: public MatProps
 {
 public:
     MatPropsTwoPhases() :
@@ -598,14 +595,16 @@ public:
     {
         mu = 0.1;
         rho = 2700;
-        den_solid=2700.0;
-        den_fluid=1200.0;
-        viscosity=0.1;
-        v_terminal=0.0;
+        den_solid = 2700.0;
+        den_fluid = 1200.0;
+        viscosity = 0.1;
+        v_terminal = 0.0;
 
-        flow_type=0;
+        flow_type = 0;
     }
-    virtual ~MatPropsTwoPhases() {}
+    virtual ~MatPropsTwoPhases()
+    {
+    }
 
     //! density
     double den_solid;
@@ -626,13 +625,12 @@ public:
     {
         MatProps::process_input();
 
-
         double diameter = 0.005;
-        v_terminal = pow(diameter, 2.) * (den_solid - den_fluid) * GRAVITY_SCALE
-                / (18. * viscosity);
+        v_terminal = pow(diameter, 2.) * (den_solid - den_fluid) * GRAVITY_SCALE / (18. * viscosity);
     }
-    virtual inline void set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr=NULL,const FluxProps *fluxprops_ptr=NULL);
-    virtual inline void calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr);
+    virtual inline void set_scale(const double length_scale, const double height_scale, const double gravity_scale,
+                                  const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
+    virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
 };
 
 #ifndef SWIG
@@ -860,7 +858,7 @@ struct OutLine
             fprintf(fp, "%g\n", max_kinergy[iy][ix] * ENERGY_SCALE);
         }
         fclose(fp);
-  
+
         // output cummulative kinetic-energy
         sprintf(filename, "cumkerecord.%06d", statprops_ptr->runid);
         fp = fopen(filename, "w");
@@ -979,7 +977,7 @@ public:
 
     //! the discharge planes are lines (with planes normal to the surface intersecting the surface passing through the lines), this holds a lot of information associated with each planes, a lot of precomputed quantities to make updating the flux through the planes fast.
     //double **planes;
-    std::vector< std::vector<double> > planes;
+    std::vector<std::vector<double> > planes;
 
     //! this constructor initializes the number of planes to zero
     DischargePlanes()
@@ -996,7 +994,7 @@ public:
     void allocate(int m_num_planes)
     {
         num_planes = m_num_planes;
-        planes.resize(num_planes);// = CAllocD2(num_planes, 10);
+        planes.resize(num_planes);    // = CAllocD2(num_planes, 10);
         for(int iplane = 0; iplane < num_planes; iplane++)
         {
             planes[iplane].resize(10);
@@ -1011,16 +1009,14 @@ private:
                 planes[i][4] * planes[i][4] + planes[i][5] * planes[i][5];
         planes[i][7] = //ya*(xb-xa)-xa*(yb-ya)
                 planes[i][3] * planes[i][4] - planes[i][1] * planes[i][5];
-        planes[i][8] = ((fabs(planes[i][4]) + fabs(planes[i][5]))
-                * (fabs(planes[i][4]) + fabs(planes[i][5])))
-                            / planes[i][6];
+        planes[i][8] = ((fabs(planes[i][4]) + fabs(planes[i][5])) * (fabs(planes[i][4]) + fabs(planes[i][5])))
+                / planes[i][6];
         planes[i][9] = 0.0; //discharge through the planes[i]
     }
 public:
     //! this function add plane and initializes the planes information (to zero flux through the planes) and precomputes a number of quantities to make updating the flux through the planes fast
 
-    void addDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b,
-                           const double m_y_b)
+    void addDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b, const double m_y_b)
     {
         std::vector<double> plane;
         plane.resize(10);
@@ -1033,10 +1029,9 @@ public:
         //printf("plane %d: (%16.10g,%16.10g) (%16.10g,%16.10g)\n",iplane,planes[iplane][0],planes[iplane][2],planes[iplane][1],planes[iplane][3]);
 
         planes.push_back(plane);
-        num_planes=planes.size();
-        calculateDerivativeProps(num_planes-1);
+        num_planes = planes.size();
+        calculateDerivativeProps(num_planes - 1);
     }
-
     
     //reinitialized in load_run()
     void init(int num_planes_in, double **planes_in)
@@ -1050,7 +1045,8 @@ public:
         {
             for(int iplane = 0; iplane < num_planes_in; iplane++)
             {
-                addDischargePlane(planes_in[iplane][0], planes_in[iplane][1], planes_in[iplane][2], planes_in[iplane][3]);
+                addDischargePlane(planes_in[iplane][0], planes_in[iplane][1], planes_in[iplane][2],
+                                  planes_in[iplane][3]);
             }
         }
         return;
@@ -1058,14 +1054,14 @@ public:
 
     void scale(double length_scale)
     {
-            for(int i = 0; i < num_planes; i++)
-            {
-                planes[i][0]/=length_scale;
-                planes[i][1]/=length_scale;
-                planes[i][2]/=length_scale;
-                planes[i][3]/=length_scale;
-                calculateDerivativeProps(i);
-            }
+        for(int i = 0; i < num_planes; i++)
+        {
+            planes[i][0] /= length_scale;
+            planes[i][1] /= length_scale;
+            planes[i][2] /= length_scale;
+            planes[i][3] /= length_scale;
+            calculateDerivativeProps(i);
+        }
     }
 
     void print_discharge_plane(int i)
@@ -1078,7 +1074,7 @@ public:
     void print0()
     {
         int i;
-        if(num_planes>0)
+        if(num_planes > 0)
         {
             printf("Discharge planes:    (Number of discharge planes: %d)\n", num_planes);
             for(i = 0; i < num_planes; i++)
@@ -1312,7 +1308,9 @@ public:
     {
         no_of_sources = 0;
     }
-    ~FluxProps(){}
+    ~FluxProps()
+    {
+    }
     //! this function allocates space for all the extrusion rate fluxes, Dinesh Kumar added it, Keith modified it slightly
     void allocsrcs(int nsrcs)
     {
@@ -1330,8 +1328,9 @@ public:
         yVel.resize(nsrcs);
     }
     //! add flux source
-    virtual void addFluxSource(double m_influx, double m_start_time, double m_end_time, double xcenter, double ycenter, double majradius, double minradius,
-                         double orientation, double Vmagnitude, double Vdirection)
+    virtual void addFluxSource(double m_influx, double m_start_time, double m_end_time, double xcenter, double ycenter,
+                               double majradius, double minradius, double orientation, double Vmagnitude,
+                               double Vdirection)
     {
         no_of_sources++;
         influx.push_back(m_influx);
@@ -1346,7 +1345,7 @@ public:
         xVel.push_back(Vmagnitude * cos(Vdirection * PI / 180.0));
         yVel.push_back(Vmagnitude * sin(Vdirection * PI / 180.0));
     }
-    virtual void scale(double length_scale,double height_scale,double gravity_scale)
+    virtual void scale(double length_scale, double height_scale, double gravity_scale)
     {
         //non-dimensionalize the inputs
         double time_scale = sqrt(length_scale / gravity_scale);
@@ -1417,9 +1416,8 @@ public:
     }
     double get_volume(int isrc) const
     {
-        return 0.5 * PI * influx[isrc] * majorrad[isrc]
-                                               * minorrad[isrc] * 0.5 * (end_time[isrc] - //0.5 for linear decrease
-                                                       start_time[isrc]);
+        return 0.5 * PI * influx[isrc] * majorrad[isrc] * minorrad[isrc] * 0.5 * (end_time[isrc] - //0.5 for linear decrease
+                start_time[isrc]);
     }
     virtual void print_source(int i)
     {
@@ -1430,10 +1428,10 @@ public:
 
         printf("\t\tCenter of Initial Volume, xc, yc (UTM E, UTM N): %f %f\n", xCen[i], yCen[i]);
         printf("\t\tMajor and Minor Extent, majorR, minorR (m, m): %f %f\n", majorrad[i], minorrad[i]);
-        double orientation=atan2(sinrot[i],cosrot[i])*180.0/PI;
+        double orientation = atan2(sinrot[i], cosrot[i]) * 180.0 / PI;
         printf("\t\tOrientation (angle [degrees] from X axis to major axis): %f\n", orientation);
-        double Vmagnitude=sqrt(xVel[i]*xVel[i]+yVel[i]*yVel[i]);
-        double Vdirection=atan2(yVel[i],xVel[i])*180.0/PI;
+        double Vmagnitude = sqrt(xVel[i] * xVel[i] + yVel[i] * yVel[i]);
+        double Vdirection = atan2(yVel[i], xVel[i]) * 180.0 / PI;
         printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude);
         printf("\t\tInitial direction ([degrees] from X axis): %f\n", Vdirection);
         printf("\t\tEffective Thickness, P (m):%f\n", get_effective_height(i));
@@ -1441,7 +1439,7 @@ public:
     virtual void print0()
     {
         int i;
-        if(no_of_sources>0)
+        if(no_of_sources > 0)
         {
             printf("Flux sources:    (Number of flux sources: %d)\n", no_of_sources);
             for(i = 0; i < no_of_sources; i++)
@@ -1473,8 +1471,8 @@ public:
         for(int isrc = 0; isrc < no_of_sources; isrc++)
             if(((start_time[isrc] <= timeprops_ptr->cur_time) && (timeprops_ptr->cur_time <= end_time[isrc])) || ((timeprops_ptr
                     ->iter
-                                                                                                           == 0)
-                                                                                                          && (start_time[isrc] == 0)))
+                                                                                                                   == 0)
+                                                                                                                  && (start_time[isrc] == 0)))
             {
                 tempinflux = sqrt(
                         influx[isrc] * influx[isrc] + (xVel[isrc] * xVel[isrc] + yVel[isrc] * yVel[isrc])
@@ -1488,7 +1486,8 @@ public:
 
 };
 
-inline void MatProps::set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr)
+inline void MatProps::set_scale(const double length_scale, const double height_scale, const double gravity_scale,
+                                const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
     //scaling info
     LENGTH_SCALE = length_scale;
@@ -1509,13 +1508,12 @@ inline void MatProps::set_scale(const double length_scale,const double height_sc
     {
         double totalvolume = 0.0;
 
-
         if(pileprops_ptr != NULL)
             for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
                 totalvolume += pileprops_ptr->get_volume(isrc);
         if(fluxprops_ptr != NULL)
             for(isrc = 0; isrc < fluxprops_ptr->no_of_sources; isrc++)
-                totalvolume +=fluxprops_ptr->get_volume(isrc);
+                totalvolume += fluxprops_ptr->get_volume(isrc);
 
         doubleswap = pow(totalvolume, 1.0 / 3.0);
 
@@ -1529,7 +1527,7 @@ inline void MatProps::set_scale(const double length_scale,const double height_sc
 
     epsilon = HEIGHT_SCALE / LENGTH_SCALE;
 }
-inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr)
+inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
     /*************************************************************************
      * Vslump doesn't mean it is related to slumping of pile
@@ -1574,11 +1572,13 @@ inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr,const FluxProps
     double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
     Vslump = sqrt(gravity * hscale);
 }
-inline void MatPropsTwoPhases::set_scale(const double length_scale,const double height_scale,const double gravity_scale,const PileProps *pileprops1_ptr,const FluxProps *fluxprops_ptr)
+inline void MatPropsTwoPhases::set_scale(const double length_scale, const double height_scale,
+                                         const double gravity_scale, const PileProps *pileprops1_ptr,
+                                         const FluxProps *fluxprops_ptr)
 {
     MatProps::set_scale(length_scale, height_scale, gravity_scale, pileprops1_ptr, fluxprops_ptr);
 
-    PilePropsTwoPhases *pileprops_ptr=(PilePropsTwoPhases*)pileprops1_ptr;
+    PilePropsTwoPhases *pileprops_ptr = (PilePropsTwoPhases*) pileprops1_ptr;
 
     int isrc;
     double maxphi = 0.;
@@ -1600,7 +1600,7 @@ inline void MatPropsTwoPhases::set_scale(const double length_scale,const double 
     else
         flow_type = TWOPHASE;
 }
-inline void MatPropsTwoPhases::calc_Vslump(const PileProps *pileprops_ptr,const FluxProps *fluxprops_ptr)
+inline void MatPropsTwoPhases::calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
     /*************************************************************************/
     /* the non-dimensional velocity stopping criteria is an idea that

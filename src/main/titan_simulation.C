@@ -120,7 +120,10 @@ void cxxTitanSinglePhase::process_input()
     double doubleswap;
 
     MatProps *matprops_ptr=get_matprops();
+
     PileProps* pileprops_ptr=get_pileprops();
+    FluxProps* fluxprops_ptr=get_fluxprops();
+
     StatProps* statprops_ptr=get_statprops();
     TimeProps* timeprops_ptr=get_timeprops();
     MapNames* mapnames_ptr=get_mapnames();
@@ -209,7 +212,7 @@ void cxxTitanSinglePhase::process_input()
     statprops_ptr->runid = statprops_ptr->lhs.runid;
 
     /*************************************************************************/
-    matprops_ptr->set_scale(length_scale, height_scale, gravity_scale,pileprops_ptr,&fluxprops);
+    matprops_ptr->set_scale(length_scale, height_scale, gravity_scale,pileprops_ptr,fluxprops_ptr);
     matprops_ptr->process_input();
 
     double TIME_SCALE = matprops_ptr->get_TIME_SCALE();
@@ -268,49 +271,9 @@ void cxxTitanSinglePhase::process_input()
     matprops_ptr->calc_Vslump(pileprops_ptr,&fluxprops);
     /*************************************************************************/
     //test point information
-    statprops_ptr->hxyminmax=edge_height;
-    if(statprops_ptr->hxyminmax == -1.0)
-    {
-        statprops_ptr->hxyminmax = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
-
-    }
-    else if(statprops_ptr->hxyminmax <= 0.0)
-    {
-        printf("bogus edge height=%g read in from simulation.data\n \
-            (edge height = -1 is the flag for using the default height)\n \
-            Exitting!!\n",
-               statprops_ptr->hxyminmax);
-        exit(1);
-    }
-    statprops_ptr->hxyminmax /= matprops_ptr->HEIGHT_SCALE;
-
-    statprops_ptr->heightifreach=test_height;
-    char chargarb1[64], chargarb2[64];
-    if(statprops_ptr->heightifreach != -2)
-    {
-
-        //default test height is 10 time the maximum negligible height
-        if(statprops_ptr->heightifreach == -1)
-            statprops_ptr->heightifreach = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
-
-        statprops_ptr->heightifreach /= matprops_ptr->HEIGHT_SCALE;
-
-        statprops_ptr->xyifreach[0]=test_location_x/matprops_ptr->LENGTH_SCALE;
-        statprops_ptr->xyifreach[1]=test_location_y/matprops_ptr->LENGTH_SCALE;
-    }
-    else
-    {
-        statprops_ptr->heightifreach = statprops_ptr->xyifreach[0] = statprops_ptr->xyifreach[1] =
-        HUGE_VAL;
-    }
-
-    //to get rid on uninitiallized memory error in saverun() (restart.C)
-    statprops_ptr->forceint = statprops_ptr->forcebed = 0.0;
+    statprops_ptr->scale(matprops_ptr);
 
     /*************************************************************************/
-    //the discharge plane section starts here
-    int iplane, num_planes;
-    num_planes=discharge_planes.num_planes;
     discharge_planes.scale(matprops_ptr->LENGTH_SCALE);
 
     //the discharge plane section ends here

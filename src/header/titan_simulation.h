@@ -68,18 +68,6 @@ public:
     //! order == 2 means use second order method
     int order;
 
-    //! xyminmax holds the minimum and maximum x and y coordinates where the pile height is greater than hxyminmax
-    double edge_height;
-    //! check if a flow of height heightifreach reaches the point xyifreach and record the first time it does in timereached, if the value is -1 the flow has not reached the point with the specified height.
-    double test_height;
-    //! check if a flow of height heightifreach reaches the point xyifreach and record the first time it does in timereached, if the value is -1 the flow has not reached the point with the specified height.
-    double test_location_x;
-    double test_location_y;
-
-
-
-
-
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)

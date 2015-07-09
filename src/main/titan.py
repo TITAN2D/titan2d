@@ -129,35 +129,34 @@ class TitanSinglePhase(TitanSimulation):
         
         #Test if flow reaches height [m] ...
         if edge_height == None:
-            self.sim.edge_height = -1.0
+            edge_height = -1.0
         else:
-            self.sim.edge_height = float(edge_height)
-            if self.sim.edge_height <= 0:
+            edge_height = float(edge_height)
+            if edge_height <= 0:
                 raise ValueError('TitanSimulation::edge_height should be positive or None\n')
         
         #Height used to define flow outline (>0) [m]
         
         if test_height == None:
-            self.sim.test_height = -2.0
+            test_height = -2.0
+            test_location_x = 0.0
+            test_location_y = 0.0
         else:
-            self.sim.test_height =float(test_height)
+            test_height =float(test_height)
             if test_height <= 0:
-                raise ValueError('TitanSimulation::test_height should be positive or None\n') 
-        
-        #... at test point (x and y location)
-        if test_location==None:
-            if test_height!=None:
+                raise ValueError('TitanSimulation::test_height should be positive or None\n')
+            #... at test point (x and y location)
+            if test_location==None:
                 raise ValueError('TitanSimulation::test_location should be set if test_height>0\n') 
-            self.sim.test_location_x = 0.0
-            self.sim.test_location_y = 0.0
-        else:
-            if not isinstance(test_location, (list, tuple)):
-                raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
-            if len(test_location)!=2:
-                raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
-            self.sim.test_location_x = float(test_location[0])
-            self.sim.test_location_y = float(test_location[1])
+            else:
+                if not isinstance(test_location, (list, tuple)):
+                    raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
+                if len(test_location)!=2:
+                    raise ValueError("Unknown format for test_location ("+str(test_location)+"). Should be [float, float]")
+                test_location_x = float(test_location[0])
+                test_location_y = float(test_location[1])
         
+        self.sim.get_statprops().set(edge_height, test_height, test_location_x, test_location_y);
         #other inits
 
     def setGIS(self,gis_format='GIS_GRASS',
