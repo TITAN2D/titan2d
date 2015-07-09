@@ -30,8 +30,8 @@ class TitanSimulation(object):
         'grasssites':8 # fourth bit flag
     }
     possible_gis_formats={
-        'GIS_GRASS':cxxTitanSimulation.GIS_GRASS,
-        'GDAL':cxxTitanSimulation.GDAL
+        'GIS_GRASS':MapNames.GIS_GRASS,
+        'GDAL':MapNames.GDAL
     }
     possible_orders={'First':1,'Second':2}
     def __init__(self):
@@ -42,10 +42,10 @@ class TitanSimulation(object):
         
 class TitanSinglePhase(TitanSimulation):
     def __init__(self,
-                 maxiter=100,
-                 maxtime=1.5,
-                 timeoutput=10.0,
-                 timesave=None,
+                 max_iter=100,
+                 max_time=1.5,
+                 time_output=10.0,
+                 time_save=None,
                  length_scale=1.0,
                  gravity_scale=9.8,
                  height_scale=None,
@@ -91,25 +91,25 @@ class TitanSinglePhase(TitanSimulation):
             
         
         #Maximum Number of Time Steps
-        self.sim.maxiter = int(maxiter)
-        if self.sim.maxiter<=0:
-            raise ValueError("TitanSimulation::maxiter should be positive")
+        max_iter = int(max_iter)
+        if max_iter<=0:
+            raise ValueError("TitanSimulation::max_iter should be positive")
         #Maximum Time [sec]
-        self.sim.maxtime = float(maxtime)
-        if self.sim.maxtime<=0.0:
-            raise ValueError("TitanSimulation::maxtime should be positive")
+        max_time = float(max_time)
+        if max_time<=0.0:
+            raise ValueError("TitanSimulation::max_time should be positive")
         #Time [sec] between Results Output
-        self.sim.timeoutput = float(timeoutput)
-        if self.sim.timeoutput<=0.0:
-            raise ValueError("TitanSimulation::timeoutput should be positive")
+        time_output = float(time_output)
+        if time_output<=0.0:
+            raise ValueError("TitanSimulation::time_output should be positive")
         #Time [sec] between Saves
-        if timesave == None:
-            self.sim.timesave = -1.0
+        if time_save == None:
+            time_save = -1.0
         else:
-            self.sim.timesave = float(timesave)
-            if self.sim.timesave<=0.0:
-                raise ValueError("TitanSimulation::timesave should be positive or None")
-            
+            time_save = float(time_save)
+            if time_save<=0.0:
+                raise ValueError("TitanSimulation::time_save should be positive or None")
+        self.sim.get_timeprops().set_time(max_iter,max_time,time_output,time_save)
         #Adapt the Grid?
         if adapt:
             self.sim.adapt = 1
@@ -160,81 +160,73 @@ class TitanSinglePhase(TitanSimulation):
         
         #other inits
 
-    def setTopo(self,gis_format='GIS_GRASS',
-                 topomain=None,
-                 toposub=None,
-                 topomapset=None,
-                 topomap=None,
-                 topovector=None,
+    def setGIS(self,gis_format='GIS_GRASS',
+                 gis_main=None,
+                 gis_sub=None,
+                 gis_mapset=None,
+                 gis_map=None,
+                 gis_vector=None,
                  min_location_x=None,
                  min_location_y=None,
                  max_location_x=None,
                  max_location_y=None):
         
         if gis_format in TitanSimulation.possible_gis_formats:
-            self.sim.gis_format = TitanSimulation.possible_gis_formats[gis_format]
+            gis_format = TitanSimulation.possible_gis_formats[gis_format]
         else:
-            raise ValueError("Unknown gis format "+str(gis_format)+". Possible formats: "+str(gis_formats[1:]))
+            raise ValueError("Unknown gis gis_format "+str(gis_format)+". Possible formats: "+str(gis_formats[1:]))
         #GIS Information Main Directory
-        self.sim.topomain = topomain if topomain!=None else ''
+        gis_main = gis_main if gis_main!=None else ''
         #GIS Sub-Directory
-        self.sim.toposub = toposub if toposub!=None else ''
+        gis_sub = gis_sub if gis_sub!=None else ''
         #GIS Map Set
-        self.sim.topomapset = topomapset if topomapset!=None else ''
+        set = gis_mapset if gis_mapset!=None else ''
         #GIS Map
-        self.sim.topomap = topomap if topomap!=None else ''
+        gis_map = gis_map if gis_map!=None else ''
         #GIS Vector
-        self.sim.topovector = topovector if topovector!=None else ''
+        gis_vector = gis_vector if gis_vector!=None else ''
+        
+        self.sim.get_mapnames().set(gis_format,gis_main, gis_sub, gis_mapset, gis_map, gis_vector, 0)
+        
         
         if min_location_x!=None and min_location_y!=None and \
             max_location_x!=None and max_location_y!=None:
-            self.sim.region_limits_set=True
+            
             #Minimum x and y location (UTM E, UTM N)
-            self.sim.min_location_x = min_location_x
-            self.sim.min_location_y = min_location_y
             #Maximum x and y location (UTM E, UTM N)
-            self.sim.max_location_x = max_location_x
-            self.sim.max_location_y = max_location_y
-        else:
-            self.sim.region_limits_set=False
-            #Minimum x and y location (UTM E, UTM N)
-            self.sim.min_location_x = 0.0
-            self.sim.min_location_y = 0.0
-            #Maximum x and y location (UTM E, UTM N)
-            self.sim.max_location_x = 0.0
-            self.sim.max_location_y = 0.0
+            self.sim.get_mapnames().set_region_limits(float(min_location_x),float(max_location_x),float(min_location_y),float(max_location_y))
+            
         
         
         
         #here should be validator
         # if there is no topo file, quit
-        if self.sim.gis_format == 1:
+        if gis_format == 1:
             errmsg='Missing GIS information.  No job will be run.'
-            if self.sim.topomain == '' or self.sim.toposub == '' or self.sim.topomapset == '' or self.sim.topomap == '':
+            if gis_main == '' or gis_sub == '' or gis_mapset == '' or gis_map == '':
                 raise ValueError(errmsg)
-            if self.sim.topomain == None or self.sim.toposub == None or self.sim.topomapset == None or self.sim.topomap == None:
+            if gis_main == None or gis_sub == None or gis_mapset == None or gis_map == None:
                 raise ValueError(errmsg)
-            if (not isinstance(self.sim.topomain, basestring)) or (not isinstance(self.sim.toposub, basestring)) or \
-                    (not isinstance(self.sim.topomapset, basestring)) or (not isinstance(self.sim.topomap, basestring)):
+            if (not isinstance(gis_main, basestring)) or (not isinstance(gis_sub, basestring)) or \
+                    (not isinstance(gis_mapset, basestring)) or (not isinstance(gis_map, basestring)):
                 raise ValueError(errmsg)
             
             p=""
-            for dirname in (self.sim.topomain,self.sim.toposub,self.sim.topomapset):
+            for dirname in (gis_main,gis_sub,gis_mapset):
                 p=os.path.join(p,dirname)
-                print p
                 if not os.path.isdir(p):
                     raise ValueError(errmsg+". "+p+" does not exist!")
-            #self.sim.topomap?
+            #gis_map?
         elif  self.sim.gis_format == 2:
-            if (self.sim.topomap == '') or (self.sim.topomap == None) or (not isinstance(self.sim.topomap, basestring)) or \
-                    (not os.path.isdir(self.sim.topomap)):
+            if (gis_map == '') or (gis_map == None) or (not isinstance(gis_map, basestring)) or \
+                    (not os.path.isdir(gis_map)):
                 raise ValueError(errmsg)
             
     def setMatMap(self,
             use_gis_matmap=False,
             number_of_cells_across_axis=20,
-            intfrict=30.0,
-            bedfrict=15.0,
+            int_frict=30.0,
+            bed_frict=15.0,
             mat_names=None):
         #Use GIS Material Map?        
         self.sim.use_gis_matmap = use_gis_matmap
@@ -244,21 +236,21 @@ class TitanSinglePhase(TitanSimulation):
             raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
         
         
-        if not isinstance(bedfrict, (list, tuple)):
-            bedfrict=[bedfrict]
+        if not isinstance(bed_frict, (list, tuple)):
+            bed_frict=[bed_frict]
         
-        self.sim.get_matprops().intfrict=float(intfrict)
+        self.sim.get_matprops().intfrict=float(int_frict)
         if self.sim.use_gis_matmap == False:
             self.sim.get_matprops().material_count=1
             self.sim.get_matprops().matnames.push_back("all materials")
-            self.sim.get_matprops().bedfrict.push_back(float(bedfrict[0]))
+            self.sim.get_matprops().bedfrict.push_back(float(bed_frict[0]))
         else:  #if they did want to use a GIS material map...
             self.sim.get_matprops().material_count=len(mat_names)
-            if len(bedfrict)!=len(mat_names):
-                raise Exception("number of mat_names does not match number of bedfrict")
-            for i in range(len(bedfrict)):
+            if len(bed_frict)!=len(mat_names):
+                raise Exception("number of mat_names does not match number of bed_frict")
+            for i in range(len(bed_frict)):
                 self.sim.get_matprops().matnames.push_back(mat_names[i])
-                self.sim.get_matprops().bedfrict.push_back(float(bedfrict[i]))
+                self.sim.get_matprops().bedfrict.push_back(float(bed_frict[i]))
             raise Exception("GIS material map Not implemented yet")
         
     def validatePile(self, **kwargs):
@@ -384,7 +376,7 @@ class TitanSinglePhase(TitanSimulation):
         
         if self.sim.myid==0:
             print 'max height is ' + str(max_height)
-            print 'heightscale based on max height is ' + str(heightscale)
+            #print 'heightscale based on max height is ' + str(heightscale)
         
         if self.sim.myid==0:
             # run preproc.x to create the fem grid, if it is not already there
@@ -396,9 +388,9 @@ class TitanSinglePhase(TitanSimulation):
             print "\npreproc..."
             self.preproc()
     
-            if self.sim.topovector != "":
+            if self.sim.get_mapnames().gis_vector != "":
                 print "\nvectordatpreproc..."
-                vectordatpreproc(self.sim.topomain, self.sim.toposub, self.sim.topomapset, self.sim.topomap, self.sim.topovector)
+                vectordatpreproc(self.sim.get_mapnames().gis_main, self.sim.get_mapnames().gis_sub, self.sim.get_mapnames().gis_mapset, self.sim.get_mapnames().gis_map, self.sim.get_mapnames().gis_vector)
             print
         #self.sim.input_summary()
         self.sim.run()

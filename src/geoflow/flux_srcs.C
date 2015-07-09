@@ -125,7 +125,7 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
     double temp_coef;
     double major, minor, dswap, xcoord, ycoord;
     int ikey, inode, isrc;
-    double curr_time = timeprops->time;
+    double curr_time = timeprops->cur_time;
     double start_time, end_time;
     /*
      printf("no_of_sources=%g time=%g\n",no_of_sources,timeprops->time);

@@ -48,7 +48,7 @@ int update_topo(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nu
     {
         double tick = MPI_Wtime();
         Delete_GIS_data();
-        Initialize_GIS_data(mapnames->gis_main, mapnames->gis_sub, mapnames->gis_mapset, gis_update_map);
+        Initialize_GIS_data(mapnames->gis_main.c_str(), mapnames->gis_sub.c_str(), mapnames->gis_mapset.c_str(), gis_update_map);
         
         /* update the nodes */
         int num_buckets = HT_Node_Ptr->get_no_of_buckets();

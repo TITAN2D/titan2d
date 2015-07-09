@@ -53,21 +53,6 @@ cxxTitanSimulation::cxxTitanSimulation()
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-    gis_format = -1;
-
-    topomain = "";
-    toposub = "";
-    topomapset = "";
-    topomap = "";
-    topovector = "";
-
-    region_limits_set = false;
-
-    min_location_x = 0.0;
-    max_location_x = 0.0;
-    min_location_y = 0.0;
-    max_location_y = 0.0;
-
     MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanSimulation::~cxxTitanSimulation()
@@ -86,16 +71,7 @@ void cxxTitanSimulation::input_summary()
         return;
     }
 
-    printf("GIS:\n");
-    printf("\tgis_format: %d\n", gis_format);
 
-    printf("\ttopomain: %s\n", topomain.c_str());
-    printf("\ttoposub: %s\n", toposub.c_str());
-    printf("\ttopomapset: %s\n", topomapset.c_str());
-    printf("\ttopomap: %s\n", topomap.c_str());
-    printf("\ttopovector: %s\n", topovector.c_str());
-
-    printf("\tregion_limits_set %d\n", (int) region_limits_set);
 
     /*int i;
     printf("Piles:\n");
@@ -126,6 +102,8 @@ void cxxTitanSimulation::input_summary()
 cxxTitanSinglePhase::cxxTitanSinglePhase() :
         cxxTitanSimulation()
 {
+
+
     MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanSinglePhase::~cxxTitanSinglePhase()
@@ -134,18 +112,21 @@ cxxTitanSinglePhase::~cxxTitanSinglePhase()
 }
 
 
-void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
-               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
+void cxxTitanSinglePhase::process_input()
 {
 
     int i;
     int isrc;
     double doubleswap;
 
-    /*************************************************************************/
-
-
+    MatProps *matprops_ptr=get_matprops();
     PileProps* pileprops_ptr=get_pileprops();
+    StatProps* statprops_ptr=get_statprops();
+    TimeProps* timeprops_ptr=get_timeprops();
+    MapNames* mapnames_ptr=get_mapnames();
+    OutLine* outline_ptr=get_outline();
+
+    /*************************************************************************/
 
     int no_of_sources = fluxprops.no_of_sources;
     if(fluxprops.no_of_sources+pileprops_ptr->numpiles==0)
@@ -228,9 +209,6 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
     statprops_ptr->runid = statprops_ptr->lhs.runid;
 
     /*************************************************************************/
-    MatProps *matprops_ptr=get_matprops();
-
-    /*************************************************************************/
     matprops_ptr->set_scale(length_scale, height_scale, gravity_scale,pileprops_ptr,&fluxprops);
     matprops_ptr->process_input();
 
@@ -249,11 +227,11 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
     //read in material map
     if(matprops_ptr->material_count > 1)
     {
-        char *gis_matmap = (char *) malloc((topomap.size() + 5) * sizeof(char));
-        strcpy(gis_matmap, topomap.c_str());
-        strcat(gis_matmap + strlen(topomap.c_str()), "_Mat");
+        char *gis_matmap = (char *) malloc((mapnames_ptr->gis_map.size() + 5) * sizeof(char));
+        strcpy(gis_matmap, mapnames_ptr->gis_map.c_str());
+        strcat(gis_matmap + strlen(mapnames_ptr->gis_map.c_str()), "_Mat");
 
-        if(Initialize_Raster_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), gis_matmap))
+        if(Initialize_Raster_data(mapnames_ptr->gis_main.c_str(), mapnames_ptr->gis_sub.c_str(), mapnames_ptr->gis_mapset.c_str(), gis_matmap))
         {
             printf("Problem with GIS Material on processor %d\n", myid);
             exit(1);
@@ -271,17 +249,16 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
     }
     /*************************************************************************/
     //time related info
-    timeprops_ptr->inittime(maxiter, maxtime, timeoutput, timesave, TIME_SCALE);
+    timeprops_ptr->scale(TIME_SCALE);
 
     /*************************************************************************/
 
     int extramaps=0;
-    if(use_gis_matmap)extramaps=1;
+    if(use_gis_matmap)mapnames_ptr->extramaps=1;
 
     /*************************************************************************/
     // read in GIS information
-    mapnames_ptr->assign(topomain.c_str(), toposub.c_str(), topomapset.c_str(), topomap.c_str(), gis_format, extramaps);
-    i = Initialize_GIS_data(topomain.c_str(), toposub.c_str(), topomapset.c_str(), topomap.c_str(), gis_format);
+    i = Initialize_GIS_data(mapnames_ptr->gis_main.c_str(), mapnames_ptr->gis_sub.c_str(), mapnames_ptr->gis_mapset.c_str(), mapnames_ptr->gis_map.c_str(), mapnames_ptr->gis_format);
     if(i != 0)
     {
         printf("Problem with GIS on processor %d\n", myid);
@@ -396,12 +373,7 @@ void cxxTitanSinglePhase::run()
 
     int xdmerr;
 
-    StatProps statprops;
-    TimeProps timeprops;
-    timeprops.starttime = time(NULL);
 
-    MapNames mapnames;
-    OutLine outline;
 
     double end_time = 10000.0;
     /*
@@ -423,12 +395,17 @@ void cxxTitanSinglePhase::run()
      criteria paper... plan to include in v_star implicitly
      later */
 
-    process_input(&statprops, &timeprops,
-              &mapnames, &outline);
-    input_summary();
-
     MatProps *matprops_ptr=get_matprops();
     PileProps* pileprops_ptr=get_pileprops();
+    StatProps* statprops_ptr=get_statprops();
+    TimeProps* timeprops_ptr=get_timeprops();
+    MapNames* mapnames_ptr=get_mapnames();
+    OutLine* outline_ptr=get_outline();
+
+    process_input();
+    input_summary();
+
+
 
 
     if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
@@ -506,7 +483,7 @@ void cxxTitanSinglePhase::run()
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      */
-    printf("Time Stepping Loop\n");
+
     long element_counter = 0; // for performance count elements/timestep/proc
     int ifstop = 0;
     double max_momentum = 100;  //nondimensional
@@ -752,35 +729,16 @@ void cxxTitanSinglePhase::run()
 
 void cxxTitanSinglePhase::input_summary()
 {
-    if(myid != 0)
+    if(myid == 0)
     {
-        MPI_Barrier (MPI_COMM_WORLD);
-        return;
+        get_mapnames()->print0();
+        get_pileprops()->print0();
+        get_fluxprops()->print0();
+        get_discharge_planes()->print0();
+        get_matprops()->print0();
     }
-    
-    printf("GIS:\n");
-    printf("\tgis_format: %d\n", gis_format);
-    
-    printf("\ttopomain: %s\n", topomain.c_str());
-    printf("\ttoposub: %s\n", toposub.c_str());
-    printf("\ttopomapset: %s\n", topomapset.c_str());
-    printf("\ttopomap: %s\n", topomap.c_str());
-    printf("\ttopovector: %s\n", topovector.c_str());
-    
-    printf("\tregion_limits_set %d\n", (int) region_limits_set);
-    
-    int i;
-    get_pileprops()->print0();
-
-    fluxprops.print0();
-
-    discharge_planes.print0();
-
-    get_matprops()->print0();
-
-    
-
-    MPI_Barrier (MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+    return;
 }
 
 cxxTitanTwoPhases::cxxTitanTwoPhases() :

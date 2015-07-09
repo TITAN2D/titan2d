@@ -243,54 +243,46 @@ public:
 /*************************************************************************/
 
 //! this structure holds the path to and name of the GIS map and also a flag to say if there are any extra maps, such as a material properties map, associated with the DEM
-struct MapNames
+class MapNames
 {
-    
+public:
+    static const int GDAL = GDAL;
+    static const int GIS_GRASS = GIS_GRASS;
+
     //! gis main directory
-    char *gis_main;
+    std::string gis_main;
 
     //! gis sub directory
-    char *gis_sub;
+    std::string gis_sub;
 
     //! gis map set
-    char *gis_mapset;
+    std::string gis_mapset;
 
     //! the actual gis map
-    char *gis_map;
+    std::string gis_map;
+
+    //! gis_vector
+    std::string gis_vector;
 
     int gis_format;
     //! extra maps: 0=none  +1=2^0=<gis_map>_Mat  MATerial map  +2^(bit#-1)=<gis_map>_Xxx  not yet used
     int extramaps;
 
-    //! this destructor calls MapNames::clear() which deallocates the dynamically allocated arrays in the MapNames structure.
-    ~MapNames()
-    {
-        clear();
-        return;
-    }
+    bool region_limits_set;
+
+    double min_location_x;
+    double min_location_y;
+    double max_location_x;
+    double max_location_y;
+
+    MapNames();
+    ~MapNames();
     
     //! this function allocates space for and assigns the information about the GIS map
-    void assign(const char *gis_main_in, const char *gis_sub_in, const char *gis_mapset_in, const char *gis_map_in, const int format,
-                const int extramaps_in)
-    {
-        gis_main = allocstrcpy(gis_main_in);
-        gis_sub = allocstrcpy(gis_sub_in);
-        gis_mapset = allocstrcpy(gis_mapset_in);
-        gis_map = allocstrcpy(gis_map_in);
-        gis_format = format;
-        extramaps = extramaps_in;
-        return;
-    }
-    
-    //! this function deallocates the dynamically allocated arrays in the MapNames structure.
-    void clear()
-    {
-        free(gis_main);
-        free(gis_sub);
-        free(gis_mapset);
-        free(gis_map);
-        return;
-    }
+    void set(const int format, const std::string gis_main_in, const std::string gis_sub_in, const std::string gis_mapset_in, const std::string gis_map_in, const std::string gis_vector_in,
+                const int extramaps_in);
+    void set_region_limits(double min_location_x, double min_location_y, double max_location_x, double max_location_y);
+    void print0();
 };
 
 /**************************************************************************/
@@ -298,8 +290,9 @@ struct MapNames
 /**************************************************************************/
 
 //! this structure holds all the information about time and timestepping
-struct TimeProps
+class TimeProps
 {
+public:
 
     //! the maximum # of iterations (a.k.a. time steps) before the simulation ends
     int maxiter;
@@ -335,7 +328,7 @@ struct TimeProps
     double TIME_SCALE;
 
     //! the non-dimensional current time
-    double time;
+    double cur_time;
 
     //! the non-dimensional time step
     double dtime;
@@ -346,38 +339,53 @@ struct TimeProps
     //! wallclock time shortly after titan starts running
     time_t starttime;
 
+    TimeProps(){
+        starttime = time(NULL);
+        TIME_SCALE=1.0;
+        set_time(0, 0.0, 0.0, 0.0);
+    }
+    ~TimeProps()
+    {
+
+    }
     //! this function initializes the time properties at the beginning of the simulation
-    void inittime(int maxiterin, double maxtimein, double timeoutputin, double timesavein, double TIME_SCALEin)
+    void set_time(int maxiterin, double maxtimein, double timeoutputin, double timesavein)
     {
         maxiter = maxiterin;
         maxtime = maxtimein;
         timeoutput = timeoutputin;
         timesave = timesavein;
-        TIME_SCALE = TIME_SCALEin;
         ndmaxtime = maxtime / TIME_SCALE;
         ndnextoutput = timeoutput / TIME_SCALE;
         ndnextsave = timesave / TIME_SCALE;
         iter = 0;
         ioutput = 0;
         isave = 0;
-        time = 0.0;
+        cur_time = 0.0;
         dtime = 0.0;
         vstarmax = 0.0;
+    }
+    void scale(double TIME_SCALEin)
+    {
+        TIME_SCALE = TIME_SCALEin;
+        ndmaxtime = maxtime / TIME_SCALE;
+        ndnextoutput = timeoutput / TIME_SCALE;
+        ndnextsave = timesave / TIME_SCALE;
     }
 
     //! this function increments the time step, after, if neccessary, decreasing the time step to land evenly on the next time to output save or end the simulation
     void incrtime(double *dt)
     {
         // first reduce dt to hit output or end time "exactly"
-        if(time + *dt > ndnextoutput)
-            *dt = ndnextoutput - time;
-        if(time + *dt > ndnextsave)
-            *dt = ndnextsave - time;
-        if(time + *dt > ndmaxtime)
-            *dt = ndmaxtime - time;
+        if(cur_time + *dt > ndnextoutput)
+            *dt = ndnextoutput - cur_time;
+        if(cur_time + *dt > ndnextsave)
+            *dt = ndnextsave - cur_time;
+        if(cur_time + *dt > ndmaxtime)
+            *dt = ndmaxtime - cur_time;
         dtime = *dt;
         // then increment time
-        time += *dt;
+        cur_time += *dt;
         iter++;
     }
 
@@ -395,19 +403,19 @@ struct TimeProps
     {
         if(vstar > vstarmax)
             vstarmax = vstar;
-        return ((time >= ndmaxtime) || (iter > maxiter) || ((vstarmax > 2.0) && !(vstar > 1.0)));
+        return ((cur_time >= ndmaxtime) || (iter > maxiter) || ((vstarmax > 2.0) && !(vstar > 1.0)));
     }
 
     //! checks if the simulation has passed 1/10th of the maximum time allowed
     int ifcheckstop()
     {
-        return (time > ndmaxtime / 10.0);
+        return (cur_time > ndmaxtime / 10.0);
     }
 
     //! checks if the restart file should be saved now
     int ifsave()
     {
-        if(time >= ndnextsave)
+        if(cur_time >= ndnextsave)
         {
             isave++; //using isave eliminates roundoff
             ndnextsave = ((isave + 1) * timesave) / TIME_SCALE;
@@ -420,7 +428,7 @@ struct TimeProps
     //! checks if the output files should be written now
     int ifoutput()
     {
-        if(time >= ndnextoutput)
+        if(cur_time >= ndnextoutput)
         {
             ioutput++; //using ioutput eliminates roundoff
             ndnextoutput = ((ioutput + 1) * timeoutput) / TIME_SCALE;
@@ -433,7 +441,7 @@ struct TimeProps
     //! chunk simulated time into hours minutes and seconds
     void chunktime(int *hours, int *minutes, double *seconds)
     {
-        double dimtime = time * TIME_SCALE;
+        double dimtime = cur_time * TIME_SCALE;
         *hours = ((int) dimtime) / 3600;
         *minutes = (((int) dimtime) % 3600) / 60;
         *seconds = dimtime - (double) (*hours * 3600 + *minutes * 60);
@@ -442,7 +450,7 @@ struct TimeProps
     //! return the simulated time in seconds
     double timesec()
     {
-        return (time * TIME_SCALE);
+        return (cur_time * TIME_SCALE);
     }
 
 };
@@ -1449,8 +1457,8 @@ public:
     {
 
         for(int isrc = 0; isrc < no_of_sources; isrc++)
-            if(((timeprops_ptr->time - timeprops_ptr->dtime <= start_time[isrc]) && (start_time[isrc]
-                    < timeprops_ptr->time))
+            if(((timeprops_ptr->cur_time - timeprops_ptr->dtime <= start_time[isrc]) && (start_time[isrc]
+                    < timeprops_ptr->cur_time))
                || ((timeprops_ptr->iter == 0) && (start_time[isrc] == 0.0)))
                 return (1);
 
@@ -1463,7 +1471,7 @@ public:
         double tempinflux, maxinflux = 0.0;
 
         for(int isrc = 0; isrc < no_of_sources; isrc++)
-            if(((start_time[isrc] <= timeprops_ptr->time) && (timeprops_ptr->time <= end_time[isrc])) || ((timeprops_ptr
+            if(((start_time[isrc] <= timeprops_ptr->cur_time) && (timeprops_ptr->cur_time <= end_time[isrc])) || ((timeprops_ptr
                     ->iter
                                                                                                            == 0)
                                                                                                           && (start_time[isrc] == 0)))

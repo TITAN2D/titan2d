@@ -109,17 +109,17 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
-    timeprops_ptr->time = temp8.d; //double
+    timeprops_ptr->cur_time = temp8.d; //double
             
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
     timeprops_ptr->TIME_SCALE = temp8.d; //double
             
-    timeprops_ptr->ioutput = floor(timeprops_ptr->time * timeprops_ptr->TIME_SCALE / timeprops_ptr->timeoutput);
+    timeprops_ptr->ioutput = floor(timeprops_ptr->cur_time * timeprops_ptr->TIME_SCALE / timeprops_ptr->timeoutput);
     timeprops_ptr->ndnextoutput = ((timeprops_ptr->ioutput + 1) * timeprops_ptr->timeoutput)
             / timeprops_ptr->TIME_SCALE;
     
-    timeprops_ptr->isave = floor(timeprops_ptr->time * timeprops_ptr->TIME_SCALE / timeprops_ptr->timesave);
+    timeprops_ptr->isave = floor(timeprops_ptr->cur_time * timeprops_ptr->TIME_SCALE / timeprops_ptr->timesave);
     timeprops_ptr->ndnextsave = ((timeprops_ptr->isave + 1) * timeprops_ptr->timesave) / timeprops_ptr->TIME_SCALE;
     
     //printf("iter=%d timesec=%g:  ioutput=%d nextoutput=%g:   isave=%d nextsave=%g\n",timeprops_ptr->iter,timeprops_ptr->time*timeprops_ptr->TIME_SCALE,timeprops_ptr->ioutput,timeprops_ptr->ndnextoutput*timeprops_ptr->TIME_SCALE,timeprops_ptr->isave,timeprops_ptr->ndnextsave*timeprops_ptr->TIME_SCALE);
@@ -130,40 +130,40 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     //GIS file info
     for(itemp = 0; itemp < 4; itemp++)
         temp4.c[itemp] = header[Itemp++];
-    if(strncmp(header + Itemp, mapnames_ptr->gis_main, temp4.i))
+    if(strncmp(header + Itemp, mapnames_ptr->gis_main.c_str(), temp4.i))
     {
         printf("in loadrun() processor %d opened file \"%s\" old GIS main directory=\"%s\" new GIS main directory=\"%s\" proceeding anyway\n",
-               myid, filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_main);
+               myid, filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_main.c_str());
         //fflush(stdout);
     }
     Itemp += temp4.i;
     
     for(itemp = 0; itemp < 4; itemp++)
         temp4.c[itemp] = header[Itemp++];
-    if(strncmp(header + Itemp, mapnames_ptr->gis_sub, temp4.i))
+    if(strncmp(header + Itemp, mapnames_ptr->gis_sub.c_str(), temp4.i))
     {
         printf("in loadrun() processor %d opened file \"%s\" old GIS sub directory=\"%s\" new GIS sub directory=\"%s\" proceeding anyway\n",
-               myid, filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_sub);
+               myid, filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_sub.c_str());
         //fflush(stdout);
     }
     Itemp += temp4.i;
     
     for(itemp = 0; itemp < 4; itemp++)
         temp4.c[itemp] = header[Itemp++];
-    if(strncmp(header + Itemp, mapnames_ptr->gis_mapset, temp4.i))
+    if(strncmp(header + Itemp, mapnames_ptr->gis_mapset.c_str(), temp4.i))
     {
         printf("in loadrun() processor %d opened file \"%s\" old GIS mapset =\"%s\" new GIS mapset =\"%s\" proceeding anyway\n",
-               myid, filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_mapset);
+               myid, filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_mapset.c_str());
         //fflush(stdout);
     }
     Itemp += temp4.i;
     
     for(itemp = 0; itemp < 4; itemp++)
         temp4.c[itemp] = header[Itemp++];
-    if(strncmp(header + Itemp, mapnames_ptr->gis_map, temp4.i))
+    if(strncmp(header + Itemp, mapnames_ptr->gis_map.c_str(), temp4.i))
     {
         printf("in loadrun() processor %d opened file \"%s\" old GIS map =\"%s\" new GIS map =\"%s\" aborting\n", myid,
-               filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_map);
+               filename, strncpy(tempstring, header + Itemp, temp4.i), mapnames_ptr->gis_map.c_str());
         fflush(stdout);
         assert(0);
     }
@@ -679,7 +679,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
     
-    temp8.d = timeprops_ptr->time; //double
+    temp8.d = timeprops_ptr->cur_time; //double
     for(itemp = 0; itemp < 8; itemp++)
         header[Itemp++] = temp8.c[itemp];
     
@@ -688,44 +688,44 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
         header[Itemp++] = temp8.c[itemp];
     
 #ifdef DEBUGSAVEHEADER
-    fprintf(fp3,"iter=%d time=%g TIME_SCALE=%g\n",timeprops_ptr->iter,timeprops_ptr->time,timeprops_ptr->TIME_SCALE);
+    fprintf(fp3,"iter=%d time=%g TIME_SCALE=%g\n",timeprops_ptr->iter,timeprops_ptr->cur_time,timeprops_ptr->TIME_SCALE);
 #endif
     
     //GIS file info
-    temp4.i = strlen(mapnames_ptr->gis_main);
+    temp4.i = strlen(mapnames_ptr->gis_main.c_str());
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
     for(itemp = 0; itemp < temp4.i; itemp++)
         header[Itemp++] = mapnames_ptr->gis_main[itemp];
 #ifdef DEBUGSAVEHEADER
-    fprintf(fp3,"gis_main: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_main);
+    fprintf(fp3,"gis_main: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_main.c_str());
 #endif
     
-    temp4.i = strlen(mapnames_ptr->gis_sub);
+    temp4.i = strlen(mapnames_ptr->gis_sub.c_str());
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
     for(itemp = 0; itemp < temp4.i; itemp++)
         header[Itemp++] = mapnames_ptr->gis_sub[itemp];
 #ifdef DEBUGSAVEHEADER
-    fprintf(fp3,"gis_sub: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_sub);
+    fprintf(fp3,"gis_sub: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_sub.c_str());
 #endif
     
-    temp4.i = strlen(mapnames_ptr->gis_mapset);
+    temp4.i = strlen(mapnames_ptr->gis_mapset.c_str());
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
     for(itemp = 0; itemp < temp4.i; itemp++)
         header[Itemp++] = mapnames_ptr->gis_mapset[itemp];
 #ifdef DEBUGSAVEHEADER
-    fprintf(fp3,"gis_mapset: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_mapset);
+    fprintf(fp3,"gis_mapset: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_mapset.c_str());
 #endif
     
-    temp4.i = strlen(mapnames_ptr->gis_map);
+    temp4.i = strlen(mapnames_ptr->gis_map.c_str());
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
     for(itemp = 0; itemp < temp4.i; itemp++)
         header[Itemp++] = mapnames_ptr->gis_map[itemp];
 #ifdef DEBUGSAVEHEADER
-    fprintf(fp3,"gis_map: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_map);
+    fprintf(fp3,"gis_map: %d: \"%s\"\n",temp4.i,mapnames_ptr->gis_map.c_str());
 #endif
     
     temp4.i = mapnames_ptr->extramaps;

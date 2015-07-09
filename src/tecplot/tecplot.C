@@ -684,7 +684,7 @@ void viz_output(HashTable * El_Table, HashTable * NodeTable, int myid, int numpr
         fp = fopen(filename, "w");
     else
         fp = fopen(filename, "a+");
-    fprintf(fp, "%f %d %d %d %d\n", timeprops->time, parameters, points, variables, inputs);
+    fprintf(fp, "%f %d %d %d %d\n", timeprops->cur_time, parameters, points, variables, inputs);
     fprintf(fp,
             "\"key unsigned[%d]\", \"coordinate double[%d]\", \"terrain_slope double[%d]\", \"pile_height double[1]\", \"pile_velocity double[%d]\", \"processor int[1]\", \"FOM double[1]\" \n",
             2, 3, 2, 2);

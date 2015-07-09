@@ -130,7 +130,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
         
         // -- calc contribution of flux source
         flux_src_coef = 0;
-        curr_time = (timeprops_ptr->time) * (timeprops_ptr->TIME_SCALE);
+        curr_time = (timeprops_ptr->cur_time) * (timeprops_ptr->TIME_SCALE);
         
         /*
          double influx[3];

@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
     {
         printf("Titan2d %d.%d.%d\n", TITAN2D_VERSION_MAJOR, TITAN2D_VERSION_MINOR, TITAN2D_VERSION_REVISION);
         printf("Executable location: %s\n", executable);
+        printf("-------------------------------------------------------------------------------\n");
         printf("\n");
     }
     

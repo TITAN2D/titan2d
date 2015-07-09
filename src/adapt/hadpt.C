@@ -467,8 +467,8 @@ void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
     }
     else
     {
-        double begoftimestep = timeprops_ptr->time - timeprops_ptr->dtime;
-        double endoftimestep = timeprops_ptr->time;
+        double begoftimestep = timeprops_ptr->cur_time - timeprops_ptr->dtime;
+        double endoftimestep = timeprops_ptr->cur_time;
         for(int isrc = 0; isrc < fluxprops_ptr->no_of_sources; isrc++)
             if((begoftimestep <= fluxprops_ptr->start_time[isrc]) && (fluxprops_ptr->start_time[isrc] < endoftimestep))
                 num_ellipse_centers++;
@@ -478,7 +478,7 @@ void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
     //printf("num_ellipse_centers=%d\n",num_ellipse_centers);
     
     int icenter = 0;
-    if(timeprops_ptr->time == 0)
+    if(timeprops_ptr->cur_time == 0)
     {
         for(int ipile = 0; ipile < pileprops_ptr->numpiles; ipile++, icenter++)
         {
@@ -498,8 +498,8 @@ void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
     }
     else
     {
-        double begoftimestep = timeprops_ptr->time - timeprops_ptr->dtime;
-        double endoftimestep = timeprops_ptr->time;
+        double begoftimestep = timeprops_ptr->cur_time - timeprops_ptr->dtime;
+        double endoftimestep = timeprops_ptr->cur_time;
         for(int isrc = 0; isrc < fluxprops_ptr->no_of_sources; isrc++)
             if((begoftimestep <= fluxprops_ptr->start_time[isrc]) && (fluxprops_ptr->start_time[isrc] < endoftimestep))
             {

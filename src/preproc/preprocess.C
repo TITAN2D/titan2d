@@ -103,21 +103,23 @@ TitanPreproc::TitanPreproc(cxxTitanSinglePhase *tSim)
     region_limits_set = true;
     
     NumProc = tSim->numprocs;
-    gis_format = tSim->gis_format;
-    topomain = tSim->topomain;
-    toposub = tSim->toposub;
-    topomapset = tSim->topomapset;
-    topomap = tSim->topomap;
     
+    MapNames* mapnames_ptr=tSim->get_mapnames();
+    gis_format = mapnames_ptr->gis_format;
+    topomain = mapnames_ptr->gis_main;
+    toposub = mapnames_ptr->gis_sub;
+    topomapset = mapnames_ptr->gis_mapset;
+    topomap = mapnames_ptr->gis_map;
+
     //material_map = tSim->material_map;
     matprops=tSim->get_matprops();
     
-    min_location_x = tSim->min_location_x;
-    max_location_x = tSim->max_location_x;
-    min_location_y = tSim->min_location_y;
-    max_location_y = tSim->max_location_y;
+    min_location_x = mapnames_ptr->min_location_x;
+    max_location_x = mapnames_ptr->max_location_x;
+    min_location_y = mapnames_ptr->min_location_y;
+    max_location_y = mapnames_ptr->max_location_y;
     
-    region_limits_set = tSim->region_limits_set;
+    region_limits_set = mapnames_ptr->region_limits_set;
 }
 TitanPreproc::~TitanPreproc()
 {

@@ -38,30 +38,7 @@ public:
     int myid;
     int numprocs;
 
-    static const int GDAL = GDAL;
-    static const int GIS_GRASS = GIS_GRASS;
 
-    //GIS
-    //!>GIS data format, 1 if GIS 0 if gdal
-    int gis_format;
-    //If using GIS GRASS data format:
-    //!>the full path of the GIS database
-    std::string topomain;
-    //!>the location
-    std::string toposub;
-    //!>the mapset,
-    std::string topomapset;
-    //!>the raster map name, used for Gdal too
-    std::string topomap;
-    //!>GIS Vector
-    std::string topovector;
-
-    bool region_limits_set;
-
-    double min_location_x;
-    double max_location_x;
-    double min_location_y;
-    double max_location_y;
 
     //! length scaling factor
     double length_scale;
@@ -73,15 +50,6 @@ public:
 
     //! gravity scaling factor
     double gravity_scale;
-
-    //! the maximum # of iterations (a.k.a. time steps) before the simulation ends
-    int maxiter;
-    //! the maximum amount of time (in seconds) before the simulation ends
-    double maxtime;
-    //! the amount of time (in seconds) between subsequent outputs (with one exception... when the simulation ends one final output is performed and that one will be less than "timeoutput" seconds after the previous one
-    double timeoutput;
-    //! the amount of time (in seconds) between subsequent saves (with one exception... when the simulation ends one final save is performed and that one will be less than "timeoutput" seconds after the previous one
-    double timesave;
 
     //! adapt
     int adapt;
@@ -122,6 +90,11 @@ public:
     virtual PileProps* get_pileprops()=0;
     virtual MatProps* get_matprops()=0;
     virtual FluxProps* get_fluxprops()=0;
+    virtual StatProps* get_statprops()=0;
+    virtual TimeProps* get_timeprops()=0;
+    virtual MapNames* get_mapnames()=0;
+    virtual OutLine* get_outline()=0;
+    virtual DischargePlanes* get_discharge_planes()=0;
 };
 
 /**
@@ -134,8 +107,7 @@ public:
     ~cxxTitanSinglePhase();
 
     //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input(StatProps* statprops_ptr,
-                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr);
+    virtual void process_input();
 
     virtual void run();
     virtual void input_summary();
@@ -152,9 +124,20 @@ public:
 
     MatProps matprops_single_phase;
 
+    StatProps statprops;
+    TimeProps timeprops;
+    MapNames mapnames;
+    OutLine outline;
+
     virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
     virtual MatProps* get_matprops(){return &matprops_single_phase;}
     virtual FluxProps* get_fluxprops(){return &fluxprops;}
+    virtual DischargePlanes* get_discharge_planes(){return &discharge_planes;}
+    virtual StatProps* get_statprops(){return &statprops;}
+    virtual TimeProps* get_timeprops(){return &timeprops;}
+    virtual MapNames* get_mapnames(){return &mapnames;}
+    virtual OutLine* get_outline(){return &outline;}
+
 protected:
     /** this function intializes the piles, by commenting/uncommenting define statements you can switch from
      * parabaloid to elliptical cylinder shaped piles, or even a hard coded pileshapes written to match particular
