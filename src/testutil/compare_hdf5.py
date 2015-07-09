@@ -55,7 +55,7 @@ for prop in ('PILE_HEIGHT', 'XMOMENTUM', 'YMOMENTUM'):
         continue
     ds=(ds1-ds2)*(ds1-ds2)
     rmsd=math.sqrt(ds.mean())
-    print "\tRMSD=%.3e"%(rmsd,)
+    print "\tRMSD=%.3e Mean1=%.3e RMSD/Mean1=%.3e"%(rmsd,ds1.mean(),rmsd/ds1.mean())
     
 
 
