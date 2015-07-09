@@ -25,9 +25,9 @@
 #include "../gisapi/GisApi.h"
 #include "../header/properties.h"
 
-#undef SEEK_SET
+/*#undef SEEK_SET
 #undef SEEK_END
-#undef SEEK_CUR
+#undef SEEK_CUR*/
 #include <mpi.h>
 #include <assert.h>
 

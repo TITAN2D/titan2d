@@ -119,7 +119,8 @@ public:
     virtual void run();
     virtual void input_summary();
 
-    virtual PileProps* get_pileprops(){return NULL;}
+    virtual PileProps* get_pileprops()=0;
+    virtual MatProps* get_matprops()=0;
 };
 
 /**
@@ -138,12 +139,8 @@ public:
     virtual void run();
     virtual void input_summary();
 
-    virtual PileProps* get_pileprops(){return &pileprops;}
-
-
-
     //!>Piles
-    PileProps pileprops;
+    PileProps pileprops_single_phase;
 
     //!>Flux sources
     FluxProps fluxprops;
@@ -152,9 +149,10 @@ public:
     DischargePlanes discharge_planes;
     //std::vector<cxxTitanDischargePlane> discharge_planes;
 
-    MatProps matprops;
+    MatProps matprops_single_phase;
 
-    virtual MatProps* get_matprops(){return &matprops;}
+    virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
+    virtual MatProps* get_matprops(){return &matprops_single_phase;}
 };
 
 class cxxTitanTwoPhases:public cxxTitanSinglePhase
@@ -164,10 +162,11 @@ public:
     ~cxxTitanTwoPhases();
 
     //!>Piles
-    PilePropsTwoPhases pileprops;
+    PilePropsTwoPhases pileprops_two_phases;
 
-    MatPropsTwoPhases matprops;
+    MatPropsTwoPhases matprops_two_phases;
 
-    virtual PileProps* get_pileprops(){return &pileprops;}
+    virtual PileProps* get_pileprops(){return (PileProps*)&pileprops_two_phases;}
+    virtual MatProps* get_matprops(){return (MatProps*)&matprops_two_phases;}
 };
 #endif

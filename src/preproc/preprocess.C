@@ -110,7 +110,7 @@ TitanPreproc::TitanPreproc(cxxTitanSinglePhase *tSim)
     topomap = tSim->topomap;
     
     //material_map = tSim->material_map;
-    matprops=&(tSim->matprops);
+    matprops=tSim->get_matprops();
     
     min_location_x = tSim->min_location_x;
     max_location_x = tSim->max_location_x;

@@ -76,15 +76,8 @@ void cxxTitanSinglePhase::hpfem()
     ElementsHashTable* BT_Elem_Ptr;
     
     //-- MPI
-    int myid, master, numprocs;
-    int namelen;
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Status status;
-    
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    MPI_Get_processor_name(processor_name, &namelen);
-    
+
     double start, end;
     double t_start, t_end;
     start = MPI_Wtime();
@@ -136,7 +129,6 @@ void cxxTitanSinglePhase::hpfem()
     if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
                 &statprops, &discharge_planes, &outline))
     {
-        
         Read_grid(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &outline);
         
         setup_geoflow(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops);
@@ -163,11 +155,11 @@ void cxxTitanSinglePhase::hpfem()
      matprops_ptr, &timeprops, &mapnames, adaptflag, order_flag,
      &statprops, &discharge_planes, &outline, &savefileflag);
      */
-
+    printf("loadrun done\n");
     if(myid == 0)
     {
         for(int imat = 1; imat <= matprops_ptr->material_count; imat++)
-            printf("bed friction angle for \"%s\" is %g\n", matprops_ptr->matnames[imat],
+            printf("bed friction angle for \"%s\" is %g\n", matprops_ptr->matnames[imat].c_str(),
                    matprops_ptr->bedfrict[imat] * 180.0 / PI);
         
         printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", matprops_ptr->intfrict * 180.0 / PI,
@@ -211,6 +203,7 @@ void cxxTitanSinglePhase::hpfem()
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      */
+    printf("Time Stepping Loop\n");
     long element_counter = 0; // for performance count elements/timestep/proc 
     int ifstop = 0;
     double max_momentum = 100;  //nondimensional

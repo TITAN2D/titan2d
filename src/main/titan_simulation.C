@@ -266,8 +266,11 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
     /*************************************************************************/
     //test point information
     statprops_ptr->hxyminmax=edge_height;
-    if(statprops_ptr->hxyminmax == -1)
+    if(statprops_ptr->hxyminmax == -1.0)
+    {
         statprops_ptr->hxyminmax = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
+
+    }
     else if(statprops_ptr->hxyminmax <= 0.0)
     {
         printf("bogus edge height=%g read in from simulation.data\n \
@@ -342,15 +345,14 @@ void cxxTitanSinglePhase::process_input(StatProps* statprops_ptr,
     //to read in outline parameters here when it has been added
     return;
 }
-int hpfem();
 void cxxTitanSinglePhase::run()
 {
-    //printf("cxxTitanSimulation::run %d\n", myid);
+    printf("cxxTitanSimulation::run %d\n", myid);
     MPI_Barrier (MPI_COMM_WORLD);
-    //printf("cxxTitanSimulation::run::let's go %d\n", myid);
-#ifndef TWO_PHASES
+    printf("cxxTitanSimulation::run::let's go %d\n", myid);
+
     hpfem();
-#endif
+
     MPI_Barrier(MPI_COMM_WORLD);
     
 }
@@ -381,7 +383,7 @@ void cxxTitanSinglePhase::input_summary()
 
     discharge_planes.print0();
 
-    matprops.print0();
+    get_matprops()->print0();
 
     
 

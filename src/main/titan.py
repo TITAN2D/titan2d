@@ -54,10 +54,14 @@ class TitanSinglePhase(TitanSimulation):
                  order='First',
                  edge_height=None,
                  test_height=None,
-                 test_location=None
+                 test_location=None,
+                 sim_class=None
                  ):
         super(TitanSinglePhase, self).__init__()
-        self.sim=cxxTitanSinglePhase()
+        if sim_class==None:
+            self.sim=cxxTitanSinglePhase()
+        else:
+            self.sim=sim_class
         #init values
         
         #Number of Processors
@@ -155,8 +159,6 @@ class TitanSinglePhase(TitanSimulation):
             self.sim.test_location_y = float(test_location[1])
         
         #other inits
-        self.sim.flux_sourcesHelper=[]
-        self.sim.discharge_planesHelper=[]
 
     def setTopo(self,gis_format='GIS_GRASS',
                  topomain=None,
@@ -237,27 +239,26 @@ class TitanSinglePhase(TitanSimulation):
         #Use GIS Material Map?        
         self.sim.use_gis_matmap = use_gis_matmap
         #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
-        self.sim.matprops.number_of_cells_across_axis = int(number_of_cells_across_axis)
-        if self.sim.matprops.number_of_cells_across_axis<=0:
+        self.sim.get_matprops().number_of_cells_across_axis = int(number_of_cells_across_axis)
+        if self.sim.get_matprops().number_of_cells_across_axis<=0:
             raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
         
         
         if not isinstance(bedfrict, (list, tuple)):
             bedfrict=[bedfrict]
         
-        self.sim.matprops.intfrict=float(intfrict)
+        self.sim.get_matprops().intfrict=float(intfrict)
         if self.sim.use_gis_matmap == False:
-            self.sim.matprops.material_count=1
-            self.sim.matprops.matnames.push_back("all materials")
-            self.sim.matprops.bedfrict.push_back(float(bedfrict[0]))
-            #self.sim.material_map.print0()
+            self.sim.get_matprops().material_count=1
+            self.sim.get_matprops().matnames.push_back("all materials")
+            self.sim.get_matprops().bedfrict.push_back(float(bedfrict[0]))
         else:  #if they did want to use a GIS material map...
-            self.sim.matprops.material_count=len(mat_names)
+            self.sim.get_matprops().material_count=len(mat_names)
             if len(bedfrict)!=len(mat_names):
                 raise Exception("number of mat_names does not match number of bedfrict")
             for i in range(len(bedfrict)):
-                self.sim.matprops.matnames.push_back(mat_names[i])
-                self.sim.matprops.bedfrict.push_back(float(bedfrict[i]))
+                self.sim.get_matprops().matnames.push_back(mat_names[i])
+                self.sim.get_matprops().bedfrict.push_back(float(bedfrict[i]))
             raise Exception("GIS material map Not implemented yet")
         
     def validatePile(self, **kwargs):
@@ -305,7 +306,7 @@ class TitanSinglePhase(TitanSimulation):
         
         pile=self.validatePile(**kwargs)
         if pile!=None:
-            self.sim.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+            self.sim.pileprops_single_phase.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
                                    pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'])
             
     
@@ -369,12 +370,11 @@ class TitanSinglePhase(TitanSimulation):
         
     def run(self):
         max_height=0.0
-        for iPile in range(self.sim.pileprops.numpiles):
-            if self.sim.pileprops.pileheight[iPile] > max_height:
-                max_height = self.sim.pileprops.pileheight[iPile]
+        for iPile in range(self.sim.get_pileprops().numpiles):
+            if self.sim.get_pileprops().pileheight[iPile] > max_height:
+                max_height = self.sim.get_pileprops().pileheight[iPile]
         heightscale = max_height
-        for i in range(len(self.sim.flux_sourcesHelper)):
-            self.sim.flux_sourcesHelper[i].done(f_p)
+        for i in range(self.sim.fluxprops.no_of_sources):
             effective_height=self.sim.flux_sources[i].get_effective_height()
             if effective_height > max_height:
                 max_height = effective_height
@@ -384,7 +384,7 @@ class TitanSinglePhase(TitanSimulation):
         
         if self.sim.myid==0:
             print 'max height is ' + str(max_height)
-            print 'heightscale is ' + str(heightscale)
+            print 'heightscale based on max height is ' + str(heightscale)
         
         if self.sim.myid==0:
             # run preproc.x to create the fem grid, if it is not already there
@@ -405,8 +405,8 @@ class TitanSinglePhase(TitanSimulation):
 
 class TitanTwoPhases(TitanSinglePhase):
     def __init__(self, **kwargs):
+        kwargs['sim_class']=cxxTitanTwoPhases()
         super(TitanTwoPhases, self).__init__(**kwargs)
-        self.sim=cxxTitanTwoPhases()
         
     def validatePile(self, **kwargs):
         out=super(TitanTwoPhases, self).validatePile(**kwargs)
@@ -436,6 +436,6 @@ class TitanTwoPhases(TitanSinglePhase):
         
         pile=self.validatePile(**kwargs)
         if pile!=None:
-            self.sim.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+            self.sim.pileprops_two_phases.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
                                    pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['vol_fract'])
     

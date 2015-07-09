@@ -23,9 +23,9 @@
 #include <assert.h>
 #include "../header/hashtab.h"
 #include "../header/element2.h"
-#undef SEEK_SET
+/*#undef SEEK_SET
 #undef SEEK_END
-#undef SEEK_CUR
+#undef SEEK_CUR*/
 #include <mpi.h>
 #include <limits.h>
 
