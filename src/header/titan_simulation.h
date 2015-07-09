@@ -23,6 +23,8 @@
 
 #include "properties.h"
 
+class ElementsHashTable;
+class HashTable;
 
 /**
  * cxxTitanSimulation
@@ -119,6 +121,7 @@ public:
 
     virtual PileProps* get_pileprops()=0;
     virtual MatProps* get_matprops()=0;
+    virtual FluxProps* get_fluxprops()=0;
 };
 
 /**
@@ -151,6 +154,16 @@ public:
 
     virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
     virtual MatProps* get_matprops(){return &matprops_single_phase;}
+    virtual FluxProps* get_fluxprops(){return &fluxprops;}
+protected:
+    /** this function intializes the piles, by commenting/uncommenting define statements you can switch from
+     * parabaloid to elliptical cylinder shaped piles, or even a hard coded pileshapes written to match particular
+     * experiments.  Adaptive remeshing and pile reinitialization helps detect small piles and refine around pile
+     * edges to obtain a more accurate initial solution and speed up the first few timesteps before adaptive
+     * refinement and unrefinement would otherwise occur.
+     */
+    void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, TimeProps* timeprops, MapNames* mapnames, StatProps* statprops);
+public:
 };
 
 class cxxTitanTwoPhases:public cxxTitanSinglePhase

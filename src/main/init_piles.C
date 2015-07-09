@@ -27,6 +27,8 @@
 #endif
 //
 
+#include "../header/titan_simulation.h"
+
 //#define PLANE
 //#define CASITA
 //#define POPO
@@ -72,28 +74,27 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
 
 void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops_ptr, PileProps* pileprops_ptr);
 
-#ifdef TWO_PHASES
-void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int adaptflag,
-                MatProps* matprops, TimeProps* timeprops_ptr, MapNames* mapnames, PileProps* pileprops2,
-                FluxProps *fluxprops, StatProps* statprops)
-#else
-void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int adaptflag,
-                MatProps* matprops, TimeProps* timeprops_ptr, MapNames* mapnames, PileProps* pileprops,
-                FluxProps *fluxprops, StatProps* statprops)
-#endif
+void cxxTitanSinglePhase::init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+                TimeProps* timeprops_ptr, MapNames* mapnames,
+                StatProps* statprops)
 {
+    MatProps* matprops_ptr=get_matprops();
+
+    FluxProps *fluxprops_ptr=get_fluxprops();
 #ifdef TWO_PHASES
-    PilePropsTwoPhases* pileprops=(PilePropsTwoPhases*)pileprops2;
+    PilePropsTwoPhases* pileprops_ptr=(PilePropsTwoPhases*)get_pileprops();
+#else
+    PileProps* pileprops_ptr=get_pileprops();
 #endif
     unsigned nodes[9][KEYLENGTH], *node_key;
     int num_buckets = HT_Elem_Ptr->get_no_of_buckets();
     
-    if(!adaptflag)
-        H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops, pileprops, fluxprops, timeprops_ptr, REFINE_LEVEL);
+    if(!adapt)
+        H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
     
 #if defined PARABALOID || defined CYLINDER 
-    if(adaptflag)
-        initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops, pileprops, fluxprops, timeprops_ptr, 4);
+    if(adapt)
+        initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
 #else
     
     for(int ibucket=0; ibucket<num_buckets; ibucket++)
@@ -127,10 +128,10 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
                 pile_height = 15*(1.-radius_sq/30000.);
 
 #elif defined POPO //popo topo
-                radius_sq = pow(ndcoord[0]- 537758./matprops->LENGTH_SCALE,2)+
-                pow(ndcoord[1]-2100910./matprops->LENGTH_SCALE,2);
-                if(radius_sq < (10000./matprops->LENGTH_SCALE))
-                pile_height = 1.-radius_sq/(10000./matprops->LENGTH_SCALE);
+                radius_sq = pow(ndcoord[0]- 537758./matprops_ptr->LENGTH_SCALE,2)+
+                pow(ndcoord[1]-2100910./matprops_ptr->LENGTH_SCALE,2);
+                if(radius_sq < (10000./matprops_ptr->LENGTH_SCALE))
+                pile_height = 1.-radius_sq/(10000./matprops_ptr->LENGTH_SCALE);
 
 #elif defined ID1 // iverson and denlinger experiments I -- as pictured
                 
@@ -146,11 +147,11 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
                 }
 
 #elif defined ID2 //iverson and denlinger experiments II -- 90 angle with plane
-                if(ndcoord[0] < 53.345/matprops->LENGTH_SCALE &&
-                        ndcoord[0] > 46.45 /matprops->LENGTH_SCALE)
+                if(ndcoord[0] < 53.345/matprops_ptr->LENGTH_SCALE &&
+                        ndcoord[0] > 46.45 /matprops_ptr->LENGTH_SCALE)
                 pile_height = 4.207255*
-                (1.0-(53.345/matprops->LENGTH_SCALE-ndcoord[0])/6.895*
-                        matprops->LENGTH_SCALE);
+                (1.0-(53.345/matprops_ptr->LENGTH_SCALE-ndcoord[0])/6.895*
+                        matprops_ptr->LENGTH_SCALE);
 #else
                 printf("Danger no recognized pile type defined in init_piles.C\n");
                 exit(0);
@@ -171,14 +172,14 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
     HT_Elem_Ptr->updateLocalElements();
     HT_Elem_Ptr->updatePointersToNeighbours();
     
-    slopes(HT_Elem_Ptr, HT_Node_Ptr, matprops);
+    slopes(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr);
     
     /* initial calculation of actual volume on the map */
 
     double realvolume = 0.0, depositedvol = 0.0, forcebed = 0.0, meanslope = 0.0;
 #ifdef TWO_PHASES
     double epsilon[2] =
-    { matprops->epsilon, matprops->epsilon };
+    { matprops_ptr->epsilon, matprops_ptr->epsilon };
 #endif
     
     HashEntryPtr* buck = HT_Elem_Ptr->getbucketptr();
@@ -199,21 +200,21 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
 #ifdef TWO_PHASES
                     Curr_El->put_kactxy(epsilon);
 #else
-                    *(Curr_El->get_kactxy() + 0) = *(Curr_El->get_kactxy() + 1) = matprops->epsilon;
+                    *(Curr_El->get_kactxy() + 0) = *(Curr_El->get_kactxy() + 1) = matprops_ptr->epsilon;
 #endif
 
-                    Curr_El->calc_stop_crit(matprops);
+                    Curr_El->calc_stop_crit(matprops_ptr);
                     if(Curr_El->get_stoppedflags() == 2)
                         depositedvol += dvol;
                     
                     double resolution = 0, xslope = 0, yslope = 0;
                     Get_max_resolution(&resolution);
-                    Get_slope(resolution, *((Curr_El->get_coord())) * matprops->LENGTH_SCALE,
-                              *((Curr_El->get_coord()) + 1) * matprops->LENGTH_SCALE, &xslope, &yslope);
+                    Get_slope(resolution, *((Curr_El->get_coord())) * matprops_ptr->LENGTH_SCALE,
+                              *((Curr_El->get_coord()) + 1) * matprops_ptr->LENGTH_SCALE, &xslope, &yslope);
                     double slope = sqrt(xslope * xslope + yslope * yslope);
                     
                     forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)
-                            * tan(matprops->bedfrict[Curr_El->get_material()]);
+                            * tan(matprops_ptr->bedfrict[Curr_El->get_material()]);
                     
                 }
                 currentPtr = currentPtr->next;
@@ -227,11 +228,11 @@ void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid
     
     MPI_Reduce(tempin, tempout, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     
-    statprops->realvolume = tempout[0] * (matprops->HEIGHT_SCALE) * (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE);
+    statprops->realvolume = tempout[0] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE) * (matprops_ptr->LENGTH_SCALE);
     statprops->outflowvol = 0.0;
     statprops->erodedvol = 0.0;
-    statprops->depositedvol = tempout[2] * (matprops->HEIGHT_SCALE) * (matprops->LENGTH_SCALE)
-                              * (matprops->LENGTH_SCALE);
+    statprops->depositedvol = tempout[2] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
+                              * (matprops_ptr->LENGTH_SCALE);
     
     statprops->forceint = 0.0;
     statprops->forcebed = tempout[1] / tempout[0];

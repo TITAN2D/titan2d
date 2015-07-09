@@ -443,8 +443,7 @@ void cxxTitanSinglePhase::run()
         AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -1.0);
 
         //initialize pile height and if appropriate perform initial adaptation
-        init_piles(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, adapt, matprops_ptr, &timeprops, &mapnames, pileprops_ptr,
-                   &fluxprops, &statprops);
+        init_piles(BT_Elem_Ptr, BT_Node_Ptr, &timeprops, &mapnames, &statprops);
     }
     else
     {

@@ -95,11 +95,6 @@ extern void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashT
                     int order_flag, StatProps *statprops_ptr, DischargePlanes *discharge_ptr, OutLine* outline_ptr,
                     int *savefileflag);
 
-//! this function intializes the piles, by commenting/uncommenting define statements you can switch from parabaloid to elliptical cylinder shaped piles, or even a hard coded pileshapes written to match particular experiments.  Adaptive remeshing and pile reinitialization helps detect small piles and refine around pile edges to obtain a more accurate initial solution and speed up the first few timesteps before adaptive refinement and unrefinement would otherwise occur.  
-extern void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int adaptflag,
-                       MatProps* matprops, TimeProps* timeprops, MapNames* mapnames, PileProps* pileprops,
-                       FluxProps* fluxprops, StatProps* statprops);
-
 //! this function performs adaptive refinement at timestep zero for refining initial piles and whenever a flux source is activated.
 void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
                      PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr,
