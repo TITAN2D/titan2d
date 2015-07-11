@@ -262,6 +262,9 @@ public:
     //! check that neighboring elements and nodes pointers are correct
     int checkPointersToNeighbours(const char *prefix);
     
+    //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
+    virtual Element* generateElement();
+
 };
 
 #endif

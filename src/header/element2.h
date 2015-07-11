@@ -71,7 +71,7 @@ class Element
     friend void destroy_element(void *r_element, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int target_pro,
                                 ELinkPtr* EL_head);
 
-    friend void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid,
+    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid,
                                double* e_error);
 
     friend void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
@@ -97,6 +97,7 @@ public:
         
         stoppedflags = 2; //material in all elements start from rest
         //do_erosion=-1;
+        myprocess=-1;
     }
     ;
 

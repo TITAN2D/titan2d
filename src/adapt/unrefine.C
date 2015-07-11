@@ -55,7 +55,7 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch)
     return (1);
 }
 
-void unrefine(HashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
+void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
               MatProps* matprops_ptr)
 {
     

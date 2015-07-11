@@ -60,7 +60,7 @@ void sim_end_warning(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* tim
 void out_final_stats(TimeProps* timeprops_ptr, StatProps* statprops_ptr);
 
 //! this function loops through the nodes zeroing the fluxes, then loops through the elements and finds the positive x direction of the element, calculates element size, calculates local terrain elevation, slopes, and curvatures, and calculates the gravity vector in local coordinates.
-void setup_geoflow(HashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void setup_geoflow(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
                    TimeProps *timeprops_ptr);
 
 //! this function calculates the spatial derivatives of the state variables
@@ -71,7 +71,7 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
                           TimeProps* timeprops_ptr, int ghost_flag);
 
 //! this function transfers information during events such as ghost element data exchange and repartitioning
-void move_data(int nump, int myid, HashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr);
+void move_data(int nump, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr);
 
 //! this function deletes the current ghost elements
 void delete_ghost_elms(HashTable* El_Table, int myid);

@@ -60,7 +60,7 @@ class Node
 
     friend void destroy_element(void *r_element, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr);
 
-    friend void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, double* e_error);
+    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, double* e_error);
 
 public:
     //! this is the constructor that creates a node when the initial grid is read in

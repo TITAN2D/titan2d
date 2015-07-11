@@ -72,6 +72,6 @@ int BSFC_create_compare_key(unsigned sfc_key[], unsigned compare_key[], unsigned
 
 int BSFC_check_refine(unsigned* sfc_key, unsigned* compare_key, unsigned* AND_operator_array);
 
-void BSFC_update_and_send_elements(int myid, int numprocs, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int);
+void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int);
 
 int BSFC_pow(int intbase, int intexp);

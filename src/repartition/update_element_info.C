@@ -83,10 +83,10 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
  * instances a new element, calls construct_el() to transfer data from ElemPack to the new element, and inserts the new
  * element into the Hashtable. Don't call this if s_flag is 0 (original repartitioning scheme)
  */
-void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double* e_error)
+void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double* e_error)
 {
     
-    Element* newelement = new Element();
+    Element* newelement = HT_Elem_Ptr->generateElement();
     
     construct_el(newelement, elem2, HT_Node_Ptr, myid, e_error);
     
@@ -98,9 +98,9 @@ void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_
 }
 
 // bsfc repartitioning scheme
-void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
+void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
 {
-    Element* newelement = new Element();
+    Element* newelement = HT_Elem_Ptr->generateElement();
     double e_error = 0;
     construct_el(newelement, elem2, HT_Node_Ptr, myid, &e_error);
     

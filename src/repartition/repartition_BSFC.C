@@ -45,10 +45,10 @@
 //(mdj)#define DEBUG_ITER 179
 #define DEBUG_ITER 1000000
 
-int SequentialSend(int numprocs, int myid, HashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
+int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend);
 
-void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, HashTable* El_Table, HashTable* NodeTable,
+void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable,
                                      TimeProps* timeprops_ptr, double *NewProcDoubleKeyBoundaries);
 
 void BSFC_create_refinement_info(int* number_of_cuts, float* global_actual_work_allocated, float total_weight,
@@ -69,7 +69,7 @@ void BSFC_update_element_proc(int myid, int numprocs, HashTable* HT_Elem_Ptr, Ha
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 
-void repartition(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int time_step)
+void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int time_step)
 {
     int ierr, i, j, k; /* local variables */
     int num_local_objects; /* the number of objects this processor owns */
@@ -575,7 +575,7 @@ void repartition2(HashTable* El_Table, HashTable* NodeTable,
  *  collection of elements.
  *
  */
-void repartition2(HashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr)
+void repartition2(ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr)
 {
     
     int myid, numprocs;
@@ -634,7 +634,7 @@ void checkelemnode(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *fp
     
     return;
 }
-int SequentialSend(int numprocs, int myid, HashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
+int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend)
 {
     
@@ -2305,7 +2305,7 @@ int SequentialSend(int numprocs, int myid, HashTable* El_Table, HashTable* NodeT
 
 //bob
 
-void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, HashTable* El_Table, HashTable* NodeTable,
+void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable,
                                      TimeProps* timeprops_ptr, double *NewProcDoubleKeyBoundaries)
 {
     
@@ -2850,7 +2850,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, HashTable* El_Table
     return;
 }
 
-void IncorporateNewElements(HashTable* El_Table, HashTable* NodeTable, int myid, int num_recv, ElemPack *recv_array,
+void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int num_recv, ElemPack *recv_array,
                             TimeProps* timeprops_ptr)
 {
     int ielem;
@@ -2891,7 +2891,7 @@ void IncorporateNewElements(HashTable* El_Table, HashTable* NodeTable, int myid,
         //their node, secondly the presence of ghost cells screws up the
         //neighbor updating.
         
-        Element* EmNew = new Element();
+        Element* EmNew = El_Table->generateElement();
         double not_used;
         //if((timeprops_ptr->iter==119)&&(myid==0))
         //printf("myid=%d num_recv=%d ielem=%d\n",myid,num_recv,ielem);

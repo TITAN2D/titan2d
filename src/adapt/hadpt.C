@@ -416,7 +416,7 @@ void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matpr
     return;
 }
 
-void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
+void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
                      PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer)
 {
     
@@ -1356,7 +1356,7 @@ void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
 }
 /***********************************************************************/
 
-void H_adapt_to_level(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
+void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
                       FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel)
 {
     if(refinelevel > REFINE_LEVEL)

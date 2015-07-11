@@ -590,6 +590,10 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
      }*/
     return count;
 }
+Element* ElementsHashTable::generateElement()
+{
+    return (Element*) new Element();
+}
 /*void ElementsHashTable::add(unsigned* key, void* value) {
  int i;
  HashTable::add(key, value);

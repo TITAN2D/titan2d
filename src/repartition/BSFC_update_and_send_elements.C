@@ -23,9 +23,9 @@
 #include "../header/exvar.h"
 #include "./repartition_BSFC.h"
 
-void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid);
+void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid);
 
-void BSFC_update_and_send_elements(int myid, int numprocs, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
                                    int time_step)
 {
     int i, j, k, no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();

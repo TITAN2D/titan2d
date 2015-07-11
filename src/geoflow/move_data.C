@@ -25,7 +25,7 @@
 
 //#define PRINT_MOVE
 
-void move_data(int numprocs, int myid, HashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr)
+void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr)
 {
     
     if(numprocs < 2)
@@ -257,7 +257,7 @@ void move_data(int numprocs, int myid, HashTable* El_Table, HashTable* NodeTable
                         elm = (Element*) (El_Table->lookup((recv_array[iproc] + ielem)->key));
                         if(elm == NULL)
                         { // this elm doesn't exist on this proc
-                            new_elm = new Element();
+                            new_elm = El_Table->generateElement();
                             
                             construct_el(new_elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
                             if((new_elm->get_adapted_flag() < 0) && (new_elm->get_adapted_flag() >= -BUFFER))

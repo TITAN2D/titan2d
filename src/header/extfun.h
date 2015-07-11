@@ -32,7 +32,7 @@ void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDeb
 void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
 
 //! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
-void unrefine(HashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
+void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
               MatProps* matprops_ptr);
 
 void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
@@ -96,12 +96,12 @@ extern void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashT
                     int *savefileflag);
 
 //! this function performs adaptive refinement at timestep zero for refining initial piles and whenever a flux source is activated.
-void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
+void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
                      PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr,
                      int num_buffer_layer);
 
 //! this function refines all elements whos generation is less than refinelevel, until they are of generation refinelevel and then places the flux sources and, if it is at timestep zero, initial piles.
-void H_adapt_to_level(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
+void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
                       FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel);
 
 //! this is the normal grid adaptive refinement function it also refreshes the flux sources
@@ -119,14 +119,14 @@ extern void Pack_element(void *sendel, ElemPack *elem, HashTable* HT_Node_Ptr, i
 extern void MPI_New_Datatype();
 
 //! this function repartitions (redistributes) the number of elements on each processor so they all have approximately the same ammount of work to do.  it is called in hpfem.C and init_piles.C 
-extern void repartition(HashTable*, HashTable*, int);
+extern void repartition(ElementsHashTable*, HashTable*, int);
 //extern void repartition(HashTable*, HashTable*);
 
 //! the replacement for repartition(), this function repartitions (redistributes) the number of elements on each processor so they all have approximately the same ammount of work to do
-extern void repartition2(HashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr);
+extern void repartition2(ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr);
 
 //! this function creates the elements listed in recv_array and adds them to the Element HashTable, it will fail an assertion if you tell it to create an Element that already exists, it is called by repartion2(), which requires the deletion of ghost elements first.
-extern void IncorporateNewElements(HashTable* El_Table, HashTable* NodeTable, int myid, int num_recv,
+extern void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int num_recv,
                                    ElemPack *recv_array, TimeProps* timeprops_ptr);
 
 //! quicksort into ascending order, according to matching double precision numbers, the array of pointers to data
