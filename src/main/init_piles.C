@@ -78,13 +78,22 @@ void cxxTitanSinglePhase::init_piles()
     unsigned nodes[9][KEYLENGTH], *node_key;
     int num_buckets = HT_Elem_Ptr->get_no_of_buckets();
     
+
     PileProps::PileType pile_type= pileprops_ptr->get_default_piletype();
+
+    int i;
+    bool allPilesAreElliptical=true;
+    for(i=0;i<pileprops_ptr->numpiles;i++)
+    {
+        if(!(pileprops_ptr->pile_type[i] == PileProps::PARABALOID || pileprops_ptr->pile_type[i] == PileProps::CYLINDER))
+            allPilesAreElliptical=false;
+    }
     if(pileprops_ptr->numpiles>0)pile_type= pileprops_ptr->pile_type[0];
 
     if(!adapt)
         H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
 
-    if(pile_type == PileProps::PARABALOID || pile_type == PileProps::CYLINDER)
+    if(allPilesAreElliptical)
     {
         if(adapt)
             initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
@@ -173,7 +182,7 @@ void cxxTitanSinglePhase::init_piles()
 
     double realvolume = 0.0, depositedvol = 0.0, forcebed = 0.0, meanslope = 0.0;
     double epsilon[DIMENSION];
-    for(int i=0;i<DIMENSION;i++)
+    for(i=0;i<DIMENSION;i++)
         epsilon[i]=matprops_ptr->epsilon;
     
     HashEntryPtr* buck = HT_Elem_Ptr->getbucketptr();
