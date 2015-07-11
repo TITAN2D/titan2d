@@ -219,7 +219,7 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
     return;
 }
 
-int Element::find_brothers(HashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
+int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
                            void *NFL, void *OPU)
 {
     ElemPtrList* NewFatherList = (ElemPtrList*) NFL;
@@ -256,7 +256,7 @@ int Element::find_brothers(HashTable* El_Table, HashTable* NodeTable, double tar
         if(*(bros[1]->getfather()) == (unsigned) 1529353130)
             printf("creating father %u %u from %u %u\n", *(bros[1]->getfather()), *(bros[1]->getfather() + 1),
                    *(bros[1]->pass_key()), *(bros[1]->pass_key() + 1));
-        bros[0] = new Element((bros + 1), NodeTable, El_Table, matprops_ptr);
+        bros[0] = El_Table->generateElement((bros + 1), NodeTable, El_Table, matprops_ptr);
         El_Table->add(bros[0]->pass_key(), bros[0]);
         assert(bros[0]);  // a copy of the parent should always be on the same process as the sons
         NewFatherList->add(bros[0]);

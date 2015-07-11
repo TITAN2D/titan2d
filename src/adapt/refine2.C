@@ -45,7 +45,7 @@ extern void create_new_node(int, int, int, HashTable*, Node*[], unsigned[][2], i
 //only 4 one step because of the info FLAG!!!
 //if the new node is on INTERFACE flag will be -1
 
-void refine(Element* EmTemp, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops_ptr)
+void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops_ptr)
 {
     //printf("refining element %u %u \n",*(EmTemp->pass_key()), *(EmTemp->pass_key()+1));
     int which;
@@ -710,7 +710,7 @@ void refine(Element* EmTemp, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Mat
     double dpson[2];
     dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 + 0.5;
     dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 + 0.5;
-    Quad9P = new Element(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     double* state_vars = Quad9P->get_state_vars();
@@ -797,7 +797,7 @@ void refine(Element* EmTemp, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Mat
     my_elm_loc[1] = elm_loc[1];
     dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 - 0.5;
     dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 + 0.5;
-    Quad9P = new Element(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     state_vars = Quad9P->get_state_vars();
@@ -884,7 +884,7 @@ void refine(Element* EmTemp, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Mat
     my_elm_loc[1] = elm_loc[1] + 1;
     dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 - 0.5;
     dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 - 0.5;
-    Quad9P = new Element(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     state_vars = Quad9P->get_state_vars();
@@ -972,7 +972,7 @@ void refine(Element* EmTemp, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Mat
     my_elm_loc[1] = elm_loc[1] + 1;
     dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 + 0.5;
     dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 - 0.5;
-    Quad9P = new Element(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     state_vars = Quad9P->get_state_vars();

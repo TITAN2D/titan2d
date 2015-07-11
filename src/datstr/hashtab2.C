@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include "../header/boundary.h"
 #include "../header/hashtab.h"
 #include "../header/element2.h"
 /*#undef SEEK_SET
@@ -594,6 +595,32 @@ Element* ElementsHashTable::generateElement()
 {
     return (Element*) new Element();
 }
+Element* ElementsHashTable::generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC* b, int mat,
+                                            int* elm_loc_in, double pile_height, int myid, unsigned* opposite_brother)
+{
+    return (Element*) new Element(nodekeys, neigh, n_pro, b, mat,
+                                  elm_loc_in, pile_height, myid, opposite_brother);
+}
+//used for refinement
+Element* ElementsHashTable::generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int gen,
+                 int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
+                 HashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
+                 double Awetfather, double *drypoint_in)
+{
+    return (Element*) new Element(nodekeys, neigh, n_pro, b, gen,
+                                  elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
+                                  El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
+                                  Awetfather, drypoint_in);
+}
+Element* ElementsHashTable::generateElement(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
+{
+    return (Element*) new Element(sons, NodeTable, El_Table, matprops_ptr);
+}
+Element* ElementsHashTable::generateElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+{
+    return (Element*) new Element(fp, NodeTable, matprops_ptr, myid);
+}
+
 /*void ElementsHashTable::add(unsigned* key, void* value) {
  int i;
  HashTable::add(key, value);

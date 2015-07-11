@@ -35,6 +35,8 @@ using namespace std;
 #include "constant.h"
 
 class Element;
+class BC;
+class MatProps;
 
 struct HashEntry
 {
@@ -264,6 +266,21 @@ public:
     
     //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
     virtual Element* generateElement();
+
+    //! constructor that creates an original element when funky is read in
+    virtual Element* generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int mat, int *elm_loc_in,
+                             double pile_height, int myid, unsigned *opposite_brother);
+
+    //! constructor that creates a son element from its father during refinement
+    virtual Element* generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int gen, int elm_loc_in[],
+                int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
+                HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+                double *drypoint_in);
+    //! constructor that creates a father element from its four sons during unrefinement
+    virtual Element* generateElement(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr);
+
+    //! constructor that creates/restores a saved element during restart
+    virtual Element* generateElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
 
 };
 

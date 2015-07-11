@@ -23,10 +23,10 @@
 #define TARGETPROC -1
 //#define FORDEBUG
 
-void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
+void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
                    Element *EmTemp);
 
-extern void refine(Element*, HashTable*, HashTable*, MatProps* matprops_ptr);
+extern void refine(Element*, ElementsHashTable*, HashTable*, MatProps* matprops_ptr);
 
 extern void depchk(Element*, HashTable*, HashTable*, int*, ElemPtrList*);
 
@@ -389,7 +389,7 @@ void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matpr
 }
 #endif
 //Keith wrote this because the code block was repeated so many times
-void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
+void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
                    Element *EmTemp)
 {
     

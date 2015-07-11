@@ -34,6 +34,7 @@ class Element
 {
     
     friend class HashTable;
+    friend class ElementsHashTable;
 
     friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
@@ -77,8 +78,12 @@ class Element
     friend void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
 
 public:
-    
-    //! default constructor, does nothing except set stoppedflags=2, this should never be used
+protected:
+    /**
+     * None of the constructor should be called directly, use ElementsHashTable::generateElement to do it
+     *  default constructor, does nothing except set stoppedflags=2, this should never be used
+     *
+     */
     Element()
     {
         counted = 0;
@@ -99,8 +104,6 @@ public:
         //do_erosion=-1;
         myprocess=-1;
     }
-    ;
-
     //! constructor that creates an original element when funky is read in
     Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int mat, int *elm_loc_in,
             double pile_height, int myid, unsigned *opposite_brother);
@@ -116,7 +119,7 @@ public:
 
     //! constructor that creates/restores a saved element during restart
     Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
-
+public:
     //! destructor that does nothing except delete boundary condition pointer
     virtual ~Element();
 
@@ -442,7 +445,7 @@ public:
     void calc_gravity_vector(MatProps *matprops_ptr);
 
     //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
-    int find_brothers(HashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
+    int find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
                       void* NewFatherList, void* OtherProcUpdate);
     /*
      //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
