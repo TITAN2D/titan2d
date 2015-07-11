@@ -78,7 +78,11 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
     
 }
 
-//! create_element() is a friend function of the Element and Node classes. After receiving an ElemPack, create_element() instances a new element, calls construct_el() to transfer data from ElemPack to the new element, and inserts the new element into the Hashtable. Don't call this if s_flag is 0 (original repartitioning scheme)
+/**
+ * create_element() is a friend function of the Element and Node classes. After receiving an ElemPack, create_element()
+ * instances a new element, calls construct_el() to transfer data from ElemPack to the new element, and inserts the new
+ * element into the Hashtable. Don't call this if s_flag is 0 (original repartitioning scheme)
+ */
 void create_element(ElemPack* elem2, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double* e_error)
 {
     

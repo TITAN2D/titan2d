@@ -38,8 +38,6 @@ public:
     int myid;
     int numprocs;
 
-
-
     //! length scaling factor
     double length_scale;
 
@@ -83,6 +81,8 @@ public:
     virtual MapNames* get_mapnames()=0;
     virtual OutLine* get_outline()=0;
     virtual DischargePlanes* get_discharge_planes()=0;
+    virtual HashTable* get_HT_Node()=0;
+    virtual ElementsHashTable* get_HT_Elem()=0;
 };
 
 /**
@@ -117,6 +117,9 @@ public:
     MapNames mapnames;
     OutLine outline;
 
+    HashTable* HT_Node;
+    ElementsHashTable* HT_Elem;
+
     virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
     virtual MatProps* get_matprops(){return &matprops_single_phase;}
     virtual FluxProps* get_fluxprops(){return &fluxprops;}
@@ -126,6 +129,9 @@ public:
     virtual MapNames* get_mapnames(){return &mapnames;}
     virtual OutLine* get_outline(){return &outline;}
 
+    virtual HashTable* get_HT_Node(){return HT_Node;}
+    virtual ElementsHashTable* get_HT_Elem(){return HT_Elem;}
+
 protected:
     /** this function intializes the piles, by commenting/uncommenting define statements you can switch from
      * parabaloid to elliptical cylinder shaped piles, or even a hard coded pileshapes written to match particular
@@ -133,8 +139,8 @@ protected:
      * edges to obtain a more accurate initial solution and speed up the first few timesteps before adaptive
      * refinement and unrefinement would otherwise occur.
      */
-    void init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, TimeProps* timeprops, MapNames* mapnames, StatProps* statprops);
-public:
+    void init_piles();
+
 };
 
 class cxxTitanTwoPhases:public cxxTitanSinglePhase

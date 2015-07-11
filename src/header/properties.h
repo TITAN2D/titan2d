@@ -36,6 +36,8 @@
 
 class FluxProps;
 class MatProps;
+class HashTable;
+class Element;
 
 
 //! LHS stands for Latin Hypercube Sampling, it is a constrained sampling method whose convergence can be much faster than monte carlo 
@@ -156,10 +158,13 @@ public:
     void scale(const MatProps* matprops_ptr);
     
 };
+
+
 //! the PileProps structure holds the pile properties read in in Read_data() so the pile can be placed at the proper locations shortly thereafter in init_piles() 
 class PileProps
 {
 public:
+    enum PileType {PARABALOID=1, CYLINDER=2,PLANE=3,CASITA=4,POPO=5,ID1=6,ID2=7 };
     //! the number of piles
     int numpiles;
 
@@ -190,6 +195,8 @@ public:
     //!array holding the initial y speed of the pile
     std::vector<double> initialVy;
 
+    std::vector<PileProps::PileType> pile_type;
+
 protected:
     double height_scale;
     double length_scale;
@@ -202,15 +209,25 @@ public:
     virtual void allocpiles(int numpiles_in);
 
     virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                         double orientation, double Vmagnitude, double Vdirection);
+                         double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type);
     virtual double get_volume(int i) const
     {
         return PI * pileheight[i] * majorrad[i] * minorrad[i] / 2.0;
     }
     virtual void scale(double length_scale, double height_scale, double gravity_scale);
     double get_smallest_pile_radius();
+
+    /**
+     * assign height to point of an elliptical (in (x,y)) shaped pile,
+     * the pile can be either parabolic (in the z direction) or be
+     * cylindrical (have uniform pile height)
+     */
+    virtual void set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
+    virtual double get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom=NULL, double* ymom=NULL);
+
     virtual void print_pile(int i);
     virtual void print0();
+    virtual PileProps::PileType get_default_piletype(){return CYLINDER;}
 };
 
 //! the PilePropsTwoPhases is PileProps for TwoPhases
@@ -226,11 +243,22 @@ public:
     virtual void allocpiles(int numpiles_in);
 #ifndef SWIG
     virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                         double orientation, double Vmagnitude, double Vdirection);
+                         double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type);
 #endif
     virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                         double orientation, double Vmagnitude, double Vdirection, double volfract);
+                         double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type,
+                         double volfract);
     virtual void print_pile(int i);
+    /**
+     * assign height to point of an elliptical (in (x,y)) shaped pile,
+     * the pile can be either parabolic (in the z direction) or be
+     * cylindrical (have uniform pile height)
+     */
+    virtual void set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
+    virtual PileProps::PileType get_default_piletype()
+    {
+        return PARABALOID;
+    }
 };
 
 /*************************************************************************/

@@ -16,6 +16,7 @@
  */
 
 #include "../header/properties.h"
+#include "../header/hpfem.h"
 
 MapNames::MapNames()
 {
@@ -163,10 +164,11 @@ void PileProps::allocpiles(int numpiles_in)
     sinrot.resize(numpiles);
     initialVx.resize(numpiles);
     initialVy.resize(numpiles);
+    pile_type.resize(numpiles);
 }
 
 void PileProps::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                        double orientation, double Vmagnitude, double Vdirection)
+                        double orientation, double Vmagnitude, double Vdirection, PileType m_pile_type)
 {
     numpiles++;
     pileheight.push_back(hight);
@@ -178,6 +180,7 @@ void PileProps::addPile(double hight, double xcenter, double ycenter, double maj
     sinrot.push_back(sin(orientation * PI / 180.0));
     initialVx.push_back(Vmagnitude * cos(Vdirection * PI / 180.0));
     initialVy.push_back(Vmagnitude * sin(Vdirection * PI / 180.0));
+    pile_type.push_back(m_pile_type);
 }
 
 void PileProps::scale(double m_length_scale, double m_height_scale, double m_gravity_scale)
@@ -226,6 +229,7 @@ void PileProps::print_pile(int i)
     double Vdirection = atan2(initialVy[i], initialVx[i]) * 180.0 / PI;
     printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude * velocity_scale);
     printf("\t\tInitial direction ([degrees] from X axis): %f\n", Vdirection);
+    printf("\t\tPile type: %d\n", pile_type[i]);
     printf("\t\tPile volume [m^3]: %f\n", get_volume(i) * height_scale * length_scale * length_scale);
 }
 void PileProps::print0()
@@ -242,6 +246,144 @@ void PileProps::print0()
         printf("Piles:    there is no piles\n");
     }
 }
+void PileProps::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
+{
+    double pileheight;
+    double xmom, ymom;
+    pileheight=get_elliptical_pile_height(HT_Node_Ptr, m_EmTemp, matprops, &xmom,&ymom);
+
+    ElementSinglePhase* EmTemp=(ElementSinglePhase*)m_EmTemp;
+
+#ifndef TWO_PHASES
+    EmTemp->put_height_mom(pileheight, xmom, ymom);
+#endif
+
+}
+double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom,
+                                         double* m_ymom)
+{
+    unsigned nodes[9][KEYLENGTH];
+
+    //get corner and edge nodes
+    unsigned *node_key = EmTemp->getNode();
+    for(int inode = 0; inode < 8; inode++)
+        for(int ikey = 0; ikey < KEYLENGTH; ikey++)
+            nodes[inode][ikey] = node_key[inode * KEYLENGTH + ikey];
+
+    //get center node
+    node_key = EmTemp->pass_key();
+    for(int ikey = 0; ikey < KEYLENGTH; ikey++)
+        nodes[8][ikey] = node_key[ikey];
+
+    double node_pile_height[9];
+    double sum_node_pile_height[9];
+    double sum_node_xmom[9];
+    double sum_node_ymom[9];
+    double height;
+
+    for(int inode = 0; inode < 9; inode++)
+    {
+
+        //get pile height at each node...
+        Node* ndtemp = (Node*) HT_Node_Ptr->lookup(&nodes[inode][0]);
+        double* ndcoord = ndtemp->get_coord();
+
+        // for multiple piles which may overlap, the highest value is used..
+        node_pile_height[inode] = 0.0;
+        sum_node_pile_height[inode] = 0.0;
+        sum_node_xmom[inode] = 0.0;
+        sum_node_ymom[inode] = 0.0;
+
+        //check each pile to see which has max height at this node
+        for(int ipile = 0; ipile < numpiles; ipile++)
+        {
+            //get position relative to pile center
+            double major = ndcoord[0] - xCen[ipile];
+            double minor = ndcoord[1] - yCen[ipile];
+
+            /* "undo" elliptical pile rotation ... from (x,y)->(major,minor)
+             also make  nondimensional (by dividing by major and minor radius) */
+            double doubleswap = (major * cosrot[ipile] + minor * sinrot[ipile])
+                    / majorrad[ipile];
+
+            minor = (-major * sinrot[ipile] + minor * cosrot[ipile]) / minorrad[ipile];
+            major = doubleswap;
+
+            /* calculate pile height based on non dimensional position relative to
+             center of pile */
+
+            if(pile_type[ipile] == PileProps::PARABALOID)
+            {
+                height = pileheight[ipile] * (1. - major * major - minor * minor);
+            }
+            else if(pile_type[ipile] == PileProps::CYLINDER)
+            {
+                if(major * major + minor * minor < 1.0)
+                    height = pileheight[ipile];
+                else
+                    height = 0.0;
+            }
+            else
+            {
+                printf("Unknown type of pile\n");
+                assert(0);
+            }
+            height = (height >= 0.0) ? height : 0.0;
+
+            sum_node_pile_height[inode] += height;
+            sum_node_xmom[inode] += height * (initialVx[ipile]);
+            sum_node_ymom[inode] += height * (initialVy[ipile]);
+
+            if(node_pile_height[inode] < height)
+                node_pile_height[inode] = height;
+        }
+        if(sum_node_pile_height[inode] <= GEOFLOW_TINY)
+            sum_node_xmom[inode] = sum_node_ymom[inode] = 0.0;
+        else
+        {
+            sum_node_xmom[inode] *= height / sum_node_pile_height[inode];
+            sum_node_ymom[inode] *= height / sum_node_pile_height[inode];
+            //these are now the averaged momentums at each node
+        }
+    }
+
+    /* The pile_height value assigned is an "area" weighted average over the
+     element's 9 nodes.  The element is divided into 4 squares, and each
+     corner of each of the 4 squares count once.  Because the center node
+     is repeated 4 times it's weight is 4 times as much as the element's
+     corner nodes which are not repeated; each edge node is repeated
+     twice */
+    double pileheight = ( //corner nodes
+    node_pile_height[0] + node_pile_height[1] + node_pile_height[2] + node_pile_height[3] +
+    //edge nodes
+    2.0 * (node_pile_height[4] + node_pile_height[5] + node_pile_height[6] + node_pile_height[7]) +
+    //center node
+    4.0 * node_pile_height[8])
+                        / 16.0;
+
+    double xmom = ( //corner nodes
+    sum_node_xmom[0] + sum_node_xmom[1] + sum_node_xmom[2] + sum_node_xmom[3] +
+    //edge nodes
+    2.0 * (sum_node_xmom[4] + sum_node_xmom[5] + sum_node_xmom[6] + sum_node_xmom[7]) +
+    //center node
+    4.0 * sum_node_xmom[8])
+                  / 16.0;
+
+    double ymom = ( //corner nodes
+    sum_node_ymom[0] + sum_node_ymom[1] + sum_node_ymom[2] + sum_node_ymom[3] +
+    //edge nodes
+    2.0 * (sum_node_ymom[4] + sum_node_ymom[5] + sum_node_ymom[6] + sum_node_ymom[7]) +
+    //center node
+    4.0 * sum_node_ymom[8])
+                  / 16.0;
+
+    if(m_xmom!=NULL)
+        *m_xmom=xmom;
+    if(m_ymom!=NULL)
+            *m_ymom=ymom;
+
+    return pileheight;
+}
 
 PilePropsTwoPhases::PilePropsTwoPhases() :
         PileProps()
@@ -257,14 +399,14 @@ void PilePropsTwoPhases::allocpiles(int numpiles_in)
     vol_fract.resize(numpiles);
 }
 void PilePropsTwoPhases::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                                 double orientation, double Vmagnitude, double Vdirection)
+                                 double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type)
 {
-    addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, 1.0);
+    addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, m_pile_type, 1.0);
 }
 void PilePropsTwoPhases::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                                 double orientation, double Vmagnitude, double Vdirection, double volfract)
+                                 double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type, double volfract)
 {
-    PileProps::addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection);
+    PileProps::addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, m_pile_type);
     vol_fract.push_back(volfract);
 }
 void PilePropsTwoPhases::print_pile(int i)
@@ -272,3 +414,22 @@ void PilePropsTwoPhases::print_pile(int i)
     PileProps::print_pile(i);
     printf("\t\tInitial solid-volume fraction,(0:1.): %f\n", vol_fract[i]);
 }
+void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
+{
+    double pileheight;
+    double xmom, ymom;
+    pileheight=get_elliptical_pile_height(HT_Node_Ptr, m_EmTemp, matprops, &xmom,&ymom);
+
+    ElementTwoPhases* EmTemp=(ElementTwoPhases*)m_EmTemp;
+    int ipile;
+    double vfract = 0.;
+    for(ipile = 0; ipile < numpiles; ipile++)
+    {
+        if(vol_fract[ipile] > vfract)
+        vfract = vol_fract[ipile];
+    }
+#ifdef TWO_PHASES
+    EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
+#endif
+}
+

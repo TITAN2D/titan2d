@@ -117,7 +117,7 @@ public:
     Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
 
     //! destructor that does nothing except delete boundary condition pointer
-    ~Element();
+    virtual ~Element();
 
     //! this member function saves a single element to a file with a single fwrite call, this allows the element to be recreated/restored upon restart of a simulation
     void save_elem(FILE* fp, FILE* fptxt); //for restart
@@ -475,14 +475,12 @@ public:
     //! this function is used to assign a value to stopped flags, for when you don't want to compute the criteria to decide whether it's stopped or not, useful during developement
     void put_stoppedflags(int stoppedflagsin);
 
-#ifdef TWO_PHASES
-    //! interface to change value of earth-pressure cofficients
-    void put_kactxy(double kap[])
+    //! interface to change value of earth-pressure coefficients
+    void put_kactxy(double kap[DIMENSION])
     {
-        kactxy[0] = kap[0];
-        kactxy[1] = kap[1];
+        for(int i=0;i<DIMENSION;i++)
+            kactxy[i] = kap[i];
     }
-#endif
 
     //! this function returns the value of "stoppedflags"
     int get_stoppedflags();
@@ -562,14 +560,12 @@ public:
     //! The Element member function convect_dryline() calculates the coordinates of the "drypoint" in the element's local coordinate system.  This is used to determine the location of the wet-dry front (or dryline) inside this element, which in turn is used (in conjunction with the location of "iwetnode" - which indicates which side of the dryline is wet) to determine the fraction of its total area that is wet (Awet).  Awet is then returned by the function.  Keith wrote this function may 2007
     double convect_dryline(double VxVy[2], double dt);
 
-#ifdef TWO_PHASES
     //! sgn of double
     double sgn(double a)
     {
         return (a < 0 ? -1. : 1);
     }
-#endif
-private:
+protected:
     //! myprocess is id of the process(or) that owns this element
     int myprocess;
 
@@ -738,7 +734,18 @@ private:
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
     double Swet;
 };
-
+class ElementSinglePhase:public Element
+{
+public:
+    ElementSinglePhase():Element(){}
+    ~ElementSinglePhase(){}
+};
+class ElementTwoPhases:public Element
+{
+public:
+    ElementTwoPhases():Element(){}
+    ~ElementTwoPhases(){}
+};
 inline int Element::get_ithelem()
 {
     return ithelem;

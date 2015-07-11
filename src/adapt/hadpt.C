@@ -416,9 +416,6 @@ void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matpr
     return;
 }
 
-//from init_piles.C
-void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops_ptr, PileProps* pileprops_ptr);
-
 void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
                      PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer)
 {
@@ -812,7 +809,7 @@ void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                 {
                     EmTemp = (Element*) (entryp->value);
                     assert(EmTemp);
-                    elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr, pileprops_ptr);
+                    pileprops_ptr->set_element_height_to_elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr);
                     entryp = entryp->next;
                 }
             }
@@ -906,7 +903,7 @@ void initial_H_adapt(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                 {
                     EmTemp = (Element*) (entryp->value);
                     assert(EmTemp);
-                    elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr, pileprops_ptr);
+                    pileprops_ptr->set_element_height_to_elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr);
                     entryp = entryp->next;
                 }
             }
@@ -1450,7 +1447,7 @@ void H_adapt_to_level(HashTable* El_Table, HashTable* NodeTable, MatProps* matpr
                         if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
                         {
                             EmTemp->put_adapted_flag(NOTRECADAPTED);
-                            elliptical_pile_height(NodeTable, EmTemp, matprops_ptr, pileprops_ptr);
+                            pileprops_ptr->set_element_height_to_elliptical_pile_height(NodeTable, EmTemp, matprops_ptr);
                         }
                         else
                         {

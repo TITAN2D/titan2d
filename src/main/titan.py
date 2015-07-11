@@ -34,6 +34,16 @@ class TitanSimulation(object):
         'GDAL':MapNames.GDAL
     }
     possible_orders={'First':1,'Second':2}
+    
+    possible_pile_types={'PARABALOID':PileProps.PARABALOID,
+                         'CYLINDER':PileProps.CYLINDER,
+                         'PLANE':PileProps.PLANE,
+                         'CASITA':PileProps.CASITA,
+                         'POPO':PileProps.POPO,
+                         'ID1':PileProps.ID1,
+                         'ID2':PileProps.ID2
+                         }
+    
     def __init__(self):
         self.sim=None
     def input_summary(self):
@@ -274,6 +284,15 @@ class TitanSinglePhase(TitanSimulation):
         out['orientation'] = float(kwargs['orientation'])
         out['Vmagnitude'] = float(kwargs['Vmagnitude'])
         out['Vdirection'] = float(kwargs['Vdirection'])
+        
+        if 'pile_type' not in kwargs or kwargs['pile_type']==None:
+            kwargs['pile_type']='CYLINDER'
+        
+        if kwargs['pile_type'] in TitanSimulation.possible_pile_types:
+            out['pile_type'] = TitanSimulation.possible_pile_types[kwargs['pile_type']]
+        else:
+            raise ValueError("Unknown pile_type "+str(pile_type)+". Possible formats: "+str(possible_pile_types.keys()))
+            
         return out
         
     def addPile(self,**kwargs):
@@ -298,7 +317,7 @@ class TitanSinglePhase(TitanSimulation):
         pile=self.validatePile(**kwargs)
         if pile!=None:
             self.sim.pileprops_single_phase.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
-                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'])
+                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'])
             
     
     def validateFluxSource(self,influx,start_time,end_time,center,radii,
@@ -400,8 +419,11 @@ class TitanTwoPhases(TitanSinglePhase):
         super(TitanTwoPhases, self).__init__(**kwargs)
         
     def validatePile(self, **kwargs):
+        if 'pile_type' not in kwargs or kwargs['pile_type']==None:
+            kwargs['pile_type']='PARABALOID'
         out=super(TitanTwoPhases, self).validatePile(**kwargs)
         out['vol_fract'] = float(kwargs['vol_fract'])
+        
         return out
         
     def addPile(self,**kwargs):
@@ -428,5 +450,5 @@ class TitanTwoPhases(TitanSinglePhase):
         pile=self.validatePile(**kwargs)
         if pile!=None:
             self.sim.pileprops_two_phases.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
-                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['vol_fract'])
+                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'],pile['vol_fract'])
     

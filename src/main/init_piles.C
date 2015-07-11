@@ -20,20 +20,9 @@
 #endif
 
 #include "../header/hpfem.h"
-#ifdef TWO_PHASES
-#define PARABALOID
-#else
-#define CYLINDER
-#endif
-//
 
 #include "../header/titan_simulation.h"
 
-//#define PLANE
-//#define CASITA
-//#define POPO
-//#define ID1
-//#define ID2
 int get_elem_elev(HashTable *HT_Node_Ptr, MatProps *matprops, Element *EmTemp, double *elevation);
 
 void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops)
@@ -72,99 +61,105 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
     return;
 }
 
-void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops_ptr, PileProps* pileprops_ptr);
 
-void cxxTitanSinglePhase::init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
-                TimeProps* timeprops_ptr, MapNames* mapnames,
-                StatProps* statprops)
+void cxxTitanSinglePhase::init_piles()
 {
-    MatProps* matprops_ptr=get_matprops();
 
-    FluxProps *fluxprops_ptr=get_fluxprops();
-#ifdef TWO_PHASES
-    PilePropsTwoPhases* pileprops_ptr=(PilePropsTwoPhases*)get_pileprops();
-#else
+    MatProps* matprops_ptr = get_matprops();
+    FluxProps* fluxprops_ptr = get_fluxprops();
+    TimeProps* timeprops_ptr = get_timeprops();
+    StatProps* statprops_ptr = get_statprops();
+
+    ElementsHashTable* HT_Elem_Ptr=get_HT_Elem();
+    HashTable* HT_Node_Ptr=get_HT_Node();
+
     PileProps* pileprops_ptr=get_pileprops();
-#endif
+
     unsigned nodes[9][KEYLENGTH], *node_key;
     int num_buckets = HT_Elem_Ptr->get_no_of_buckets();
     
+    PileProps::PileType pile_type= pileprops_ptr->get_default_piletype();
+    if(pileprops_ptr->numpiles>0)pile_type= pileprops_ptr->pile_type[0];
+
     if(!adapt)
         H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
-    
-#if defined PARABALOID || defined CYLINDER 
-    if(adapt)
-        initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
-#else
-    
-    for(int ibucket=0; ibucket<num_buckets; ibucket++)
-    {   
 
-        HashEntry *entryp = *(HT_Elem_Ptr->getbucketptr() + ibucket);
-
-        //check every element in bucket
-        while(entryp)
-        {   
-            Element *EmTemp = (Element*)entryp->value;
-            assert(EmTemp);
-
-            if(EmTemp->get_adapted_flag()>0)
-            {   
-
-                //put in the pile height right here...
-                double* ndcoord = EmTemp->get_coord();
-                double pile_height=0.0;
-                double radius_sq;
-#ifndef TWO_PHASES
-
-#ifdef PLANE
-                radius_sq = pow(ndcoord[0]-76.,2)+pow(ndcoord[1]-80.,2);
-                if(radius_sq < 35.)
-                pile_height = 10*(1.-radius_sq/35.);
-
-#elif defined CASITA
-                radius_sq = pow(ndcoord[0]-504600.,2)+pow(ndcoord[1]-1402320.,2);
-                if(radius_sq < 30000.)
-                pile_height = 15*(1.-radius_sq/30000.);
-
-#elif defined POPO //popo topo
-                radius_sq = pow(ndcoord[0]- 537758./matprops_ptr->LENGTH_SCALE,2)+
-                pow(ndcoord[1]-2100910./matprops_ptr->LENGTH_SCALE,2);
-                if(radius_sq < (10000./matprops_ptr->LENGTH_SCALE))
-                pile_height = 1.-radius_sq/(10000./matprops_ptr->LENGTH_SCALE);
-
-#elif defined ID1 // iverson and denlinger experiments I -- as pictured
-                
-                if(ndcoord[0] < 53.345 && ndcoord[0] > 45.265 &&
-                        ndcoord[1] > -10. && ndcoord[1] < 300.)
-                {   
-                    if(ndcoord[0] < 51.148)
-                    pile_height = 3.5912*(1.0-(51.148-ndcoord[0])/5.8832);
-                    else
-                    pile_height = 3.59*(53.345-ndcoord[0])/2.1967;
-                    if(pile_height < 0)
-                    pile_height = 0;
-                }
-
-#elif defined ID2 //iverson and denlinger experiments II -- 90 angle with plane
-                if(ndcoord[0] < 53.345/matprops_ptr->LENGTH_SCALE &&
-                        ndcoord[0] > 46.45 /matprops_ptr->LENGTH_SCALE)
-                pile_height = 4.207255*
-                (1.0-(53.345/matprops_ptr->LENGTH_SCALE-ndcoord[0])/6.895*
-                        matprops_ptr->LENGTH_SCALE);
-#else
-                printf("Danger no recognized pile type defined in init_piles.C\n");
-                exit(0);
-#endif 
-#endif
-                EmTemp->put_height(pileheight);
-
-            }
-            entryp = entryp->next;
-        }
+    if(pile_type == PileProps::PARABALOID || pile_type == PileProps::CYLINDER)
+    {
+        if(adapt)
+            initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
     }
-#endif //end "#if defined PARABALOID || defined CYLINDER"
-    
+    else
+    {
+        printf("It seems this type of piles have hardcoded coordinates\n");
+        assert(0);
+        for(int ibucket = 0; ibucket < num_buckets; ibucket++)
+        {
+
+            HashEntry *entryp = *(HT_Elem_Ptr->getbucketptr() + ibucket);
+
+            //check every element in bucket
+            while (entryp)
+            {
+                Element *EmTemp = (Element*) entryp->value;
+                assert(EmTemp);
+                
+                if(EmTemp->get_adapted_flag() > 0)
+                {
+
+                    //put in the pile height right here...
+                    double* ndcoord = EmTemp->get_coord();
+                    double pile_height = 0.0;
+                    double radius_sq;
+                    switch (pile_type)
+                    {
+
+                        case PileProps::PLANE:
+                            radius_sq = pow(ndcoord[0] - 76., 2) + pow(ndcoord[1] - 80., 2);
+                            if(radius_sq < 35.)
+                                pile_height = 10 * (1. - radius_sq / 35.);
+                            break;
+                        case PileProps::CASITA:
+                            radius_sq = pow(ndcoord[0] - 504600., 2) + pow(ndcoord[1] - 1402320., 2);
+                            if(radius_sq < 30000.)
+                                pile_height = 15 * (1. - radius_sq / 30000.);
+                            break;
+                        case PileProps::POPO: //popo topo
+                            radius_sq = pow(ndcoord[0] - 537758. / matprops_ptr->LENGTH_SCALE, 2)
+                                    + pow(ndcoord[1] - 2100910. / matprops_ptr->LENGTH_SCALE, 2);
+                            if(radius_sq < (10000. / matprops_ptr->LENGTH_SCALE))
+                                pile_height = 1. - radius_sq / (10000. / matprops_ptr->LENGTH_SCALE);
+                            break;
+                        case PileProps::ID1: // iverson and denlinger experiments I -- as pictured
+
+                            if(ndcoord[0] < 53.345 && ndcoord[0] > 45.265 && ndcoord[1] > -10. && ndcoord[1] < 300.)
+                            {
+                                if(ndcoord[0] < 51.148)
+                                    pile_height = 3.5912 * (1.0 - (51.148 - ndcoord[0]) / 5.8832);
+                                else
+                                    pile_height = 3.59 * (53.345 - ndcoord[0]) / 2.1967;
+                                if(pile_height < 0)
+                                    pile_height = 0;
+                            }
+                            break;
+                        case PileProps::ID2: //iverson and denlinger experiments II -- 90 angle with plane
+                            if(ndcoord[0] < 53.345 / matprops_ptr->LENGTH_SCALE && ndcoord[0]
+                                    > 46.45 / matprops_ptr->LENGTH_SCALE)
+                                pile_height = 4.207255
+                                        * (1.0 - (53.345 / matprops_ptr->LENGTH_SCALE - ndcoord[0]) / 6.895
+                                                * matprops_ptr->LENGTH_SCALE);
+                            break;
+                        default:
+                            printf("Danger no recognized pile type defined in init_piles.C\n");
+                            assert(0);
+                    }
+                    EmTemp->put_height(pile_height);
+
+                }
+                entryp = entryp->next;
+            }
+        }
+    } //end "#if defined PARABALOID || defined CYLINDER"
     move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
     
     //update temporary arrays of elements/nodes pointers
@@ -177,10 +172,9 @@ void cxxTitanSinglePhase::init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* 
     /* initial calculation of actual volume on the map */
 
     double realvolume = 0.0, depositedvol = 0.0, forcebed = 0.0, meanslope = 0.0;
-#ifdef TWO_PHASES
-    double epsilon[2] =
-    { matprops_ptr->epsilon, matprops_ptr->epsilon };
-#endif
+    double epsilon[DIMENSION];
+    for(int i=0;i<DIMENSION;i++)
+        epsilon[i]=matprops_ptr->epsilon;
     
     HashEntryPtr* buck = HT_Elem_Ptr->getbucketptr();
     for(int ibucket = 0; ibucket < HT_Elem_Ptr->get_no_of_buckets(); ibucket++)
@@ -197,11 +191,7 @@ void cxxTitanSinglePhase::init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* 
                     double *dxy = Curr_El->get_dx();
                     double dvol = dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
                     realvolume += dvol;
-#ifdef TWO_PHASES
                     Curr_El->put_kactxy(epsilon);
-#else
-                    *(Curr_El->get_kactxy() + 0) = *(Curr_El->get_kactxy() + 1) = matprops_ptr->epsilon;
-#endif
 
                     Curr_El->calc_stop_crit(matprops_ptr);
                     if(Curr_El->get_stoppedflags() == 2)
@@ -228,149 +218,15 @@ void cxxTitanSinglePhase::init_piles(ElementsHashTable* HT_Elem_Ptr, HashTable* 
     
     MPI_Reduce(tempin, tempout, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     
-    statprops->realvolume = tempout[0] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE) * (matprops_ptr->LENGTH_SCALE);
-    statprops->outflowvol = 0.0;
-    statprops->erodedvol = 0.0;
-    statprops->depositedvol = tempout[2] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
+    statprops_ptr->realvolume = tempout[0] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE) * (matprops_ptr->LENGTH_SCALE);
+    statprops_ptr->outflowvol = 0.0;
+    statprops_ptr->erodedvol = 0.0;
+    statprops_ptr->depositedvol = tempout[2] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
                               * (matprops_ptr->LENGTH_SCALE);
     
-    statprops->forceint = 0.0;
-    statprops->forcebed = tempout[1] / tempout[0];
+    statprops_ptr->forceint = 0.0;
+    statprops_ptr->forcebed = tempout[1] / tempout[0];
     
     return;
 }
 
-/*******************************************************************/
-/* assign height to point of an elliptical (in (x,y)) shaped pile, */
-/* the pile can be either parabolic (in the z direction) or be     */
-/* cylindrical (have uniform pile height)                          */
-/*******************************************************************/
-#ifdef TWO_PHASES
-void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, PileProps* pileprops2)
-#else
-void elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, PileProps* pileprops)
-#endif
-{
-#ifdef TWO_PHASES
-    PilePropsTwoPhases* pileprops=(PilePropsTwoPhases*)pileprops2;
-#endif
-    unsigned nodes[9][2];
-    
-    //get corner and edge nodes
-    unsigned *node_key = EmTemp->getNode();
-    for(int inode = 0; inode < 8; inode++)
-        for(int ikey = 0; ikey < KEYLENGTH; ikey++)
-            nodes[inode][ikey] = node_key[inode * KEYLENGTH + ikey];
-    
-    //get center node
-    node_key = EmTemp->pass_key();
-    for(int ikey = 0; ikey < KEYLENGTH; ikey++)
-        nodes[8][ikey] = node_key[ikey];
-    
-    double node_pile_height[9];
-    double sum_node_pile_height[9];
-    double sum_node_xmom[9];
-    double sum_node_ymom[9];
-    double height;
-#ifdef TWO_PHASES
-    double vfract = 0.;
-#endif
-    
-    for(int inode = 0; inode < 9; inode++)
-    {
-        
-        //get pile height at each node...
-        Node* ndtemp = (Node*) HT_Node_Ptr->lookup(&nodes[inode][0]);
-        double* ndcoord = ndtemp->get_coord();
-        
-        // for multiple piles which may overlap, the highest value is used..
-        node_pile_height[inode] = 0.0;
-        sum_node_pile_height[inode] = 0.0;
-        sum_node_xmom[inode] = 0.0;
-        sum_node_ymom[inode] = 0.0;
-        
-        //check each pile to see which has max height at this node
-        for(int ipile = 0; ipile < pileprops->numpiles; ipile++)
-        {
-#ifdef TWO_PHASES
-            if(pileprops->vol_fract[ipile] > vfract)
-                vfract = pileprops->vol_fract[ipile];
-#endif
-            //get position relative to pile center
-            double major = ndcoord[0] - pileprops->xCen[ipile];
-            double minor = ndcoord[1] - pileprops->yCen[ipile];
-            
-            /* "undo" elliptical pile rotation ... from (x,y)->(major,minor) 
-             also make  nondimensional (by dividing by major and minor radius) */
-            double doubleswap = (major * pileprops->cosrot[ipile] + minor * pileprops->sinrot[ipile])
-                    / pileprops->majorrad[ipile];
-            
-            minor = (-major * pileprops->sinrot[ipile] + minor * pileprops->cosrot[ipile]) / pileprops->minorrad[ipile];
-            major = doubleswap;
-            
-            /* calculate pile height based on non dimensional position relative to
-             center of pile */
-#ifdef PARABALOID      
-            height = pileprops->pileheight[ipile]*(1.-major*major-minor*minor);
-#elif defined CYLINDER
-            if(major * major + minor * minor < 1.0)
-                height = pileprops->pileheight[ipile];
-            else
-                height = 0.0;
-            
-#endif
-            height = (height >= 0.0) ? height : 0.0;
-            
-            sum_node_pile_height[inode] += height;
-            sum_node_xmom[inode] += height * (pileprops->initialVx[ipile]);
-            sum_node_ymom[inode] += height * (pileprops->initialVy[ipile]);
-            
-            if(node_pile_height[inode] < height)
-                node_pile_height[inode] = height;
-        }
-        if(sum_node_pile_height[inode] <= GEOFLOW_TINY)
-            sum_node_xmom[inode] = sum_node_ymom[inode] = 0.0;
-        else
-        {
-            sum_node_xmom[inode] *= height / sum_node_pile_height[inode];
-            sum_node_ymom[inode] *= height / sum_node_pile_height[inode];
-            //these are now the averaged momentums at each node
-        }
-    }
-    
-    /* The pile_height value assigned is an "area" weighted average over the 
-     element's 9 nodes.  The element is divided into 4 squares, and each 
-     corner of each of the 4 squares count once.  Because the center node 
-     is repeated 4 times it's weight is 4 times as much as the element's 
-     corner nodes which are not repeated; each edge node is repeated 
-     twice */
-    double pileheight = ( //corner nodes
-    node_pile_height[0] + node_pile_height[1] + node_pile_height[2] + node_pile_height[3] +
-    //edge nodes 
-    2.0 * (node_pile_height[4] + node_pile_height[5] + node_pile_height[6] + node_pile_height[7]) +
-    //center node
-    4.0 * node_pile_height[8])
-                        / 16.0;
-    
-    double xmom = ( //corner nodes
-    sum_node_xmom[0] + sum_node_xmom[1] + sum_node_xmom[2] + sum_node_xmom[3] +
-    //edge nodes 
-    2.0 * (sum_node_xmom[4] + sum_node_xmom[5] + sum_node_xmom[6] + sum_node_xmom[7]) +
-    //center node
-    4.0 * sum_node_xmom[8])
-                  / 16.0;
-    
-    double ymom = ( //corner nodes
-    sum_node_ymom[0] + sum_node_ymom[1] + sum_node_ymom[2] + sum_node_ymom[3] +
-    //edge nodes 
-    2.0 * (sum_node_ymom[4] + sum_node_ymom[5] + sum_node_ymom[6] + sum_node_ymom[7]) +
-    //center node
-    4.0 * sum_node_ymom[8])
-                  / 16.0;
-#ifdef TWO_PHASES
-    EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
-#else
-    EmTemp->put_height_mom(pileheight, xmom, ymom);
-#endif
-    return;
-}

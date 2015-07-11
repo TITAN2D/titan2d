@@ -102,7 +102,8 @@ void cxxTitanSimulation::input_summary()
 cxxTitanSinglePhase::cxxTitanSinglePhase() :
         cxxTitanSimulation()
 {
-
+    HT_Node=NULL;
+    HT_Elem=NULL;
 
     MPI_Barrier (MPI_COMM_WORLD);
 }
@@ -317,9 +318,6 @@ void cxxTitanSinglePhase::run()
 
     int i; //-- counters
 
-    HashTable* BT_Node_Ptr;
-    ElementsHashTable* BT_Elem_Ptr;
-
     //-- MPI
     MPI_Status status;
 
@@ -370,27 +368,37 @@ void cxxTitanSinglePhase::run()
 
 
 
+    int result;
 
-    if(!loadrun(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
-                &statprops, &discharge_planes, &outline))
+    //check if restart is available
+    result=loadrun(myid, numprocs, &HT_Node, &HT_Elem, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
+                  &statprops, &discharge_planes, &outline);
+
+    if(result==0)
+        Read_grid(myid, numprocs, &HT_Node, &HT_Elem, matprops_ptr, &outline);
+
+    ElementsHashTable* HT_Elem_Ptr=get_HT_Elem();
+    HashTable* HT_Node_Ptr=get_HT_Node();
+
+
+
+    if(result==0)
     {
-        Read_grid(myid, numprocs, &BT_Node_Ptr, &BT_Elem_Ptr, matprops_ptr, &outline);
+        setup_geoflow(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops);
 
-        setup_geoflow(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops);
+        move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
-        move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
-
-        AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -1.0);
+        AssertMeshErrorFree(HT_Elem_Ptr, HT_Node_Ptr, numprocs, myid, -1.0);
 
         //initialize pile height and if appropriate perform initial adaptation
-        init_piles(BT_Elem_Ptr, BT_Node_Ptr, &timeprops, &mapnames, &statprops);
+        init_piles();
     }
     else
     {
         //update temporary arrays of elements/nodes pointers
-        BT_Elem_Ptr->updateElements();
-        BT_Elem_Ptr->updateLocalElements();
-        BT_Elem_Ptr->updatePointersToNeighbours();
+        HT_Elem_Ptr->updateElements();
+        HT_Elem_Ptr->updateLocalElements();
+        HT_Elem_Ptr->updatePointersToNeighbours();
     }
 
     /* for debug only, to check if exactly what's loaded will be saved again
@@ -411,30 +419,30 @@ void cxxTitanSinglePhase::run()
     }
 
     MPI_Barrier (MPI_COMM_WORLD);
-    calc_stats(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
+    calc_stats(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
-    move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+    move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
     if(myid == 0)
         output_summary(&timeprops, &statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
     if(vizoutput & 2)
-        meshplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
-    xdmerr=write_xdmf(BT_Elem_Ptr,BT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
+    xdmerr=write_xdmf(HT_Elem_Ptr,HT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
 #endif
 
     if(vizoutput & 8)
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops);
+        grass_sites_proc_output(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops);
     }
 
     /*
@@ -477,41 +485,41 @@ void cxxTitanSinglePhase::run()
         //check for changes in topography and update if necessary
         if(timeprops.iter == 200)
         {
-            update_topo(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
+            update_topo(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
         }
 
         if((adapt != 0) && (timeprops.iter % 5 == 4))
         {
-            AssertMeshErrorFree(BT_Elem_Ptr, BT_Node_Ptr, numprocs, myid, -2.0);
+            AssertMeshErrorFree(HT_Elem_Ptr, HT_Node_Ptr, numprocs, myid, -2.0);
 
-            H_adapt(BT_Elem_Ptr, BT_Node_Ptr, h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
+            H_adapt(HT_Elem_Ptr, HT_Node_Ptr, h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
 
-            move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
-            unrefine(BT_Elem_Ptr, BT_Node_Ptr, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
+            unrefine(HT_Elem_Ptr, HT_Node_Ptr, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
-            move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
             if((numprocs > 1) && (timeprops.iter % 10 == 9))
             {
-                repartition2(BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+                repartition2(HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
                 //this move_data() here for debug... to make AssertMeshErrorFree() Work
-                move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+                move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
             }
-            move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
             //update temporary arrays of elements/nodes pointers
-            BT_Elem_Ptr->updateElements();
-            BT_Elem_Ptr->updateLocalElements();
-            BT_Elem_Ptr->updatePointersToNeighbours();
+            HT_Elem_Ptr->updateElements();
+            HT_Elem_Ptr->updateLocalElements();
+            HT_Elem_Ptr->updatePointersToNeighbours();
         }
         titanTimings.meshAdaptionTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.meshAdaptionTime += MPI_Wtime() - t_start;
 
         t_start = MPI_Wtime();
-        step(BT_Elem_Ptr, BT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
+        step(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
              &order, &outline, &discharge_planes, adapt);
         titanTimings.stepTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
@@ -521,7 +529,7 @@ void cxxTitanSinglePhase::run()
          * save a restart file
          */
         if(timeprops.ifsave())
-            saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
+            saverun(&HT_Node_Ptr, myid, numprocs, &HT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
                     &statprops, &discharge_planes, &outline, &savefileflag);
 
         /*
@@ -529,7 +537,7 @@ void cxxTitanSinglePhase::run()
          */
         if(timeprops.ifoutput())
         {
-            move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
             output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
@@ -537,14 +545,14 @@ void cxxTitanSinglePhase::run()
                 output_summary(&timeprops, &statprops, savefileflag);
 
             if(vizoutput & 1)
-                tecplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                tecplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
             if(vizoutput & 2)
-                meshplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
             if(vizoutput & 4)
-            xdmerr=write_xdmf(BT_Elem_Ptr, BT_Node_Ptr, &timeprops,
+            xdmerr=write_xdmf(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
                     matprops_ptr, &mapnames, XDMF_OLD);
 #endif
 
@@ -552,17 +560,17 @@ void cxxTitanSinglePhase::run()
             {
                 if(myid == 0)
                     grass_sites_header_output(&timeprops);
-                grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops);
+                grass_sites_proc_output(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops);
             }
         }
 
 #ifdef PERFTEST
         int countedvalue=timeprops.iter%2+1;
-        int e_buckets=BT_Elem_Ptr->get_no_of_buckets();
+        int e_buckets=HT_Elem_Ptr->get_no_of_buckets();
         HashEntry* entryp;
         for(i=0; i<e_buckets; i++)
         {
-            entryp = *(BT_Elem_Ptr->getbucketptr() + i);
+            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
             while(entryp)
             {
                 Element * EmTemp = (Element*)entryp->value;
@@ -595,13 +603,13 @@ void cxxTitanSinglePhase::run()
         }
     }
 
-    move_data(numprocs, myid, BT_Elem_Ptr, BT_Node_Ptr, &timeprops);
+    move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
     /*
      * save a restart file
      */
 
-    saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
+    saverun(&HT_Node_Ptr, myid, numprocs, &HT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
             &statprops, &discharge_planes, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -612,14 +620,14 @@ void cxxTitanSinglePhase::run()
         output_summary(&timeprops, &statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
     if(vizoutput & 2)
-        meshplotter(BT_Elem_Ptr, BT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
-    xdmerr=write_xdmf(BT_Elem_Ptr, BT_Node_Ptr, &timeprops,
+    xdmerr=write_xdmf(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
             matprops_ptr, &mapnames, XDMF_CLOSE);
 #endif
 
@@ -627,13 +635,13 @@ void cxxTitanSinglePhase::run()
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(BT_Elem_Ptr, BT_Node_Ptr, myid, matprops_ptr, &timeprops);
+        grass_sites_proc_output(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     // write out ending warning, maybe flow hasn't finished moving
-    sim_end_warning(BT_Elem_Ptr, matprops_ptr, &timeprops, statprops.vstar);
+    sim_end_warning(HT_Elem_Ptr, matprops_ptr, &timeprops, statprops.vstar);
     MPI_Barrier(MPI_COMM_WORLD);
 
     //write out the final pile statistics (and run time)
