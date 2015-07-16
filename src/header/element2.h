@@ -29,6 +29,10 @@ using namespace std;
 
 //#define USE_FATHER
 
+class TimeProps;
+class FluxProps;
+class Node;
+
 //! The Element class is a data structure designed to hold all the information need for an h (cell edge length) p (polynomial order) adaptive finite element.  Titan doesn't use p adaptation because it is a finite difference/volume code, hence many of the members are legacy from afeapi (adaptive finite element application programmers interface) which serves as the core of titan.  There is a seperate Discontinuous Galerkin Method (finite elements + finite volumes) version of titan and the polynomial information is not legacy there.  However in this version of Titan elements function simply as finite volume cells.
 class Element
 {
@@ -86,6 +90,13 @@ protected:
      */
     Element()
     {
+        if(NUM_STATE_VARS == 3)
+            elementType = ElementType::SinglePhase;
+        else if(NUM_STATE_VARS == 6)
+            elementType = ElementType::TwoPhases;
+        else
+            elementType = ElementType::UnknownElementType;
+
         counted = 0;
         father[0] = father[1] = 0; //initialize the father key to zero
         for(int i = 0; i < NUM_STATE_VARS; i++)
@@ -319,11 +330,9 @@ public:
     /* geoflow functions */
 
     //! this function initializes pileheight, momentums and shortspeed (also known as the L'Hosptial speed see calc_shortspeed for an explanation),this function is called in init_piles.C 
-#ifdef TWO_PHASES
-    void put_height_mom(double pile_height, double vfract, double xmom, double ymom);
-#else
     void put_height_mom(double pile_height, double xmom, double ymom);
-#endif
+    void put_height_mom(double pile_height, double vfract, double xmom, double ymom);
+
 
     //! this function assigns a specified value to the pileheight and zeros to the momentums and shortspeed
     void put_height(double pile_height);
@@ -363,15 +372,15 @@ public:
 
     //! this function, based on the dir flag, chooses between calling xdirflux and ydirflux, which respectively, calculate either the x or y direction analytical cell center fluxes (or the fluxes at the the boundary if 2nd order flux option is checked on the gui). Keith wrote this.
     void zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
-                  double hfv[3][NUM_STATE_VARS], double hrfv[3][NUM_STATE_VARS], Element* EmNeigh, double dt);
+                  double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element* EmNeigh, double dt);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) x direction fluxes. Keith wrote this
-    void xdirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][NUM_STATE_VARS],
-                  double hrfv[3][NUM_STATE_VARS]);
+    void xdirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
+                  double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) y direction fluxes. Keith wrote this
-    void ydirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][NUM_STATE_VARS],
-                  double hrfv[3][NUM_STATE_VARS]);
+    void ydirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
+                  double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function (indirectly) calculates the fluxes that will be used to perform the finite volume corrector step and stores them in element edge nodes, indirectly because it calls other functions to calculate the analytical fluxes and then calls another function to compute the riemann fluxes from the analytical fluxes. Talk to me (Keith) before you modify this, as I am fairly certain that it is now completely bug free and parts of it can be slightly confusing.
     void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
@@ -394,11 +403,8 @@ public:
     void put_shortspeed(double shortspeedin);
 
     //! this function computes the velocity, either V=hV/h or shortspeed in the direction of hV/h, if the pile is short, that is h is less than the defined (nondimensional) value of GEOFLOW_SHORT, see geoflow.h, it chooses the speed to be min(|hV/h|,shortspeed) if h is greater than GEOFLOW_SHORT it chooses hV/h regardless of which one is smaller.
-#ifdef TWO_PHASES
-    void eval_velocity(double xoffset, double yoffset, double Vel[]);
-#else
-    double* eval_velocity(double xoffset, double yoffset, double VxVy[2]);
-#endif
+    double* eval_velocity(double xoffset, double yoffset, double Vel[]);
+
 
 
     //! this function is legacy afeapi code, it is never called in the finite difference/volume version of titan
@@ -569,7 +575,10 @@ public:
     {
         return (a < 0 ? -1. : 1);
     }
+
 protected:
+    //! Element type
+    ElementType elementType;
     //! myprocess is id of the process(or) that owns this element
     int myprocess;
 
@@ -663,12 +672,12 @@ protected:
     /* variables for hyperbolic geoflow problem */
 
     //! state_vars is an array that holds the current state variables: h, hVx, and hVy 
-    double state_vars[NUM_STATE_VARS];
+    double state_vars[MAX_NUM_STATE_VARS];
     //! these are the values of the state variables from before the predictor step
-    double prev_state_vars[NUM_STATE_VARS];
+    double prev_state_vars[MAX_NUM_STATE_VARS];
 
     //! these are the spatial (x and y) derivatives of the state variables: (dh/dx, dhVx/dx, dhVy/dx, dh/dy, dhVx/dy, dhVy/dy)
-    double d_state_vars[NUM_STATE_VARS * DIMENSION];
+    double d_state_vars[MAX_NUM_STATE_VARS * DIMENSION];
 
     //! the short speed is the speed computed as: shortspeed=|v|=|dhv/dh|=|v*dh/dh+h*dv/dh|=|v+h*dv/dh| which goes to |v| in the limit of h->0, this is a more accurate way to compute speed when the pile in this cell is short, hence the name "shortspeed" but it is not accurate when the pile is tall, that is when h*dv/dh is large, this is the value from the previous iteration (so there is lagging when using the shortspeed, but this should still be much more accurate than hV/h when h->0. Keith implemented this in late summer 2006, 
     double shortspeed;
@@ -719,7 +728,7 @@ protected:
     double effect_kactxy[2];
 
     //! extrusion flux rate for this timestep for this element, used when having material flow out of the ground, a volume per unit area influx rate source term
-    double Influx[NUM_STATE_VARS];
+    double Influx[MAX_NUM_STATE_VARS];
 
     int counted;
 
@@ -822,7 +831,6 @@ inline int Element::get_opposite_brother_flag()
 }
 ;
 
-#ifdef TWO_PHASES
 inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom)
 {
     prev_state_vars[0] = state_vars[0] = pile_height;
@@ -841,7 +849,6 @@ inline void Element::put_height_mom(double pile_height, double volf, double xmom
     }
     return;
 };
-#else
 inline void Element::put_height_mom(double pile_height, double xmom, double ymom)
 {
     prev_state_vars[0] = state_vars[0] = pile_height;
@@ -859,17 +866,18 @@ inline void Element::put_height_mom(double pile_height, double xmom, double ymom
     }
     
     return;
-}
-;
-#endif
+};
 
 inline void Element::put_height(double pile_height)
 {
-#ifdef TWO_PHASES
-    put_height_mom(pile_height, 1., 0., 0.);
-#else
-    put_height_mom(pile_height, 0.0, 0.0);
-#endif
+    if(elementType == ElementType::TwoPhases)
+    {
+        put_height_mom(pile_height, 1., 0., 0.);
+    }
+    if(elementType == ElementType::SinglePhase)
+    {
+        put_height_mom(pile_height, 0.0, 0.0);
+    }
     return;
 };
 

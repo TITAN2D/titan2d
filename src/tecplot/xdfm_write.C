@@ -40,8 +40,7 @@ double interpolate_elv(HashTable *, HashTable *, Element *, int, unsigned *);
 void xdmf_fopen(char *);
 void xdmf_fclose(ofstream &);
 
-#ifdef TWO_PHASES 
-int write_xdmf(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode)
 {
     //if Need to have generic form, do vector of vectors
@@ -213,8 +212,7 @@ int write_xdmf(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_p
     
     return 0;
 }
-#else
-int write_xdmf(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode)
 {
     int i, j, k;
@@ -425,7 +423,6 @@ int write_xdmf(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_p
     
     return 0;
 }
-#endif
 /* open an XML file for Metadata and write header information */
 void xdmf_fopen(char *filename)
 {

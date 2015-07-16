@@ -253,11 +253,7 @@ void PileProps::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_
     pileheight=get_elliptical_pile_height(HT_Node_Ptr, m_EmTemp, matprops, &xmom,&ymom);
 
     ElementSinglePhase* EmTemp=(ElementSinglePhase*)m_EmTemp;
-
-#ifndef TWO_PHASES
     EmTemp->put_height_mom(pileheight, xmom, ymom);
-#endif
-
 }
 double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom,
                                          double* m_ymom)
@@ -428,8 +424,6 @@ void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(HashTable*
         if(vol_fract[ipile] > vfract)
         vfract = vol_fract[ipile];
     }
-#ifdef TWO_PHASES
     EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
-#endif
 }
 

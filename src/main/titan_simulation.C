@@ -48,8 +48,12 @@ TitanTimings titanTimingsAlongSimulation;
 #include "../header/constant.h"
 #include "../header/properties.h"
 
+int NUM_STATE_VARS;
+bool SHORTSPEED;
+
 cxxTitanSimulation::cxxTitanSimulation()
 {
+    elementType=ElementType::UnknownElementType;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
@@ -105,13 +109,20 @@ cxxTitanSinglePhase::cxxTitanSinglePhase() :
     HT_Node=NULL;
     HT_Elem=NULL;
 
+    NUM_STATE_VARS = 3;
+    SHORTSPEED=false;
+    get_outline()->elementType=ElementType::SinglePhase;
+    elementType=ElementType::SinglePhase;
     MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanSinglePhase::~cxxTitanSinglePhase()
 {
 
 }
-
+void cxxTitanSinglePhase::set_short_speed(bool short_speed)
+{
+    SHORTSPEED=short_speed;
+}
 
 void cxxTitanSinglePhase::process_input()
 {
@@ -419,7 +430,7 @@ void cxxTitanSinglePhase::run()
     }
 
     MPI_Barrier (MPI_COMM_WORLD);
-    calc_stats(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
+    calc_stats(elementType, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
@@ -428,14 +439,24 @@ void cxxTitanSinglePhase::run()
         output_summary(&timeprops, &statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(elementType, HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
     if(vizoutput & 2)
         meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
-    xdmerr=write_xdmf(HT_Elem_Ptr,HT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
+    {
+        if(elementType == ElementType::TwoPhases)
+        {
+            xdmerr=write_xdmf_two_phases(HT_Elem_Ptr,HT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
+        }
+        if(elementType == ElementType::SinglePhase)
+        {
+            xdmerr=write_xdmf_single_phase(HT_Elem_Ptr,HT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
+        }
+    }
+
 #endif
 
     if(vizoutput & 8)
@@ -519,7 +540,7 @@ void cxxTitanSinglePhase::run()
         titanTimingsAlongSimulation.meshAdaptionTime += MPI_Wtime() - t_start;
 
         t_start = MPI_Wtime();
-        step(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
+        step(elementType,HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
              &order, &outline, &discharge_planes, adapt);
         titanTimings.stepTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
@@ -545,15 +566,25 @@ void cxxTitanSinglePhase::run()
                 output_summary(&timeprops, &statprops, savefileflag);
 
             if(vizoutput & 1)
-                tecplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                tecplotter(elementType, HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
             if(vizoutput & 2)
                 meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
             if(vizoutput & 4)
-            xdmerr=write_xdmf(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
-                    matprops_ptr, &mapnames, XDMF_OLD);
+            {
+                if(elementType == ElementType::TwoPhases)
+                {
+                    xdmerr=write_xdmf_two_phases(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+                                        matprops_ptr, &mapnames, XDMF_OLD);
+                }
+                if(elementType == ElementType::SinglePhase)
+                {
+                    xdmerr=write_xdmf_single_phase(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+                                        matprops_ptr, &mapnames, XDMF_OLD);
+                }
+            }
 #endif
 
             if(vizoutput & 8)
@@ -620,15 +651,25 @@ void cxxTitanSinglePhase::run()
         output_summary(&timeprops, &statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(elementType, HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
     if(vizoutput & 2)
         meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
-    xdmerr=write_xdmf(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
-            matprops_ptr, &mapnames, XDMF_CLOSE);
+    {
+        if(elementType == ElementType::TwoPhases)
+        {
+            xdmerr=write_xdmf_two_phases(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+                        matprops_ptr, &mapnames, XDMF_CLOSE);
+        }
+        if(elementType == ElementType::SinglePhase)
+        {
+            xdmerr=write_xdmf_single_phase(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+                        matprops_ptr, &mapnames, XDMF_CLOSE);
+        }
+    }
 #endif
 
     if(vizoutput & 8)
@@ -641,7 +682,7 @@ void cxxTitanSinglePhase::run()
     MPI_Barrier(MPI_COMM_WORLD);
 
     // write out ending warning, maybe flow hasn't finished moving
-    sim_end_warning(HT_Elem_Ptr, matprops_ptr, &timeprops, statprops.vstar);
+    sim_end_warning(elementType, HT_Elem_Ptr, matprops_ptr, &timeprops, statprops.vstar);
     MPI_Barrier(MPI_COMM_WORLD);
 
     //write out the final pile statistics (and run time)
@@ -665,12 +706,10 @@ void cxxTitanSinglePhase::run()
         outline2.init2(dxy, outline.xminmax, outline.yminmax);
         int NxNyout = outline.Nx * outline.Ny;
 
-//TWO_PHASES is:MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+//TWO PHASES is:MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-#ifndef TWO_PHASES
         MPI_Reduce(*(outline.max_kinergy), *(outline2.max_kinergy), NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         MPI_Reduce(*(outline.cum_kinergy), *(outline2.cum_kinergy), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-#endif
         if(myid == 0)
             outline2.output(matprops_ptr, &statprops);
     }
@@ -715,6 +754,9 @@ void cxxTitanSinglePhase::input_summary()
 cxxTitanTwoPhases::cxxTitanTwoPhases() :
         cxxTitanSinglePhase()
 {
+    NUM_STATE_VARS = 6;
+    get_outline()->elementType=ElementType::TwoPhases;
+    elementType=ElementType::TwoPhases;
     MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanTwoPhases::~cxxTitanTwoPhases()

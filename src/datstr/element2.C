@@ -15,9 +15,6 @@
  * $Id: element2.C 232 2012-03-27 00:33:41Z dkumar $ 
  */
 //#define DEBUG_SAVE_ELEM
-#ifdef TWO_PHASES
-#define SHORTSPEED
-#endif
 
 #define DISABLE_DRY_FLUX_ZEROING   //this disables the zeroing of fluxes through dry sides facet of thin layer control
 
@@ -36,6 +33,10 @@
 Element::Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC* b, int mat,
                  int* elm_loc_in, double pile_height, int myid, unsigned* opposite_brother)
 {
+    if(NUM_STATE_VARS==3)elementType=ElementType::SinglePhase;
+    else if(NUM_STATE_VARS==6)elementType=ElementType::TwoPhases;
+    else elementType=ElementType::UnknownElementType;
+
     int ikey;
     int i, j;
     counted = 0; //for debugging only
@@ -152,40 +153,48 @@ Element::Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], in
     opposite_brother_flag = 1;
     
     new_old = OLD;
-#ifdef TWO_PHASES
-    state_vars[0] = pile_height;
-    state_vars[1] = pile_height;
-    state_vars[2] = state_vars[4] = 0.;
-    if(state_vars[0] != 0)
-        state_vars[2] = state_vars[4] = 0.0001;
-    state_vars[3] = state_vars[5] = 0;
-#else
-    state_vars[0] = pile_height;
-    state_vars[1] = 0;
-    if(state_vars[0] != 0)
-        state_vars[1] = 0.0001;
-    state_vars[2] = 0;
-#endif
+    if(elementType == ElementType::SinglePhase)
+    {
+        state_vars[0] = pile_height;
+        state_vars[1] = 0;
+        if(state_vars[0] != 0)
+            state_vars[1] = 0.0001;
+        state_vars[2] = 0;
+    }
+
+    if(elementType == ElementType::TwoPhases)
+    {
+        state_vars[0] = pile_height;
+        state_vars[1] = pile_height;
+        state_vars[2] = state_vars[4] = 0.;
+        if(state_vars[0] != 0)
+            state_vars[2] = state_vars[4] = 0.0001;
+        state_vars[3] = state_vars[5] = 0;
+    }
     shortspeed = 0.0;
     
     iwetnode = 8;
     drypoint[0] = drypoint[1] = 0.0;
     Awet = Swet = (pile_height > GEOFLOW_TINY) ? 1.0 : 0.0;
     
-#ifdef TWO_PHASES
-    prev_state_vars[0] = pile_height;
-    prev_state_vars[1] = pile_height;
-    prev_state_vars[2] = prev_state_vars[4] = 0.;
-    if(prev_state_vars[0] != 0)
-        prev_state_vars[2] = prev_state_vars[4] = 0.0001;
-    prev_state_vars[3] = prev_state_vars[5] = 0;
-#else
-    prev_state_vars[0] = pile_height;
-    prev_state_vars[1] = 0;
-    if(prev_state_vars[0] != 0)
-        prev_state_vars[1] = 0.0001;
-    prev_state_vars[2] = 0;
-#endif
+
+    if(elementType == ElementType::TwoPhases)
+    {
+        prev_state_vars[0] = pile_height;
+        prev_state_vars[1] = pile_height;
+        prev_state_vars[2] = prev_state_vars[4] = 0.;
+        if(prev_state_vars[0] != 0)
+            prev_state_vars[2] = prev_state_vars[4] = 0.0001;
+        prev_state_vars[3] = prev_state_vars[5] = 0;
+    }
+    if(elementType == ElementType::SinglePhase)
+    {
+        prev_state_vars[0] = pile_height;
+        prev_state_vars[1] = 0;
+        if(prev_state_vars[0] != 0)
+            prev_state_vars[1] = 0.0001;
+        prev_state_vars[2] = 0;
+    }
 
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         d_state_vars[i] = 0;
@@ -197,12 +206,13 @@ Element::Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], in
     
     stoppedflags = 2;
 
-#ifdef TWO_PHASES
-    // initialize kactxy
-    kactxy[0] = kactxy[1] = 0.;
-    effect_kactxy[0] = effect_kactxy[0] = 0.;
-    effect_bedfrict = effect_tanbedfrict = 0.;
-#endif
+    if(elementType == ElementType::TwoPhases)
+    {
+        // initialize kactxy
+        kactxy[0] = kactxy[1] = 0.;
+        effect_kactxy[0] = effect_kactxy[0] = 0.;
+        effect_bedfrict = effect_tanbedfrict = 0.;
+    }
 }
 
 //used for refinement
@@ -211,6 +221,13 @@ Element::Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], in
                  HashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
+    if(NUM_STATE_VARS == 3)
+        elementType = ElementType::SinglePhase;
+    else if(NUM_STATE_VARS == 6)
+        elementType = ElementType::TwoPhases;
+    else
+        elementType = ElementType::UnknownElementType;
+
     int i;
     int ikey;
     counted = 0; //for debugging only
@@ -343,6 +360,13 @@ Element::Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], in
  *****************************************/
 Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
 {
+    if(NUM_STATE_VARS == 3)
+        elementType = ElementType::SinglePhase;
+    else if(NUM_STATE_VARS == 6)
+        elementType = ElementType::TwoPhases;
+    else
+        elementType = ElementType::UnknownElementType;
+
     counted = 0; //for debugging only
             
     adapted = NEWFATHER;
@@ -1700,35 +1724,38 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
     
     double a; //speed of sound
     double VxVy[2]; //will be rarefaction velocity non-dimensionalized by cell size
-#ifdef TWO_PHASES
-    VxVy[0] = state_vars[2] / state_vars[1];
-    if(VxVy[0] != 0.0)
+    if(elementType == ElementType::TwoPhases)
     {
-        a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
-        VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx[0];
+        VxVy[0] = state_vars[2] / state_vars[1];
+        if(VxVy[0] != 0.0)
+        {
+            a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
+            VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx[0];
+        }
+
+        VxVy[1] = state_vars[3] / state_vars[1];
+        if(VxVy[1] != 0.0)
+        {
+            a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
+            VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
+        }
     }
-    
-    VxVy[1] = state_vars[3] / state_vars[1];
-    if(VxVy[1] != 0.0)
+    if(elementType == ElementType::SinglePhase)
     {
-        a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
-        VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
+        VxVy[0] = state_vars[1] / state_vars[0];
+        if(VxVy[0] != 0.0)
+        {
+            a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[0]);
+            VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx[0];
+        }
+
+        VxVy[1] = state_vars[2] / state_vars[0];
+        if(VxVy[1] != 0.0)
+        {
+            a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[0]);
+            VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
+        }
     }
-#else
-    VxVy[0] = state_vars[1] / state_vars[0];
-    if(VxVy[0] != 0.0)
-    {
-        a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[0]);
-        VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx[0];
-    }
-    
-    VxVy[1] = state_vars[2] / state_vars[0];
-    if(VxVy[1] != 0.0)
-    {
-        a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[0]);
-        VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
-    }
-#endif
     
     double doubleswap = 1.0 / sqrt(2.0);
     switch (iwetnode)
@@ -1908,560 +1935,552 @@ double Element::convect_dryline(double VxVy[2], double dt)
     
     return Awet;
 }
-#ifdef TWO_PHASES
+
 //x direction flux in current cell
-void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
-                       double hrfv[3][NUM_STATE_VARS])
+void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
+                       double hrfv[3][MAX_NUM_STATE_VARS])
 {
-    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
-    int i, j;
-    double a, Vel[4]; // Vel[0:1]: solid-vel, Vel[2:3]: fluid-vel
-    double volf = 0.;
-    double epsilon = matprops_ptr->epsilon;
-    double den_frac = matprops_ptr->den_fluid / matprops_ptr->den_solid;
-    
-    //the "update flux" values (hfv) are the fluxes used to update the solution,
-    // they may or may not be "reset" from their standard values based on whether 
-    // or not the stopping criteria is triggering a change intended to cause the flow to stop.
-    if(state_vars[0] < GEOFLOW_TINY)
+    if(elementType == ElementType::TwoPhases)
     {
-        for(i = 0; i < 3; i++)
-            for(j = 0; j < NUM_STATE_VARS; j++)
-                hfv[i][j] = 0.0;
-    }
-#ifdef STOPCRIT_CHANGE_FLUX
-    else if(stoppedflags==2)
-    {   
-        //state variables
-        hfv[0][0]=state_vars[0]+d_state_vars[0]*dz;
-        hfv[0][1]=state_vars[1]+d_state_vars[1]*dz;
-        for (i=2; i<NUM_STATE_VARS; i++)
-        hfv[0][i]=0.0;
-        if((Awet>0.0)&&(Awet<1.0))
+        MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
+        int i, j;
+        double a, Vel[4]; // Vel[0:1]: solid-vel, Vel[2:3]: fluid-vel
+        double volf = 0.;
+        double epsilon = matprops_ptr->epsilon;
+        double den_frac = matprops_ptr->den_fluid / matprops_ptr->den_solid;
+
+        //the "update flux" values (hfv) are the fluxes used to update the solution,
+        // they may or may not be "reset" from their standard values based on whether
+        // or not the stopping criteria is triggering a change intended to cause the flow to stop.
+        if(state_vars[0] < GEOFLOW_TINY)
+        {
+            for(i = 0; i < 3; i++)
+                for(j = 0; j < NUM_STATE_VARS; j++)
+                    hfv[i][j] = 0.0;
+        }
+    #ifdef STOPCRIT_CHANGE_FLUX
+        else if(stoppedflags==2)
         {   
-            hfv[0][0]*=wetnessfactor;
-            hfv[0][1]*=wetnessfactor;
+            //state variables
+            hfv[0][0]=state_vars[0]+d_state_vars[0]*dz;
+            hfv[0][1]=state_vars[1]+d_state_vars[1]*dz;
+            for (i=2; i<NUM_STATE_VARS; i++)
+            hfv[0][i]=0.0;
+            if((Awet>0.0)&&(Awet<1.0))
+            {
+                hfv[0][0]*=wetnessfactor;
+                hfv[0][1]*=wetnessfactor;
+            }
+
+            for (i=0; i<4; i++)
+            Vel[i] = 0.;
+
+            // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
+            a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][1]
+                    +(hfv[0][0]-hfv[0][1])*gravity[2]);
+
+            //fluxes
+            for (i=0; i<NUM_STATE_VARS; i++)
+            hfv[1][i] = 0.;
+
+            //wave speeds
+            hfv[2][0]=Vel[0]-a;
+            hfv[2][1]=Vel[0];
+            hfv[2][2]=Vel[0]+a;
+            hfv[2][3]=Vel[2]-a;
+            hfv[2][4]=Vel[2];
+            hfv[2][5]=Vel[2]+a;
+        }
+    #endif
+        else
+        {
+            //state variables
+            for(i = 0; i < NUM_STATE_VARS; i++)
+                hfv[0][i] = state_vars[i] + d_state_vars[i] * dz;
+
+            if((0.0 < Awet) && (Awet < 1.0))
+                for(i = 0; i < NUM_STATE_VARS; i++)
+                    hfv[0][i] *= wetnessfactor;
+            Vel[1] = Vel[3] = 0.; // not really, but don't need it here
+            Vel[0] = hfv[0][2] / hfv[0][1];
+            Vel[2] = hfv[0][4] / hfv[0][0];
+
+            // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
+            double temp = effect_kactxy[0] * hfv[0][1] * gravity[2];
+            a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity[2]);
+
+            // get du/dy
+            double dudy = (d_state_vars[NUM_STATE_VARS + 2] - d_state_vars[NUM_STATE_VARS + 1] * Vel[0]) / state_vars[1];
+            double alphaxy = -c_sgn(dudy) * sin(matprops_ptr->intfrict) * effect_kactxy[0];
+            double temp2 = alphaxy * hfv[0][0] * hfv[0][1] * gravity[2];
+            if(hfv[0][0] > GEOFLOW_TINY)
+                volf = hfv[0][1] / hfv[0][0];
+            //fluxes
+            hfv[1][0] = hfv[0][2] + hfv[0][4] * (1. - volf);
+            hfv[1][1] = hfv[0][2];
+            hfv[1][2] = hfv[0][2] * Vel[0] + 0.5 * (1. - den_frac) * temp * hfv[0][0];
+            hfv[1][3] = hfv[0][3] * Vel[0] + 0.5 * (1. - den_frac) * temp2;
+            hfv[1][4] = hfv[0][4] * Vel[2] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity[2];
+            hfv[1][5] = hfv[0][5] * Vel[2];
+
+            //wave speeds
+            hfv[2][0] = Vel[0] - a;
+            hfv[2][1] = Vel[0];
+            hfv[2][2] = Vel[0] + a;
+            hfv[2][3] = Vel[2] - a;
+            hfv[2][4] = Vel[2];
+            hfv[2][5] = Vel[2] + a;
         }
 
-        for (i=0; i<4; i++)
-        Vel[i] = 0.;
+        //the "refinement flux" values (hrfv) are what the flux would have
+        //been if it had not been reset due to being "stopped,"
+        //they are needed since refinement is based on fluxes
+        //(and also pileheight gradient but that's not relevant here)
+    #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+        if(state_vars[0] < GEOFLOW_TINY)
+        {
+            for (i=0; i<3; i++)
+            for (j=0; j<NUM_STATE_VARS; j++)
+            hrfv[i][j] = 0.;
+        }
+        else
+        {
+            for (i=0; i<NUM_STATE_VARS; i++)
+            hrfv[0][i]=state_vars[i]+d_state_vars[i]*dz;
 
-        // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
-        a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][1]
-                +(hfv[0][0]-hfv[0][1])*gravity[2]);
-
-        //fluxes
-        for (i=0; i<NUM_STATE_VARS; i++)
-        hfv[1][i] = 0.;
-
-        //wave speeds
-        hfv[2][0]=Vel[0]-a;
-        hfv[2][1]=Vel[0];
-        hfv[2][2]=Vel[0]+a;
-        hfv[2][3]=Vel[2]-a;
-        hfv[2][4]=Vel[2];
-        hfv[2][5]=Vel[2]+a;
-    }
-#endif
-    else
-    {
-        //state variables
-        for(i = 0; i < NUM_STATE_VARS; i++)
-            hfv[0][i] = state_vars[i] + d_state_vars[i] * dz;
-        
-        if((0.0 < Awet) && (Awet < 1.0))
-            for(i = 0; i < NUM_STATE_VARS; i++)
-                hfv[0][i] *= wetnessfactor;
-        Vel[1] = Vel[3] = 0.; // not really, but don't need it here
-        Vel[0] = hfv[0][2] / hfv[0][1];
-        Vel[2] = hfv[0][4] / hfv[0][0];
-        
-        // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
-        double temp = effect_kactxy[0] * hfv[0][1] * gravity[2];
-        a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity[2]);
-        
-        // get du/dy
-        double dudy = (d_state_vars[NUM_STATE_VARS + 2] - d_state_vars[NUM_STATE_VARS + 1] * Vel[0]) / state_vars[1];
-        double alphaxy = -c_sgn(dudy) * sin(matprops_ptr->intfrict) * effect_kactxy[0];
-        double temp2 = alphaxy * hfv[0][0] * hfv[0][1] * gravity[2];
-        if(hfv[0][0] > GEOFLOW_TINY)
-            volf = hfv[0][1] / hfv[0][0];
-        //fluxes
-        hfv[1][0] = hfv[0][2] + hfv[0][4] * (1. - volf);
-        hfv[1][1] = hfv[0][2];
-        hfv[1][2] = hfv[0][2] * Vel[0] + 0.5 * (1. - den_frac) * temp * hfv[0][0];
-        hfv[1][3] = hfv[0][3] * Vel[0] + 0.5 * (1. - den_frac) * temp2;
-        hfv[1][4] = hfv[0][4] * Vel[2] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity[2];
-        hfv[1][5] = hfv[0][5] * Vel[2];
-        
-        //wave speeds
-        hfv[2][0] = Vel[0] - a;
-        hfv[2][1] = Vel[0];
-        hfv[2][2] = Vel[0] + a;
-        hfv[2][3] = Vel[2] - a;
-        hfv[2][4] = Vel[2];
-        hfv[2][5] = Vel[2] + a;
-    }
+            if((0.0<Awet)&&(Awet<1.0))
+            for (i=0; i<NUM_STATE_VARS; i++)
+            hrfv[0][i]*=wetnessfactor;
     
-    //the "refinement flux" values (hrfv) are what the flux would have 
-    //been if it had not been reset due to being "stopped," 
-    //they are needed since refinement is based on fluxes 
-    //(and also pileheight gradient but that's not relevant here)
-#if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
-    if(state_vars[0] < GEOFLOW_TINY)
-    {   
+            Vel[1]= Vel[3] = 0.; // not really, but don't need them here
+            Vel[0]=hfv[0][2]/hfv[0][1];
+            Vel[2]=hfv[0][4]/hfv[0][0];
+            double temp = effect_kactxy[0]*hrfv[0][1]*gravity[2];
+            a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity[2]);
+
+            // get du/dy
+            double dudy=(d_state_vars[NUM_STATE_VARS+2]-
+                    d_state_vars[NUM_STATE_VARS+1]*Vel[0])/state_vars[1];
+            double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[0];
+            double temp2=alphaxy*hrfv[0][0]*hrfv[0][1]*gravity[2];
+            if ( hrfv[0][0] > GEOFLOW_TINY )
+            volf = hrfv[0][1]/hrfv[0][0];
+            //fluxes
+            hrfv[1][0]=hrfv[0][2]+hrfv[0][4]*(1.-volf);
+            hrfv[1][1]=hrfv[0][2];
+            hrfv[1][2]=hrfv[0][2]*Vel[0] + 0.5*(1.-den_frac)*temp*hrfv[0][0];
+            hrfv[1][3]=hrfv[0][3]*Vel[0] + 0.5*(1.-den_frac)*temp2;
+            hrfv[1][4]=hrfv[0][4]*Vel[2] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity[2];
+            hrfv[1][5]=hrfv[0][5]*Vel[2];
+
+            //wave speeds
+            hrfv[2][0]=Vel[0]-a;
+            hrfv[2][1]=Vel[0];
+            hrfv[2][2]=Vel[0]+a;
+            hrfv[2][0]=Vel[2]-a;
+            hrfv[2][1]=Vel[2];
+            hrfv[2][2]=Vel[2]+a;
+        }
+    #else
+        for(i = 0; i < 3; i++)
+            for(j = 0; j < NUM_STATE_VARS; j++)
+                hrfv[i][j] = hfv[i][j];
+    #endif
+    }
+    if(elementType == ElementType::SinglePhase)
+    {
+        double speed, speed2, a, VxVy[2];
+
+        //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
+        if(state_vars[0] < GEOFLOW_TINY)
+        {
+            //printf("xdirflux case 1 ");
+            hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
+            hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
+            hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
+        }
+    #ifdef STOPCRIT_CHANGE_FLUX
+        else if(stoppedflags==2)
+        {
+            //printf("xdirflux case 2 ");
+            //state variables
+            hfv[0][0]=state_vars[0]+d_state_vars[0]*dz;
+            hfv[0][1]=hfv[0][2]=0.0;
+            if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
+
+            speed=0.0;
+            a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][0]);
+
+            //fluxes
+            hfv[1][0]=speed*hfv[0][0];
+            hfv[1][1]=speed*hfv[0][1]+0.5*hfv[0][0]*a*a;
+            hfv[1][2]=speed*hfv[0][2];
+
+            //wave speeds
+            hfv[2][0]=speed-a;
+            hfv[2][1]=speed;
+            hfv[2][2]=speed+a;
+        }
+    #endif
+        else
+        {
+            //printf("xdirflux case 3 ");
+            //state variables
+            hfv[0][0] = state_vars[0] + d_state_vars[0] * dz;
+            hfv[0][1] = state_vars[1] + d_state_vars[1] * dz;
+            hfv[0][2] = state_vars[2] + d_state_vars[2] * dz;
+
+            if((0.0 < Awet) && (Awet < 1.0))
+            {
+                hfv[0][0] *= wetnessfactor;
+                hfv[0][1] *= wetnessfactor;
+                hfv[0][2] *= wetnessfactor;
+            }
+
+            //eval_velocity(dz,0.0,VxVy);
+            //speed=VxVy[0];
+            speed = speed2 = hfv[0][1] / hfv[0][0];
+
+            a = sqrt(effect_kactxy[0] * gravity[2] * hfv[0][0]);
+
+            //fluxes
+            hfv[1][0] = speed * hfv[0][0];
+            hfv[1][1] = speed * hfv[0][1] + 0.5 * hfv[0][0] * a * a;
+            hfv[1][2] = speed * hfv[0][2];
+
+            //wave speeds
+            hfv[2][0] = speed2 - a;
+            hfv[2][1] = speed2;
+            hfv[2][2] = speed2 + a;
+        }
+        //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
+    #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+        if(state_vars[0] < GEOFLOW_TINY)
+        {
+            hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
+            hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
+            hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
+        }
+        else
+        {
+            hrfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
+            hrfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
+            hrfv[0][2]=state_vars[2]+d_state_vars[NUM_STATE_VARS+2]*dz;
+
+            if((0.0<Awet)&&(Awet<1.0))
+            {
+                hrfv[0][0]*=wetnessfactor;
+                hrfv[0][1]*=wetnessfactor;
+                hrfv[0][2]*=wetnessfactor;
+            }
+
+            //eval_velocity(dz,0.0,VxVy);
+            //speed=VxVy[0];
+            speed=speed2=hfv[0][1]/hfv[0][0];
+
+            a=sqrt(kactxy[1]*gravity[2]*hrfv[0][0]);
+
+            //fluxes
+            hrfv[1][0]=speed*hrfv[0][0];
+            hrfv[1][1]=speed*hrfv[0][1]+0.5*hrfv[0][0]*a*a;
+            hrfv[1][2]=speed*hrfv[0][2];
+
+            //wave speeds
+            hrfv[2][0]=speed2-a;
+            hrfv[2][1]=speed2;
+            hrfv[2][2]=speed2+a;
+        }
+    #else
+        hrfv[0][0] = hfv[0][0];
+        hrfv[0][1] = hfv[0][1];
+        hrfv[0][2] = hfv[0][2];
+
+        hrfv[1][0] = hfv[1][0];
+        hrfv[1][1] = hfv[1][1];
+        hrfv[1][2] = hfv[1][2];
+
+        hrfv[2][0] = hfv[2][0];
+        hrfv[2][1] = hfv[2][1];
+        hrfv[2][2] = hfv[2][2];
+    #endif
+    }
+    return;
+}
+
+//y direction flux in current cell
+void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
+                       double hrfv[3][MAX_NUM_STATE_VARS])
+{
+    if(elementType == ElementType::TwoPhases)
+    {
+        MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
+        int i, j;
+        double Vel[4], a;
+        double volf = 0.;
+        double epsilon = matprops_ptr->epsilon;
+        double den_frac = matprops_ptr->den_fluid / matprops_ptr->den_solid;
+        
+        //the "update flux" values (hfv) are the fluxes used to update the solution,
+        // they may or may not be "reset" from their standard values based on whether
+        // or not the stopping criteria is triggering a change intended to cause the flow to stop.
+        if(state_vars[0] < GEOFLOW_TINY)
+        {
+            for(i = 0; i < 3; i++)
+                for(j = 0; j < NUM_STATE_VARS; j++)
+                    hfv[i][j] = 0.0; //state variables
+        }
+    #ifdef STOPCRIT_CHANGE_FLUX
+        else if(stoppedflags==2)
+        {
+            //state variables
+            hfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
+            hfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
+
+            for (i=2; i<NUM_STATE_VARS; i++)
+            hfv[0][i]=0.;
+            if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
+            if((0.0<Awet)&&(Awet<1.0)) hfv[0][1]*=wetnessfactor;
+
+            double temp= effect_kactxy[1]*hfv[0][1]*gravity[2];
+            a=sqrt(temp + (hfv[0][0]-hfv[0][1])*gravity[2]);
+            Vel[0]=Vel[1]=Vel[2]=Vel[3]=0.;
+
+            //fluxes
+            for (i=0; i<NUM_STATE_VARS; i++)
+            hfv[1][i]=0.;
+    
+            //wave speeds
+            hfv[2][0]=Vel[1]-a;
+            hfv[2][1]=Vel[1];
+            hfv[2][2]=Vel[1]+a;
+            hfv[2][3]=Vel[3]-a;
+            hfv[2][4]=Vel[3];
+            hfv[2][5]=Vel[3]+a;
+        }
+    #endif
+        else
+        {
+            //state variables
+            for(i = 0; i < NUM_STATE_VARS; i++)
+                hfv[0][i] = state_vars[i] + d_state_vars[NUM_STATE_VARS + i] * dz;
+
+            if((0.0 < Awet) && (Awet < 1.0))
+                for(i = 0; i < NUM_STATE_VARS; i++)
+                    hfv[0][i] *= wetnessfactor;
+
+            // a = speed of sound through the medium
+            double temp = effect_kactxy[1] * hfv[0][1] * gravity[2];
+            a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity[2]);
+
+            // velocities
+            Vel[0] = Vel[2] = 0.; // don't need them here
+            Vel[1] = hfv[0][3] / hfv[0][1];
+            Vel[3] = hfv[0][5] / hfv[0][0];
+
+            // hydostatic terms
+            double dvdx = (d_state_vars[3] - d_state_vars[1] * Vel[1]) / state_vars[1];
+            double alphayx = -c_sgn(dvdx) * sin(matprops_ptr->intfrict) * effect_kactxy[1];
+            double temp2 = alphayx * hfv[0][0] * hfv[0][1] * gravity[2];
+            if(hfv[0][0] > GEOFLOW_TINY)
+                volf = hfv[0][1] / hfv[0][0];
+
+            //fluxes
+            hfv[1][0] = hfv[0][3] + hfv[0][5] * (1. - volf);
+            hfv[1][1] = hfv[0][3];
+            hfv[1][2] = hfv[0][2] * Vel[1] + 0.5 * (1. - den_frac) * temp2;
+            hfv[1][3] = hfv[0][3] * Vel[1] + 0.5 * (1. - den_frac) * temp * hfv[0][0];
+            hfv[1][4] = hfv[0][4] * Vel[3];
+            hfv[1][5] = hfv[0][5] * Vel[3] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity[2];
+
+            //wave speeds
+            hfv[2][0] = Vel[1] - a;
+            hfv[2][1] = Vel[1];
+            hfv[2][2] = Vel[1] + a;
+            hfv[2][3] = Vel[3] - a;
+            hfv[2][4] = Vel[3];
+            hfv[2][5] = Vel[3] + a;
+        }
+        
+        //the "refinement flux" values (hrfv) are what the flux would have been if it
+        // had not been reset due to being "stopped," they are needed since refinement
+        // is based on fluxes (and also pileheight gradient but that's not relevant here)
+    #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+        if(state_vars[0] < GEOFLOW_TINY)
         for (i=0; i<3; i++)
         for (j=0; j<NUM_STATE_VARS; j++)
-        hrfv[i][j] = 0.;
-    }
-    else
-    {   
-        for (i=0; i<NUM_STATE_VARS; i++)
-        hrfv[0][i]=state_vars[i]+d_state_vars[i]*dz;
-
-        if((0.0<Awet)&&(Awet<1.0))
-        for (i=0; i<NUM_STATE_VARS; i++)
-        hrfv[0][i]*=wetnessfactor;
-
-        Vel[1]= Vel[3] = 0.; // not really, but don't need them here
-        Vel[0]=hfv[0][2]/hfv[0][1];
-        Vel[2]=hfv[0][4]/hfv[0][0];
-        double temp = effect_kactxy[0]*hrfv[0][1]*gravity[2];
-        a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity[2]);
-
-        // get du/dy
-        double dudy=(d_state_vars[NUM_STATE_VARS+2]-
-                d_state_vars[NUM_STATE_VARS+1]*Vel[0])/state_vars[1];
-        double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[0];
-        double temp2=alphaxy*hrfv[0][0]*hrfv[0][1]*gravity[2];
-        if ( hrfv[0][0] > GEOFLOW_TINY )
-        volf = hrfv[0][1]/hrfv[0][0];
-        //fluxes
-        hrfv[1][0]=hrfv[0][2]+hrfv[0][4]*(1.-volf);
-        hrfv[1][1]=hrfv[0][2];
-        hrfv[1][2]=hrfv[0][2]*Vel[0] + 0.5*(1.-den_frac)*temp*hrfv[0][0];
-        hrfv[1][3]=hrfv[0][3]*Vel[0] + 0.5*(1.-den_frac)*temp2;
-        hrfv[1][4]=hrfv[0][4]*Vel[2] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity[2];
-        hrfv[1][5]=hrfv[0][5]*Vel[2];
-
-        //wave speeds
-        hrfv[2][0]=Vel[0]-a;
-        hrfv[2][1]=Vel[0];
-        hrfv[2][2]=Vel[0]+a;
-        hrfv[2][0]=Vel[2]-a;
-        hrfv[2][1]=Vel[2];
-        hrfv[2][2]=Vel[2]+a;
-    }
-#else
-    for(i = 0; i < 3; i++)
-        for(j = 0; j < NUM_STATE_VARS; j++)
-            hrfv[i][j] = hfv[i][j];
-#endif
-    return;
-}
-
-//y direction flux in current cell
-void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
-                       double hrfv[3][NUM_STATE_VARS])
-{
-    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
-    int i, j;
-    double Vel[4], a;
-    double volf = 0.;
-    double epsilon = matprops_ptr->epsilon;
-    double den_frac = matprops_ptr->den_fluid / matprops_ptr->den_solid;
+        hrfv[i][j]=0.;
+        else
+        {
+            for (i=0; i<NUM_STATE_VARS; i++)
+            hrfv[0][i]=state_vars[i]+d_state_vars[NUM_STATE_VARS+i]*dz;
     
-    //the "update flux" values (hfv) are the fluxes used to update the solution,
-    // they may or may not be "reset" from their standard values based on whether
-    // or not the stopping criteria is triggering a change intended to cause the flow to stop.
-    if(state_vars[0] < GEOFLOW_TINY)
-    {
+            if((0.0<Awet)&&(Awet<1.0))
+            for (i=0; i<NUM_STATE_VARS; i++)
+            hrfv[0][i]*=wetnessfactor;
+    
+            double temp=effect_kactxy[1]*hrfv[0][1]*gravity[2];
+            a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity[2]);
+    
+            // velocities
+            Vel[0]=Vel[2]=0.;
+            Vel[1]=hrfv[0][3]/hrfv[0][1];
+            Vel[3]=hrfv[0][5]/hrfv[0][0];
+    
+            // hydostatic terms
+            double dvdx=(d_state_vars[3]-d_state_vars[1]*Vel[1])/state_vars[1];
+            double alphayx=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[1];
+            double temp2=alphayx*hrfv[0][0]*hrfv[0][1]*gravity[2];
+            if ( hrfv[0][0] > GEOFLOW_TINY )
+            volf = hrfv[0][1]/hrfv[0][0];
+            //fluxes
+            hrfv[1][0]=hrfv[0][3]+hrfv[0][5]*(1.-volf);
+            hrfv[1][1]=hrfv[0][3];
+            hrfv[1][2]=hrfv[0][2]*Vel[1] + 0.5*(1.-den_frac)*temp2;
+            hrfv[1][3]=hrfv[0][3]*Vel[1] + 0.5*(1.-den_frac)*temp*hrfv[0][0];
+            hrfv[1][4]=hrfv[0][4]*Vel[3];
+            hrfv[1][5]=hrfv[0][5]*Vel[3] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity[2];
+    
+            //wave speeds
+            hrfv[2][0]=Vel[1]-a;
+            hrfv[2][1]=Vel[1];
+            hrfv[2][2]=Vel[1]+a;
+            hrfv[2][3]=Vel[3]-a;
+            hrfv[2][4]=Vel[3];
+            hrfv[2][5]=Vel[3]+a;
+        }
+    #else
         for(i = 0; i < 3; i++)
             for(j = 0; j < NUM_STATE_VARS; j++)
-                hfv[i][j] = 0.0; //state variables
+                hrfv[i][j] = hfv[i][j];
+    #endif
     }
-#ifdef STOPCRIT_CHANGE_FLUX
-    else if(stoppedflags==2)
-    {   
-        //state variables
-        hfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
-        hfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
-
-        for (i=2; i<NUM_STATE_VARS; i++)
-        hfv[0][i]=0.;
-        if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
-        if((0.0<Awet)&&(Awet<1.0)) hfv[0][1]*=wetnessfactor;
-
-        double temp= effect_kactxy[1]*hfv[0][1]*gravity[2];
-        a=sqrt(temp + (hfv[0][0]-hfv[0][1])*gravity[2]);
-        Vel[0]=Vel[1]=Vel[2]=Vel[3]=0.;
-
-        //fluxes
-        for (i=0; i<NUM_STATE_VARS; i++)
-        hfv[1][i]=0.;
-
-        //wave speeds
-        hfv[2][0]=Vel[1]-a;
-        hfv[2][1]=Vel[1];
-        hfv[2][2]=Vel[1]+a;
-        hfv[2][3]=Vel[3]-a;
-        hfv[2][4]=Vel[3];
-        hfv[2][5]=Vel[3]+a;
-    }
-#endif
-    else
+    if(elementType == ElementType::SinglePhase)
     {
-        //state variables
-        for(i = 0; i < NUM_STATE_VARS; i++)
-            hfv[0][i] = state_vars[i] + d_state_vars[NUM_STATE_VARS + i] * dz;
+        double speed, speed2, a, VxVy[2];
         
-        if((0.0 < Awet) && (Awet < 1.0))
-            for(i = 0; i < NUM_STATE_VARS; i++)
-                hfv[0][i] *= wetnessfactor;
-        
-        // a = speed of sound through the medium
-        double temp = effect_kactxy[1] * hfv[0][1] * gravity[2];
-        a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity[2]);
-        
-        // velocities
-        Vel[0] = Vel[2] = 0.; // don't need them here
-        Vel[1] = hfv[0][3] / hfv[0][1];
-        Vel[3] = hfv[0][5] / hfv[0][0];
-        
-        // hydostatic terms
-        double dvdx = (d_state_vars[3] - d_state_vars[1] * Vel[1]) / state_vars[1];
-        double alphayx = -c_sgn(dvdx) * sin(matprops_ptr->intfrict) * effect_kactxy[1];
-        double temp2 = alphayx * hfv[0][0] * hfv[0][1] * gravity[2];
-        if(hfv[0][0] > GEOFLOW_TINY)
-            volf = hfv[0][1] / hfv[0][0];
-        
-        //fluxes
-        hfv[1][0] = hfv[0][3] + hfv[0][5] * (1. - volf);
-        hfv[1][1] = hfv[0][3];
-        hfv[1][2] = hfv[0][2] * Vel[1] + 0.5 * (1. - den_frac) * temp2;
-        hfv[1][3] = hfv[0][3] * Vel[1] + 0.5 * (1. - den_frac) * temp * hfv[0][0];
-        hfv[1][4] = hfv[0][4] * Vel[3];
-        hfv[1][5] = hfv[0][5] * Vel[3] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity[2];
-        
-        //wave speeds
-        hfv[2][0] = Vel[1] - a;
-        hfv[2][1] = Vel[1];
-        hfv[2][2] = Vel[1] + a;
-        hfv[2][3] = Vel[3] - a;
-        hfv[2][4] = Vel[3];
-        hfv[2][5] = Vel[3] + a;
-    }
-    
-    //the "refinement flux" values (hrfv) are what the flux would have been if it
-    // had not been reset due to being "stopped," they are needed since refinement 
-    // is based on fluxes (and also pileheight gradient but that's not relevant here)
-#if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
-    if(state_vars[0] < GEOFLOW_TINY)
-    for (i=0; i<3; i++)
-    for (j=0; j<NUM_STATE_VARS; j++)
-    hrfv[i][j]=0.;
-    else
-    {   
-        for (i=0; i<NUM_STATE_VARS; i++)
-        hrfv[0][i]=state_vars[i]+d_state_vars[NUM_STATE_VARS+i]*dz;
-
-        if((0.0<Awet)&&(Awet<1.0))
-        for (i=0; i<NUM_STATE_VARS; i++)
-        hrfv[0][i]*=wetnessfactor;
-
-        double temp=effect_kactxy[1]*hrfv[0][1]*gravity[2];
-        a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity[2]);
-
-        // velocities
-        Vel[0]=Vel[2]=0.;
-        Vel[1]=hrfv[0][3]/hrfv[0][1];
-        Vel[3]=hrfv[0][5]/hrfv[0][0];
-
-        // hydostatic terms
-        double dvdx=(d_state_vars[3]-d_state_vars[1]*Vel[1])/state_vars[1];
-        double alphayx=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[1];
-        double temp2=alphayx*hrfv[0][0]*hrfv[0][1]*gravity[2];
-        if ( hrfv[0][0] > GEOFLOW_TINY )
-        volf = hrfv[0][1]/hrfv[0][0];
-        //fluxes
-        hrfv[1][0]=hrfv[0][3]+hrfv[0][5]*(1.-volf);
-        hrfv[1][1]=hrfv[0][3];
-        hrfv[1][2]=hrfv[0][2]*Vel[1] + 0.5*(1.-den_frac)*temp2;
-        hrfv[1][3]=hrfv[0][3]*Vel[1] + 0.5*(1.-den_frac)*temp*hrfv[0][0];
-        hrfv[1][4]=hrfv[0][4]*Vel[3];
-        hrfv[1][5]=hrfv[0][5]*Vel[3] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity[2];
-
-        //wave speeds
-        hrfv[2][0]=Vel[1]-a;
-        hrfv[2][1]=Vel[1];
-        hrfv[2][2]=Vel[1]+a;
-        hrfv[2][3]=Vel[3]-a;
-        hrfv[2][4]=Vel[3];
-        hrfv[2][5]=Vel[3]+a;
-    }
-#else
-    for(i = 0; i < 3; i++)
-        for(j = 0; j < NUM_STATE_VARS; j++)
-            hrfv[i][j] = hfv[i][j];
-#endif
-    
-    return;
-}
-#else
-//x direction flux in current cell
-void Element::xdirflux(MatProps* matprops_ptr, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
-                       double hrfv[3][NUM_STATE_VARS])
-{
-    
-    double speed, speed2, a, VxVy[2];
-    
-    //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
-    if(state_vars[0] < GEOFLOW_TINY)
-    {
-        //printf("xdirflux case 1 ");
-        hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
-        hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
-        hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
-    }
-#ifdef STOPCRIT_CHANGE_FLUX
-    else if(stoppedflags==2)
-    {   
-        //printf("xdirflux case 2 ");
-        //state variables
-        hfv[0][0]=state_vars[0]+d_state_vars[0]*dz;
-        hfv[0][1]=hfv[0][2]=0.0;
-        if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
-
-        speed=0.0;
-        a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][0]);
-
-        //fluxes
-        hfv[1][0]=speed*hfv[0][0];
-        hfv[1][1]=speed*hfv[0][1]+0.5*hfv[0][0]*a*a;
-        hfv[1][2]=speed*hfv[0][2];
-
-        //wave speeds
-        hfv[2][0]=speed-a;
-        hfv[2][1]=speed;
-        hfv[2][2]=speed+a;
-    }
-#endif
-    else
-    {
-        //printf("xdirflux case 3 ");
-        //state variables
-        hfv[0][0] = state_vars[0] + d_state_vars[0] * dz;
-        hfv[0][1] = state_vars[1] + d_state_vars[1] * dz;
-        hfv[0][2] = state_vars[2] + d_state_vars[2] * dz;
-        
-        if((0.0 < Awet) && (Awet < 1.0))
+        //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
+        if(state_vars[0] < GEOFLOW_TINY)
         {
-            hfv[0][0] *= wetnessfactor;
-            hfv[0][1] *= wetnessfactor;
-            hfv[0][2] *= wetnessfactor;
+            //    printf("choice 1 ");
+            hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
+            hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
+            hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
+
         }
-        
-        //eval_velocity(dz,0.0,VxVy);
-        //speed=VxVy[0];
-        speed = speed2 = hfv[0][1] / hfv[0][0];
-        
-        a = sqrt(effect_kactxy[0] * gravity[2] * hfv[0][0]);
-        
-        //fluxes
-        hfv[1][0] = speed * hfv[0][0];
-        hfv[1][1] = speed * hfv[0][1] + 0.5 * hfv[0][0] * a * a;
-        hfv[1][2] = speed * hfv[0][2];
-        
-        //wave speeds
-        hfv[2][0] = speed2 - a;
-        hfv[2][1] = speed2;
-        hfv[2][2] = speed2 + a;
-    }
-    //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
-#if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
-    if(state_vars[0] < GEOFLOW_TINY)
-    {   
-        hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
-        hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
-        hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
-    }
-    else
-    {   
-        hrfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
-        hrfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
-        hrfv[0][2]=state_vars[2]+d_state_vars[NUM_STATE_VARS+2]*dz;
-
-        if((0.0<Awet)&&(Awet<1.0))
-        {   
-            hrfv[0][0]*=wetnessfactor;
-            hrfv[0][1]*=wetnessfactor;
-            hrfv[0][2]*=wetnessfactor;
-        }
-
-        //eval_velocity(dz,0.0,VxVy);
-        //speed=VxVy[0];
-        speed=speed2=hfv[0][1]/hfv[0][0];
-
-        a=sqrt(kactxy[1]*gravity[2]*hrfv[0][0]);
-
-        //fluxes
-        hrfv[1][0]=speed*hrfv[0][0];
-        hrfv[1][1]=speed*hrfv[0][1]+0.5*hrfv[0][0]*a*a;
-        hrfv[1][2]=speed*hrfv[0][2];
-
-        //wave speeds
-        hrfv[2][0]=speed2-a;
-        hrfv[2][1]=speed2;
-        hrfv[2][2]=speed2+a;
-    }
-#else
-    hrfv[0][0] = hfv[0][0];
-    hrfv[0][1] = hfv[0][1];
-    hrfv[0][2] = hfv[0][2];
-    
-    hrfv[1][0] = hfv[1][0];
-    hrfv[1][1] = hfv[1][1];
-    hrfv[1][2] = hfv[1][2];
-    
-    hrfv[2][0] = hfv[2][0];
-    hrfv[2][1] = hfv[2][1];
-    hrfv[2][2] = hfv[2][2];
-#endif
-    
-    return;
-}
-
-//y direction flux in current cell
-void Element::ydirflux(MatProps* matprops_ptr, double dz, double wetnessfactor, double hfv[3][NUM_STATE_VARS],
-                       double hrfv[3][NUM_STATE_VARS])
-{
-    
-    double speed, speed2, a, VxVy[2];
-    
-    //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
-    if(state_vars[0] < GEOFLOW_TINY)
-    {
-        //    printf("choice 1 ");
-        hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
-        hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
-        hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
-                
-    }
-#ifdef STOPCRIT_CHANGE_FLUX
-    else if(stoppedflags==2)
-    {   
-        //    printf("choice 2 ");
-        
-        //state variables
-        hfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
-        hfv[0][1]=hfv[0][2]=0.0;
-        if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
-
-        speed=0.0;
-        a=sqrt(effect_kactxy[1]*gravity[2]*hfv[0][0]);
-
-        //fluxes
-        hfv[1][0]=speed*hfv[0][0];
-        hfv[1][1]=speed*hfv[0][1];
-        hfv[1][2]=speed*hfv[0][2]+0.5*hfv[0][0]*a*a;
-
-        //wave speeds
-        hfv[2][0]=speed-a;
-        hfv[2][1]=speed;
-        hfv[2][2]=speed+a;
-    }
-#endif
-    else
-    {
-        //    printf("choice 3 ");
-        //state variables
-        hfv[0][0] = state_vars[0] + d_state_vars[NUM_STATE_VARS + 0] * dz;
-        hfv[0][1] = state_vars[1] + d_state_vars[NUM_STATE_VARS + 1] * dz;
-        hfv[0][2] = state_vars[2] + d_state_vars[NUM_STATE_VARS + 2] * dz;
-        
-        if((0.0 < Awet) && (Awet < 1.0))
+    #ifdef STOPCRIT_CHANGE_FLUX
+        else if(stoppedflags==2)
         {
-            hfv[0][0] *= wetnessfactor;
-            hfv[0][1] *= wetnessfactor;
-            hfv[0][2] *= wetnessfactor;
+            //    printf("choice 2 ");
+
+            //state variables
+            hfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
+            hfv[0][1]=hfv[0][2]=0.0;
+            if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
+
+            speed=0.0;
+            a=sqrt(effect_kactxy[1]*gravity[2]*hfv[0][0]);
+
+            //fluxes
+            hfv[1][0]=speed*hfv[0][0];
+            hfv[1][1]=speed*hfv[0][1];
+            hfv[1][2]=speed*hfv[0][2]+0.5*hfv[0][0]*a*a;
+
+            //wave speeds
+            hfv[2][0]=speed-a;
+            hfv[2][1]=speed;
+            hfv[2][2]=speed+a;
+        }
+    #endif
+        else
+        {
+            //    printf("choice 3 ");
+            //state variables
+            hfv[0][0] = state_vars[0] + d_state_vars[NUM_STATE_VARS + 0] * dz;
+            hfv[0][1] = state_vars[1] + d_state_vars[NUM_STATE_VARS + 1] * dz;
+            hfv[0][2] = state_vars[2] + d_state_vars[NUM_STATE_VARS + 2] * dz;
+
+            if((0.0 < Awet) && (Awet < 1.0))
+            {
+                hfv[0][0] *= wetnessfactor;
+                hfv[0][1] *= wetnessfactor;
+                hfv[0][2] *= wetnessfactor;
+            }
+
+            //eval_velocity(0.0,dz,VxVy);
+            //speed=VxVy[1];
+            speed = speed2 = hfv[0][2] / hfv[0][0];
+
+            a = sqrt(effect_kactxy[1] * gravity[2] * hfv[0][0]);
+
+            //fluxes
+            hfv[1][0] = speed * hfv[0][0];
+            hfv[1][1] = speed * hfv[0][1];
+            hfv[1][2] = speed * hfv[0][2] + 0.5 * hfv[0][0] * a * a;
+
+            //wave speeds
+            hfv[2][0] = speed2 - a;
+            hfv[2][1] = speed2;
+            hfv[2][2] = speed2 + a;
         }
         
-        //eval_velocity(0.0,dz,VxVy);
-        //speed=VxVy[1];
-        speed = speed2 = hfv[0][2] / hfv[0][0];
-        
-        a = sqrt(effect_kactxy[1] * gravity[2] * hfv[0][0]);
-        
-        //fluxes
-        hfv[1][0] = speed * hfv[0][0];
-        hfv[1][1] = speed * hfv[0][1];
-        hfv[1][2] = speed * hfv[0][2] + 0.5 * hfv[0][0] * a * a;
-        
-        //wave speeds
-        hfv[2][0] = speed2 - a;
-        hfv[2][1] = speed2;
-        hfv[2][2] = speed2 + a;
-    }
-    
-    //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
-#if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
-    if(state_vars[0] < GEOFLOW_TINY)
-    {   
-        hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
-        hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
-        hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
-    }
-    else
-    {   
-        hrfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
-        hrfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
-        hrfv[0][2]=state_vars[2]+d_state_vars[NUM_STATE_VARS+2]*dz;
-
-        if((0.0<Awet)&&(Awet<1.0))
+        //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
+    #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+        if(state_vars[0] < GEOFLOW_TINY)
+        {
+            hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
+            hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
+            hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
+        }
+        else
         {   
-            hrfv[0][0]*=wetnessfactor;
-            hrfv[0][1]*=wetnessfactor;
-            hrfv[0][2]*=wetnessfactor;
+            hrfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
+            hrfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
+            hrfv[0][2]=state_vars[2]+d_state_vars[NUM_STATE_VARS+2]*dz;
+
+            if((0.0<Awet)&&(Awet<1.0))
+            {
+                hrfv[0][0]*=wetnessfactor;
+                hrfv[0][1]*=wetnessfactor;
+                hrfv[0][2]*=wetnessfactor;
+            }
+
+            //eval_velocity(0.0,dz,VxVy);
+            //speed=VxVy[1];
+            speed=speed2=hfv[0][2]/hfv[0][0];
+
+            a=sqrt(kactxy[1]*gravity[2]*hrfv[0][0]);
+
+            //fluxes
+            hrfv[1][0]=speed*hrfv[0][0];
+            hrfv[1][1]=speed*hrfv[0][1];
+            hrfv[1][2]=speed*hrfv[0][2]+0.5*hrfv[0][0]*a*a;
+
+            //wave speeds
+            hrfv[2][0]=speed2-a;
+            hrfv[2][1]=speed2;
+            hrfv[2][2]=speed2+a;
         }
+    #else
+        hrfv[0][0] = hfv[0][0];
+        hrfv[0][1] = hfv[0][1];
+        hrfv[0][2] = hfv[0][2];
 
-        //eval_velocity(0.0,dz,VxVy);
-        //speed=VxVy[1];
-        speed=speed2=hfv[0][2]/hfv[0][0];
+        hrfv[1][0] = hfv[1][0];
+        hrfv[1][1] = hfv[1][1];
+        hrfv[1][2] = hfv[1][2];
 
-        a=sqrt(kactxy[1]*gravity[2]*hrfv[0][0]);
-
-        //fluxes
-        hrfv[1][0]=speed*hrfv[0][0];
-        hrfv[1][1]=speed*hrfv[0][1];
-        hrfv[1][2]=speed*hrfv[0][2]+0.5*hrfv[0][0]*a*a;
-
-        //wave speeds
-        hrfv[2][0]=speed2-a;
-        hrfv[2][1]=speed2;
-        hrfv[2][2]=speed2+a;
+        hrfv[2][0] = hfv[2][0];
+        hrfv[2][1] = hfv[2][1];
+        hrfv[2][2] = hfv[2][2];
+    #endif
     }
-#else
-    hrfv[0][0] = hfv[0][0];
-    hrfv[0][1] = hfv[0][1];
-    hrfv[0][2] = hfv[0][2];
-    
-    hrfv[1][0] = hfv[1][0];
-    hrfv[1][1] = hfv[1][1];
-    hrfv[1][2] = hfv[1][2];
-    
-    hrfv[2][0] = hfv[2][0];
-    hrfv[2][1] = hfv[2][1];
-    hrfv[2][2] = hfv[2][2];
-#endif
-    
-    //  printf("ydirflux\nspeed=%12.6g   a=%12.6g\nhfv=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n",speed,a,hfv[0][0],hfv[1][0],hfv[2][0],hfv[0][1],hfv[1][1],hfv[2][1],hfv[0][2],hfv[1][2],hfv[2][2]);
     
     return;
 }
-#endif
+
 //note z is not "z" but either x or y
 void Element::zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
-                       double hfv[3][NUM_STATE_VARS], double hrfv[3][NUM_STATE_VARS], Element *EmNeigh, double dt)
+                       double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element *EmNeigh, double dt)
 {
     double dz = 0.0;
     
@@ -2497,7 +2516,7 @@ void Element::zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matp
 }
 
 //need move this to step.C
-void riemannflux(double hfvl[3][NUM_STATE_VARS], double hfvr[3][NUM_STATE_VARS], double flux[NUM_STATE_VARS])
+void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS], double hfvr[3][MAX_NUM_STATE_VARS], double flux[MAX_NUM_STATE_VARS])
 {
     //hfv: h=state variable, f=flux, v=wave speeds
     //l="left" (the minus side), r="right" (the plus side)
@@ -2510,42 +2529,45 @@ void riemannflux(double hfvl[3][NUM_STATE_VARS], double hfvr[3][NUM_STATE_VARS],
     else
     {
         double sl, sr;
-#ifdef TWO_PHASES
-        if(hfvl[0][0] == 0.0)
+        if(elementType == ElementType::TwoPhases)
         {
-            sl = min(0, min(2.0 * hfvr[2][0] - hfvr[2][1], 2.0 * hfvr[2][3] - hfvr[2][4]));
-            sr = max(0, max(2.0 * hfvr[2][2] - hfvr[2][1], 2.0 * hfvr[2][5] - hfvr[2][4]));
+            if(hfvl[0][0] == 0.0)
+            {
+                sl = min(0, min(2.0 * hfvr[2][0] - hfvr[2][1], 2.0 * hfvr[2][3] - hfvr[2][4]));
+                sr = max(0, max(2.0 * hfvr[2][2] - hfvr[2][1], 2.0 * hfvr[2][5] - hfvr[2][4]));
+            }
+            else if(hfvr[0][0] == 0.0)
+            {
+                sl = min(0, min(2.0 * hfvl[2][0] - hfvl[2][1], 2.0 * hfvl[2][3] - hfvl[2][4]));
+                sr = max(0, max(2.0 * hfvl[2][2] - hfvl[2][1], 2.0 * hfvl[2][5] - hfvl[2][4]));
+            }
+            else
+            {
+                sl = min(0, min(min(hfvl[2][0], hfvl[2][3]), min(hfvr[2][0], hfvr[2][3])));
+                sr = max(0, max(max(hfvl[2][2], hfvl[2][5]), max(hfvr[2][2], hfvr[2][5])));
+            }
         }
-        else if(hfvr[0][0] == 0.0)
+        if(elementType == ElementType::SinglePhase)
         {
-            sl = min(0, min(2.0 * hfvl[2][0] - hfvl[2][1], 2.0 * hfvl[2][3] - hfvl[2][4]));
-            sr = max(0, max(2.0 * hfvl[2][2] - hfvl[2][1], 2.0 * hfvl[2][5] - hfvl[2][4]));
+            if(hfvl[0][0] == 0.0)
+            {
+                sl = min(0, 2.0 * hfvr[2][0] - hfvr[2][1]);
+                sr = max(0, 2.0 * hfvr[2][2] - hfvr[2][1]);
+                //printf("hfvr=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvr[0][0],hfvr[1][0],hfvr[2][0],hfvr[0][1],hfvr[1][1],hfvr[2][1],hfvr[0][2],hfvr[1][2],hfvr[2][2],sl,sr);
+            }
+            else if(hfvr[0][0] == 0.0)
+            {
+                sl = min(0, 2.0 * hfvl[2][0] - hfvl[2][1]);
+                sr = max(0, 2.0 * hfvl[2][2] - hfvl[2][1]);
+                //printf("hfvl=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvl[0][0],hfvl[1][0],hfvl[2][0],hfvl[0][1],hfvl[1][1],hfvl[2][1],hfvl[0][2],hfvl[1][2],hfvl[2][2],sl,sr);
+
+            }
+            else
+            {
+                sl = min(0, min(hfvl[2][0], hfvr[2][0]));
+                sr = max(0, max(hfvl[2][2], hfvr[2][2]));
+            }
         }
-        else
-        {
-            sl = min(0, min(min(hfvl[2][0], hfvl[2][3]), min(hfvr[2][0], hfvr[2][3])));
-            sr = max(0, max(max(hfvl[2][2], hfvl[2][5]), max(hfvr[2][2], hfvr[2][5])));
-        }
-#else
-        if(hfvl[0][0] == 0.0)
-        {
-            sl = min(0, 2.0 * hfvr[2][0] - hfvr[2][1]);
-            sr = max(0, 2.0 * hfvr[2][2] - hfvr[2][1]);
-            //printf("hfvr=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvr[0][0],hfvr[1][0],hfvr[2][0],hfvr[0][1],hfvr[1][1],hfvr[2][1],hfvr[0][2],hfvr[1][2],hfvr[2][2],sl,sr);
-        }
-        else if(hfvr[0][0] == 0.0)
-        {
-            sl = min(0, 2.0 * hfvl[2][0] - hfvl[2][1]);
-            sr = max(0, 2.0 * hfvl[2][2] - hfvl[2][1]);
-            //printf("hfvl=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvl[0][0],hfvl[1][0],hfvl[2][0],hfvl[0][1],hfvl[1][1],hfvl[2][1],hfvl[0][2],hfvl[1][2],hfvl[2][2],sl,sr);
-            
-        }
-        else
-        {
-            sl = min(0, min(hfvl[2][0], hfvr[2][0]));
-            sr = max(0, max(hfvl[2][2], hfvr[2][2]));
-        }
-#endif
         
         if(sl >= 0.0)
             for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -2571,11 +2593,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
     int zp2, zm2; //positive_z_side_2 minus_z_side_2
     int zelmpos = -100, zelmpos_2 = -100;
     int ivar;
-    double hfv[3][NUM_STATE_VARS], hfv1[3][NUM_STATE_VARS], hfv2[3][NUM_STATE_VARS]; //update flux
-    double hrfv[3][NUM_STATE_VARS], hrfv1[3][NUM_STATE_VARS], hrfv2[3][NUM_STATE_VARS]; //refinement flux
+    double hfv[3][MAX_NUM_STATE_VARS], hfv1[3][MAX_NUM_STATE_VARS], hfv2[3][MAX_NUM_STATE_VARS]; //update flux
+    double hrfv[3][MAX_NUM_STATE_VARS], hrfv1[3][MAX_NUM_STATE_VARS], hrfv2[3][MAX_NUM_STATE_VARS]; //refinement flux
             
     //ghost elements don't have nodes so you have to make temp storage for flux
-    double ghostflux[NUM_STATE_VARS]; //, (*fluxptr)[NUM_STATE_VARS];
+    double ghostflux[MAX_NUM_STATE_VARS]; //, (*fluxptr)[MAX_NUM_STATE_VARS];
     
     //double min(double x,double y), max(double x,double y);
     
@@ -2609,8 +2631,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(hfv, hfv1, np->flux);
-            riemannflux(hrfv, hrfv1, np->refinementflux);
+            riemannflux(elm1->elementType,hfv, hfv1, np->flux);
+            riemannflux(elm1->elementType,hrfv, hrfv1, np->refinementflux);
             
             elm2 = neighborPtr[zp + 4]; //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
             assert(elm2);
@@ -2623,8 +2645,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 zm2 = elm2->which_neighbor(pass_key()) % 4;
                 nm2 = elm2->node_keyPtr[zm2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
                 
-                riemannflux(hfv, hfv2, nm2->flux);
-                riemannflux(hrfv, hrfv2, nm2->refinementflux);
+                riemannflux(elm2->elementType,hfv, hfv2, nm2->flux);
+                riemannflux(elm2->elementType,hrfv, hrfv2, nm2->refinementflux);
                 
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 {
@@ -2634,11 +2656,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             }
             else
             {
-                riemannflux(hfv, hfv2, ghostflux);
+                riemannflux(elm2->elementType,hfv, hfv2, ghostflux);
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     np->flux[ivar] = 0.5 * (np->flux[ivar] + ghostflux[ivar]);
                 
-                riemannflux(hrfv, hrfv2, ghostflux);
+                riemannflux(elm2->elementType,hrfv, hrfv2, ghostflux);
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     np->refinementflux[ivar] = 0.5 * (np->refinementflux[ivar] + ghostflux[ivar]);
             }
@@ -2654,8 +2676,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(hfv, hfv1, np->flux);
-            riemannflux(hrfv, hrfv1, np->refinementflux);
+            riemannflux(elm1->elementType,hfv, hfv1, np->flux);
+            riemannflux(elm1->elementType,hrfv, hrfv1, np->refinementflux);
             
             /* CASE I
              ------------------- -------------------               
@@ -2711,8 +2733,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 {
                     zp2 = elm2->which_neighbor(elm1->pass_key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
-                    riemannflux(hfv2, hfv1, np2->flux);
-                    riemannflux(hrfv2, hrfv1, np2->refinementflux);
+                    riemannflux(elm2->elementType,hfv2, hfv1, np2->flux);
+                    riemannflux(elm2->elementType,hrfv2, hrfv1, np2->refinementflux);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2723,11 +2745,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 else
                 {
                     
-                    riemannflux(hfv2, hfv1, ghostflux);
+                    riemannflux(elm2->elementType,hfv2, hfv1, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm1->flux[ivar] = 0.5 * (np->flux[ivar] + ghostflux[ivar]);
                     
-                    riemannflux(hrfv2, hrfv1, ghostflux);
+                    riemannflux(elm2->elementType,hrfv2, hrfv1, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm1->refinementflux[ivar] = 0.5 * (np->refinementflux[ivar] + ghostflux[ivar]);
                 }
@@ -2771,8 +2793,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 {
                     zelmpos_2 = elm2->which_neighbor(pass_key()) % 4;
                     nm2 = elm2->node_keyPtr[zelmpos_2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
-                    riemannflux(hfv, hfv2, nm2->flux);
-                    riemannflux(hrfv, hrfv2, nm2->refinementflux);
+                    riemannflux(elm2->elementType,hfv, hfv2, nm2->flux);
+                    riemannflux(elm2->elementType,hrfv, hrfv2, nm2->refinementflux);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2785,14 +2807,14 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 }
                 else
                 {
-                    riemannflux(hfv, hfv2, ghostflux);
+                    riemannflux(elm2->elementType,hfv, hfv2, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
                         nm1->flux[ivar] = np->flux[ivar];
                         np->flux[ivar] = 0.5 * (nm1->flux[ivar] + ghostflux[ivar]);
                     }
                     
-                    riemannflux(hrfv, hrfv2, ghostflux);
+                    riemannflux(elm2->elementType,hrfv, hrfv2, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
                         nm1->refinementflux[ivar] = np->refinementflux[ivar];
@@ -2877,8 +2899,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm1, dt);
                 elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, this, dt);
-                riemannflux(hfv1, hfv, nm->flux);
-                riemannflux(hrfv1, hrfv, nm->refinementflux);
+                riemannflux(elm1->elementType,hfv1, hfv, nm->flux);
+                riemannflux(elm1->elementType,hrfv1, hrfv, nm->refinementflux);
                 
                 elm2 = neighborPtr[zm + 4]; //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
                 assert(elm2);
@@ -2892,8 +2914,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                     zp2 = elm2->which_neighbor(pass_key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     
-                    riemannflux(hfv2, hfv, np2->flux);
-                    riemannflux(hrfv2, hrfv, np2->refinementflux);
+                    riemannflux(elm2->elementType,hfv2, hfv, np2->flux);
+                    riemannflux(elm2->elementType,hrfv2, hrfv, np2->refinementflux);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2903,11 +2925,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 }
                 else
                 {
-                    riemannflux(hfv2, hfv, ghostflux);
+                    riemannflux(elm2->elementType,hfv2, hfv, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm->flux[ivar] = 0.5 * (nm->flux[ivar] + ghostflux[ivar]);
                     
-                    riemannflux(hrfv2, hrfv, ghostflux);
+                    riemannflux(elm2->elementType,hrfv2, hrfv, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm->refinementflux[ivar] = 0.5 * (nm->refinementflux[ivar] + ghostflux[ivar]);
                 }
@@ -3066,111 +3088,132 @@ void Element::calc_shortspeed(double inv_dt)
 
     shortspeed = 0.0;
     
-#ifdef SHORTSPEED
-    if(state_vars[0] > GEOFLOW_TINY)
+    if(SHORTSPEED)
     {
-#ifdef TWO_PHASES
-        double Vmag=sqrt(state_vars[2]*state_vars[2]+
-                state_vars[3]*state_vars[3]);
-#else
-        double Vmag = pow(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2], 0.5);
-#endif
-        if(!(Vmag > 0.0))
-            return;
-        
-        double invnormhv = 1.0 / Vmag;
-#ifdef TWO_PHASES
-        Vmag/=state_vars[1];
-#else
-        Vmag /= state_vars[0];
-#endif
-
-        double Vmag0 = Vmag; //tall cell speed
-        assert(Vmag0 > 0.0);
-#ifdef TWO_PHASES
-        double doubleswap_h =(state_vars[2]*d_state_vars[1]+
-                state_vars[3]*d_state_vars[NUM_STATE_VARS+1])*invnormhv;
-        double doubleswap_hvx=(state_vars[2]*d_state_vars[2]+
-                state_vars[3]*d_state_vars[NUM_STATE_VARS+2])*invnormhv;
-        double doubleswap_hvy=(state_vars[2]*d_state_vars[3]+
-                state_vars[3]*d_state_vars[NUM_STATE_VARS+3])*invnormhv;
-#else
-        double doubleswap_h = (state_vars[1] * d_state_vars[0] + state_vars[2] * d_state_vars[3]) * invnormhv;
-        double doubleswap_hvx = (state_vars[1] * d_state_vars[1] + state_vars[2] * d_state_vars[4]) * invnormhv;
-        double doubleswap_hvy = (state_vars[1] * d_state_vars[2] + state_vars[2] * d_state_vars[5]) * invnormhv;
-#endif
-        double doubleswap_h_2, doubleswap_hvx_2, doubleswap_hvy_2;
-        
-        double f, df, d2f, df2, d2f2, dVmag, absdVmag0, VmagOld = -1.0, dVmag2 = -1.0;
-        double toler = 1.0 / ((double) (1024 * 1024 * 1024)); //toler~10^-9
-        int inewt, yada = 0;
-        
-        for(inewt = 0; inewt < 15; inewt++)
-        { //should only need about 5 newton iterations
-#ifdef TWO_PHASES
-            doubleswap_h_2 =((state_vars[1]-prev_state_vars[1])*inv_dt+Vmag*doubleswap_h );
-            doubleswap_hvx_2=((state_vars[2]-prev_state_vars[2])*inv_dt+Vmag*doubleswap_hvx);
-            doubleswap_hvy_2=((state_vars[3]-prev_state_vars[3])*inv_dt+Vmag*doubleswap_hvy);
-#else
-            doubleswap_h_2 = ((state_vars[0] - prev_state_vars[0]) * inv_dt + Vmag * doubleswap_h);
-            doubleswap_hvx_2 = ((state_vars[1] - prev_state_vars[1]) * inv_dt + Vmag * doubleswap_hvx);
-            doubleswap_hvy_2 = ((state_vars[2] - prev_state_vars[2]) * inv_dt + Vmag * doubleswap_hvy);
-#endif
-            
-            /* f could be greater or less than zero but f2 is always non-negative, 
-             note however that minimum/optimal value of f2 could be > 0 so solving 
-             for f2==0 isn't full proof, instead we want minium f2 which means solve
-             for df2==0, but df2==0 could be min or max. but in newton if you take
-             the absolute value d2f2 in the denominator you cause f2 to ALWAYS 
-             decrease, and thus you are guarenteed to find a local mimimum, recall 
-             we do want a minimum because f2 is guaranteed >= 0 */
-
-            f = Vmag * Vmag * doubleswap_h_2 * doubleswap_h_2 - doubleswap_hvx_2 * doubleswap_hvx_2
-                - doubleswap_hvy_2 * doubleswap_hvy_2;
-            
-            df = 2.0 * (Vmag * doubleswap_h_2 * doubleswap_h_2 + Vmag * Vmag * doubleswap_h_2 * doubleswap_h
-                    - doubleswap_hvx_2 * doubleswap_hvx - doubleswap_hvy_2 * doubleswap_hvy);
-            d2f = 2.0 * (doubleswap_h_2 * doubleswap_h_2 + 4.0 * Vmag * doubleswap_h_2 * doubleswap_h
-                         + Vmag * Vmag * doubleswap_h * doubleswap_h
-                         - doubleswap_hvx * doubleswap_hvx - doubleswap_hvy * doubleswap_hvy);
-            //f2=f*f;  
-            df2 = 2.0 * f * df; //solving for df2==0 is either min or max of f2
-            d2f2 = 2.0 * (f * d2f + df * df);
-            dVmag = (df2) ? (-df2 / fabs(d2f2)) : 0.0; //fabs(d2f2) will cause f2 to always decrease and since f2 can't be less than zero we always want it to decrease, also need to prevent division of zero by zero = nan
-                    
-            if(!(shortspeed >= 0.0))
+        if(state_vars[0] > GEOFLOW_TINY)
+        {
+            double Vmag;
+            if(elementType == ElementType::TwoPhases)
             {
-                printf("inewt=%d Vmag0=%g Vmag=%g doubleswap_h_2=%g doubleswap_hvx_2=%g doubleswap_hvy_2=%g f=%g df=%g d2f=%g df2=%g d2f2=%g\n",
-                       inewt, Vmag0, Vmag, doubleswap_h_2, doubleswap_hvx_2, doubleswap_hvy_2, f, df, d2f, df2, d2f2);
-                assert(0);
+                Vmag=sqrt(state_vars[2]*state_vars[2]+
+                    state_vars[3]*state_vars[3]);
+            }
+            if(elementType == ElementType::SinglePhase)
+            {
+                Vmag = pow(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2], 0.5);
+            }
+
+            if(!(Vmag > 0.0))
+                return;
+
+            double invnormhv = 1.0 / Vmag;
+
+            if(elementType == ElementType::TwoPhases)
+            {
+                Vmag/=state_vars[1];
+            }
+            if(elementType == ElementType::SinglePhase)
+            {
+                Vmag /= state_vars[0];
+            }
+
+            double Vmag0 = Vmag; //tall cell speed
+            assert(Vmag0 > 0.0);
+
+            double doubleswap_h;
+            double doubleswap_hvx;
+            double doubleswap_hvy;
+            if(elementType == ElementType::TwoPhases)
+            {
+                doubleswap_h =(state_vars[2]*d_state_vars[1]+
+                    state_vars[3]*d_state_vars[NUM_STATE_VARS+1])*invnormhv;
+                doubleswap_hvx=(state_vars[2]*d_state_vars[2]+
+                    state_vars[3]*d_state_vars[NUM_STATE_VARS+2])*invnormhv;
+                doubleswap_hvy=(state_vars[2]*d_state_vars[3]+
+                    state_vars[3]*d_state_vars[NUM_STATE_VARS+3])*invnormhv;
+            }
+            if(elementType == ElementType::SinglePhase)
+            {
+                doubleswap_h = (state_vars[1] * d_state_vars[0] + state_vars[2] * d_state_vars[3]) * invnormhv;
+                doubleswap_hvx = (state_vars[1] * d_state_vars[1] + state_vars[2] * d_state_vars[4]) * invnormhv;
+                doubleswap_hvy = (state_vars[1] * d_state_vars[2] + state_vars[2] * d_state_vars[5]) * invnormhv;
+            }
+
+            double doubleswap_h_2, doubleswap_hvx_2, doubleswap_hvy_2;
+            
+            double f, df, d2f, df2, d2f2, dVmag, absdVmag0, VmagOld = -1.0, dVmag2 = -1.0;
+            double toler = 1.0 / ((double) (1024 * 1024 * 1024)); //toler~10^-9
+            int inewt, yada = 0;
+            
+            for(inewt = 0; inewt < 15; inewt++)
+            { //should only need about 5 newton iterations
+                if(elementType == ElementType::TwoPhases)
+                {
+                    doubleswap_h_2 =((state_vars[1]-prev_state_vars[1])*inv_dt+Vmag*doubleswap_h );
+                    doubleswap_hvx_2=((state_vars[2]-prev_state_vars[2])*inv_dt+Vmag*doubleswap_hvx);
+                    doubleswap_hvy_2=((state_vars[3]-prev_state_vars[3])*inv_dt+Vmag*doubleswap_hvy);
+                }
+                if(elementType == ElementType::SinglePhase)
+                {
+                    doubleswap_h_2 = ((state_vars[0] - prev_state_vars[0]) * inv_dt + Vmag * doubleswap_h);
+                    doubleswap_hvx_2 = ((state_vars[1] - prev_state_vars[1]) * inv_dt + Vmag * doubleswap_hvx);
+                    doubleswap_hvy_2 = ((state_vars[2] - prev_state_vars[2]) * inv_dt + Vmag * doubleswap_hvy);
+                }
+
+                /* f could be greater or less than zero but f2 is always non-negative,
+                 note however that minimum/optimal value of f2 could be > 0 so solving
+                 for f2==0 isn't full proof, instead we want minium f2 which means solve
+                 for df2==0, but df2==0 could be min or max. but in newton if you take
+                 the absolute value d2f2 in the denominator you cause f2 to ALWAYS
+                 decrease, and thus you are guarenteed to find a local mimimum, recall
+                 we do want a minimum because f2 is guaranteed >= 0 */
+
+                f = Vmag * Vmag * doubleswap_h_2 * doubleswap_h_2 - doubleswap_hvx_2 * doubleswap_hvx_2
+                    - doubleswap_hvy_2 * doubleswap_hvy_2;
+
+                df = 2.0 * (Vmag * doubleswap_h_2 * doubleswap_h_2 + Vmag * Vmag * doubleswap_h_2 * doubleswap_h
+                        - doubleswap_hvx_2 * doubleswap_hvx - doubleswap_hvy_2 * doubleswap_hvy);
+                d2f = 2.0 * (doubleswap_h_2 * doubleswap_h_2 + 4.0 * Vmag * doubleswap_h_2 * doubleswap_h
+                             + Vmag * Vmag * doubleswap_h * doubleswap_h
+                             - doubleswap_hvx * doubleswap_hvx - doubleswap_hvy * doubleswap_hvy);
+                //f2=f*f;
+                df2 = 2.0 * f * df; //solving for df2==0 is either min or max of f2
+                d2f2 = 2.0 * (f * d2f + df * df);
+                dVmag = (df2) ? (-df2 / fabs(d2f2)) : 0.0; //fabs(d2f2) will cause f2 to always decrease and since f2 can't be less than zero we always want it to decrease, also need to prevent division of zero by zero = nan
+
+                if(!(shortspeed >= 0.0))
+                {
+                    printf("inewt=%d Vmag0=%g Vmag=%g doubleswap_h_2=%g doubleswap_hvx_2=%g doubleswap_hvy_2=%g f=%g df=%g d2f=%g df2=%g d2f2=%g\n",
+                           inewt, Vmag0, Vmag, doubleswap_h_2, doubleswap_hvx_2, doubleswap_hvy_2, f, df, d2f, df2, d2f2);
+                    assert(0);
+                }
+
+                VmagOld = Vmag;
+                Vmag += dVmag;
+
+                if(Vmag < 0.0)
+                    Vmag = 0.0; //safety in case it finds wrong root but this
+                //shouldn't be a problem equation looks like it should be smooth in
+                //the region were interested in
+
+                dVmag2 = Vmag - VmagOld;
+
+                if(fabs(dVmag2) < 0.0)
+                    printf("VmagOld=%g dVmag2=%g yada=%d\n", VmagOld, dVmag2, yada);
+
+                yada = yada + yada;
+
+                if(inewt == 0)
+                    absdVmag0 = fabs(dVmag);
+                else if((absdVmag0 * toler >= fabs(dVmag2)) || (Vmag * toler >= fabs(dVmag2)))
+                    break;
             }
             
-            VmagOld = Vmag;
-            Vmag += dVmag;
+            assert(inewt >= 0.0);
             
-            if(Vmag < 0.0)
-                Vmag = 0.0; //safety in case it finds wrong root but this 
-            //shouldn't be a problem equation looks like it should be smooth in 
-            //the region were interested in
-            
-            dVmag2 = Vmag - VmagOld;
-            
-            if(fabs(dVmag2) < 0.0)
-                printf("VmagOld=%g dVmag2=%g yada=%d\n", VmagOld, dVmag2, yada);
-            
-            yada = yada + yada;
-            
-            if(inewt == 0)
-                absdVmag0 = fabs(dVmag);
-            else if((absdVmag0 * toler >= fabs(dVmag2)) || (Vmag * toler >= fabs(dVmag2)))
-                break;
+            shortspeed = Vmag;
         }
-        
-        assert(inewt >= 0.0);
-        
-        shortspeed = Vmag;
     }
-#endif
     
     if(!(shortspeed >= 0.0))
         printf("shortspeed=%g\n", shortspeed);
@@ -3179,116 +3222,113 @@ void Element::calc_shortspeed(double inv_dt)
     
     return;
 }
-
-#ifdef TWO_PHASES
-void Element::eval_velocity(double xoffset, double yoffset, double Vel[])
-{
-    int i;
-    
-    if(!(shortspeed >= 0.0))
-        printf("shortspeed=%g\n", shortspeed);
-    assert(shortspeed >= 0.0);
-    
-    double temp_state_vars[NUM_STATE_VARS];
-    for(int ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-        temp_state_vars[ivar] = state_vars[ivar] + d_state_vars[ivar] * xoffset +      //distfromcenter[0]+
-                                d_state_vars[NUM_STATE_VARS + ivar] * yoffset;      //distfromcenter[1];
-                                
-    if(!(temp_state_vars[0] > 0))
-    {
-        for(i = 0; i < 4; i++)
-            Vel[i] = 0;
-        return;
-    }
-    
-#ifdef SHORTSPEED
-    double doubleswap=
-    (temp_state_vars[2])*(temp_state_vars[2])+
-    (temp_state_vars[3])*(temp_state_vars[3]);
-
-    if(!(doubleswap>(temp_state_vars[1]*temp_state_vars[1]*
-                            GEOFLOW_TINY*GEOFLOW_TINY)))
-    {   
-        for (i=0; i<4; i++)
-        Vel[i]=0.;
-        return;
-    }
-
-    if((temp_state_vars[1]<GEOFLOW_SHORT) &&
-            (doubleswap>shortspeed*shortspeed*temp_state_vars[1]*temp_state_vars[1]))
-    {   
-        doubleswap=sqrt(doubleswap);
-        Vel[0]=shortspeed*temp_state_vars[2]/doubleswap;
-        Vel[1]=shortspeed*temp_state_vars[3]/doubleswap;
-        Vel[2]=0.;
-        Vel[3]=0.;
-    }
-    else
-#endif
-    {
-        Vel[0] = temp_state_vars[2] / temp_state_vars[1];
-        Vel[1] = temp_state_vars[3] / temp_state_vars[1];
-        Vel[2] = temp_state_vars[4] / temp_state_vars[0];
-        Vel[3] = temp_state_vars[5] / temp_state_vars[0];
-    }
-    return;
-}
-
-#else
-double* Element::eval_velocity(double xoffset, double yoffset, double VxVy[2])
+double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
 {
     if(!(shortspeed >= 0.0))
         printf("shortspeed=%g\n", shortspeed);
-    
+
     assert(shortspeed >= 0.0);
     
-    //assert((fabs(nondimx)<=0.5)&&(fabs(nondimy)<=0.5));
-    
-    //double distfromcenter[2];
-    //distfromcenter[0]=nondimx*dx[0];
-    //distfromcenter[1]=nondimx*dx[1];
-    
-    double temp_state_vars[NUM_STATE_VARS];
+    double temp_state_vars[MAX_NUM_STATE_VARS];
+
     for(int ivar = 0; ivar < NUM_STATE_VARS; ivar++)
         temp_state_vars[ivar] = state_vars[ivar] + d_state_vars[ivar] * xoffset +  //distfromcenter[0]+
                                 d_state_vars[NUM_STATE_VARS + ivar] * yoffset;  //distfromcenter[1];
                                 
-    if(!(temp_state_vars[0] > 0))
+    if(elementType == ElementType::TwoPhases)
     {
-        VxVy[0] = VxVy[1] = 0.0;
-        return VxVy;
+        if(!(temp_state_vars[0] > 0))
+        {
+            for(int i = 0; i < 4; i++)
+                Vel[i] = 0;
+            return Vel;
+        }
+
+        if(SHORTSPEED)
+        {
+            double doubleswap = (temp_state_vars[2]) * (temp_state_vars[2])
+                    + (temp_state_vars[3]) * (temp_state_vars[3]);
+
+            if(!(doubleswap > (temp_state_vars[1] * temp_state_vars[1] *
+            GEOFLOW_TINY
+                               * GEOFLOW_TINY)))
+            {
+                for(int i = 0; i < 4; i++)
+                    Vel[i] = 0.;
+                return Vel;
+            }
+
+            if((temp_state_vars[1] < GEOFLOW_SHORT) && (doubleswap
+                    > shortspeed * shortspeed * temp_state_vars[1] * temp_state_vars[1]))
+            {
+                doubleswap = sqrt(doubleswap);
+                Vel[0] = shortspeed * temp_state_vars[2] / doubleswap;
+                Vel[1] = shortspeed * temp_state_vars[3] / doubleswap;
+                Vel[2] = 0.;
+                Vel[3] = 0.;
+            }
+            else
+            {
+                Vel[0] = temp_state_vars[2] / temp_state_vars[1];
+                Vel[1] = temp_state_vars[3] / temp_state_vars[1];
+                Vel[2] = temp_state_vars[4] / temp_state_vars[0];
+                Vel[3] = temp_state_vars[5] / temp_state_vars[0];
+            }
+        }
+        else
+        {
+            Vel[0] = temp_state_vars[2] / temp_state_vars[1];
+            Vel[1] = temp_state_vars[3] / temp_state_vars[1];
+            Vel[2] = temp_state_vars[4] / temp_state_vars[0];
+            Vel[3] = temp_state_vars[5] / temp_state_vars[0];
+        }
+        return Vel;
     }
-    
-#ifdef SHORTSPEED
-    double doubleswap = (temp_state_vars[1]) * (temp_state_vars[1]) + (temp_state_vars[2]) * (temp_state_vars[2]);
-    
-    if(!(doubleswap > (temp_state_vars[0] * temp_state_vars[0] *
-    GEOFLOW_TINY
-                       * GEOFLOW_TINY)))
+    if(elementType == ElementType::SinglePhase)
     {
-        VxVy[0] = VxVy[1] = 0.0;
-        return VxVy;
+        if(!(temp_state_vars[0] > 0))
+        {
+            Vel[0] = Vel[1] = 0.0;
+            return Vel;
+        }
+
+        if(SHORTSPEED)
+        {
+            double doubleswap = (temp_state_vars[1]) * (temp_state_vars[1])
+                    + (temp_state_vars[2]) * (temp_state_vars[2]);
+
+            if(!(doubleswap > (temp_state_vars[0] * temp_state_vars[0] *
+            GEOFLOW_TINY
+                               * GEOFLOW_TINY)))
+            {
+                Vel[0] = Vel[1] = 0.0;
+                return Vel;
+            }
+
+            if((temp_state_vars[0] < GEOFLOW_SHORT) && (doubleswap
+                    > shortspeed * shortspeed * temp_state_vars[0] * temp_state_vars[0]))
+            {
+                doubleswap = sqrt(doubleswap);
+                Vel[0] = shortspeed * temp_state_vars[1] / doubleswap;
+                Vel[1] = shortspeed * temp_state_vars[2] / doubleswap;
+            }
+            else
+            {
+                Vel[0] = temp_state_vars[1] / temp_state_vars[0];
+                Vel[1] = temp_state_vars[2] / temp_state_vars[0];
+            }
+        }
+        else
+        {
+            Vel[0] = temp_state_vars[1] / temp_state_vars[0];
+            Vel[1] = temp_state_vars[2] / temp_state_vars[0];
+        }
+        assert((Vel[0] * Vel[0] * Vel[1] * Vel[1]) >= 0.0);
+
+        return Vel;
     }
-    
-    if((temp_state_vars[0] < GEOFLOW_SHORT) && (doubleswap
-            > shortspeed * shortspeed * temp_state_vars[0] * temp_state_vars[0]))
-    {
-        doubleswap = sqrt(doubleswap);
-        VxVy[0] = shortspeed * temp_state_vars[1] / doubleswap;
-        VxVy[1] = shortspeed * temp_state_vars[2] / doubleswap;
-    }
-    else
-#endif
-    {
-        VxVy[0] = temp_state_vars[1] / temp_state_vars[0];
-        VxVy[1] = temp_state_vars[2] / temp_state_vars[0];
-    }
-    
-    assert((VxVy[0] * VxVy[0] * VxVy[1] * VxVy[1]) >= 0.0);
-    
-    return VxVy;
+    return NULL;
 }
-#endif
 double* Element::get_zeta()
 {
     return zeta;
@@ -3844,9 +3884,10 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
 #endif
     
     stoppedflags = 0;
-#ifdef TWO_PHASES
-    return;
-#endif
+    if(elementType == ElementType::TwoPhases)
+    {
+        return;
+    }
     if(state_vars[0] <= GEOFLOW_TINY)
         stopcrit = HUGE_VAL;
     else

@@ -55,9 +55,9 @@ struct ElemPack
     double el_error[EQUATIONS];                         // 21
     double el_solution[EQUATIONS];                      // 23  
     double bc_value[4][2][2];                           // 39
-    double state_vars[NUM_STATE_VARS];                  // 42
-    double prev_state_vars[NUM_STATE_VARS];             // 45 
-    double d_state_vars[NUM_STATE_VARS * DIMENSION];      // 51
+    double state_vars[MAX_NUM_STATE_VARS];                  // 42
+    double prev_state_vars[MAX_NUM_STATE_VARS];             // 45
+    double d_state_vars[MAX_NUM_STATE_VARS * DIMENSION];      // 51
     double shortspeed;                                  // 52
     double dx[DIMENSION];                               // 54 
     double eigenvxymax[DIMENSION];                      // 56
@@ -69,7 +69,7 @@ struct ElemPack
     double lam;                                         // 68
     double lb_weight;                                   // 69
     double node_elevation[9];                           // 78
-    double Influx[NUM_STATE_VARS];                      // 81
+    double Influx[MAX_NUM_STATE_VARS];                      // 81
     double Awet;                                        // 82
     double Swet;                                        // 83
     double drypoint[DIMENSION];                         // 85

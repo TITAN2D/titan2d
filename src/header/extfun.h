@@ -18,6 +18,9 @@
 #ifndef EXTFUN_H
 #define EXTFUN_H
 #define DEBUG_HEADER
+
+#include "constant.h"
+
 const int QUADNODES = 9;
 
 //! this function checks for any and all possible mesh errors, i.e. it checks if the mesh is legal, it says nothing about the quality of a legal mesh, you must have ghost information present before performing this check, WARNING THIS CHECK TAKES A LOT OF TIME, ONLY USE IT TO DEBUG.
@@ -54,7 +57,7 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch);
 void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr);
 
 //! this function implements 1 time step which consists of (by calling other functions) computing spatial derivatives of state variables, computing k active/passive and wave speeds and therefore timestep size, does a finite difference predictor step, followed by a finite volume corrector step, and lastly computing statistics from the current timestep's data.
-void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
           TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
           int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag);
 
@@ -157,7 +160,7 @@ extern void output_discharge(MatProps* matprops, TimeProps* timeprops, Discharge
 extern void output_stoch_stats(MatProps* matprops, StatProps* statprops);
 
 //! this function writes text tecplot output files in the tecplxxxxxxxx.plt format.  Keith rewrote this function to eliminate a lot of bugs shortly after he started the project, since then files were 1/3 the size they were previously.
-extern void tecplotter(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
+extern void tecplotter(ElementType elementType, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
                        MapNames* mapnames, double v_star);
 
 //! this function writes text tecplot output files in the mshplxxxxxxxx.plt format.  This is largely untouched since before I (Keith) joined the GMFG, just minor changes.  This is the preferred (by Professor Patra) format of output for debugging purposes even though tecplxxxxxxxx.plt create nicer images.
@@ -168,7 +171,7 @@ extern void meshplotter(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps
 extern void vizplotter(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops);
 
 //! another of "pady's" output functions, since Keith never met "pady" this is probably long out of date
-void viz_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, MatProps* matprops,
+void viz_output(ElementType elementType,HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, MatProps* matprops,
                 TimeProps* timeprops, MapNames* mapnames);
 #if HAVE_LIBHDF5 == 1 && HAVE_LIBHDF5_HL == 1
 //! the hdf output never worked right (never got debugged)
@@ -180,7 +183,9 @@ void hdf_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
 #endif
 
 //! eXtensible Data Model and Format (http://www.arl.hpc.mil/ice/) is a Paraview readable data format 
-int write_xdmf(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+               MapNames *mapnames, const int mode);
+int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode);
 
 //! this is Amrita's output function, Keith wrote it to her specifications, it is for use with the gmfg viewer, which Daniel rewrote during the summer of 2006 to remove a lot dependencies and use basically only opengl calls.  This makes the viewer compatible with almost every linux machine and a lot easier (read as possible) to install

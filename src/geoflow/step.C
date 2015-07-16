@@ -24,7 +24,7 @@
 
 #include "../header/titan2d_utils.h"
 
-void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
           TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
           int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag)
 {
@@ -56,7 +56,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
     titanTimingsAlongSimulation.slopesCalcTime += MPI_Wtime() - t_start;
     
     // get coefficients, eigenvalues, hmax and calculate the time step 
-    double dt = get_coef_and_eigen(El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 0);
+    double dt = get_coef_and_eigen(elementType, El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 0);
     //printf("step(): iter=%d %g+",timeprops_ptr->iter,timeprops_ptr->time);
     
     timeprops_ptr->incrtime(&dt); //also reduces dt if necessary
@@ -90,7 +90,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
     double tiny = GEOFLOW_TINY;
     double flux_src_coef = 0;
 
-// in TWO_PHASES #ifdef SECOND_ORDER
+// in TWO PHASES #ifdef SECOND_ORDER
 
     //-------------------go through all the elements of the subdomain and  
     //-------------------calculate the state variables at time .5*delta_t
@@ -160,17 +160,21 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
 #else
         IF_STOPPED = !(!(Curr_El->get_stoppedflags()));
 #endif
-#ifdef TWO_PHASES
-        predict2ph_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(), &tiny,
-                 Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
-                 &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
-                 Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);
-#else
-        predict_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(), &tiny,
-                 Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
-                 &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
-                 Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);
-#endif
+        if(elementType == ElementType::TwoPhases)
+        {
+            predict2ph_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
+                        &tiny, Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
+                        &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
+                        Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);
+        }
+        if(elementType == ElementType::SinglePhase)
+        {
+            predict_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
+                     &tiny, Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
+                     &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
+                     Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);
+        }
+
         
 
         /* apply bc's */
@@ -193,7 +197,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
     t_start = MPI_Wtime();
     slopes(El_Table, NodeTable, matprops_ptr);
 
-    // in TWO_PHASES #endif  //SECOND_ORDER
+    // in TWO PHASES #endif  //SECOND_ORDER
 
 
     
@@ -201,7 +205,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
     move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
     
     /* calculate kact/pass */
-    double dt_not_used = get_coef_and_eigen(El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 1);
+    double dt_not_used = get_coef_and_eigen(elementType, El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 1);
     
     /*
      * calculate edge states
@@ -231,14 +235,16 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
     {
         Curr_El = Elms[i];
         double *dxy = Curr_El->get_dx();
-#ifdef TWO_PHASES
-        // if calculations are first-order, predict is never called
-        // ... so we need to update prev_states
-        if(*order_flag == 1)
-            Curr_El->update_prev_state_vars();
-#endif
+        if(elementType == ElementType::TwoPhases)
+        {
+            // if calculations are first-order, predict is never called
+            // ... so we need to update prev_states
+            if(*order_flag == 1)
+                Curr_El->update_prev_state_vars();
+
+        }
         void *Curr_El_out = (void *) Curr_El;
-        correct(NodeTable, El_Table, dt, matprops_ptr, fluxprops, timeprops_ptr, Curr_El_out, &elemforceint,
+        correct(elementType, NodeTable, El_Table, dt, matprops_ptr, fluxprops, timeprops_ptr, Curr_El_out, &elemforceint,
                 &elemforcebed, &elemeroded, &elemdeposited);
         
         forceint += fabs(elemforceint);
@@ -253,13 +259,24 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
         //	;
         
 #ifdef MAX_DEPTH_MAP
-#ifdef TWO_PHASES
-        double momenta[6];
-#else
-        double *momenta = Curr_El->get_state_vars() + 1;
-#endif
+        double *momenta;
+        if(elementType == ElementType::TwoPhases)
+        {
+            momenta=new double[6];
+        }
+        if(elementType == ElementType::SinglePhase)
+        {
+            momenta = Curr_El->get_state_vars() + 1;
+        }
+
         outline_ptr->update(coord[0] - 0.5 * dxy[0], coord[0] + 0.5 * dxy[0], coord[1] - 0.5 * dxy[1],
                             coord[1] + 0.5 * dxy[1], hheight, momenta);
+        if(elementType == ElementType::TwoPhases)
+        {
+            delete [] momenta;
+            momenta=nullptr;
+        }
+
 #endif
         
 #ifdef APPLY_BC
@@ -282,7 +299,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
     
     /* finished corrector step */
 
-    calc_stats(El_Table, NodeTable, myid, matprops_ptr, timeprops_ptr, statprops_ptr, discharge, dt);
+    calc_stats(elementType, El_Table, NodeTable, myid, matprops_ptr, timeprops_ptr, statprops_ptr, discharge, dt);
     
     double tempin[6], tempout[6];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
@@ -322,7 +339,7 @@ void step(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump,
 /* determines and returns v_star the non-dimensional stopping velocity */
 /***********************************************************************/
 
-void calc_volume(HashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
+void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
                  double *v_star, double *nz_star)
 {
     int i, j, k, counter, imax = 0;
@@ -360,15 +377,19 @@ void calc_volume(HashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProp
                     // rule out non physical fast moving thin layers
                     if(state_vars[0] > min_height)
                     {
-#ifndef TWO_PHASES
-                        temp = sqrt(state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]);
-                        v_ave += temp * dx * dy;
-                        temp /= state_vars[1];
-#else
-                        temp = sqrt(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]);
-                        v_ave += temp * dx * dy;
-                        temp /= state_vars[0];
-#endif
+                        if(elementType == ElementType::TwoPhases)
+                        {
+                            temp = sqrt(state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]);
+                            v_ave += temp * dx * dy;
+                            temp /= state_vars[1];
+                        }
+                        if(elementType == ElementType::SinglePhase)
+                        {
+                            temp = sqrt(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]);
+                            v_ave += temp * dx * dy;
+                            temp /= state_vars[0];
+                        }
+
                         
                         double dvol = state_vars[0] * dx * dy;
                         g_ave += *(Curr_El->get_gravity() + 2) * dvol;
@@ -450,7 +471,7 @@ void calc_volume(HashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProp
 /* can think of a better place to put it go ahead                      */
 /***********************************************************************/
 
-double get_max_momentum(HashTable* El_Table, MatProps* matprops_ptr)
+double get_max_momentum(ElementType elementType,HashTable* El_Table, MatProps* matprops_ptr)
 {
     int numprocs, myid;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -477,11 +498,14 @@ double get_max_momentum(HashTable* El_Table, MatProps* matprops_ptr)
                     //eliminate fast moving very thin pile from consideration
                     if(state_vars[0] >= min_height)
                     {
-#ifndef TWO_PHASES
-                        mom2 = (state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]);
-#else
-                        mom2 = (state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]);
-#endif
+                        if(elementType == ElementType::TwoPhases)
+                        {
+                            mom2 = (state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]);
+                        }
+                        if(elementType == ElementType::SinglePhase)
+                        {
+                            mom2 = (state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]);
+                        }
                         /* mom2 is not a mistake... only need to take the root of 
                          the maximum value */
                         if(mom2 > max_mom)
@@ -518,7 +542,7 @@ double get_max_momentum(HashTable* El_Table, MatProps* matprops_ptr)
 /* can think of a better place to put it go ahead                     */
 /**********************************************************************/
 
-void sim_end_warning(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double v_star)
+void sim_end_warning(ElementType elementType,HashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double v_star)
 {
     FILE *fp;
     int myid, numprocs;
@@ -579,13 +603,16 @@ void sim_end_warning(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* tim
                     //eliminate fast moving very thin pile from consideration
                     if(state_vars[0] >= min_height)
                     {
-#ifndef TWO_PHASES
-                        velocity2 = (state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3])
+                        if(elementType == ElementType::TwoPhases)
+                        {
+                            velocity2 = (state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3])
                                 / (state_vars[1] * state_vars[1]);
-#else
-                        velocity2 = (state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2])
+                        }
+                        if(elementType == ElementType::SinglePhase)
+                        {
+                            velocity2 = (state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2])
                                 / (state_vars[0] * state_vars[0]);
-#endif
+                        }
 
                         
                         if(velocity2 > v_max)

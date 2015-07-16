@@ -689,17 +689,19 @@ struct OutLine
     //! 2-d array holding the maximum throughout time pileheight at every point
     double **pileheight;
 
-#ifndef TWO_PHASES
     //! 2-d array holding the maximum throughout time kinetice energy at every point
     double **max_kinergy;
 
     //! 2-d array holding the cummulative kinetic energy at every point
     double **cum_kinergy;
-#endif
+
+    ElementType elementType;
+
     //! this is the OutLine constructor it initializes the number of cells to zero
     OutLine()
     {
         Nx = Ny = 0;
+        elementType=ElementType::SinglePhase;
         return;
     }
     
@@ -742,18 +744,15 @@ struct OutLine
         printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d\n", Nx, Ny, Nx * Ny);
         
         pileheight = CAllocD2(Ny, Nx);
-#ifndef TWO_PHASES
         max_kinergy = CAllocD2(Ny, Nx);
         cum_kinergy = CAllocD2(Ny, Nx);
-#endif
+
         for(iy = 0; iy < Ny; iy++)
             for(ix = 0; ix < Nx; ix++)
             {
                 pileheight[iy][ix] = 0.0;
-#ifndef TWO_PHASES
                 max_kinergy[iy][ix] = 0.0;
                 cum_kinergy[iy][ix] = 0.0;
-#endif
             }
         return;
     }
@@ -775,28 +774,20 @@ struct OutLine
         Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
         
         pileheight = CAllocD2(Ny, Nx);
-#ifndef TWO_PHASES
         max_kinergy = CAllocD2(Ny, Nx);
         cum_kinergy = CAllocD2(Ny, Nx);
-#endif
         for(iy = 0; iy < Ny; iy++)
             for(ix = 0; ix < Nx; ix++)
             {
                 pileheight[iy][ix] = 0.0;
-#ifndef TWO_PHASES
                 max_kinergy[iy][ix] = 0.0;
                 cum_kinergy[iy][ix] = 0.0;
-#endif
             }
         return;
     }
     
     //! this function updates the maximum throughout time pileheight in every cell covered by an arbitrary element
-#ifdef TWO_PHASES
-    void update(double xstart, double xstop, double ystart, double ystop, double height, double h2[6])
-#else
     void update(double xstart, double xstop, double ystart, double ystop, double height, double *hv)
-#endif
     {
         int ixstart = (int) ((xstart - xminmax[0]) / dx + 0.5);
         int ixstop = (int) ((xstop - xminmax[0]) / dx + 0.5);
@@ -822,23 +813,30 @@ struct OutLine
         }
         if(iystop > Ny)
             iystop = Ny;
-#ifndef TWO_PHASES
+
         double ke = 0.;
         if(height > 1.0E-04)
-            ke = 0.5 * (hv[0] * hv[0] + hv[1] * hv[1]) / height;
-#endif
+        {
+            if(elementType == ElementType::TwoPhases)
+            {
+                //@TODO: Check the correctness of TwoPhases ke calculation
+                ke = 0.5 * (hv[0] * hv[0] + hv[1] * hv[1] + hv[2] * hv[2] + hv[3] * hv[3]) / height;
+            }
+            if(elementType == ElementType::SinglePhase)
+            {
+                ke = 0.5 * (hv[0] * hv[0] + hv[1] * hv[1]) / height;
+            }
+        }
+
+
         for(int iy = iystart; iy < iystop; iy++)
             for(int ix = ixstart; ix < ixstop; ix++)
             {
-#ifndef TWO_PHASES
                 cum_kinergy[iy][ix] += ke;
-#endif
                 if(height > pileheight[iy][ix])
                     pileheight[iy][ix] = height;
-#ifndef TWO_PHASES
                 if(ke > max_kinergy[iy][ix])
                     max_kinergy[iy][ix] = ke;
-#endif
             }
         return;
     }
@@ -867,7 +865,7 @@ struct OutLine
             fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
         }
         fclose(fp);
-#ifndef TWO_PHASES       
+
         //output max over time kinetic energy
         double ENERGY_SCALE = matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE * matprops_ptr->HEIGHT_SCALE;
         
@@ -903,7 +901,6 @@ struct OutLine
             fprintf(fp, "%g\n", cum_kinergy[iy][ix] * ENERGY_SCALE);
         }
         fclose(fp);
-#endif
         
         // output elevation data
         fp = fopen("elevation.grid", "w");

@@ -25,6 +25,8 @@ case $host in
     test_CXXFLAGS=${CXXFLAGS+set}
     if test "$test_CXXFLAGS" != set; then
     	CXXFLAGS="-g -w -O2"
+    else
+    	CXXFLAGS="-std=c++11 $CXXFLAGS"
     fi
     
     CPPFLAGS="$CPPFLAGS -DMPICH_IGNORE_CXX_SEEK"

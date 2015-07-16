@@ -82,11 +82,13 @@ extern void fhsfc3d(double*, unsigned*, unsigned*);
 extern void fhsfc2d_(double*, unsigned*, unsigned*);
 
 /* geoflow data */
-#ifdef TWO_PHASES
-const int NUM_STATE_VARS = 6;
-#else
-const int NUM_STATE_VARS = 3;
-#endif
+
+const int MAX_NUM_STATE_VARS = 6;
+/* NUM_STATE_VARS 3 for single phase 6 for two phases; */
+extern int NUM_STATE_VARS;
+extern bool SHORTSPEED;
+
+enum class ElementType {UnknownElementType=1, SinglePhase=1, TwoPhases=2 };
 
 #define GEOFLOW_TINY 0.0001
 #define GEOFLOW_SHORT 0.01

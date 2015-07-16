@@ -43,13 +43,18 @@ void MPI_New_Datatype()
      MPI_Datatype LB_VERT_TYPE;*/
 
     //int           blockcounts[5]={29, 44*KEYLENGTH, 4*EQUATIONS+36, 41, 16};
-#ifdef TWO_PHASES
+
     int blockcounts[3] =
-    { 58, 25 * KEYLENGTH, 100 };
-#else
-    int blockcounts[3] =
-    { 58, 25 * KEYLENGTH, 85 };
-#endif
+        { 58, 25 * KEYLENGTH, 100 };
+    /*if(elementType == ElementType::TwoPhases)
+    {
+        blockcounts[3]=100;
+    }
+    if(elementType == ElementType::SinglePhase)
+    {
+        blockcounts[3]=85;
+    }*/
+
     MPI_Datatype types[3];
     MPI_Aint displs[3];
     int d;

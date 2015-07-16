@@ -24,19 +24,16 @@
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
 
-#ifdef TWO_PHASES
-void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr2, FluxProps *fluxprops,
+
+void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
              TimeProps *timeprops, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
              double *deposited)
-#else
-void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
-             TimeProps *timeprops, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
-             double *deposited)
-#endif
 {
-#ifdef TWO_PHASES
-    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
-#endif
+    MatPropsTwoPhases* matprops2_ptr{nullptr};
+    if(elementType == ElementType::TwoPhases)
+    {
+        matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
+    }
     Element *EmTemp = (Element *) EmTemp_in;
     double *dx = EmTemp->get_dx();
     double dtdx = dt / dx[0];
@@ -69,7 +66,7 @@ void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* mat
     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
         fluxym[ivar] = nym->flux[ivar];
     
-#ifdef SUNOS
+
     /* the values being passed to correct are for a SINGLE element, NOT a
      region, as such the only change that having variable bedfriction
      requires is to pass the bedfriction angle for the current element
@@ -99,111 +96,113 @@ void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* mat
     double *curvature = EmTemp->get_curvature();
 
     double *Influx = EmTemp->get_influx();
-#ifdef TWO_PHASES
-    int i;
-    double kactxy[DIMENSION];
-    double bedfrict = EmTemp->get_effect_bedfrict();
-    double solid_den = matprops_ptr->den_solid;
-    double fluid_den = matprops_ptr->den_fluid;
-    double terminal_vel = matprops_ptr->v_terminal;
     
-    double Vfluid[DIMENSION];
-    double volf;
-    if(state_vars[0] > GEOFLOW_TINY)
+    if(elementType == ElementType::TwoPhases)
     {
-        for(i = 0; i < DIMENSION; i++)
-            kactxy[i] = *(EmTemp->get_effect_kactxy() + i);
-        
-        // fluid velocities
-        Vfluid[0] = state_vars[4] / state_vars[0];
-        Vfluid[1] = state_vars[5] / state_vars[0];
-        
-        // volume fractions
-        volf = state_vars[1] / state_vars[0];
-    }
-    else
-    {
-        for(i = 0; i < DIMENSION; i++)
+        int i;
+        double kactxy[DIMENSION];
+        double bedfrict = EmTemp->get_effect_bedfrict();
+        double solid_den = matprops2_ptr->den_solid;
+        double fluid_den = matprops2_ptr->den_fluid;
+        double terminal_vel = matprops2_ptr->v_terminal;
+
+        double Vfluid[DIMENSION];
+        double volf;
+        if(state_vars[0] > GEOFLOW_TINY)
         {
-            kactxy[i] = matprops_ptr->epsilon;
-            Vfluid[i] = 0.;
+            for(i = 0; i < DIMENSION; i++)
+                kactxy[i] = *(EmTemp->get_effect_kactxy() + i);
+
+            // fluid velocities
+            Vfluid[0] = state_vars[4] / state_vars[0];
+            Vfluid[1] = state_vars[5] / state_vars[0];
+
+            // volume fractions
+            volf = state_vars[1] / state_vars[0];
         }
-        volf = 1.;
-        bedfrict = matprops_ptr->bedfrict[EmTemp->get_material()];
+        else
+        {
+            for(i = 0; i < DIMENSION; i++)
+            {
+                kactxy[i] = matprops2_ptr->epsilon;
+                Vfluid[i] = 0.;
+            }
+            volf = 1.;
+            bedfrict = matprops2_ptr->bedfrict[EmTemp->get_material()];
+        }
+
+        double Vsolid[DIMENSION];
+        if(state_vars[1] > GEOFLOW_TINY)
+        {
+            Vsolid[0] = state_vars[2] / state_vars[1];
+            Vsolid[1] = state_vars[3] / state_vars[1];
+        }
+        else
+        {
+            Vsolid[0] = Vsolid[1] = 0.0;
+        }
+
+        double V_avg[DIMENSION];
+        V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
+        V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
+        EmTemp->convect_dryline(V_avg, dt); //this is necessary
+
+        correct2ph_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
+                 (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops2_ptr->intfrict), &bedfrict,
+                 gravity, kactxy, &(matprops2_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, Vsolid, Vfluid,
+                 &solid_den, &fluid_den, &terminal_vel, &(matprops2_ptr->epsilon), &IF_STOPPED, Influx);
+        
+        bool print_vars = false;
+        for(i = 0; i < NUM_STATE_VARS; i++)
+            if(isnan(state_vars[i]))
+                print_vars = true;
+        
+        if(print_vars)
+        {
+            printf("ElemKey: %u\n", *EmTemp->pass_key());
+            printf("Kactxy = %10.5f%10.5f\n", kactxy[0], kactxy[1]);
+            printf("BedFrict: %10.5f: IntFrict: %10.5f\n", bedfrict, matprops2_ptr->intfrict);
+            printf("state_vars: \n");
+            for(i = 0; i < NUM_STATE_VARS; i++)
+                printf("%10.5f", state_vars[i]);
+            printf("\n");
+            printf("prev_state_vars: \n");
+            for(i = 0; i < NUM_STATE_VARS; i++)
+                printf("%10.5f", prev_state_vars[i]);
+            printf("\n");
+            printf("fluxes: \n");
+            for(i = 0; i < NUM_STATE_VARS; i++)
+                printf("%10.5f%10.5f%10.5f%10.5f\n", fluxxp[i], fluxxm[i], fluxyp[i], fluxym[i]);
+        }
+    }
+    if(elementType == ElementType::SinglePhase)
+    {
+        double effect_bedfrict = EmTemp->get_effect_bedfrict();
+        double *effect_kactxy = EmTemp->get_effect_kactxy();
+
+        double VxVy[2];
+        if(state_vars[0] > GEOFLOW_TINY)
+        {
+            VxVy[0] = state_vars[1] / state_vars[0];
+            VxVy[1] = state_vars[2] / state_vars[0];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+        EmTemp->convect_dryline(VxVy, dt); //this is necessary
+
+        correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
+                 (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict),
+                 &effect_bedfrict, gravity, effect_kactxy, d_gravity, &(matprops_ptr->frict_tiny), forceint, forcebed,
+                 &do_erosion, eroded, VxVy, &IF_STOPPED, Influx);
     }
     
-    double Vsolid[DIMENSION];
-    if(state_vars[1] > GEOFLOW_TINY)
-    {
-        Vsolid[0] = state_vars[2] / state_vars[1];
-        Vsolid[1] = state_vars[3] / state_vars[1];
-    }
-    else
-    {
-        Vsolid[0] = Vsolid[1] = 0.0;
-    }
-    
-    double V_avg[DIMENSION];
-    V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
-    V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
-    EmTemp->convect_dryline(V_avg, dt); //this is necessary
-                            
-    correct2ph_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
-             (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict), &bedfrict,
-             gravity, kactxy, &(matprops_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, Vsolid, Vfluid,
-             &solid_den, &fluid_den, &terminal_vel, &(matprops_ptr->epsilon), &IF_STOPPED, Influx);
-#else
-    double effect_bedfrict = EmTemp->get_effect_bedfrict();
-    double *effect_kactxy = EmTemp->get_effect_kactxy();
-    
-    double VxVy[2];
-    if(state_vars[0] > GEOFLOW_TINY)
-    {
-        VxVy[0] = state_vars[1] / state_vars[0];
-        VxVy[1] = state_vars[2] / state_vars[0];
-    }
-    else
-    {
-        VxVy[0] = VxVy[1] = 0.0;
-    }
-    
-    EmTemp->convect_dryline(VxVy, dt); //this is necessary
-                            
-    correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
-             (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict),
-             &effect_bedfrict, gravity, effect_kactxy, d_gravity, &(matprops_ptr->frict_tiny), forceint, forcebed,
-             &do_erosion, eroded, VxVy, &IF_STOPPED, Influx);
-#endif  
     *forceint *= dx[0] * dx[1];
     *forcebed *= dx[0] * dx[1];
     *eroded *= dx[0] * dx[1];
 
-#ifdef TWO_PHASES
-    bool print_vars = false;
-    for(i = 0; i < NUM_STATE_VARS; i++)
-        if(isnan(state_vars[i]))
-            print_vars = true;
-    
-    if(print_vars)
-    {
-        printf("ElemKey: %u\n", *EmTemp->pass_key());
-        printf("Kactxy = %10.5f%10.5f\n", kactxy[0], kactxy[1]);
-        printf("BedFrict: %10.5f: IntFrict: %10.5f\n", bedfrict, matprops_ptr->intfrict);
-        printf("state_vars: \n");
-        for(i = 0; i < NUM_STATE_VARS; i++)
-            printf("%10.5f", state_vars[i]);
-        printf("\n");
-        printf("prev_state_vars: \n");
-        for(i = 0; i < NUM_STATE_VARS; i++)
-            printf("%10.5f", prev_state_vars[i]);
-        printf("\n");
-        printf("fluxes: \n");
-        for(i = 0; i < NUM_STATE_VARS; i++)
-            printf("%10.5f%10.5f%10.5f%10.5f\n", fluxxp[i], fluxxm[i], fluxyp[i], fluxym[i]);
-    }
-#endif
-
-#endif 
     
     if(EmTemp->get_stoppedflags() == 2)
         *deposited = state_vars[0] * dx[0] * dx[1];

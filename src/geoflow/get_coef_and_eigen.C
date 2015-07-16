@@ -18,22 +18,19 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-//#define DEBUGINHERE
 
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
 
-#ifdef TWO_PHASES
-double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr2, FluxProps* fluxprops_ptr,
+
+double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
                           TimeProps* timeprops_ptr, int ghost_flag)
-#else
-double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
-                          TimeProps* timeprops_ptr, int ghost_flag)
-#endif
 {
-#ifdef TWO_PHASES
-    MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
-#endif
+    MatPropsTwoPhases* matprops2_ptr{nullptr};
+    if(elementType == ElementType::TwoPhases)
+    {
+        matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
+    }
     int myid;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     double min_distance = 1000000, max_evalue = GEOFLOW_TINY, doubleswap;
@@ -45,10 +42,6 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
     //-------------------the coefficients and eigenvalues and calculate the time step
     double global_dt[3], dt[3] =
     { 0.0, 0.0, HUGE_VAL };
-    
-#ifdef DEBUGINHERE
-    FILE *fp=fopen("junk.debug","w");
-#endif
     
     HashEntryPtr* elem_bucket_zero = El_Table->getbucketptr();
     HashEntryPtr entryp;
@@ -96,11 +89,10 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
     int intswap;
     double *curve, maxcurve;
     int ifanynonzeroheight = 0;
-#ifdef TWO_PHASES
+    //for TWO PHASES
     double Vsolid[2], Vfluid[2];
-#else
+    //for single PHASE
     double VxVy[2];
-#endif
 
     for(ibuck = 0; ibuck < num_elem_buckets; ibuck++)
     {
@@ -124,50 +116,55 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
                     
                     d_uvec = EmTemp->get_d_state_vars();
                     dx_ptr = EmTemp->get_dx();
-#ifdef SUNOS
-#ifdef TWO_PHASES
-                    double kactxy[DIMENSION];
-                    gmfggetcoef2ph_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
-                                 &(matprops_ptr->bedfrict[EmTemp->get_material()]), &(matprops_ptr->intfrict), kactxy,
-                                 (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));
-                    
-                    EmTemp->put_kactxy(kactxy);
-#else
-                    gmfggetcoef_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
-                                 &(matprops_ptr->bedfrict[EmTemp->get_material()]), &(matprops_ptr->intfrict),
-                                 EmTemp->get_kactxy(), (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));
-#endif
+
+                    if(elementType == ElementType::TwoPhases)
+                    {
+                        double kactxy[DIMENSION];
+                        gmfggetcoef2ph_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
+                                        &(matprops_ptr->bedfrict[EmTemp->get_material()]), &(matprops_ptr->intfrict),
+                                        kactxy, (EmTemp->get_kactxy() + 1), &tiny, &(matprops2_ptr->epsilon));
+
+                        EmTemp->put_kactxy(kactxy);
+                    }
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        gmfggetcoef_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
+                                     &(matprops_ptr->bedfrict[EmTemp->get_material()]), &(matprops_ptr->intfrict),
+                                     EmTemp->get_kactxy(), (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));
+                    }
+
                     EmTemp->calc_stop_crit(matprops_ptr);
                     intswap = EmTemp->get_stoppedflags();
-#ifdef DEBUGINHERE
-                    fprintf(fp,"%d\n",intswap);
-#endif
+
                     if((intswap < 0) || (intswap > 2))
                         printf("get_coef_and_eigen stopped flag=%d\n", intswap);
                     
                     //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
                     //rule speed if it is smaller) because underestimating speed (which
                     //results in over estimating the timestep) is fatal to stability...
-#ifdef TWO_PHASES
-                    Vsolid[0] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars() + 1));
-                    Vsolid[1] = (*(EmTemp->get_state_vars() + 3)) / (*(EmTemp->get_state_vars() + 1));
-                    
-                    Vfluid[0] = (*(EmTemp->get_state_vars() + 4)) / (*(EmTemp->get_state_vars()));
-                    Vfluid[1] = (*(EmTemp->get_state_vars() + 5)) / (*(EmTemp->get_state_vars()));
-                    
-                    //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                    eigen2ph_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()), (EmTemp->get_eigenvxymax() + 1),
-                           &evalue, &tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), Vsolid, Vfluid,
-                           &(matprops_ptr->epsilon), &(matprops_ptr->flow_type));
-#else
-                    VxVy[0] = (*(EmTemp->get_state_vars() + 1)) / (*(EmTemp->get_state_vars()));
-                    VxVy[1] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars()));
-                    
-                    //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                    eigen_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()), (EmTemp->get_eigenvxymax() + 1),
-                           &evalue, &tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), VxVy);
-#endif               
-#endif
+                    if(elementType == ElementType::TwoPhases)
+                    {
+                        Vsolid[0] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars() + 1));
+                        Vsolid[1] = (*(EmTemp->get_state_vars() + 3)) / (*(EmTemp->get_state_vars() + 1));
+
+                        Vfluid[0] = (*(EmTemp->get_state_vars() + 4)) / (*(EmTemp->get_state_vars()));
+                        Vfluid[1] = (*(EmTemp->get_state_vars() + 5)) / (*(EmTemp->get_state_vars()));
+
+                        //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                        eigen2ph_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()),
+                                  (EmTemp->get_eigenvxymax() + 1), &evalue, &tiny, EmTemp->get_kactxy(),
+                                  EmTemp->get_gravity(), Vsolid, Vfluid, &(matprops_ptr->epsilon),
+                                  &(matprops2_ptr->flow_type));
+                    }
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        VxVy[0] = (*(EmTemp->get_state_vars() + 1)) / (*(EmTemp->get_state_vars()));
+                        VxVy[1] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars()));
+
+                        //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                        eigen_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()), (EmTemp->get_eigenvxymax() + 1),
+                               &evalue, &tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), VxVy);
+                    }
                     
                     //printf("evalue=%g\n",evalue);
                     
@@ -185,48 +182,47 @@ double get_coef_and_eigen(HashTable* El_Table, HashTable* NodeTable, MatProps* m
                     {
                         curve = EmTemp->get_curvature();
                         maxcurve = (dabs(curve[0]) > dabs(curve[1])) ? curve[0] : curve[1];
-#ifdef TWO_PHASES
-                        fprintf(stderr,
-                                "eigenvalue is %e for procd %d momentums are:\n \
+                        if(elementType == ElementType::TwoPhases)
+                        {
+                            fprintf(stderr,
+                                    "eigenvalue is %e for procd %d momentums are:\n \
                      solid :(%e, %e) \n \
                      fluid :(%e, %e) \n \
                      for pile height %e curvature=%e (x,y)=(%e,%e)\n",
-                                evalue, myid, *(EmTemp->get_state_vars() + 2), *(EmTemp->get_state_vars() + 3),
-                                *(EmTemp->get_state_vars() + 4), *(EmTemp->get_state_vars() + 5),
-                                *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
-                                *(EmTemp->get_coord() + 1));
-                        exit(1);
-#else
-                        printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
-                               evalue, myid, *(EmTemp->get_state_vars() + 1), *(EmTemp->get_state_vars() + 2),
-                               *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
-                               *(EmTemp->get_coord() + 1));
-#endif
+                                    evalue, myid, *(EmTemp->get_state_vars() + 2), *(EmTemp->get_state_vars() + 3),
+                                    *(EmTemp->get_state_vars() + 4), *(EmTemp->get_state_vars() + 5),
+                                    *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
+                                    *(EmTemp->get_coord() + 1));
+                            exit(1);
+                        }
+                        if(elementType == ElementType::SinglePhase)
+                        {
+                            printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
+                                   evalue, myid, *(EmTemp->get_state_vars() + 1), *(EmTemp->get_state_vars() + 2),
+                                   *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
+                                   *(EmTemp->get_coord() + 1));
+                            exit(1);
+                        }
                     }
                     
                     min_dx_dy_evalue = c_dmin1(c_dmin1(dx_ptr[0], dx_ptr[1]) / evalue, min_dx_dy_evalue);
                 }
                 else
                 {
-#ifdef TWO_PHASES
-                    EmTemp->calc_stop_crit(matprops_ptr); // ensure decent values of kactxy
-#else
-                    EmTemp->put_stoppedflags(2);
-#endif
-
-#ifdef DEBUGINHERE
-                    fprintf(fp,"%d\n",EmTemp->get_stoppedflags());
-#endif
+                    if(elementType == ElementType::TwoPhases)
+                    {
+                        EmTemp->calc_stop_crit(matprops2_ptr); // ensure decent values of kactxy
+                    }
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        EmTemp->put_stoppedflags(2);
+                    }
                 }
                 
             } //(EmTemp->get_adapted_flag()>0)||...
             
         } //while(entryp)
     }
-    
-#ifdef DEBUGINHERE
-    fclose(fp);
-#endif
     
     //if(!ifanynonzeroheight) min_dx_dy_evalue=0.0;
     

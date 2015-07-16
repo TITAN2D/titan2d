@@ -60,6 +60,7 @@ class TitanSinglePhase(TitanSimulation):
                  gravity_scale=9.8,
                  height_scale=None,
                  adapt=False,
+                 short_speed=False,
                  vizoutput="tecplotxxxx.tec",
                  order='First',
                  edge_height=None,
@@ -125,6 +126,9 @@ class TitanSinglePhase(TitanSimulation):
             self.sim.adapt = 1
         else:
             self.sim.adapt = 0
+            
+        #short_speed
+        self.sim.set_short_speed(short_speed)
         #Visualization Output
         if vizoutput in TitanSimulation.possible_vizoutputs:
             self.sim.vizoutput = TitanSimulation.possible_vizoutputs[vizoutput]
@@ -419,8 +423,8 @@ class TitanTwoPhases(TitanSinglePhase):
         super(TitanTwoPhases, self).__init__(**kwargs)
         
     def validatePile(self, **kwargs):
-        if 'pile_type' not in kwargs or kwargs['pile_type']==None:
-            kwargs['pile_type']='PARABALOID'
+        #if 'pile_type' not in kwargs or kwargs['pile_type']==None:
+        #    kwargs['pile_type']='PARABALOID'
         out=super(TitanTwoPhases, self).validatePile(**kwargs)
         out['vol_fract'] = float(kwargs['vol_fract'])
         

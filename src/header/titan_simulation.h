@@ -66,6 +66,8 @@ public:
     //! order == 2 means use second order method
     int order;
 
+    ElementType elementType;
+
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input(StatProps* statprops_ptr,
                                TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
@@ -93,6 +95,8 @@ class cxxTitanSinglePhase:public cxxTitanSimulation
 public:
     cxxTitanSinglePhase();
     ~cxxTitanSinglePhase();
+
+    void set_short_speed(bool short_speed);
 
     //!>Process input and initiate dependencies, replacing Read_data
     virtual void process_input();
