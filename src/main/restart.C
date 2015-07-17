@@ -468,7 +468,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     Yrange[1] = temp8.d;
     
     //recreate the node hashtable
-    *NodeTable = new HashTable(doublekeyrange, NODE_TABLE_SIZE, 2017, Xrange, Yrange, 1);
+    *NodeTable = new HashTable(doublekeyrange, NODE_TABLE_SIZE, Xrange, Yrange);
     
     //the number of ELEMENTS in table 
     for(itemp = 0; itemp < 4; itemp++)
@@ -513,7 +513,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     }
     
     //recreate the element hashtable
-    *ElemTable = new ElementsHashTable(doublekeyrange, ELEM_TABLE_SIZE, 503, Xrange, Yrange, 1, *NodeTable);
+    *ElemTable = new ElementsHashTable(doublekeyrange, ELEM_TABLE_SIZE, Xrange, Yrange, *NodeTable);
     
     /*****************************************************************/
 

@@ -34,58 +34,12 @@
 #define MaxBits ( sizeof(unsigned) * CHAR_BIT )
 #define IScale  ((unsigned)((MaxBits <= 32) ? ~(0u) : (0xffffffff << (MaxBits - 32))))
 
-HashTable::HashTable(unsigned* min, unsigned* max, int size, int prime)
-{
-    assert(0);  //avoid using this since it doesn't intialize doublekeyrange
-    
-    MinKey[0] = *min;
-    MinKey[1] = *(min + 1);
-    MaxKey[0] = *max;
-    MaxKey[1] = *(max + 1);
-    // extend the hashtable bounds a little bit to make it more efficient for adaptive meshes
-    unsigned hashtable_extender = HASHTABLE_EXTENDER;
-    if(MinKey[0] >= hashtable_extender)
-        MinKey[0] -= hashtable_extender;
-    else
-        MinKey[0] = 0;
-    unsigned umax = IScale;
-    if((hashtable_extender / 2 + MaxKey[0] / 2) <= (umax / 2))
-        MaxKey[0] += hashtable_extender;
-    else
-        MaxKey[0] = umax;
-    
-    NBUCKETS = size;
-    PRIME = prime;
-    //Range  = *(MaxKey);
-    Range = *(MaxKey) - *(MinKey); //Keith Made this change 20061109
-    
-    bucket = new HashEntryPtr[NBUCKETS];
-    
-    for(int i = 0; i < NBUCKETS; i++)
-        *(bucket + i) = 0;
-    
-    /*  MaxMinX[0]=MaxMinY[0]=-1;
-     
-     MaxMinX[1]=MaxMinY[1]=1;*/
 
-    ukeyBucket = new vector<uint64_t> [NBUCKETS];
-    hashEntryBucket = new vector<HashEntry*> [NBUCKETS];
-    
-    ENTRIES = 0;
-}
-
-HashTable::HashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[], int ifrestart)
+HashTable::HashTable(double *doublekeyrangein, int size, double XR[], double YR[])
 {
     int i;
-    /*
-     MinKey[0] = *min;
-     MinKey[1] = *(min+1);
-     MaxKey[0] = *max;
-     MaxKey[1] = *(max+1);
-     */
 
     NBUCKETS = size;
-    PRIME = prime;
     
     for(i = 0; i < KEYLENGTH; i++)
         doublekeyrange[i] = doublekeyrangein[i];
@@ -411,7 +365,33 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
     }
     ENTRIES--;
 }
+void HashTable::print0()
+{
+    bool minmax_init=false;
+    uint64_t ukey_min;
+    uint64_t ukey_max;
 
+    for(int i = 0; i < NBUCKETS; i++)
+    {
+        int NEntriesInBucket = ukeyBucket[i].size();
+        for(int j = 0; j < NEntriesInBucket; j++)
+        {
+            HashEntry* ent = hashEntryBucket[i][j];
+            if(minmax_init)
+            {
+                if(ent->ukey<ukey_min)ukey_min=ent->ukey;
+                if(ent->ukey>ukey_max)ukey_max=ent->ukey;
+            }
+            else
+            {
+                ukey_min=ent->ukey;
+                ukey_max=ent->ukey;
+                minmax_init=true;
+            }
+        }
+    }
+    return;
+}
 /*
  int HashTable:: hash(unsigned* key)
  {
@@ -424,16 +404,9 @@ void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int wher
  return (igazee);
  }
  */
-ElementsHashTable::ElementsHashTable(unsigned* min, unsigned* max, int size, int prime, HashTable* nodeTable) :
-        HashTable(min, max, size, prime)
-{
-    NlocalElements = 0;
-    NodeTable = nodeTable;
-}
 
-ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, int prime, double XR[], double YR[],
-                                     int ifrestart, HashTable* nodeTable) :
-        HashTable(doublekeyrangein, size, prime, XR, YR, ifrestart)
+ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], HashTable* nodeTable) :
+        HashTable(doublekeyrangein, size, XR, YR)
 {
     NlocalElements = 0;
     NodeTable = nodeTable;
@@ -469,11 +442,11 @@ void ElementsHashTable::updateLocalElements()
 }
 int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
 {
-    int i, j, count = 0, NEntriesInBucket, mismatch = 0;
+    int count = 0, NEntriesInBucket, mismatch = 0;
     for(int i = 0; i < NBUCKETS; i++)
     {
         NEntriesInBucket = ukeyBucket[i].size();
-        for(j = 0; j < NEntriesInBucket; j++)
+        for(int j = 0; j < NEntriesInBucket; j++)
         {
             Element* Curr_El = (Element*) hashEntryBucket[i][j]->value;
             if(Curr_El->get_adapted_flag() > 0)

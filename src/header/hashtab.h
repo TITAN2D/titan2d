@@ -83,9 +83,6 @@ class HashTable
     friend class Element;
 
 protected:
-    unsigned MinKey[2];
-    unsigned MaxKey[2];
-    unsigned Range;
     double doublekeyrange[2];
     double hashconstant;
     double Xrange[2];
@@ -95,7 +92,6 @@ protected:
 
     HashEntryPtr* bucket;
     int NBUCKETS;
-    int PRIME;
     int ENTRIES;
 
     vector<uint64_t> *ukeyBucket;
@@ -105,8 +101,7 @@ protected:
     HashEntryPtr searchBucket(HashEntryPtr p, unsigned* key);
 
 public:
-    HashTable(unsigned*, unsigned*, int, int);
-    HashTable(double *doublekeyrangein, int, int, double* XR, double* YR, int ifrestart);
+    HashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
     virtual ~HashTable();
 
     int hash(unsigned* key);
@@ -126,22 +121,16 @@ public:
     double* get_doublekeyrange();
     double get_invdxrange();
     double get_invdyrange();
-    unsigned* get_MinKey();
-    unsigned* get_MaxKey();
     int get_nbuckets();
-
-    /*
-     double* getXrange();
-     double* getYrange();
-     */
     int get_no_of_entries();
+
+    void print0();
 };
 
 inline double* HashTable::get_doublekeyrange()
 {
     return doublekeyrange;
 }
-;
 
 inline HashEntryPtr* HashTable::getbucketptr()
 {
@@ -152,54 +141,37 @@ inline int HashTable::get_no_of_buckets()
 {
     return NBUCKETS;
 }
-;
 
 inline double HashTable::get_invdxrange()
 {
     return invdxrange;
 }
-;
 
 inline double HashTable::get_invdyrange()
 {
     return invdyrange;
 }
-;
 
 inline double* HashTable::get_Xrange()
 {
     return Xrange;
 }
-;
 
 inline double* HashTable::get_Yrange()
 {
     return Yrange;
 }
-;
 
-inline unsigned* HashTable::get_MinKey()
-{
-    return MinKey;
-}
-;
-
-inline unsigned* HashTable::get_MaxKey()
-{
-    return MaxKey;
-}
-;
 
 inline int HashTable::get_nbuckets()
 {
     return NBUCKETS;
 }
-;
+
 inline int HashTable::get_no_of_entries()
 {
     return ENTRIES;
 }
-;
 
 inline int HashTable::hash(unsigned* key)
 {
@@ -227,8 +199,7 @@ protected:
     vector<uint64_t> ukeyLocalElements;
     vector<Element*> localElements;
 public:
-    ElementsHashTable(unsigned*, unsigned*, int, int, HashTable*);
-    ElementsHashTable(double *doublekeyrangein, int, int, double* XR, double* YR, int ifrestart, HashTable* nodeTable);
+    ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], HashTable* nodeTable);
     virtual ~ElementsHashTable();
 
     Element** getElements()

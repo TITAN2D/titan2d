@@ -119,7 +119,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         yminmax[i] = YRange[i];
     }
     
-    *NodeTable = new HashTable(doublekeyrange, NODE_TABLE_SIZE, 2017, XRange, YRange, 0);
+    *NodeTable = new HashTable(doublekeyrange, NODE_TABLE_SIZE, XRange, YRange);
     
     for(i = 0; i < Node_Num; i++)
     {
@@ -138,7 +138,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         NodeP = new Node(key, coord, matprops_ptr);
         (*NodeTable)->add(key, NodeP);
     }
-    
+    (*NodeTable)->print0();
     //done reading in node data
     //start reading in element data
     
@@ -164,7 +164,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
     
     freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
            
-    *ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, 503, XRange, YRange, 0, *NodeTable);
+    *ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, XRange, YRange, *NodeTable);
     for(int ielem = 0; ielem < Elem_Num; ielem++)
     {
         
@@ -258,7 +258,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         Quad9P->find_positive_x_side(*NodeTable);
         Quad9P->calculate_dx(*NodeTable);
     }
-    
+    (*ElemTable)->print0();
     /************************************************************/
     /* need to change this so that smallest cell size is chosen */
     /* based on cube root of volume with failsafe for a minimum */
