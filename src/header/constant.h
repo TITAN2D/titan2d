@@ -88,7 +88,7 @@ const int MAX_NUM_STATE_VARS = 6;
 extern int NUM_STATE_VARS;
 extern bool SHORTSPEED;
 
-enum class ElementType {UnknownElementType=1, SinglePhase=1, TwoPhases=2 };
+enum class ElementType {UnknownElementType=0, SinglePhase=1, TwoPhases=2 };
 
 #define GEOFLOW_TINY 0.0001
 #define GEOFLOW_SHORT 0.01
