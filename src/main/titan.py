@@ -389,7 +389,7 @@ class TitanSinglePhase(TitanSimulation):
                 max_height = self.sim.get_pileprops().pileheight[iPile]
         heightscale = max_height
         for i in range(self.sim.fluxprops.no_of_sources):
-            effective_height=self.sim.flux_sources[i].get_effective_height()
+            effective_height=self.sim.fluxprops.get_effective_height(i)
             if effective_height > max_height:
                 max_height = effective_height
         #scaling stuff

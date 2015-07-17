@@ -1329,6 +1329,13 @@ public:
     //! array holding the y component of velocity of material extruding from each flux source
     std::vector<double> yVel;
 
+protected:
+    double height_scale;
+    double length_scale;
+    double velocity_scale;
+    double time_scale;
+
+public:
     FluxProps()
     {
         no_of_sources = 0;
@@ -1370,11 +1377,13 @@ public:
         xVel.push_back(Vmagnitude * cos(Vdirection * PI / 180.0));
         yVel.push_back(Vmagnitude * sin(Vdirection * PI / 180.0));
     }
-    virtual void scale(double length_scale, double height_scale, double gravity_scale)
+    virtual void scale(double m_length_scale, double m_height_scale, double m_gravity_scale)
     {
+        length_scale = m_length_scale;
+        height_scale = m_height_scale;
         //non-dimensionalize the inputs
-        double time_scale = sqrt(length_scale / gravity_scale);
-        double velocity_scale = sqrt(length_scale * gravity_scale);
+        time_scale = sqrt(length_scale / m_gravity_scale);
+        velocity_scale = sqrt(length_scale * m_gravity_scale);
         int isrc;
         for(isrc = 0; isrc < no_of_sources; isrc++)
         {
@@ -1448,18 +1457,18 @@ public:
     {
         printf("\tFlux_source %d:\n", i);
 
-        printf("\t\tExtrusion flux rate [m/s]:%f\n", influx[i]);
+        printf("\t\tExtrusion flux rate [m/s]:%f\n", influx[i] * height_scale/time_scale );
         printf("\t\tActive Time [s], start, end: %f %f\n", start_time[i], end_time[i]);
 
-        printf("\t\tCenter of Initial Volume, xc, yc (UTM E, UTM N): %f %f\n", xCen[i], yCen[i]);
-        printf("\t\tMajor and Minor Extent, majorR, minorR (m, m): %f %f\n", majorrad[i], minorrad[i]);
+        printf("\t\tCenter of Initial Volume, xc, yc (UTM E, UTM N): %f %f\n", xCen[i] * length_scale, yCen[i] * length_scale);
+        printf("\t\tMajor and Minor Extent, majorR, minorR (m, m): %f %f\n", majorrad[i] * length_scale, minorrad[i] * length_scale);
         double orientation = atan2(sinrot[i], cosrot[i]) * 180.0 / PI;
         printf("\t\tOrientation (angle [degrees] from X axis to major axis): %f\n", orientation);
         double Vmagnitude = sqrt(xVel[i] * xVel[i] + yVel[i] * yVel[i]);
         double Vdirection = atan2(yVel[i], xVel[i]) * 180.0 / PI;
-        printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude);
+        printf("\t\tInitial speed [m/s]: %f\n", Vmagnitude * velocity_scale);
         printf("\t\tInitial direction ([degrees] from X axis): %f\n", Vdirection);
-        printf("\t\tEffective Thickness, P (m):%f\n", get_effective_height(i));
+        printf("\t\tEffective Thickness, P (m):%f\n", get_effective_height(i) * height_scale);
     }
     virtual void print0()
     {
