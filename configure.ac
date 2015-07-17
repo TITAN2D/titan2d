@@ -38,7 +38,7 @@ case $host in
     ;;
 esac
 
-AC_CONFIG_SRCDIR([src/main/hpfem.C])
+AC_CONFIG_SRCDIR([src/main/titan.C])
 AC_CONFIG_HEADER([config.h])
 AC_PREFIX_DEFAULT([${PWD}])
 AC_LANG_CPLUSPLUS
