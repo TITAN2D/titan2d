@@ -47,14 +47,13 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
     /* pass off proc data here (really only need state_vars for off-proc neighbors) */
     move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
     
-    int Nelms = El_Table->getNumberOfLocalElements();
-    Element** Elms = (Element**) El_Table->getLocalElementsValues();
+
     
     t_start = MPI_Wtime();
     slopes(El_Table, NodeTable, matprops_ptr);
     titanTimings.slopesCalcTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.slopesCalcTime += MPI_Wtime() - t_start;
-    
+
     // get coefficients, eigenvalues, hmax and calculate the time step 
     double dt = get_coef_and_eigen(elementType, El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 0);
     //printf("step(): iter=%d %g+",timeprops_ptr->iter,timeprops_ptr->time);
@@ -97,6 +96,9 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
     /* mdj 2007-04 */
     int IF_STOPPED;
     double curr_time, influx[3], *d_uvec; //VxVy[2];
+
+    int Nelms = El_Table->getNumberOfLocalElements();
+    Element** Elms = (Element**) El_Table->getLocalElementsValues();
     //Node* nd;
 //#pragma omp parallel for                                                \
 //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)

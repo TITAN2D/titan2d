@@ -445,14 +445,14 @@ ElementsHashTable::~ElementsHashTable()              //evacuate the table
 }
 void ElementsHashTable::updateLocalElements()
 {
-    int i, j, count = 0, NEntriesInBucket;
+    int count = 0, NEntriesInBucket;
     
     ukeyLocalElements.resize(ENTRIES);
     localElements.resize(ENTRIES);
     for(int i = 0; i < NBUCKETS; i++)
     {
-        NEntriesInBucket = ukeyBucket[i].size();
-        for(j = 0; j < NEntriesInBucket; j++)
+        int NEntriesInBucket = ukeyBucket[i].size();
+        for(int j = 0; j < NEntriesInBucket; j++)
         {
             Element* Curr_El = (Element*) hashEntryBucket[i][j]->value;
             if(Curr_El->get_adapted_flag() > 0)
@@ -493,13 +493,13 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
 }
 void ElementsHashTable::updateElements()
 {
-    int i, j, count = 0, NEntriesInBucket;
+    int count = 0, NEntriesInBucket;
     ukeyElements.resize(ENTRIES);
     elements.resize(ENTRIES);
     for(int i = 0; i < NBUCKETS; i++)
     {
         NEntriesInBucket = ukeyBucket[i].size();
-        for(j = 0; j < NEntriesInBucket; j++)
+        for(int j = 0; j < NEntriesInBucket; j++)
         {
             ukeyElements[count] = ukeyBucket[i][j];
             elements[count] = (Element*) hashEntryBucket[i][j]->value;
