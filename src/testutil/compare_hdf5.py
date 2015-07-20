@@ -26,9 +26,9 @@ ds2=numpy.array(f2['Mesh']['Points'])
 if ds1.shape!=ds2.shape:
     print "\tDatasets have different size!"
 else:
-    ds=ds1-ds2
+    ds=(ds1-ds2)*(ds1-ds2)
     rmsd=math.sqrt(ds.mean())
-    print "\tRMSD=%.3e"%(rmsd,)
+    print "\tRMSD=%.3e Mean1=%.3e RMSD/Mean1=%.3e"%(rmsd,ds1.mean(),rmsd/ds1.mean())
 
 #compare Mash
 print "Comparing Mesh/Connections"
