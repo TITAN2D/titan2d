@@ -24,7 +24,7 @@ case $host in
     
     test_CXXFLAGS=${CXXFLAGS+set}
     if test "$test_CXXFLAGS" != set; then
-    	CXXFLAGS="-g -w -O2"
+    	CXXFLAGS="-g -w -O2 -std=c++11"
     else
     	CXXFLAGS="-std=c++11 $CXXFLAGS"
     fi
