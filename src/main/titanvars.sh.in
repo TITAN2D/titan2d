@@ -16,5 +16,5 @@
 
 export TITAN_HOME=@prefix@
 
-export LD_LIBRARY_PATH=@PYTHON@/../../lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=@PYTHON_ROOT@/lib:$LD_LIBRARY_PATH
 
