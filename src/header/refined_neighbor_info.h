@@ -18,6 +18,8 @@
 #ifndef REFINED_NEIGHBOR_INFO_H
 #define REFINED_NEIGHBOR_INFO_H
 
+#include "sfc.h"
+
 struct refined_neighbor_pack
 {
     int orig_gen;
@@ -68,8 +70,29 @@ struct refined_neighbor
             }
         }
         next = NULL;
-    }
-    ;
+    };
+    void set_parameters(int proc, const SFC_Key& target, const SFC_Key& old, const SFC_Key* new_sons, const int * which, int og,
+                            int case_flag)
+    {
+        target_proc = proc;
+        orig_gen = og;
+
+        SET_OLDKEY(target_element,target);
+        SET_OLDKEY(old_neighbor,old);
+
+        if(case_flag == 1)
+        {
+            SET_OLDKEY(sons[0], new_sons[which[1]]);
+            SET_OLDKEY(sons[1], new_sons[which[0]]);
+        }
+        else if(case_flag == 2)
+        {
+            SET_OLDKEY(sons[0], new_sons[which[0]]);
+            SET_OLDKEY(sons[1], SFC_Key(0));
+        }
+
+        next = NULL;
+    };
     
 };
 

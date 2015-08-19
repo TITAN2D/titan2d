@@ -7,7 +7,7 @@
 bin_PROGRAMS = titan
 bin_SCRIPTS = titanvars.sh
 
-titan_SOURCES = titan.C cxxtitan_wrap.cxx titan_simulation.C compare_key.C delete_tab.C datread.C hilbert.C init_piles.C update_topo.C restart.C properties.C
+titan_SOURCES = titan.C cxxtitan_wrap.cxx titan_simulation.C delete_tab.C datread.C hilbert.C init_piles.C update_topo.C restart.C properties.C
 
 titan_CXXFLAGS = -fpic -I$(srcdir)/../gisapi -I@PYTHON_ROOT@/include/python@PYTHON_VERSION@
 titan_cxxtitan_wrap_o_CXXFLAGS = -O0

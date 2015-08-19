@@ -258,18 +258,15 @@ void PileProps::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_
 double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom,
                                          double* m_ymom)
 {
-    unsigned nodes[9][KEYLENGTH];
+    SFC_Key nodes[9];
 
     //get corner and edge nodes
-    unsigned *node_key = EmTemp->getNode();
+    SFC_Key *node_key = EmTemp->getNode();
     for(int inode = 0; inode < 8; inode++)
-        for(int ikey = 0; ikey < KEYLENGTH; ikey++)
-            nodes[inode][ikey] = node_key[inode * KEYLENGTH + ikey];
+        nodes[inode] = node_key[inode];
 
     //get center node
-    node_key = EmTemp->pass_key();
-    for(int ikey = 0; ikey < KEYLENGTH; ikey++)
-        nodes[8][ikey] = node_key[ikey];
+    nodes[8] = *(EmTemp->pass_key());
 
     double node_pile_height[9];
     double sum_node_pile_height[9];
@@ -281,7 +278,7 @@ double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *Em
     {
 
         //get pile height at each node...
-        Node* ndtemp = (Node*) HT_Node_Ptr->lookup(&nodes[inode][0]);
+        Node* ndtemp = (Node*) HT_Node_Ptr->lookup(nodes[inode]);
         double* ndcoord = ndtemp->get_coord();
 
         // for multiple piles which may overlap, the highest value is used..

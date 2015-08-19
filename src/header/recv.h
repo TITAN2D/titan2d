@@ -53,7 +53,10 @@ public:
         sender_refined = *(recv_buf + i + 3);
         for(i = 0; i < KEYLENGTH; i++)
             target[i] = recv_buf[5 * KEYLENGTH + i];
-        targetP = (Element*) ht_elem_ptr->lookup(target);
+
+        SFC_Key target_key;
+        SET_NEWKEY(target_key,target);
+        targetP = (Element*) ht_elem_ptr->lookup(target_key);
         sender_id = assoc;
         identify();
         pre = NULL;

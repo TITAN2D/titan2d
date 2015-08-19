@@ -22,6 +22,7 @@
 #include "constant.h"
 #include "hashtab.h"
 #include "struct.h"
+#include "sfc.h"
 
 class TimeProps;
 class FluxProps;
@@ -37,11 +38,11 @@ class Node
 
     friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
-    friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
+    friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
     friend void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
 
-    friend void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
+    friend void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
     friend void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
 
@@ -67,13 +68,13 @@ class Node
 
 public:
     //! this is the constructor that creates a node when the initial grid is read in
-    Node(unsigned *keyi, double *coordi, MatProps *matprops_ptr);
+    Node(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
 
     //! this is the constructor that creates bubble and edge nodes for son Elements when the father Element is refined
-    Node(unsigned *keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);/*for refined*/
+    Node(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);/*for refined*/
     
     //! this is the node constructor that is called in construct_el() in update_element_info.C
-    Node(unsigned* keyi, double* coordi, int inf, int ord, double elev, int yada);
+    Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
 
     //! this is the constructor that recreates/restores a node that was saved in a restart file.
     Node(FILE* fp, MatProps* matprops_ptr); //for restart
@@ -108,7 +109,7 @@ public:
     void putinfo(int in);
 
     //! this function returns the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
-    unsigned* pass_key();
+    SFC_Key* pass_key();
 
     //! this function returns the global x and y coordinates of the node, in the finite difference version of Titan this is not always reliable, use the coordinates of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
     double* get_coord();
@@ -194,7 +195,7 @@ protected:
     double coord[DIMENSION];
 
     //! this is the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
-    unsigned key[KEYLENGTH];
+    SFC_Key key;
 
     //! points to the next node
     void* nextptr;
@@ -313,9 +314,9 @@ inline int Node::getglnum()
     return glnum;
 }
 
-inline unsigned* Node::pass_key()
+inline SFC_Key* Node::pass_key()
 {
-    return key;
+    return &key;
 }
 
 inline int Node::get_order()

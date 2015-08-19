@@ -58,7 +58,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
             if((neigh_proc != -1) && (neigh_proc != -2))
             { //-- if there is a neighbor
             
-                Neigh = (Element*) (El_Table->lookup(element->get_neighbors() + i * KEYLENGTH));
+                Neigh = (Element*) (El_Table->lookup(element->get_neighbors()[i]));
                 
                 //assert(Neigh);
                 if(Neigh != NULL && neigh_proc == myid)
@@ -72,7 +72,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                         {
                             int flag = 1;
                             for(int m = 0; m < TempList.get_num_elem(); m++)
-                                if(compare_key(TempList.get_key(m), Neigh->pass_key()))
+                                if(*TempList.get_key(m)==*Neigh->pass_key())
                                 {
                                     flag = 0;
                                     break;
@@ -123,7 +123,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
             {
                 int sur = 0;
                 for(int mi = 0; mi < RefinedList->get_num_elem(); mi++)
-                    if(sur = compare_key(RefinedList->get_key(mi), TempList.get_key(m)))
+                    if(sur = (*RefinedList->get_key(mi)==*TempList.get_key(m)))
                         break;
                 if(!sur)
                     RefinedList->add(TempList.get(m));
@@ -137,7 +137,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
     
     for(int m = 0; m < TempList.get_num_elem() - 1; m++)
         for(int mi = m + 1; mi < TempList.get_num_elem(); mi++)
-            assert(!compare_key(TempList.get_key(m), TempList.get_key(mi)));
+            assert(!(*TempList.get_key(m)==*TempList.get_key(mi)));
     
     return;
 }

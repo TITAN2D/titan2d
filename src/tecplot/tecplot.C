@@ -42,20 +42,17 @@ void DumpString(FILE * fp, char *str);
 
 void testkey(HashTable * El_Table, Element * EmTemp)
 {
-    unsigned key[2];
-    key[0] = *(EmTemp->pass_key() + 0);
-    key[1] = *(EmTemp->pass_key() + 1);
-    Element *EmTemp2 = (Element *) El_Table->lookup(key);
+    Element *EmTemp2 = (Element *) El_Table->lookup(*(EmTemp->pass_key()));
     if(EmTemp != EmTemp2)
     {
         printf("Element can't look up self with key");
         printf("\n");
     }
-    if((key[0] == 486561007) && (key[1] == 1010586963))
+    /*if((key[0] == 486561007) && (key[1] == 1010586963))
     {
         printf("danger key present");
         printf("\n");
-    }
+    }*/
     
     return;
 }
@@ -188,7 +185,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
     double secs;
     timeprops->chunktime(&hrs, &mins, &secs);
     
-    fprintf(fp, "TITLE= \" %s: time %d:%02d:%g (hrs:min:sec), V*=%g\"\n", mapnames->gis_map, hrs, mins, secs, v_star);
+    fprintf(fp, "TITLE= \" %s: time %d:%02d:%g (hrs:min:sec), V*=%g\"\n", mapnames->gis_map.c_str(), hrs, mins, secs, v_star);
     if(elementType == ElementType::TwoPhases)
     {
         fprintf(fp, "VARIABLES = \"X\", \"Y\", \"Z\", \"PILE_HEIGHT\","
@@ -303,12 +300,12 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         EmArray[1] = EmArray[2] = EmArray[3] = NULL;
                         
                         //The Primary Neighbor
-                        EmArray[1] = (Element *) El_Table->lookup(EmTemp->get_neighbors() + i_neigh * KEYLENGTH);
+                        EmArray[1] = (Element *) El_Table->lookup(EmTemp->get_neighbors()[i_neigh]);
                         assert(EmArray[1]);
                         tec_nodes_in_tec_quad[1] = EmArray[1]->get_ithelem();
                         
                         //The Secondary Neighbor
-                        EmArray[2] = (Element *) El_Table->lookup(EmTemp->get_neighbors() + (i_neigh + 4) * KEYLENGTH);
+                        EmArray[2] = (Element *) El_Table->lookup(EmTemp->get_neighbors()[i_neigh + 4]);
                         assert(EmArray[2]);
                         tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[2]->get_ithelem();
                         
@@ -361,7 +358,7 @@ int get_elem_elev(HashTable * NodeTable, MatProps * matprops, Element * EmTemp, 
     double resolution, xcoord, ycoord;
     Node *NdTemp;
     
-    NdTemp = (Node *) NodeTable->lookup(EmTemp->pass_key());
+    NdTemp = (Node *) NodeTable->lookup(*(EmTemp->pass_key()));
     
     if(NdTemp == NULL)
     {
@@ -427,8 +424,8 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     
     //yada++;
     
-    EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors() + (xm + 4) * KEYLENGTH);
-    EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors() + ym * KEYLENGTH);
+    EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[xm + 4]);
+    EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[ym]);
     
     if(!(((neigh_proc[xm + 4] == myid) || ((neigh_proc[xm + 4] == -2) && (neigh_proc[xm] == myid))) || (neigh_proc[ym]
             == myid)))
@@ -447,7 +444,7 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
             EmArray[1] = EmArray[2] = EmArray[3] = NULL;
             return 0;
         }
-        EmArray[3] = (Element *) El_Table->lookup(EmArray[1]->get_neighbors() + (zmym + 4) * KEYLENGTH);
+        EmArray[3] = (Element *) El_Table->lookup(EmArray[1]->get_neighbors()[zmym + 4]);
         //printf("left then down\n");
         //yada++;
         
@@ -463,13 +460,14 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
             EmArray[1] = EmArray[2] = EmArray[3] = NULL;
             return 0;
         }
-        EmArray[3] = (Element *) El_Table->lookup(EmArray[2]->get_neighbors() + zmxm * KEYLENGTH);
+        EmArray[3] = (Element *) El_Table->lookup(EmArray[2]->get_neighbors()[zmxm]);
     }
     
     if(!(EmArray[3]))
     {
-        printf("myid=%d xm=%d xp=%d ym=%d yp=%d zmxm=%d zmxp=%d zmym=%d zmyp=%d EmArray[0]->key={%u,%u}\n", myid, xm,
-               xp, ym, yp, zmxm, zmxp, zmym, zmyp, *(EmArray[0]->pass_key() + 0), *(EmArray[0]->pass_key() + 1));
+        printf("myid=%d xm=%d xp=%d ym=%d yp=%d zmxm=%d zmxp=%d zmym=%d zmyp=%d EmArray[0]->key={\n", myid, xm,
+               xp, ym, yp, zmxm, zmxp, zmym, zmyp);
+        cout<<*(EmArray[0]->pass_key())<<"}\n";
         scanf("%d", &yada);
     }
     assert(EmArray[3]);          //make this full proof
@@ -509,12 +507,12 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     if((neigh_proc[xpfirst] != INIT) && (neigh_proc[yp] != INIT))
     {
         
-        EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors() + yp * KEYLENGTH);
+        EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[yp]);
         if(!EmArray[2])
         {
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->pass_key(),
+            ElemBackgroundCheck(El_Table, NodeTable, *(EmArray[0]->pass_key()),
             stdout);
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors() + yp * KEYLENGTH,
+            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors()[yp],
             stdout);
             
         }
@@ -523,12 +521,12 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         get_elem_orient(EmArray[2], &ypxm, &ypxp, &ypym, &ypyp);
         yneigh_neigh_proc = EmArray[2]->get_neigh_proc();
         
-        EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors() + xp * KEYLENGTH);
+        EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[xp]);
         if(!EmArray[1])
         {
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->pass_key(),
+            ElemBackgroundCheck(El_Table, NodeTable, *(EmArray[0]->pass_key()),
             stdout);
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors() + xp * KEYLENGTH,
+            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors()[xp],
             stdout);
         }
         assert(EmArray[1]);
@@ -709,12 +707,13 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
             if(EmTemp->get_adapted_flag() > 0)
             {
                 double *state_vars = EmTemp->get_state_vars();
-                Node *NdTemp = (Node *) NodeTable->lookup(EmTemp->pass_key());
+                Node *NdTemp = (Node *) NodeTable->lookup(*(EmTemp->pass_key()));
                 if(state_vars[0] < GEOFLOW_TINY)
                 {
                     double zero = 0;
-                    fprintf(fp, "%u %u %f %f %f %f %f %f %f %f %d %f \n", *(EmTemp->pass_key()),
-                            *(EmTemp->pass_key() + 1), (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                    fprintf_sfc_key(fp, *(EmTemp->pass_key()));
+                    fprintf(fp, "%f %f %f %f %f %f %f %f %d %f \n",
+                            (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                             (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                             (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
                             *(EmTemp->get_zeta() + 1), zero, zero, zero, myid, zero);
@@ -725,8 +724,8 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     {
                         double Vel[4];
                         EmTemp->eval_velocity(0.0, 0.0, Vel);
-                        fprintf(fp, "%u %u %f %f %f %f %f %f %f %f %d %f \n", *(EmTemp->pass_key()),
-                                *(EmTemp->pass_key() + 1), (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                        fprintf_sfc_key(fp, *(EmTemp->pass_key()));
+                        fprintf(fp, " %f %f %f %f %f %f %f %f %d %f \n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), state_vars[0] * (matprops)->HEIGHT_SCALE,
@@ -738,8 +737,9 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     {
                         double VxVy[2];
                         EmTemp->eval_velocity(0.0, 0.0, VxVy);
-                        fprintf(fp, "%u %u %f %f %f %f %f %f %f %f %d %f \n", *(EmTemp->pass_key()),
-                                *(EmTemp->pass_key() + 1), (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
+                        fprintf_sfc_key(fp, *(EmTemp->pass_key()));
+                        fprintf(fp, "%f %f %f %f %f %f %f %f %d %f \n",
+                                (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), state_vars[0] * (matprops)->HEIGHT_SCALE,
@@ -782,7 +782,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
     Element *EmTemp;
     Node *NodeTemp;
     HashEntry *entryp;
-    unsigned *nodes;
+    SFC_Key *nodes;
     char filename[256];
     
     if(myid == TARGETPROCB)
@@ -816,7 +816,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
     double seconds;
     timeprops->chunktime(&hours, &minutes, &seconds);
     
-    fprintf(fp, "TITLE= \" %s (MESH OUTPUT) time %d:%02d:%g (hrs:min:sec), V*=%g\"\n", mapnames->gis_map, hours,
+    fprintf(fp, "TITLE= \" %s (MESH OUTPUT) time %d:%02d:%g (hrs:min:sec), V*=%g\"\n", mapnames->gis_map.c_str(), hours,
             minutes, seconds, v_star);
     
     fprintf(fp,
@@ -888,19 +888,21 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                 double err = sqrt(*(EmTemp->get_el_error()));
                 for(int j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes + j * KEYLENGTH);
+                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
                     assert(NodeTemp);
                     //int* dof = NodeTemp->getdof();
                     int jj = j;
                     if(1)
                     {           //NodeTemp->getinfo() != S_C_CON) {
+                        unsigned tmpkey[KEYLENGTH];
+                        SET_OLDKEY(tmpkey,(*(EmTemp->pass_key())));
 #ifdef TWO_PHASES 
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
                                 state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
-                                state_vars[3] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
+                                state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
                                 EmTemp->get_gen(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
@@ -912,7 +914,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
                                 state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
-                                state_vars[2] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
+                                state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],
                                 EmTemp->get_gen(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
@@ -952,23 +954,25 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                             neighside = 1;
                             //assert(0);
                         }
-                        Node *NodeTemp2 = (Node *) NodeTable->lookup(nodes + mynode * KEYLENGTH);
+                        Node *NodeTemp2 = (Node *) NodeTable->lookup(nodes[mynode]);
                         assert(NodeTemp2);
                         
                         elev = .5 * NodeTemp2->get_elevation();
                         Element *EmTemp2 = (Element *) El_Table->lookup(
-                                (EmTemp->get_neighbors() + KEYLENGTH * neighside));
+                                (EmTemp->get_neighbors()[neighside]));
                         assert(EmTemp2);
                         
-                        NodeTemp2 = (Node *) NodeTable->lookup(EmTemp2->getNode() + j * KEYLENGTH);
+                        NodeTemp2 = (Node *) NodeTable->lookup(EmTemp2->getNode()[j]);
                         elev += .5 * NodeTemp2->get_elevation();
+
+                        unsigned tmpkey[KEYLENGTH];
+                        SET_OLDKEY(tmpkey,(*(EmTemp->pass_key())));
 #ifdef TWO_PHASES 
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
-                                state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, *(EmTemp->pass_key()),
-                                *(EmTemp->pass_key() + 1), EmTemp->get_gen(), EmTemp->get_which_son(),
+                                state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->get_gen(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
@@ -978,8 +982,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
-                                state_vars[1] * momentum_scale, state_vars[2] * momentum_scale, *(EmTemp->pass_key()),
-                                *(EmTemp->pass_key() + 1), EmTemp->get_gen(), EmTemp->get_which_son(),
+                                state_vars[1] * momentum_scale, state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->get_gen(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
@@ -1051,7 +1054,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
     Element *EmTemp;
     Node *NodeTemp;
     HashEntry *entryp;
-    unsigned *nodes;
+    SFC_Key *nodes;
     char filename[20];            //="vizplotxxxxxxxx.plt";
     sprintf(filename, "vizplot%08d.plt", timeprops->iter);
     
@@ -1131,7 +1134,9 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                 double err = sqrt(*(EmTemp->get_el_error()));
                 for(int j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes + j * KEYLENGTH);
+                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
+                    unsigned tmpkey[KEYLENGTH];
+                    SET_OLDKEY(tmpkey,(*(EmTemp->pass_key())));
                     //int* dof = NodeTemp->getdof();
 #ifdef TWO_PHASES 
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
@@ -1139,7 +1144,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                             (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                             (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
-                            state_vars[3] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
+                            state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
                             EmTemp->get_gen(), EmTemp->get_which_son());
 #else
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
@@ -1147,7 +1152,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                             (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                             (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
-                            state_vars[2] * momentum_scale, *(EmTemp->pass_key()), *(EmTemp->pass_key() + 1),
+                            state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],
                             EmTemp->get_gen(), EmTemp->get_which_son());
 #endif
                     

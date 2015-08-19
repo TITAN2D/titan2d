@@ -166,9 +166,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
             if(!EmTemp->get_refined_flag() && EmTemp->get_new_old() > 0)
             {
                 sfc_vert_ptr[j].lb_weight = EmTemp->get_lb_weight();
-                unsigned* elem_key = EmTemp->get_lb_key();
-                for(k = 0; k < KEYLENGTH; k++)
-                    sfc_vert_ptr[j].sfc_key[k] = elem_key[k];
+                SET_OLDKEY(sfc_vert_ptr[j].sfc_key,EmTemp->get_lb_key());
                 
                 j++;
             }
@@ -614,7 +612,7 @@ void repartition2(ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* 
 }
 #endif
 
-void checkelemnode(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *fpdebug, double loc)
+/*void checkelemnode(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *fpdebug, double loc)
 {
     unsigned elemdebugkey2a[2] =
     { 695804849, 991146299 };
@@ -633,7 +631,7 @@ void checkelemnode(HashTable *El_Table, HashTable *NodeTable, int myid, FILE *fp
     fflush(fpdebug);
     
     return;
-}
+}*/
 int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend)
 {
@@ -760,7 +758,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             {
                 //delete the non active elements
                 EmTemp->void_bcptr();
-                El_Table->remove(EmTemp->pass_key(), 1, stdout, myid, 1);
+                El_Table->remove(*(EmTemp->pass_key()));//, 1, stdout, myid, 1);
                 delete EmTemp;
             }
         } //while(currentPtr)
@@ -806,9 +804,12 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             
             if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
             {
-                DoubleKeyArray[ielem] = *(EmTemp->pass_key() + 0);
+                unsigned tmpkey[KEYLENGTH];
+                SET_OLDKEY(tmpkey,(*(EmTemp->pass_key())));
+                DoubleKeyArray[ielem] = tmpkey[0];
+
                 for(ikey = 1; ikey < KEYLENGTH; ikey++)
-                    DoubleKeyArray[ielem] = DoubleKeyArray[ielem] * doublekeyrange1 + *(EmTemp->pass_key() + ikey);
+                    DoubleKeyArray[ielem] = DoubleKeyArray[ielem] * doublekeyrange1 + tmpkey[ikey];
                 
                 ElemArray[ielem] = EmTemp;
                 
@@ -855,8 +856,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     unsigned MyFirstAndLastKey[2 * KEYLENGTH];
     
     //store my first key
-    for(ikey = 0; ikey < KEYLENGTH; ikey++)
-        MyFirstAndLastKey[0 * KEYLENGTH + ikey] = *(ElemArray[0]->pass_key() + ikey);
+    SET_OLDKEY(((MyFirstAndLastKey+0 * KEYLENGTH)),(*(ElemArray[0]->pass_key())))
     
     //DoubleArray now becomes the cumulative sum of the load balancing
     //weights (lb_weight);
@@ -868,8 +868,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     //sum instead of before it, because I know ElemArray[num_elem-1] 
     //will be in cache now because I just used him, so save a SMALL 
     //amount of time  
-    for(ikey = 0; ikey < KEYLENGTH; ikey++)
-        MyFirstAndLastKey[1 * KEYLENGTH + ikey] = *(ElemArray[num_elem - 1]->pass_key() + ikey);
+    SET_OLDKEY(((MyFirstAndLastKey+1 * KEYLENGTH)),(*(ElemArray[num_elem - 1]->pass_key())))
     
     /*
      if(myid==1) MPI_Barrier(MPI_COMM_WORLD);
@@ -1153,9 +1152,11 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         {
             
             //compute the double precision equivalent of this element's key
-            doublekey = *(ElemArray[ielem]->pass_key() + 0);
+            unsigned tmpkey[KEYLENGTH];
+            SET_OLDKEY(tmpkey,(*(ElemArray[ielem]->pass_key())));
+            doublekey =  tmpkey[0];
             for(ikey = 1; ikey < KEYLENGTH; ikey++)
-                doublekey = doublekey * doublekeyrange1 + *(ElemArray[ielem]->pass_key() + ikey);
+                doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
             
             if(doublekey >= AllFirstAndLastDoubleKeys[myid + 1][0])
             {
@@ -1183,9 +1184,11 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         {
             
             //compute the double precision equivalent of this element's key
-            doublekey = *(ElemArray[ielem]->pass_key() + 0);
+            unsigned tmpkey[KEYLENGTH];
+            SET_OLDKEY(tmpkey,(*(ElemArray[ielem]->pass_key())));
+            doublekey =  tmpkey[0];
             for(ikey = 1; ikey < KEYLENGTH; ikey++)
-                doublekey = doublekey * doublekeyrange1 + *(ElemArray[ielem]->pass_key() + ikey);
+                doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
             
             if(doublekey > AllFirstAndLastDoubleKeys[myid - 1][1])
             {
@@ -1739,13 +1742,12 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         send_array0 = (ElemPack*) malloc(num_send[0] * sizeof(ElemPack));
         //my first key is changing, update my record
-        for(ikey = 0; ikey < KEYLENGTH; ikey++)
-            MyFirstAndLastKey[0 * KEYLENGTH + ikey] = *(ElemArray[isend[0] + 1]->pass_key() + ikey);
+        SET_OLDKEY( (MyFirstAndLastKey+0 * KEYLENGTH), (*(ElemArray[isend[0] + 1]->pass_key())));
         
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
             Pack_element(ElemArray[ielem], send_array0 + ielem, NodeTable, myid - 1);
-            assert(!compare_key(send_array0[ielem].key, nullkey));
+            assert(!(sfc_key_from_oldkey(send_array0[ielem].key)==SFC_Key(0)));
         }
         assert(ielem = num_send[0]);
         
@@ -1811,13 +1813,12 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         send_array1 = (ElemPack*) malloc(num_send[1] * sizeof(ElemPack));
         //my last key is changing, update my record
-        for(ikey = 0; ikey < KEYLENGTH; ikey++)
-            MyFirstAndLastKey[1 * KEYLENGTH + ikey] = *(ElemArray[isend[1] - 1]->pass_key() + ikey);
+        SET_OLDKEY((MyFirstAndLastKey+1 * KEYLENGTH + ikey),(*(ElemArray[isend[1] - 1]->pass_key())));
         
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
             Pack_element(ElemArray[ielem], send_array1 + ielem - isend[1], NodeTable, myid + 1);
-            assert(!compare_key(send_array1[ielem - isend[1]].key, nullkey));
+            assert(!(sfc_key_from_oldkey(send_array1[ielem - isend[1]].key)==SFC_Key(0)));
         }
         assert(ielem - isend[1] == num_send[1]);
         
@@ -1919,14 +1920,21 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                 "repartition2(): myid=%d\nabout to delete elements %d through %d out of %d because I sent them to processor %d\n",
                 myid, 0, isend[0], num_elem, myid - 1);
         for(ielem = 0; ielem <= isend[0]; ielem++)
-            fprintf(fpdb2, "    deleting %dth element: key={%u,%u}\n", ielem, *(ElemArray[ielem]->pass_key() + 0),
-                    *(ElemArray[ielem]->pass_key() + 1));
+        {
+            fprintf(fpdb2, "    deleting %dth element: key={", ielem);
+            fprintf_sfc_key(fpdb2, *(ElemArray[ielem]->pass_key()));
+            fprintf(fpdb2, "}\n");
+        }
         
         fprintf(fpdb2, "\nabout to delete elements %d through %d out of %d because I sent the to processor %d\n",
                 isend[1], num_elem - 1, num_elem, myid + 1);
         for(ielem = isend[1]; ielem < num_elem; ielem++)
-            fprintf(fpdb2, "    deleting %dth element: key={%u,%u}\n", ielem, *(ElemArray[ielem]->pass_key() + 0),
-                    *(ElemArray[ielem]->pass_key() + 1));
+        {
+            fprintf(fpdb2, "    deleting %dth element: key={", ielem);
+            fprintf_sfc_key(fpdb2, *(ElemArray[ielem]->pass_key()));
+            fprintf(fpdb2, "}\n");
+        }
+
         
         fclose(fpdb2);
     }
@@ -1941,7 +1949,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
             ElemArray[ielem]->void_bcptr();
-            El_Table->remove(ElemArray[ielem]->pass_key(), 1, stdout, myid, 2);
+            El_Table->remove(*(ElemArray[ielem]->pass_key()));//, 1, stdout, myid, 2);
             delete ElemArray[ielem];
         }
     
@@ -1949,7 +1957,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
-            El_Table->remove(ElemArray[ielem]->pass_key(), 1, stdout, myid, 3);
+            El_Table->remove(*(ElemArray[ielem]->pass_key()));//, 1, stdout, myid, 3);
             delete ElemArray[ielem];
         }
     }
@@ -1996,13 +2004,13 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             EmTemp = (Element*) (currentPtr->value);
             currentPtr = currentPtr->next;
             assert(EmTemp);
-            NdTemp = (Node*) NodeTable->lookup(EmTemp->pass_key());
+            NdTemp = (Node*) NodeTable->lookup(*(EmTemp->pass_key()));
             assert(NdTemp);
             NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
             
             for(inode = 0; inode < 8; inode++)
             {
-                NdTemp = (Node*) NodeTable->lookup(EmTemp->getNode() + inode * KEYLENGTH);
+                NdTemp = (Node*) NodeTable->lookup(EmTemp->getNode()[inode]);
                 if(NdTemp == NULL)
                 {
                     //char fname2[256];
@@ -2012,10 +2020,10 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                     //fpdb2=stdout;
                     fprintf(fpdb2, "myid=%d iter=%d iseqsend=%d node inode=%d is missing\n", myid, timeprops_ptr->iter,
                             iseqsend, inode);
-                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->pass_key(), fpdb2);
+                    ElemBackgroundCheck(El_Table, NodeTable, *(EmTemp->pass_key()), fpdb2);
                     fclose(fpdb2);
                     fpdb2 = fopen(fname2, "a");
-                    NodeBackgroundCheck(El_Table, NodeTable, EmTemp->getNode() + inode * KEYLENGTH, fpdb2);
+                    NodeBackgroundCheck(El_Table, NodeTable, EmTemp->getNode()[inode], fpdb2);
                     //unsigned tempkey[2]={695892755,2973438897};
                     //printf(
                     
@@ -2043,7 +2051,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             
             if(NdTemp->get_num_assoc_elem() == 0)
             {
-                NodeTable->remove(NdTemp->pass_key(), 0, stdout, myid, 4);
+                NodeTable->remove(*(NdTemp->pass_key()));//, 0, stdout, myid, 4);
                 delete NdTemp;
             }
         }	  //while(NodeTable_entry_ptr)
@@ -2388,10 +2396,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             if((timeprops_ptr->iter == DEBUG_ITER) && (EmTemp->get_adapted_flag() <= -NOTRECADAPTED)
                && (EmTemp->get_adapted_flag() >= -BUFFER))
             {
-                
-                doublekey = *(EmTemp->pass_key() + 0);
+                unsigned tmpkey[KEYLENGTH];
+                SET_OLDKEY(tmpkey,(*(EmTemp->pass_key())));
+                doublekey = tmpkey[0];
+
                 for(ikey = 1; ikey < KEYLENGTH; ikey++)
-                    doublekey = doublekey * doublekeyrange1 + *(EmTemp->pass_key() + ikey);
+                    doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
                 
                 fpdb2 = fopen(fname2, "a");
                 fprintf(fpdb2,
@@ -2404,9 +2414,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             
             if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
             {
-                doublekey = *(EmTemp->pass_key() + 0);
+                unsigned tmpkey[KEYLENGTH];
+                SET_OLDKEY(tmpkey,(*(EmTemp->pass_key())));
+                doublekey = tmpkey[0];
+
                 for(ikey = 1; ikey < KEYLENGTH; ikey++)
-                    doublekey = doublekey * doublekeyrange1 + *(EmTemp->pass_key() + ikey);
+                    doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
                 
                 if((doublekey < MyFirstAndLastDoubleKey[0]) || (doublekey > MyFirstAndLastDoubleKey[1]))
                 {
@@ -2494,9 +2507,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     //to send them to the elements they should belong to
     for(ielem = 0; ielem < NotMyElem.get_num_elem(); ielem++)
     {
-        doublekey = *(NotMyElem.get_key(ielem));
+        unsigned tmpkey[KEYLENGTH];
+        SET_OLDKEY(tmpkey,(*(NotMyElem.get_key(ielem))));
+        doublekey = tmpkey[0];
+
         for(ikey = 1; ikey < KEYLENGTH; ikey++)
-            doublekey = doublekey * doublekeyrange1 + *(NotMyElem.get_key(ielem) + ikey);
+            doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
         
         for(iproc = 0; iproc < numprocs; iproc++)
             if((NewProcDoubleKeyBoundaries[iproc] < doublekey) && (NewProcDoubleKeyBoundaries[iproc + 1] >= doublekey))
@@ -2540,7 +2556,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             
             //make sure I'm not sending any empty elements
             for(iSecondSend = 0; iSecondSend < NumToSecondSend[iproc]; iSecondSend++)
-                assert(!compare_key(SecondSendArray[iproc][iSecondSend].key, nullkey));
+                assert(!(sfc_key_from_oldkey(SecondSendArray[iproc][iSecondSend].key)==sfc_key_null));
             
             //non blocking second-send to processor iproc
             ierr = MPI_Isend((void *) SecondSendArray[iproc], NumToSecondSend[iproc], ELEMTYPE, iproc, send_tag3 + myid,
@@ -2577,7 +2593,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     for(ielem = 0; ielem < NotMyElem.get_num_elem(); ielem++)
     {
         NotMyElem.get(ielem)->void_bcptr();
-        El_Table->remove(NotMyElem.get_key(ielem), 1, stdout, myid, 5);
+        El_Table->remove(*(NotMyElem.get_key(ielem)));//, 1, stdout, myid, 5);
         delete NotMyElem.get(ielem);
     }
     
@@ -2610,13 +2626,13 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 EmTemp = (Element*) (currentPtr->value);
                 currentPtr = currentPtr->next;
                 assert(EmTemp);
-                NdTemp = (Node*) NodeTable->lookup(EmTemp->pass_key());
+                NdTemp = (Node*) NodeTable->lookup(*(EmTemp->pass_key()));
                 assert(NdTemp);
                 NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
                 
                 for(inode = 0; inode < 8; inode++)
                 {
-                    NdTemp = (Node*) NodeTable->lookup(EmTemp->getNode() + inode * KEYLENGTH);
+                    NdTemp = (Node*) NodeTable->lookup(EmTemp->getNode()[inode]);
                     assert(NdTemp);
                     NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
                 }
@@ -2637,7 +2653,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 
                 if(NdTemp->get_num_assoc_elem() == 0)
                 {
-                    NodeTable->remove(NdTemp->pass_key(), 0, stdout, myid, 6);
+                    NodeTable->remove(*(NdTemp->pass_key()));//, 0, stdout, myid, 6);
                     delete NdTemp;
                 }
             }  //while(NodeTable_entry_ptr)
@@ -2760,10 +2776,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 {
                     
                     //make a double precision version of the neighbor's key
-                    doublekey = *(EmTemp->get_neighbors() + ineigh * KEYLENGTH);
+                    unsigned tmpkey[KEYLENGTH];
+                    SET_OLDKEY(tmpkey,EmTemp->get_neighbors()[ineigh]);
+                    doublekey =  tmpkey[0];
                     for(ikey = 1; ikey < KEYLENGTH; ikey++)
-                        doublekey = doublekey * doublekeyrange1
-                                + *(EmTemp->get_neighbors() + ineigh * KEYLENGTH + ikey);
+                        doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
+
                     
                     //check which processor the neighbor's key belongs to
                     for(iproc = 0; iproc < numprocs; iproc++)
@@ -2875,12 +2893,12 @@ void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, i
 
     for(ielem = 0; ielem < num_recv; ielem++)
     {
-        if(compare_key(recv_array[ielem].key, nullkey))
+        if(sfc_key_from_oldkey(recv_array[ielem].key)==sfc_key_null)
         {
             printf("myid=%d num_recv=%d recv_array[%d].key=={0,0}\n", myid, num_recv, ielem);
             assert(0);
         }
-        EmTemp = (Element*) (El_Table->lookup(recv_array[ielem].key));
+        EmTemp = (Element*) (El_Table->lookup(sfc_key_from_oldkey(recv_array[ielem].key)));
         
         assert(EmTemp==NULL);  //this forces a deletion of ghost elements 
         //before repartitioning, which is done within repartition2(), if
@@ -2897,7 +2915,7 @@ void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, i
         //printf("myid=%d num_recv=%d ielem=%d\n",myid,num_recv,ielem);
         
         construct_el(EmNew, recv_array + ielem, NodeTable, myid, &not_used);
-        El_Table->add(EmNew->pass_key(), EmNew);
+        El_Table->add(*(EmNew->pass_key()), EmNew);
     }
     
     return;

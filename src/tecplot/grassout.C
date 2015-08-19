@@ -52,10 +52,10 @@ void grass_sites_proc_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             if(EmTemp->get_adapted_flag() > 0)
             {
                 
-                unsigned *nodes = EmTemp->getNode();
+                SFC_Key *nodes = EmTemp->getNode();
                 double *state_vars = EmTemp->get_state_vars();
                 
-                Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(nodes + 8 * KEYLENGTH);
+                Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(nodes[8]);
                 
                 double pile_height = state_vars[0] * (matprops->HEIGHT_SCALE);
                 double x_mom = state_vars[1] * momentum_scale;

@@ -83,10 +83,10 @@ HashTable::~HashTable()              //evacuate the table
     ENTRIES = 0;
 }
 
-HashEntryPtr HashTable::searchBucket(HashEntryPtr p, unsigned* keyi)
+HashEntryPtr HashTable::searchBucket(HashEntryPtr p, const SFC_Key& keyi)
 {
     int i;
-    uint64_t ukey = (((uint64_t) keyi[0]) << 32) | keyi[1];
+    uint64_t ukey = get_ukey_from_sfc_key(keyi);
     while (p)
     {
         if(p->ukey == ukey)
@@ -96,7 +96,7 @@ HashEntryPtr HashTable::searchBucket(HashEntryPtr p, unsigned* keyi)
     return NULL;
 }
 
-HashEntryPtr HashTable::addElement(int entry, unsigned key[])
+HashEntryPtr HashTable::addElement(int entry, const SFC_Key& key)
 {
     
     HashEntryPtr p = new HashEntry(key);
@@ -105,7 +105,7 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[])
     if(*(bucket + entry)) //this place is already occupied
     {
         HashEntryPtr currentPtr = *(bucket + entry);
-        while (currentPtr != 0 && (key[0] > currentPtr->key[0]))
+        /*while (currentPtr != 0 && (key[0] > currentPtr->key[0]))
         {
             p->pre = currentPtr;
             currentPtr = currentPtr->next;
@@ -121,8 +121,15 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[])
                 i++;
             }
             
+        }*/
+        while (currentPtr != nullptr && (key > currentPtr->key))
+        {
+            p->pre = currentPtr;
+            currentPtr = currentPtr->next;
+            i++;
         }
         
+
         if(currentPtr)
             currentPtr->pre = p;
         p->next = currentPtr;
@@ -150,11 +157,11 @@ HashEntryPtr HashTable::addElement(int entry, unsigned key[])
 
 #define HASHTABLE_LOOKUP_LINSEARCH 8
 void*
-HashTable::lookup(unsigned* key)
+HashTable::lookup(const SFC_Key &key)
 {
     int entry = hash(key);
     
-    uint64_t ukey = (((uint64_t) key[0]) << 32) | key[1];
+    uint64_t ukey = get_ukey_from_sfc_key(key);
     int size = ukeyBucket[entry].size();
     uint64_t *ukeyArr = &(ukeyBucket[entry][0]);
     int i;
@@ -206,7 +213,7 @@ HashTable::lookup(unsigned* key)
     return NULL;
 }
 
-void HashTable::add(unsigned* key, void* value)
+void HashTable::add(const SFC_Key& key, void* value)
 {
     void* v = lookup(key);
     if(v == NULL)
@@ -218,7 +225,7 @@ void HashTable::add(unsigned* key, void* value)
     return;
 }
 
-void HashTable::remove(unsigned* key)
+void HashTable::remove(const SFC_Key& key)
 {
     /* if(key[0] == (unsigned) 270752286)
      printf(" removing an unknown object with key %u %u\n",key[0], key[1]);*/
@@ -228,111 +235,6 @@ void HashTable::remove(unsigned* key)
     
     if(!p)
         return;
-    
-    if(*(bucket + entry) == p)
-    {
-        *(bucket + entry) = p->next;
-        delete p;
-        ukeyBucket[entry].erase(ukeyBucket[entry].begin());
-        hashEntryBucket[entry].erase(hashEntryBucket[entry].begin());
-    }
-    
-    else
-    {
-        int i;
-        for(i = 0; i < ukeyBucket[entry].size(); ++i)
-        {
-            if(ukeyBucket[entry][i] == p->ukey)
-            {
-                ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
-                hashEntryBucket[entry].erase(hashEntryBucket[entry].begin() + i);
-                break;
-            }
-        }
-        if(!(p->next))
-            delete p;
-        else
-        {
-            (p->pre)->next = p->next;
-            (p->next)->pre = p->pre;
-            delete p;
-        }
-    }
-    ENTRIES--;
-}
-// for debugging...
-void HashTable::remove(unsigned* key, int whatflag)
-{
-    /*  if(whatflag == 1) {
-     printf(" removing an element with key %u %u\n",key[0], key[1]);
-     } 
-     else {
-     printf(" removing a node with key %u %u\n",key[0], key[1]);
-     }*/
-    int entry = hash(key);
-    
-    HashEntryPtr p = searchBucket(*(bucket + entry), key);
-    
-    if(!p)
-    {
-        printf(" this object has already been deleted, entry type=%d  ****************************\n", whatflag);
-        return;
-    }
-    
-    if(*(bucket + entry) == p)
-    {
-        *(bucket + entry) = p->next;
-        delete p;
-        ukeyBucket[entry].erase(ukeyBucket[entry].begin());
-        hashEntryBucket[entry].erase(hashEntryBucket[entry].begin());
-    }
-    
-    else
-    {
-        int i;
-        for(i = 0; i < ukeyBucket[entry].size(); ++i)
-        {
-            if(ukeyBucket[entry][i] == p->ukey)
-            {
-                ukeyBucket[entry].erase(ukeyBucket[entry].begin() + i);
-                hashEntryBucket[entry].erase(hashEntryBucket[entry].begin() + i);
-                break;
-            }
-        }
-        if(!(p->next))
-            delete p;
-        else
-        {
-            (p->pre)->next = p->next;
-            (p->next)->pre = p->pre;
-            delete p;
-        }
-    }
-    ENTRIES--;
-}
-
-void HashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int where)
-{
-    if(fp == NULL)
-        fp = stdout;
-    
-    /*  if(whatflag == 1) {
-     printf(" removing an element with key %u %u\n",key[0], key[1]);
-     } 
-     else {
-     printf(" removing a node with key %u %u\n",key[0], key[1]);
-     }*/
-    int entry = hash(key);
-    
-    HashEntryPtr p = searchBucket(*(bucket + entry), key);
-    
-    if(!p)
-    {
-        fprintf(fp,
-                " this object has already been deleted, myid=%d entry type=%d key={%u,%u} where=%d ****************************\n",
-                myid, whatflag, key[0], key[1], where);
-        return;
-    }
     
     if(*(bucket + entry) == p)
     {
@@ -568,14 +470,14 @@ Element* ElementsHashTable::generateElement()
 {
     return (Element*) new Element();
 }
-Element* ElementsHashTable::generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC* b, int mat,
-                                            int* elm_loc_in, double pile_height, int myid, unsigned* opposite_brother)
+Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
+                                            int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
     return (Element*) new Element(nodekeys, neigh, n_pro, b, mat,
                                   elm_loc_in, pile_height, myid, opposite_brother);
 }
 //used for refinement
-Element* ElementsHashTable::generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int gen,
+Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
                  HashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)

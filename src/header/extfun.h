@@ -27,12 +27,12 @@ const int QUADNODES = 9;
 void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
 //! investigate an Element, question his "friends and family" about him.
-void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
+void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
 void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
 
 //! investigate a Node question his "friends and family" about him.
-void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
+void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
 //! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
 void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
@@ -218,9 +218,6 @@ extern double random_error(HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
 extern void search_object(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, unsigned* key, int myid);
-
-//! this function compares 2 hashtable keys and says if they're the same or different.
-extern int compare_key(unsigned*, unsigned*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
 extern void list_elements(HashTable*, HashTable*, int, int);

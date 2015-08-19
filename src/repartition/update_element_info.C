@@ -74,7 +74,7 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
         }
     }
     
-    HT_Elem_Ptr->remove(r_element->key, 1, stdout, myid, 26);
+    HT_Elem_Ptr->remove(r_element->key);//, 1, stdout, myid, 26);
     
 }
 
@@ -90,7 +90,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
     
     construct_el(newelement, elem2, HT_Node_Ptr, myid, e_error);
     
-    HT_Elem_Ptr->add(newelement->pass_key(), newelement);
+    HT_Elem_Ptr->add(*(newelement->pass_key()), newelement);
     
     if(!newelement->get_refined_flag()) //if parent .... don't care about neighbor info
         check_neighbor_info(newelement, HT_Elem_Ptr, myid);
@@ -104,7 +104,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
     double e_error = 0;
     construct_el(newelement, elem2, HT_Node_Ptr, myid, &e_error);
     
-    Element* EmTemp = (Element*) HT_Elem_Ptr->lookup(newelement->pass_key());
+    Element* EmTemp = (Element*) HT_Elem_Ptr->lookup(*(newelement->pass_key()));
     if(EmTemp != NULL)
     { // update this element
       // first check that it is the same element
@@ -117,11 +117,11 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
             assert(elem2->which_son == EmTemp->get_which_son());
         }
         // the same element...
-        HT_Elem_Ptr->remove(elem2->key, 1, stdout, myid, 27);
+        HT_Elem_Ptr->remove(*(elem2->key));//, 1, stdout, myid, 27);
         delete EmTemp;
     }
     if(!((*(newelement->pass_key() + 0) == 0) && (*(newelement->pass_key() + 1) == 0)))
-        HT_Elem_Ptr->add(newelement->pass_key(), newelement);
+        HT_Elem_Ptr->add(*(newelement->pass_key()), newelement);
     else
         delete newelement;
     //printf("processor %d just added element %u %u\n",myid, elem2->key[0], elem2->key[1]);
@@ -134,10 +134,10 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
 void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int side)
 {
     Element* Neighbor;
-    Neighbor = (Element*) HT_Elem_Ptr->lookup(r_element->get_neighbors() + side * KEYLENGTH);
+    Neighbor = (Element*) HT_Elem_Ptr->lookup(r_element->get_neighbors()[side]);
     //r_element->put_neigh_gen(side, Neighbor->get_gen());// added by jp 9.30
     
-    int which = Neighbor->which_neighbor(r_element->pass_key());
+    int which = Neighbor->which_neighbor(*(r_element->pass_key()));
     int gen = r_element->get_gen();    // added by jp 9.30
             
     Neighbor->change_neighbor_process(which, target_proc);
@@ -152,8 +152,8 @@ void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int sid
     ELinkPtr EL_new;
     ELinkPtr EL_temp;
     
-    EL_new = new ElementLink(r_element->pass_key(), (r_element->get_neighbors() + side * KEYLENGTH),
-                             *(r_element->getassoc() + side), new_proc);
+    EL_new = new ElementLink(*(r_element->pass_key()), r_element->get_neighbors()[side],
+                             r_element->getassoc()[side], new_proc);
     
     if(!(*EL_head))
         *EL_head = EL_new;
@@ -190,21 +190,22 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->which_son = elem2->which_son;
     newelement->new_old = elem2->new_old;
     for(i = 0; i < 4; i++)
-        for(j = 0; j < KEYLENGTH; j++)
-            newelement->brothers[i][j] = elem2->brothers[i][j];
+    {
+        SET_NEWKEY(newelement->brothers[i], elem2->brothers[i]);
+    }
     
-    for(i = 0; i < KEYLENGTH; i++)
-        newelement->key[i] = elem2->key[i];
+    SET_NEWKEY(newelement->key, elem2->key);
     
     for(i = 0; i < 8; i++)
-        for(int j = 0; j < KEYLENGTH; j++)
+    {
+        SET_NEWKEY(newelement->node_key[i], elem2->node_key[i]);
+        SET_NEWKEY(newelement->neighbor[i], elem2->neighbor[i]);
+        if(i < 4)
         {
-            newelement->node_key[i][j] = elem2->node_key[i][j];
-            newelement->neighbor[i][j] = elem2->neighbor[i][j];
-            if(i < 4)
-                newelement->son[i][j] = elem2->son[i][j];
-            
+            SET_NEWKEY(newelement->son[i], elem2->son[i]);
         }
+
+    }
     for(i = 0; i < EQUATIONS; i++)
     {
         newelement->el_error[i] = elem2->el_error[i];
@@ -221,13 +222,13 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
                    elem2->node_key[i][0], elem2->node_key[i][1], elem2->n_coord[i][0], elem2->n_coord[i][1]);
         }
         
-        node = (Node*) HT_Node_Ptr->lookup(elem2->node_key[i]);
+        node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem2->node_key[i]));
         if(!node)
         {
-            node = new Node(elem2->node_key[i], elem2->n_coord[i], elem2->n_info[i], elem2->n_order[i],
+            node = new Node(sfc_key_from_oldkey(elem2->node_key[i]), elem2->n_coord[i], elem2->n_info[i], elem2->n_order[i],
                             elem2->node_elevation[i], i);
             
-            HT_Node_Ptr->add(elem2->node_key[i], node);
+            HT_Node_Ptr->add(sfc_key_from_oldkey(elem2->node_key[i]), node);
         }
         else
         {
@@ -247,13 +248,13 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         }
     }
     
-    node = (Node*) HT_Node_Ptr->lookup(elem2->key);
+    node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem2->key));
     if(!node)
     {
-        node = new Node(elem2->key, elem2->n_coord[8], elem2->n_info[8], elem2->n_order[8], elem2->node_elevation[8],
+        node = new Node(sfc_key_from_oldkey(elem2->key), elem2->n_coord[8], elem2->n_info[8], elem2->n_order[8], elem2->node_elevation[8],
                         8);
         
-        HT_Node_Ptr->add(elem2->key, node);
+        HT_Node_Ptr->add(sfc_key_from_oldkey(elem2->key), node);
     }
     else if(newelement->refined != 0) // only update if this is from an active element
         node->set_parameters(elem2->n_info[8], elem2->n_order[8]);
@@ -319,7 +320,7 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
 {
     
     int* neigh_proc = newelement->getassoc();
-    unsigned* neigh_key = newelement->get_neighbors();
+    SFC_Key* neigh_key = newelement->get_neighbors();
     Element* neighbor;
     int which;
     
@@ -327,8 +328,8 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
     {
         if(*(neigh_proc + i) == myid)
         {
-            neighbor = (Element*) HT_Elem_Ptr->lookup(neigh_key + i * KEYLENGTH);
-            which = neighbor->which_neighbor(newelement->pass_key());
+            neighbor = (Element*) HT_Elem_Ptr->lookup(neigh_key[i]);
+            which = neighbor->which_neighbor(*(newelement->pass_key()));
             neighbor->change_neighbor_process(which, myid);
         }
         
@@ -344,9 +345,9 @@ void diff_proc1_2(int counter, NeighborPack packed_neighbor_info[], HashTable* H
     int which;
     for(int i = 0; i < counter; i++)
     {
-        element = (Element*) HT_Elem_Ptr->lookup(packed_neighbor_info[i].targetkey);
+        element = (Element*) HT_Elem_Ptr->lookup(sfc_key_from_oldkey(packed_neighbor_info[i].targetkey));
         assert(element);
-        which = element->which_neighbor(packed_neighbor_info[i].elkey);
+        which = element->which_neighbor(sfc_key_from_oldkey(packed_neighbor_info[i].elkey));
         element->change_neighbor_process(which, packed_neighbor_info[i].new_proc);
         
     }

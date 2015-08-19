@@ -18,6 +18,8 @@
 #ifndef STRUCT_H
 #define STRUCT_H
 
+#include "sfc.h"
+
 //! ElemPack is a smaller (memory spacewise) version of Element that can be sent from one processor to another via MPI calls
 struct ElemPack
 {
@@ -92,6 +94,15 @@ struct ElementLink
     ElementLink* pre;
     ElementLink* next;
 
+    ElementLink(const SFC_Key& keyi,  const SFC_Key& key2, int tp, int np)
+    {
+        target_proc = tp;
+        new_proc = np;
+        SET_OLDKEY(elkey,keyi);
+        SET_OLDKEY(targetkey,key2);
+        next = NULL;
+        pre = NULL;
+    }
     ElementLink(unsigned* keyi, unsigned* key2, int tp, int np)
     {
         target_proc = tp;

@@ -30,17 +30,17 @@ extern void refine(Element*, ElementsHashTable*, HashTable*, MatProps* matprops_
 
 extern void depchk(Element*, HashTable*, HashTable*, int*, ElemPtrList*);
 
-void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int numprocs,
-                          HashTable* HT_Node_Ptr, int h_count);
+//void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int numprocs,
+//                          HashTable* HT_Node_Ptr, int h_count);
 //extern void  update_neighbor_info(HashTable*, Element*[], int, int,int, HashTable*, int h_count);
 
-extern void data_com(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int h_count);
+//extern void data_com(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int h_count);
 
 extern void htflush(HashTable*, HashTable*, int);
 
-extern void test_h_refine(HashTable* HT_Elem_Ptr, int myid, int h_count);
+//extern void test_h_refine(HashTable* HT_Elem_Ptr, int myid, int h_count);
 
-extern void all_check(HashTable* eltab, HashTable* ndtab, int myid, int m, double TARGET);
+//extern void all_check(HashTable* eltab, HashTable* ndtab, int myid, int m, double TARGET);
 
 //#define REFINE_THRESHOLD 250000*GEOFLOW_TINY
 //#define REFINE_THRESHOLD 10*GEOFLOW_TINY
@@ -86,9 +86,9 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
         printf("After first AssertMeshErrorFree\n");
     }
     
-    unsigned elemdebugkey2a[2] =
-    { 2114123639, 2004318068 };
-    Element* Curr_El = (Element*) HT_Elem_Ptr->lookup(elemdebugkey2a);
+    //unsigned elemdebugkey2a[2] =
+    //{ 2114123639, 2004318068 };
+    Element* Curr_El = nullptr;//(Element*) HT_Elem_Ptr->lookup(elemdebugkey2a);
     int k, i, j;
     HashEntryPtr entryp;
     Element* EmTemp;
@@ -316,7 +316,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                 case TOBEDELETED:
                     //deleting the refined father elements but not ghost element so don't need to call move_data() again
                     EmTemp->void_bcptr();
-                    HT_Elem_Ptr->remove(EmTemp->pass_key(), 1, stdout, myid, 20);
+                    HT_Elem_Ptr->remove(*(EmTemp->pass_key()));//, 1, stdout, myid, 20);
                     delete EmTemp;
                     break;
                 case -NOTRECADAPTED:
@@ -332,8 +332,8 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                     break;
                 default:
                     //I don't know what kind of Element this is.
-                    printf("FUBAR element type in H_adapt()!!! key={%u,%u} adapted=%d\naborting.\n",
-                           *(EmTemp->pass_key() + 0), *(EmTemp->pass_key() + 1), EmTemp->get_adapted_flag());
+                    cout<<"FUBAR element type in H_adapt()!!! key={"<<*(EmTemp->pass_key())<<"} adapted="<<EmTemp->get_adapted_flag();
+                    cout <<"\naborting.\n";
                     assert(0);
                     break;
             }
@@ -396,8 +396,10 @@ void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProp
     int sur = 0, ifg = 1, ielem;
     
     for(ielem = 0; ielem < RefinedList->get_num_elem(); ielem++)
-        if(sur = compare_key(RefinedList->get_key(ielem), EmTemp->pass_key()))
-            break;
+    {
+        sur = (RefinedList->get_key(ielem)==EmTemp->pass_key());
+        if(sur)break;
+    }
     
     if(!sur)
     {
@@ -611,7 +613,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
-                                    EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson() + KEYLENGTH * ison);
+                                    EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson()[ison]);
                                     TempList.add(EmSon);
                                 }
                             else
@@ -693,8 +695,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
-                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(
-                                            EmTemp->getson() + KEYLENGTH * ison);
+                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson()[ison]);
                                     TempList.add(EmSon);
                                 }
                             else
@@ -984,8 +985,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
-                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(
-                                            EmTemp->getson() + KEYLENGTH * ison);
+                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson()[ison]);
                                     TempList.add(EmSon);
                                 }
                             else
@@ -1287,7 +1287,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 case TOBEDELETED:
                     //deleting the refined father elements but ghost element so don't need to call move_data() again before AssertMeshErrorFree
                     EmTemp->void_bcptr();
-                    HT_Elem_Ptr->remove(EmTemp->pass_key(), 1, stdout, myid, 22);
+                    HT_Elem_Ptr->remove(*(EmTemp->pass_key()));//, 1, stdout, myid, 22);
                     delete EmTemp;
                     break;
                 case -NOTRECADAPTED:
@@ -1303,8 +1303,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                     break;
                 default:
                     //I don't know what kind of Element this is.
-                    printf("FUBAR element type in H_adapt()!!! key={%u,%u} adapted=%d\naborting.\n",
-                           *(EmTemp->pass_key() + 0), *(EmTemp->pass_key() + 1), EmTemp->get_adapted_flag());
+                    cout<<"FUBAR element type in H_adapt()!!! key={"<<*(EmTemp->pass_key())<<"} adapted="<<EmTemp->get_adapted_flag()<<"\naborting.\n";
                     assert(0);
                     break;
             }
@@ -1452,7 +1451,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                         else
                         {
                             EmTemp->void_bcptr();
-                            El_Table->remove(EmTemp->pass_key(), 1, stdout, myid, 24);
+                            El_Table->remove(*(EmTemp->pass_key()));//, 1, stdout, myid, 24);
                             delete EmTemp;
                         }
                     }
@@ -1479,7 +1478,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                         else
                         {
                             EmTemp->void_bcptr();
-                            El_Table->remove(EmTemp->pass_key(), 1, stdout, myid, 25);
+                            El_Table->remove(*(EmTemp->pass_key()));//, 1, stdout, myid, 25);
                             delete EmTemp;
                         }
                     }

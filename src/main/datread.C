@@ -135,8 +135,8 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         
         for(j = 0; j < 2; j++)
             coord[j] = coord[j] / matprops_ptr->LENGTH_SCALE;
-        NodeP = new Node(key, coord, matprops_ptr);
-        (*NodeTable)->add(key, NodeP);
+        NodeP = new Node(sfc_key_from_oldkey(key), coord, matprops_ptr);
+        (*NodeTable)->add(sfc_key_from_oldkey(key), NodeP);
     }
     (*NodeTable)->print0();
     //done reading in node data
@@ -155,8 +155,10 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
     int* assocp;/*--*/
     unsigned* keyP;
     
-    unsigned nodes[9][2];
-    unsigned neigh[4][2];
+    unsigned nodes_old[9][2];
+    unsigned neigh_old[4][2];
+    SFC_Key nodes[9];
+    SFC_Key neigh[9];
     int neighbor_proc[4];
     
     int temp2;
@@ -169,8 +171,11 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
     {
         
         for(j = 0; j < 9; j++)
+        {
             for(k = 0; k < KEYLENGTH; k++)
-                freadU(fp, &(nodes[j][k]));
+                freadU(fp, &(nodes_old[j][k]));
+            SET_NEWKEY(nodes[j],nodes_old[j]);
+        }
         
         interflag = 0;  //---switch for interface
         for(j = 0; j < 4; j++)
@@ -184,13 +189,15 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
                     interflag = 1; //--switch is used for avoiding nominating neighbor twice
                             
                 for(k = 0; k < KEYLENGTH; k++)
-                    freadU(fp, &(neigh[j][k])); //--read the left parts of the key
+                    freadU(fp, &(neigh_old[j][k])); //--read the left parts of the key
             }
             
             else
                 //--there is no neighbor 
                 for(k = 0; k < KEYLENGTH; k++)
-                    neigh[j][k] = 0;
+                    neigh_old[j][k] = 0;
+
+            SET_NEWKEY(neigh[j],neigh_old[j]);
         }
         
         BC* bcptr = 0;
@@ -253,7 +260,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         if(!bcf)
             bcptr = NULL; //--this element is not on the bound
         Quad9P = (*ElemTable)->generateElement(nodes, neigh, neighbor_proc, bcptr, material, elm_loc, pile_height, myid,
-                             opposite_brother);
+                                               sfc_key_from_oldkey(opposite_brother));
         (*ElemTable)->add(nodes[8], Quad9P);
         Quad9P->find_positive_x_side(*NodeTable);
         Quad9P->calculate_dx(*NodeTable);
@@ -302,20 +309,20 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
                 
                 EmTemp->put_myprocess(myid);
                 
-                NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->pass_key());
+                NdTemp = (Node*) (*NodeTable)->lookup(*(EmTemp->pass_key()));
                 assert(NdTemp);
                 NdTemp->putinfo(BUBBLE);
                 
                 for(inode = 0; inode < 4; inode++)
                 {
-                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->getNode() + inode * KEYLENGTH);
+                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->getNode()[inode]);
                     assert(NdTemp);
                     NdTemp->putinfo(CORNER);
                 }
                 
                 for(inode = 4; inode < 8; inode++)
                 {
-                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->getNode() + inode * KEYLENGTH);
+                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->getNode()[inode]);
                     assert(NdTemp);
                     NdTemp->putinfo(SIDE);
                 }

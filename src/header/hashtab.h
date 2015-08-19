@@ -33,6 +33,7 @@ using namespace std;
 #include <stdlib.h>
 #include <stdint.h>
 #include "constant.h"
+#include "sfc.h"
 
 class Element;
 class BC;
@@ -40,27 +41,21 @@ class MatProps;
 
 struct HashEntry
 {
-    unsigned key[KEYLENGTH];  //key: object key word
+    SFC_Key key;  //key: object key word
     uint64_t ukey; //ukey: single 64 bit key
     void* value;   //value: poiter to record
     HashEntry* pre;
     HashEntry* next;    //pre, next: objects with same entry will be stored in a two-way link
     
-    HashEntry(unsigned* keyi)
+    HashEntry(const SFC_Key& keyi)
     {
         int i;
-        for(i = 0; i < KEYLENGTH; i++)
-            key[i] = *(keyi + i);
-        ukey = (((uint64_t) keyi[0]) << 32) | keyi[1];
-        next = NULL;
+        key=keyi;
+        ukey = get_ukey_from_sfc_key(key);
+        value = NULL;
         pre = NULL;
+        next = NULL;
     }
-    
-    /*HashEntry() {
-     value = NULL;
-     next = NULL;
-     pre = NULL;
-     }*/
 
     ~HashEntry()
     {         //keep the follower when deleting an object
@@ -97,19 +92,17 @@ protected:
     vector<uint64_t> *ukeyBucket;
     vector<HashEntry*> *hashEntryBucket;
 
-    HashEntryPtr addElement(int entry, unsigned* key);
-    HashEntryPtr searchBucket(HashEntryPtr p, unsigned* key);
+    HashEntryPtr addElement(int entry, const SFC_Key& key);
+    HashEntryPtr searchBucket(HashEntryPtr p, const SFC_Key& key);
 
 public:
     HashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
     virtual ~HashTable();
 
-    int hash(unsigned* key);
-    void add(unsigned* key, void* value);
-    void* lookup(unsigned* key);
-    void remove(unsigned* key);
-    void remove(unsigned* key, int whatflag);  //for debugging
-    void remove(unsigned* key, int whatflag, FILE *fp, int myid, int where);  //for debugging
+    int hash(const SFC_Key& key) const;
+    void add(const SFC_Key& key, void* value);
+    void* lookup(const SFC_Key& key);
+    void remove(const SFC_Key& key);
     void print_out(int);
     int get_no_of_buckets();
 //    void   get_element_stiffness(HashTable*);
@@ -173,7 +166,7 @@ inline int HashTable::get_no_of_entries()
     return ENTRIES;
 }
 
-inline int HashTable::hash(unsigned* key)
+inline int HashTable::hash(const SFC_Key& key) const
 {
     //Keith made this change 20061109; and made hash an inline function
     /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
@@ -181,7 +174,7 @@ inline int HashTable::hash(unsigned* key)
      (doublekeyrange[0]*doublekeyrange[1]+doublekeyrange[1])*
      NBUCKETS*2+0.5) )%NBUCKETS);
      */
-    return (((int) ((key[0] * doublekeyrange[1] + key[1]) * hashconstant + 0.5)) % NBUCKETS);
+    return (((int) ((key.key[0] * doublekeyrange[1] + key.key[1]) * hashconstant + 0.5)) % NBUCKETS);
 }
 //! Hashtables for Elements
 class ElementsHashTable: public HashTable
@@ -239,11 +232,11 @@ public:
     virtual Element* generateElement();
 
     //! constructor that creates an original element when funky is read in
-    virtual Element* generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int mat, int *elm_loc_in,
-                             double pile_height, int myid, unsigned *opposite_brother);
+    virtual Element* generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+                             double pile_height, int myid, const SFC_Key& opposite_brother);
 
     //! constructor that creates a son element from its father during refinement
-    virtual Element* generateElement(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int gen, int elm_loc_in[],
+    virtual Element* generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
                 HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);

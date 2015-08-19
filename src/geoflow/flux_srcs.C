@@ -121,10 +121,10 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
 {
     
     int no_of_sources = fluxprops->no_of_sources;
-    unsigned node[9][2];
+    SFC_Key node[9];
     double temp_coef;
     double major, minor, dswap, xcoord, ycoord;
-    int ikey, inode, isrc;
+    int inode, isrc;
     double curr_time = timeprops->cur_time;
     double start_time, end_time;
     /*
@@ -137,19 +137,17 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
     
     //get corner and edge nodes
     for(inode = 0; inode < 8; inode++)
-        for(ikey = 0; ikey < KEYLENGTH; ikey++)
-            node[inode][ikey] = *(this->getNode() + inode * KEYLENGTH + ikey);
+        node[inode] = this->getNode()[inode];
     
-    for(ikey = 0; ikey < KEYLENGTH; ikey++)
-        // center node key is same as element key
-        node[8][ikey] = *(this->pass_key() + ikey);
+    // center node key is same as element key
+    node[8] = *(this->pass_key());
     
     for(inode = 0; inode < 9; inode++)
     {
         double temp_coef2 = temp_coef = 0.0;
         double sum_flux_xmom_ymom[3] =
         { 0.0, 0.0, 0.0 };
-        Node* ndtemp = (Node*) NodeTable->lookup(&node[inode][0]);
+        Node* ndtemp = (Node*) NodeTable->lookup(node[inode]);
         assert(ndtemp);
         xcoord = *(ndtemp->get_coord());
         ycoord = *(ndtemp->get_coord() + 1);

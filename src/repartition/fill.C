@@ -5,7 +5,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
 {
     int j, i = 0;
     Element *sendel = (Element *) sendel_in;
-    if((sendel->key[0] == 0) && (sendel->key[1] == 0))
+    if(sendel->key == sfc_key_null)
     {
         printf("Element key={0,0} is being packed\n");
         i++;
@@ -33,21 +33,18 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     elem->which_son = sendel->which_son;
     elem->new_old = sendel->new_old;
     
-    for(i = 0; i < KEYLENGTH; i++)
-        elem->key[i] = sendel->key[i];
+    SET_OLDKEY(elem->key, sendel->key);
     
     for(i = 0; i < 4; i++)
-        for(j = 0; j < KEYLENGTH; j++)
-            elem->brothers[i][j] = sendel->brothers[i][j];
+        SET_OLDKEY(elem->brothers[i], sendel->brothers[i]);
     
     for(i = 0; i < 8; i++)
-        for(j = 0; j < KEYLENGTH; j++)
-        {
-            elem->node_key[i][j] = sendel->node_key[i][j];
-            elem->neighbor[i][j] = sendel->neighbor[i][j];
-            if(i < 4)
-                elem->son[i][j] = sendel->son[i][j];
-        }
+    {
+        SET_OLDKEY(elem->node_key[i], sendel->node_key[i]);
+        SET_OLDKEY(elem->neighbor[i], sendel->neighbor[i]);
+        if(i < 4)
+            SET_OLDKEY(elem->son[i], sendel->son[i]);
+    }
     for(i = 0; i < EQUATIONS; i++)
     {
         elem->el_error[i] = sendel->el_error[i];
@@ -57,7 +54,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     //and the node info:
     for(i = 0; i < 8; i++)
     {
-        node = (Node*) HT_Node_Ptr->lookup(elem->node_key[i]);
+        node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem->node_key[i]));
         assert(node);
         elem->n_order[i] = node->order;
         elem->n_info[i] = node->info;
@@ -66,7 +63,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->node_elevation[i] = node->elevation;
     }
     
-    node = (Node*) HT_Node_Ptr->lookup(elem->key);
+    node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem->key));
     assert(node);
     elem->n_order[8] = node->order;
     elem->n_info[8] = node->info;

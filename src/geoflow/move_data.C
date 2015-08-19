@@ -57,9 +57,9 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
     FILE *fpelem2;
     //if(timeprops_ptr->iter==279) fpelem2=fopen(filename,"w");
     
-    unsigned elemdebugkey2a[2] =
-    { 2114123639, 2004318068 };
-    Element* EmTemp = (Element*) El_Table->lookup(elemdebugkey2a);
+    //unsigned elemdebugkey2a[2] =
+    //{ 2114123639, 2004318068 };
+    Element* EmTemp = nullptr;//(Element*) El_Table->lookup(elemdebugkey2a);
     Node* NdTemp;
     
     /*
@@ -111,14 +111,16 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                 if(0 && ifprint && (timeprops_ptr->iter == 279))
                 {
                     fprintf(fpelem1, "___%d___==============================\n", numprocsrint);
-                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->pass_key(), fpelem1);
-                    fprintf(fpelem2, "%03d:  : {%10u,%10u}:", numprocsrint, *(EmTemp->pass_key() + 0),
-                            *(EmTemp->pass_key() + 1));
+                    ElemBackgroundCheck(El_Table, NodeTable, *(EmTemp->pass_key()), fpelem1);
+                    fprintf(fpelem2, "%03d:  : {", numprocsrint);
+                    fprintf_sfc_key(fpelem2,*(EmTemp->pass_key()));
+                    fprintf(fpelem2, "}:");
                     for(ineigh = 0; ineigh < 8; ineigh++)
                         if((neigh_proc[ineigh] >= 0) && (neigh_proc[ineigh] != myid)
                            && ((neigh_proc[ineigh] == 0) || (neigh_proc[ineigh] == 1)))
-                            fprintf(fpelem2, " {%10u,%10u}", *(EmTemp->get_neighbors() + ineigh * KEYLENGTH + 0),
-                                    *(EmTemp->get_neighbors() + ineigh * KEYLENGTH + 1));
+                        {
+                            fprintf_sfc_key(fpelem2,EmTemp->get_neighbors()[ineigh]);
+                        }
                     fprintf(fpelem2, "\n");
                     
                     numprocsrint++;
@@ -254,7 +256,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                     
                     for(ielem = 0; ielem < num_send_recv[iproc]; ielem++)
                     {
-                        elm = (Element*) (El_Table->lookup((recv_array[iproc] + ielem)->key));
+                        elm = (Element*) (El_Table->lookup(sfc_key_from_oldkey((recv_array[iproc] + ielem)->key)));
                         if(elm == NULL)
                         { // this elm doesn't exist on this proc
                             new_elm = El_Table->generateElement();
@@ -262,7 +264,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                             construct_el(new_elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
                             if((new_elm->get_adapted_flag() < 0) && (new_elm->get_adapted_flag() >= -BUFFER))
                                 new_elm->put_myprocess(iproc);
-                            El_Table->add(new_elm->pass_key(), new_elm);
+                            El_Table->add(*(new_elm->pass_key()), new_elm);
                             add_counter++;
                         } //if(elm == NULL)
                         else
@@ -351,7 +353,7 @@ void delete_ghost_elms(HashTable* El_Table, int myid)
             )
             { //this is a GHOST element
                 EmTemp->void_bcptr();
-                El_Table->remove(EmTemp->pass_key(), 1, stdout, myid, 26);
+                El_Table->remove(*(EmTemp->pass_key()));//, 1, stdout, myid, 26);
                 delete EmTemp;
                 delete_counter++;
             }

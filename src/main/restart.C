@@ -525,7 +525,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
         if(inode < 0)
             printf("inode=%d\n", inode);
         NodeP = new Node(fp, matprops_ptr);
-        (*NodeTable)->add(NodeP->pass_key(), NodeP);
+        (*NodeTable)->add(*(NodeP->pass_key()), NodeP);
     }
     printf("inode=%d Node_Num=%d NodeP=%u\n", inode, Node_Num, NodeP);
     
@@ -542,7 +542,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
         if(ielem < 0)
             printf("ielem=%d\n", ielem);
         ElemP = (*ElemTable)->generateElement(fp, *NodeTable, matprops_ptr, myid);
-        (*ElemTable)->add(ElemP->pass_key(), ElemP);
+        (*ElemTable)->add(*(ElemP->pass_key()), ElemP);
         if(ElemP->get_gen() > maxgen)
             maxgen = ElemP->get_gen();
         //if((*(ElemP->pass_key()+0)==tempkey[0])&&(*(ElemP->pass_key()+1)==tempkey[1]))

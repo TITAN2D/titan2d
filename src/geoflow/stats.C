@@ -334,7 +334,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                     double* state_vars = Curr_El->get_state_vars();
                     
                     //calculate volume passing through "discharge planes"
-                    unsigned *nodes = Curr_El->getNode();
+                    SFC_Key *nodes = Curr_El->getNode();
                     Node** nodesPtr = Curr_El->getNodesPtrs();
                     double nodescoord[9][2], *coord;
                     Node* node;
@@ -423,8 +423,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                                || (!((state_vars[5] <= 0.0) || (0.0 <= state_vars[5]))))
                             {
                                 //v_ave is NaN
-                                printf("calc_stats(): NaN detected in element={%10u,%10u} at iter=%d\n",
-                                       *(Curr_El->pass_key() + 0), *(Curr_El->pass_key() + 1), timeprops->iter);
+                                cout<<"calc_stats(): NaN detected in element={"<<*(Curr_El->pass_key())<<"} at iter="<<timeprops->iter<<"\n";
                                 printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
                                        *(Curr_El->get_prev_state_vars() + 0), *(Curr_El->get_prev_state_vars() + 1),
                                        *(Curr_El->get_prev_state_vars() + 2), *(Curr_El->get_prev_state_vars() + 3),
@@ -459,8 +458,8 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                                || (!((state_vars[2] <= 0.0) || (0.0 <= state_vars[2]))))
                             {
                                 //v_ave is NaN
-                                printf("calc_stats(): NaN detected in element={%10u,%10u} at iter=%d\n",
-                                       *(Curr_El->pass_key() + 0), *(Curr_El->pass_key() + 1), timeprops->iter);
+
+                                cout<<"calc_stats(): NaN detected in element={"<<*(Curr_El->pass_key())<<"} at iter="<<timeprops->iter<<"\n";
                                 printf("prevu={%12.6g,%12.6g,%12.6g}\n", *(Curr_El->get_prev_state_vars() + 0),
                                        *(Curr_El->get_prev_state_vars() + 1), *(Curr_El->get_prev_state_vars() + 2));
                                 printf("    u={%12.6g,%12.6g,%12.6g}\n", state_vars[0], state_vars[1], state_vars[2]);
@@ -672,10 +671,10 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         || (Curr_El->get_adapted_flag() == NEWFATHER) || (Curr_El->get_adapted_flag() == NEWSON)
                         || (Curr_El->get_adapted_flag() == BUFFER)))
                 {
-                    printf("FUBAR 1 in InsanityCheck()\nnump=%d myid=%d iter=%d time=%g[sec]\nElement={%u,%u} myprocess=%d refined=%d adapted=%d\n",
-                           nump, myid, timeprops_ptr->iter, timeprops_ptr->timesec(), *(Curr_El->pass_key() + 0),
-                           *(Curr_El->pass_key() + 1), Curr_El->get_myprocess(), Curr_El->get_refined_flag(),
-                           Curr_El->get_adapted_flag());
+                    cout<<"FUBAR 1 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<*(Curr_El->pass_key());
+                    cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+
                     assert(0);
                 }
 
@@ -683,50 +682,45 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         || (Curr_El->get_adapted_flag() == NEWFATHER) || (Curr_El->get_adapted_flag() == NEWSON)
                         || (Curr_El->get_adapted_flag() == BUFFER)))
                 {
-                    printf("FUBAR 2 in InsanityCheck()\nnump=%d myid=%d iter=%d time=%g[sec]\nElement={%u,%u} myprocess=%d refined=%d adapted=%d\n",
-                           nump, myid, timeprops_ptr->iter, timeprops_ptr->timesec(), *(Curr_El->pass_key() + 0),
-                           *(Curr_El->pass_key() + 1), Curr_El->get_myprocess(), Curr_El->get_refined_flag(),
-                           Curr_El->get_adapted_flag());
+                    cout<<"FUBAR 2 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<*(Curr_El->pass_key());
+                    cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
 
                 if((Curr_El->get_refined_flag() == GHOST) && !((Curr_El->get_adapted_flag() <= -NOTRECADAPTED)
                         && (Curr_El->get_adapted_flag() >= -BUFFER)))
                 {
-                    printf("FUBAR 3 in InsanityCheck()\nnump=%d myid=%d iter=%d time=%g[sec]\nElement={%u,%u} myprocess=%d refined=%d adapted=%d\n",
-                           nump, myid, timeprops_ptr->iter, timeprops_ptr->timesec(), *(Curr_El->pass_key() + 0),
-                           *(Curr_El->pass_key() + 1), Curr_El->get_myprocess(), Curr_El->get_refined_flag(),
-                           Curr_El->get_adapted_flag());
+                    cout<<"FUBAR 3 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<*(Curr_El->pass_key());
+                    cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
 
                 if((Curr_El->get_refined_flag() != GHOST) && ((Curr_El->get_adapted_flag() <= -NOTRECADAPTED)
                         && (Curr_El->get_adapted_flag() >= -BUFFER)))
                 {
-                    printf("FUBAR 4 in InsanityCheck()\nnump=%d myid=%d iter=%d time=%g[sec]\nElement={%u,%u} myprocess=%d refined=%d adapted=%d\n",
-                           nump, myid, timeprops_ptr->iter, timeprops_ptr->timesec(), *(Curr_El->pass_key() + 0),
-                           *(Curr_El->pass_key() + 1), Curr_El->get_myprocess(), Curr_El->get_refined_flag(),
-                           Curr_El->get_adapted_flag());
+                    cout<<"FUBAR 4 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<*(Curr_El->pass_key());
+                    cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
 
                 if((Curr_El->get_refined_flag() > 0) && !((Curr_El->get_adapted_flag() == TOBEDELETED)
                         || (Curr_El->get_adapted_flag() == OLDFATHER) || (Curr_El->get_adapted_flag() == OLDSON)))
                 {
-                    printf("FUBAR 5 in InsanityCheck()\nnump=%d myid=%d iter=%d time=%g[sec]\nElement={%u,%u} myprocess=%d refined=%d adapted=%d\n",
-                           nump, myid, timeprops_ptr->iter, timeprops_ptr->timesec(), *(Curr_El->pass_key() + 0),
-                           *(Curr_El->pass_key() + 1), Curr_El->get_myprocess(), Curr_El->get_refined_flag(),
-                           Curr_El->get_adapted_flag());
+                    cout<<"FUBAR 5 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<*(Curr_El->pass_key());
+                    cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
 
                 if(!(Curr_El->get_refined_flag() > 0) && ((Curr_El->get_adapted_flag() == TOBEDELETED)
                         || (Curr_El->get_adapted_flag() == OLDFATHER) || (Curr_El->get_adapted_flag() == OLDSON)))
                 {
-                    printf("FUBAR 6 in InsanityCheck()\nnump=%d myid=%d iter=%d time=%g[sec]\nElement={%u,%u} myprocess=%d refined=%d adapted=%d\n",
-                           nump, myid, timeprops_ptr->iter, timeprops_ptr->timesec(), *(Curr_El->pass_key() + 0),
-                           *(Curr_El->pass_key() + 1), Curr_El->get_myprocess(), Curr_El->get_refined_flag(),
-                           Curr_El->get_adapted_flag());
+                    cout<<"FUBAR 6 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<*(Curr_El->pass_key());
+                    cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
             }

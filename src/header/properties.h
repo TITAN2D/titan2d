@@ -269,8 +269,9 @@ public:
 class MapNames
 {
 public:
-    static const int GDAL = GDAL;
-    static const int GIS_GRASS = GIS_GRASS;
+    //@TODO consolidate with GisApi.h as enums
+    static const int GDAL = 2;
+    static const int GIS_GRASS = 1;
 
     //! gis main directory
     std::string gis_main;

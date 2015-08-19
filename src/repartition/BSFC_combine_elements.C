@@ -45,32 +45,32 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         switch (EmTemp->which_son)
         {
             case 0:
-                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                 break;
             case 1:
-                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                 break;
             case 2:
-                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                 break;
             case 3:
-                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                 break;
         }
     else
         switch (EmTemp->which_son)
         {
             case 0:
-                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                 break;
             case 1:
-                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                 break;
             case 2:
-                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                 break;
             case 3:
-                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                 break;
         }
     // check the next side
@@ -79,39 +79,39 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         next_side = 3;
     if(next_side < 4)
     {
-        nd = (Node*) HT_Node_Ptr->lookup(&(EmTemp->node_key[next_side + 4][0]));
+        nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key[next_side + 4]);
         if(nd->getinfo() == S_S_CON)
         {
             if(next_side == EmTemp->which_son)
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                         break;
                     case 1:
-                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                         break;
                     case 2:
-                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                         break;
                     case 3:
-                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                         break;
                 }
             else
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                         break;
                     case 1:
-                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                         break;
                     case 2:
-                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                         break;
                     case 3:
-                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                         break;
                 }
         }
@@ -127,7 +127,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
     if(orig_elem->get_opposite_brother_flag() == 0)
         orig_elem->find_opposite_brother(HT_Elem_Ptr);
     if(orig_elem->get_opposite_brother_flag() == 1)
-        EmTemp = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[next_elm][0]));
+        EmTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[next_elm]);
     else
         EmTemp = NULL;
     
@@ -137,7 +137,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         i = 4;
         while (i < 8 && side == -1)
         {
-            nd = (Node*) HT_Node_Ptr->lookup(&(EmTemp->node_key[i][0]));
+            nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key[i]);
             if(nd->getinfo() == S_S_CON)
                 side = i - 4;
             i++;
@@ -151,32 +151,32 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                         break;
                     case 1:
-                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                         break;
                     case 2:
-                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                         break;
                     case 3:
-                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                         break;
                 }
             else
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                         break;
                     case 1:
-                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                         break;
                     case 2:
-                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                         break;
                     case 3:
-                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                         break;
                 }
             // check the next side
@@ -185,39 +185,39 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 next_side = 3;
             if(next_side < 4)
             {
-                nd = (Node*) HT_Node_Ptr->lookup(&(EmTemp->node_key[next_side + 4][0]));
+                nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key[next_side + 4]);
                 if(nd->getinfo() == S_S_CON)
                 {
                     if(next_side == EmTemp->which_son)
                         switch (EmTemp->which_son)
                         {
                             case 0:
-                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                                 break;
                             case 1:
-                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                                 break;
                             case 2:
-                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                                 break;
                             case 3:
-                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                                 break;
                         }
                     else
                         switch (EmTemp->which_son)
                         {
                             case 0:
-                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[3][0]));
+                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[3]);
                                 break;
                             case 1:
-                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[0][0]));
+                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[0]);
                                 break;
                             case 2:
-                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[1][0]));
+                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[1]);
                                 break;
                             case 3:
-                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(&(EmTemp->brothers[2][0]));
+                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothers[2]);
                                 break;
                         }
                 }
@@ -269,20 +269,17 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
             assert(j > 1);
         if(j == 2)
         {  // 2 elements get shared side node key as the representative key...
-            for(i = 0; i < KEYLENGTH; i++)
-                orig_elem->lb_key[i] = orig_elem->node_key[orig_side_number + 4][i];
+            orig_elem->lb_key = orig_elem->node_key[orig_side_number + 4];
         }
         else
         { // 3 or more elements get parent's bubble key as the representative key...
             if(elm_bunch[0] != NULL)
             {
-                for(i = 0; i < KEYLENGTH; i++)
-                    orig_elem->lb_key[i] = elm_bunch[0]->node_key[2][i];
+                orig_elem->lb_key = elm_bunch[0]->node_key[2];
             }
             else
             {
-                for(i = 0; i < KEYLENGTH; i++)
-                    orig_elem->lb_key[i] = elm_bunch[1]->node_key[3][i];
+                orig_elem->lb_key = elm_bunch[1]->node_key[3];
             }
         }
     }

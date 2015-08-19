@@ -23,7 +23,7 @@
 
 extern void fhsfc2d_(double, unsigned, unsigned);
 extern void hsfc2d(unsigned*, unsigned*, unsigned*);
-extern void create_new_node(int, int, int, HashTable*, Node*[], unsigned[][2], int, int*, int, int, MatProps*);
+extern void create_new_node(int, int, int, HashTable*, Node*[], SFC_Key[], int, int*, int, int, MatProps*);
 
 //()---new node numbering
 
@@ -51,13 +51,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     int which;
     Node *n1, *n2, *n3, *n4;
     
-    unsigned* KeyTemp;
+    SFC_Key* KeyTemp;
     Node* NodeTemp[9];
-    unsigned NewNodeKey[16][KEYLENGTH];
+    SFC_Key NewNodeKey[16];
     Element* Quad9P;
     int numprocs, myid, i;
     Element* neigh_elm;
-    unsigned* neigh_node_key;
+    SFC_Key* neigh_node_key;
     int RefinedNeigh = 0;
     int info;
     int other_proc = 0;
@@ -76,7 +76,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     for(i = 0; i < 8; i++) //-- corners and sides
     {
-        NodeTemp[i] = (Node*) HT_Node_Ptr->lookup(KeyTemp + i * KEYLENGTH);
+        NodeTemp[i] = (Node*) HT_Node_Ptr->lookup(KeyTemp[i]);
         assert(NodeTemp[i]);
     }
     
@@ -121,7 +121,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
                 NewOrder[i][a] = NewOrder[i][b] = order[j];
     }
     
-    NodeTemp[8] = (Node*) HT_Node_Ptr->lookup(EmTemp->pass_key()); //-- bubble
+    NodeTemp[8] = (Node*) HT_Node_Ptr->lookup(*(EmTemp->pass_key())); //-- bubble
             
     //SIDE 0
     if(*(EmTemp->get_neigh_proc()) == -1)
@@ -141,8 +141,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         which = 4;
         //---Fourth new node---
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 4);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode());
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[4]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[0]);
         
         create_new_node(which, 0, 4, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[0],
                         matprops_ptr);
@@ -157,7 +157,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Fifth new node---
         which = 5;
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[1]);
         
         create_new_node(which, 1, 4, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[0],
                         matprops_ptr);
@@ -173,19 +173,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // fourth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors());
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[0]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if((neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key())))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[4][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[4] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[4]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -198,19 +197,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[4]->putinfo(-1);
         // fifth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + 4 * KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[4]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if((neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key())))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[5][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[5] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[5]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -242,8 +240,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Eight new node---
         which = 8;
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 5);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH);
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[5]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[1]);
         
         create_new_node(which, 1, 5, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[1],
                         matprops_ptr);
@@ -261,8 +259,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Thirteenth new node---
         which = 13;
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 5);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 2);
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[5]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[2]);
         
         create_new_node(which, 2, 5, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[1],
                         matprops_ptr);
@@ -277,19 +275,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // eighth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[1]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if((neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key())))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[8][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[8] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[8]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -302,19 +299,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is set based on side 0 neigbor not being more refined or never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[5]->putinfo(-1);
         // thirteenth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + 5 * KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[5]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if(neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key()))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[13][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[13] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[13]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -347,8 +343,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Fourteenth new node---
         which = 14;
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 3);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 6);
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[3]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[6]);
         
         create_new_node(which, 3, 6, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[2],
                         matprops_ptr);
@@ -364,8 +360,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         //---Fifteenth new node---
         which = 15;
         // geoflow info
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 6);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 2);
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[6]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[2]);
         
         create_new_node(which, 2, 6, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[2],
                         matprops_ptr);
@@ -380,19 +376,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // fourteenth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + 6 * KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[6]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if(neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key()))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[14][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[14] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[14]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -405,19 +400,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[6]->putinfo(-1);
         // fifteenth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + 2 * KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[2]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if(neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key()))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[15][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[15] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[15]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -450,8 +444,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Sixth new node----
         which = 6;
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 7);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode());
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[7]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[0]);
         
         create_new_node(which, 0, 7, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[3],
                         matprops_ptr);
@@ -466,8 +460,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Eleventh new node---
         which = 11;
-        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 7);
-        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 3);
+        n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[7]);
+        n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[3]);
         
         create_new_node(which, 3, 7, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, order[3],
                         matprops_ptr);
@@ -482,19 +476,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // sixth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + 7 * KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[7]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if(neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key()))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[6][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[6] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[6]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -507,19 +500,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[7]->putinfo(-1);
         // eleventh new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors() + 3 * KEYLENGTH);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[3]);
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(compare_key(neigh_elm->get_neighbors() + i * KEYLENGTH, EmTemp->pass_key()))
+            if(neigh_elm->get_neighbors()[i]==*(EmTemp->pass_key()))
                 which = i;
             i++;
         }
         assert(which != -1);
         neigh_node_key = neigh_elm->getNode();
-        for(i = 0; i < KEYLENGTH; i++)
-            NewNodeKey[11][i] = neigh_node_key[i + (which + 4) * KEYLENGTH];
+        NewNodeKey[11] = neigh_node_key[which + 4];
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[11]);
         if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
             n1->putinfo(SIDE);
@@ -538,8 +530,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     which = 7;
     // geoflow info
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 4);
-    n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->pass_key());
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[4]);
+    n2 = (Node*) HT_Node_Ptr->lookup(*(EmTemp->pass_key()));
     
     create_new_node(which, 4, 8, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[0][1],
                     matprops_ptr);
@@ -550,7 +542,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     which = 12;
     // geoflow info
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 6);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[6]);
     
     create_new_node(which, 6, 8, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[3][1],
                     matprops_ptr);
@@ -559,7 +551,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     which = 9;
     // geoflow info
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 7);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[7]);
     
     create_new_node(which, 7, 8, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[0][2],
                     matprops_ptr);
@@ -568,7 +560,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     which = 10;
     // geoflow info
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 5);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[5]);
     
     create_new_node(which, 5, 8, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[1][2],
                     matprops_ptr);
@@ -582,9 +574,9 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     NodeTemp[0] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[6]);
     NodeTemp[1] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[7]);
     which = 0;
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode());
-    n3 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 4);
-    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 7);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[0]);
+    n3 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[4]);
+    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[7]);
     
     create_new_node(which, 0, 1, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[0][4],
                     matprops_ptr);
@@ -594,8 +586,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     NodeTemp[0] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[7]);
     NodeTemp[1] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[8]);
     which = 1;
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH);
-    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 5);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[1]);
+    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[5]);
     
     create_new_node(which, 0, 1, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[1][4],
                     matprops_ptr);
@@ -605,9 +597,9 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     NodeTemp[0] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[12]);
     NodeTemp[1] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[13]);
     which = 2;
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 2);
-    n3 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 5);
-    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 6);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[2]);
+    n3 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[5]);
+    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[6]);
     
     create_new_node(which, 0, 1, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[2][4],
                     matprops_ptr);
@@ -617,18 +609,18 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     NodeTemp[0] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[11]);
     NodeTemp[1] = (Node*) HT_Node_Ptr->lookup(NewNodeKey[12]);
     which = 3;
-    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 6);
-    n3 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 3);
-    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + KEYLENGTH * 7);
+    n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[6]);
+    n3 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[3]);
+    n4 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[7]);
     
     create_new_node(which, 0, 1, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[3][4],
                     matprops_ptr);
     
     //---NEW ELEMENTS---
     
-    unsigned nodes[9][KEYLENGTH];
-    unsigned neigh[8][KEYLENGTH];
-    unsigned* orig_neighbors = EmTemp->get_neighbors();
+    SFC_Key nodes[9];
+    SFC_Key neigh[8];
+    SFC_Key* orig_neighbors = EmTemp->get_neighbors();
     int* orig_neigh_proc = EmTemp->get_neigh_proc();
     int neigh_proc[8];
     BC* bcptr = NULL;
@@ -643,33 +635,27 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //the nodes
     
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        nodes[0][i] = *(KeyTemp + i);
-        nodes[1][i] = *(KeyTemp + 4 * KEYLENGTH + i);
-        nodes[2][i] = *((EmTemp->pass_key()) + i);
-        nodes[3][i] = *(KeyTemp + 7 * KEYLENGTH + i);
-        nodes[4][i] = NewNodeKey[4][i];
-        nodes[5][i] = NewNodeKey[7][i];
-        nodes[6][i] = NewNodeKey[9][i];
-        nodes[7][i] = NewNodeKey[6][i];
-        nodes[8][i] = NewNodeKey[0][i];
-    }
-    n1 = (Node*) HT_Node_Ptr->lookup(&(nodes[8][0]));
+    nodes[0] = KeyTemp[0];
+    nodes[1] = KeyTemp[4];
+    nodes[2] = *(EmTemp->pass_key());
+    nodes[3] = KeyTemp[7];
+    nodes[4] = NewNodeKey[4];
+    nodes[5] = NewNodeKey[7];
+    nodes[6] = NewNodeKey[9];
+    nodes[7] = NewNodeKey[6];
+    nodes[8] = NewNodeKey[0];
+
+    n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(n1->get_coord() + i);
     //neighbors
-    
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        neigh[0][i] = neigh[4][i] = *(orig_neighbors + i); //Why is this ok if not ok for 3 down
-        neigh[1][i] = neigh[5][i] = NewNodeKey[1][i];
-        neigh[2][i] = neigh[6][i] = NewNodeKey[3][i];
-        if(*(EmTemp->get_neigh_proc() + 7) != -2)
-            neigh[3][i] = neigh[7][i] = *(orig_neighbors + 7 * KEYLENGTH + i); //This should be okay no matter what
-        else
-            neigh[3][i] = neigh[7][i] = *(orig_neighbors + 3 * KEYLENGTH + i); //This is only ok if neigh_proc==-2
-    }
+    neigh[0] = neigh[4] = orig_neighbors[0]; //Why is this ok if not ok for 3 down
+    neigh[1] = neigh[5] = NewNodeKey[1];
+    neigh[2] = neigh[6] = NewNodeKey[3];
+    if(EmTemp->get_neigh_proc()[7] != -2)
+        neigh[3] = neigh[7] = orig_neighbors[7]; //This should be okay no matter what
+    else
+        neigh[3] = neigh[7] = orig_neighbors[3]; //This is only ok if neigh_proc==-2
     
     //process of the neighbors
     
@@ -719,12 +705,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(0);  //--by jp, 0 means son 0
             
     Quad9P->putel_sq(sol, err);  //added by jp oct11
-    Element* old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->pass_key());
+    Element* old_elm = (Element*) HT_Elem_Ptr->lookup(*(Quad9P->pass_key()));
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->pass_key(), 1, stdout, myid, 16);
+        HT_Elem_Ptr->remove(*(old_elm->pass_key()));//, 1, stdout, myid, 16);
         delete old_elm;
     }
     
@@ -734,35 +720,28 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //the nodes
     
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        nodes[0][i] = *(KeyTemp + 4 * KEYLENGTH + i);
-        nodes[1][i] = *(KeyTemp + 1 * KEYLENGTH + i);
-        nodes[2][i] = *(KeyTemp + 5 * KEYLENGTH + i);
-        nodes[3][i] = *((EmTemp->pass_key()) + i);
-        nodes[4][i] = NewNodeKey[5][i];
-        nodes[5][i] = NewNodeKey[8][i];
-        nodes[6][i] = NewNodeKey[10][i];
-        nodes[7][i] = NewNodeKey[7][i];
-        nodes[8][i] = NewNodeKey[1][i];
-    }
-    n1 = (Node*) HT_Node_Ptr->lookup(&(nodes[8][0]));
+    nodes[0] = KeyTemp[4];
+    nodes[1] = KeyTemp[1];
+    nodes[2] = KeyTemp[5];
+    nodes[3] = *(EmTemp->pass_key());
+    nodes[4] = NewNodeKey[5];
+    nodes[5] = NewNodeKey[8];
+    nodes[6] = NewNodeKey[10];
+    nodes[7] = NewNodeKey[7];
+    nodes[8] = NewNodeKey[1];
+
+    n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(n1->get_coord() + i);
     
     //neighbors
-    
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        if(*(EmTemp->get_neigh_proc() + 4) != -2)
-            neigh[0][i] = neigh[4][i] = *(orig_neighbors + 4 * KEYLENGTH + i); //this should be ok now matter what
-        else
-            neigh[0][i] = neigh[4][i] = *(orig_neighbors + 0 * KEYLENGTH + i); //this is only ok if neigh_proc==-2
-        neigh[1][i] = neigh[5][i] = *(orig_neighbors + 1 * KEYLENGTH + i);
-        neigh[2][i] = neigh[6][i] = NewNodeKey[2][i];
-        neigh[3][i] = neigh[7][i] = NewNodeKey[0][i];
-        
-    }
+    if(*(EmTemp->get_neigh_proc() + 4) != -2)
+        neigh[0] = neigh[4] = orig_neighbors[4]; //this should be ok now matter what
+    else
+        neigh[0] = neigh[4] = orig_neighbors[0]; //this is only ok if neigh_proc==-2
+    neigh[1] = neigh[5] = orig_neighbors[1];
+    neigh[2] = neigh[6] = NewNodeKey[2];
+    neigh[3] = neigh[7] = NewNodeKey[0];
     
     //process of the neighbors
     
@@ -806,12 +785,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(1); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->pass_key());
+    old_elm = (Element*) HT_Elem_Ptr->lookup(*(Quad9P->pass_key()));
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->pass_key(), 1, stdout, myid, 17);
+        HT_Elem_Ptr->remove(*(old_elm->pass_key()));//, 1, stdout, myid, 17);
         delete old_elm;
     }
     
@@ -820,36 +799,29 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     //---2nd new element---
     
     //the nodes
-    
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        nodes[0][i] = *((EmTemp->pass_key()) + i);
-        nodes[1][i] = *(KeyTemp + 5 * KEYLENGTH + i);
-        nodes[2][i] = *(KeyTemp + 2 * KEYLENGTH + i);
-        nodes[3][i] = *(KeyTemp + 6 * KEYLENGTH + i);
-        nodes[4][i] = NewNodeKey[10][i];
-        nodes[5][i] = NewNodeKey[13][i];
-        nodes[6][i] = NewNodeKey[15][i];
-        nodes[7][i] = NewNodeKey[12][i];
-        nodes[8][i] = NewNodeKey[2][i];
-    }
-    n1 = (Node*) HT_Node_Ptr->lookup(&(nodes[8][0]));
+    nodes[0] = *(EmTemp->pass_key());
+    nodes[1] = KeyTemp[5];
+    nodes[2] = KeyTemp[2];
+    nodes[3] = KeyTemp[6];
+    nodes[4] = NewNodeKey[10];
+    nodes[5] = NewNodeKey[13];
+    nodes[6] = NewNodeKey[15];
+    nodes[7] = NewNodeKey[12];
+    nodes[8] = NewNodeKey[2];
+
+    n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(n1->get_coord() + i);
     
     //neighbors
-    
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        neigh[0][i] = neigh[4][i] = NewNodeKey[1][i];
-        if(*(EmTemp->get_neigh_proc() + 5) != -2)
-            neigh[1][i] = neigh[5][i] = *(orig_neighbors + 5 * KEYLENGTH + i); //This should be ok no matter what
-        else
-            neigh[1][i] = neigh[5][i] = *(orig_neighbors + 1 * KEYLENGTH + i); //this is only ok is neigh_proc==-2
-        neigh[2][i] = neigh[6][i] = *(orig_neighbors + 2 * KEYLENGTH + i);
-        neigh[3][i] = neigh[6][i] = NewNodeKey[3][i];
+    neigh[0] = neigh[4] = NewNodeKey[1];
+    if(*(EmTemp->get_neigh_proc() + 5) != -2)
+        neigh[1] = neigh[5] = orig_neighbors[5]; //This should be ok no matter what
+    else
+        neigh[1] = neigh[5] = orig_neighbors[1]; //this is only ok is neigh_proc==-2
+    neigh[2] = neigh[6] = orig_neighbors[2];
+    neigh[3] = neigh[6] = NewNodeKey[3];
         
-    }
     
     //process of the neighbors
     
@@ -893,12 +865,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(2); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->pass_key());
+    old_elm = (Element*) HT_Elem_Ptr->lookup(*(Quad9P->pass_key()));
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->pass_key(), 1, stdout, myid, 18);
+        HT_Elem_Ptr->remove(*(old_elm->pass_key()));//, 1, stdout, myid, 18);
         delete old_elm;
     }
     
@@ -907,36 +879,30 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     //---3rd new element---
     
     //the nodes
+    nodes[0] = KeyTemp[7];
+    nodes[1] = *(EmTemp->pass_key());
+    nodes[2] = KeyTemp[6];
+    nodes[3] = KeyTemp[3];
+    nodes[4] = NewNodeKey[9];
+    nodes[5] = NewNodeKey[12];
+    nodes[6] = NewNodeKey[14];
+    nodes[7] = NewNodeKey[11];
+    nodes[8] = NewNodeKey[3];
     
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        nodes[0][i] = *(KeyTemp + 7 * KEYLENGTH + i);
-        nodes[1][i] = *((EmTemp->pass_key()) + i);
-        nodes[2][i] = *(KeyTemp + 6 * KEYLENGTH + i);
-        nodes[3][i] = *(KeyTemp + 3 * KEYLENGTH + i);
-        nodes[4][i] = NewNodeKey[9][i];
-        nodes[5][i] = NewNodeKey[12][i];
-        nodes[6][i] = NewNodeKey[14][i];
-        nodes[7][i] = NewNodeKey[11][i];
-        nodes[8][i] = NewNodeKey[3][i];
-    }
-    n1 = (Node*) HT_Node_Ptr->lookup(&(nodes[8][0]));
+    n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(n1->get_coord() + i);
     
     //neighbors
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        neigh[0][i] = neigh[4][i] = NewNodeKey[0][i];
-        neigh[1][i] = neigh[5][i] = NewNodeKey[2][i];
-        if(*(EmTemp->get_neigh_proc() + 6) != -2)
-            neigh[2][i] = neigh[6][i] = *(orig_neighbors + 6 * KEYLENGTH + i);
-        else
-            neigh[2][i] = neigh[6][i] = *(orig_neighbors + 2 * KEYLENGTH + i);
-        
-        neigh[3][i] = neigh[6][i] = *(orig_neighbors + 3 * KEYLENGTH + i);
-        
-    }
+    neigh[0] = neigh[4] = NewNodeKey[0];
+    neigh[1] = neigh[5] = NewNodeKey[2];
+    if(*(EmTemp->get_neigh_proc() + 6) != -2)
+        neigh[2] = neigh[6] = orig_neighbors[6];
+    else
+        neigh[2] = neigh[6] = orig_neighbors[2];
+
+    neigh[3] = neigh[6] = orig_neighbors[3];
+
     
     //process of the neighbors
     
@@ -981,38 +947,39 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(3); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->pass_key());
+    old_elm = (Element*) HT_Elem_Ptr->lookup(*(Quad9P->pass_key()));
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->pass_key(), 1, stdout, myid, 19);
+        HT_Elem_Ptr->remove(*(old_elm->pass_key()));//, 1, stdout, myid, 19);
         delete old_elm;
     }
     
     HT_Elem_Ptr->add(nodes[8], Quad9P);
     
     //---CHANGING THE FATHER---
-    EmTemp->putson(&NewNodeKey[0][0]);
+    EmTemp->putson(NewNodeKey);
     // putting in brother info
     for(i = 0; i < 4; i++)
     {
-        EmTemp = (Element*) HT_Elem_Ptr->lookup(&NewNodeKey[i][0]);
-        EmTemp->putbrothers(&NewNodeKey[0][0]);  //was  EmTemp->putbrothers(&NewNodeKey[i][0]);
+        EmTemp = (Element*) HT_Elem_Ptr->lookup(NewNodeKey[i]);
+        EmTemp->putbrothers(NewNodeKey);  //was  EmTemp->putbrothers(&NewNodeKey[i][0]);
     }
     
     return;
 }
 
 void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, Node* NodeTemp[],
-                     unsigned NewNodeKey[][KEYLENGTH], int info, int* RefNe, int boundary, int order,
+                     SFC_Key NewNodeKey[], int info, int* RefNe, int boundary, int order,
                      MatProps* matprops_ptr)
 {
     double NewNodeCoord[2];
     double norm_coord[2];
     unsigned u_norm_coord[2];
     unsigned nkey = 2;
-    unsigned key[KEYLENGTH];
+    SFC_Key key;
+    unsigned oldkey[KEYLENGTH];
     Node* NewNode;
     Node* p;
     static double XRange[2];
@@ -1031,11 +998,10 @@ void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, No
     norm_coord[0] = (NewNodeCoord[0] - XRange[0]) / (XRange[1] - XRange[0]);
     norm_coord[1] = (NewNodeCoord[1] - YRange[0]) / (YRange[1] - YRange[0]);
     
-    fhsfc2d_(norm_coord, &nkey, key);
+    fhsfc2d_(norm_coord, &nkey, oldkey);
     
-    for(i = 0; i < KEYLENGTH; i++)
-        
-        NewNodeKey[which][i] = key[i];
+    SET_NEWKEY(key,oldkey);
+    NewNodeKey[which]=key;
     
     p = (Node*) HT_Node_Ptr->lookup(key);
     

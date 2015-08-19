@@ -236,7 +236,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
     }
     while (i < 4 && unrefine_flag == 1)
     {
-        Element* EmTemp = (Element*) El_Table->lookup(&brothers[i][0]);
+        Element* EmTemp = (Element*) El_Table->lookup(brothers[i]);
         if(EmTemp == NULL) //|| EmTemp->refined != 0)
             return 0;
         else if(EmTemp->adapted != NOTRECADAPTED) //this should be sufficient
@@ -253,11 +253,11 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
     { // we want to unrefine this element...
       //first we create the father element
       //printf("==============================\n unrefining an element \n===============================\n");
-        if(*(bros[1]->getfather()) == (unsigned) 1529353130)
-            printf("creating father %u %u from %u %u\n", *(bros[1]->getfather()), *(bros[1]->getfather() + 1),
-                   *(bros[1]->pass_key()), *(bros[1]->pass_key() + 1));
+        //if(*(bros[1]->getfather()) == (unsigned) 1529353130)
+        //    printf("creating father %u %u from %u %u\n", *(bros[1]->getfather()), *(bros[1]->getfather() + 1),
+        //           *(bros[1]->pass_key()), *(bros[1]->pass_key() + 1));
         bros[0] = El_Table->generateElement((bros + 1), NodeTable, El_Table, matprops_ptr);
-        El_Table->add(bros[0]->pass_key(), bros[0]);
+        El_Table->add(*(bros[0]->pass_key()), bros[0]);
         assert(bros[0]);  // a copy of the parent should always be on the same process as the sons
         NewFatherList->add(bros[0]);
         
@@ -353,8 +353,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         EmSon = (Element *) El_Table->lookup(EmFather->son[ison]);
         if(EmSon == NULL)
         {
-            printf("delete_oldsons() null son, ison=%d son={%u,%u}\n", ison, EmFather->son[ison][0],
-                   EmFather->son[ison][1]);
+            cout<<"delete_oldsons() null son, ison="<<ison<<" son={"<<EmFather->son[ison]<<"}\n";
             int yada;
             scanf("%d", &yada);
         }
@@ -367,14 +366,14 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         assert(NdTemp);
         if(NdTemp->order > nodeorder[8])
             nodeorder[8] = NdTemp->order;
-        NodeTable->remove(NdTemp->key, 0, stdout, myid, 7);
+        NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 7);
         delete NdTemp;
         
         //delete son to son edge nodes
         inode = (ison + 1) % 4 + 4;
         NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
         assert(NdTemp);
-        NodeTable->remove(NdTemp->key, 0, stdout, myid, 8);
+        NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 8);
         delete NdTemp;
         
         //check 2 other edge nodes per son and delete if necessary
@@ -391,7 +390,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
             {
                 if(NdTemp->order > nodeorder[inode])
                     nodeorder[inode] = NdTemp->order;
-                NodeTable->remove(NdTemp->key, 0, stdout, myid, 9);
+                NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 9);
                 delete NdTemp;
             }
         }
@@ -417,7 +416,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
                 if(NdTemp->order > nodeorder[inode])
                     nodeorder[inode] = NdTemp->order;
                 
-                NodeTable->remove(NdTemp->key, 0, stdout, myid, 10);
+                NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 10);
                 delete NdTemp;
             }
             
@@ -438,7 +437,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         }
         
         //Now delete this oldson Element
-        El_Table->remove(EmSon->key, 1, stdout, myid, 11);
+        El_Table->remove(EmSon->key);
         EmSon->void_bcptr();
         delete EmSon;
     }
@@ -456,7 +455,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
     
     return;
 }
-
+/*
 void Element::change_neigh_info(unsigned* fth_key, unsigned* ng_key, int neworder, int fth_gen, int fth_proc)
 {
     int i, j, which_side = -1, same;
@@ -507,7 +506,7 @@ void Element::change_neigh_info(unsigned* fth_key, unsigned* ng_key, int neworde
     
     return;
 }
-
+*/
 //make this an element friend function
 void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, void* NFL)
 {
@@ -569,8 +568,8 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     isonB = (isonA + 1) % 4;
                     
                     for(ineighme = 0; ineighme < 4; ineighme++)
-                        if(compare_key(EmNeigh->neighbor[ineighme], EmFather->son[isonA]) || compare_key(
-                                EmNeigh->neighbor[ineighme], EmFather->son[isonB]))
+                        if((EmNeigh->neighbor[ineighme]==EmFather->son[isonA]) || (
+                                EmNeigh->neighbor[ineighme]==EmFather->son[isonB]))
                             break;
                     if(!(ineighme < 4))
                         printf("DANGER\n");
@@ -591,20 +590,16 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                         
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
-                        for(ikey = 0; ikey < KEYLENGTH; ikey++)
-                        {
-                            EmFather->neighbor[ineigh][ikey] = EmFather->neighbor[ineigh + 4][ikey] =
-                                    EmNeigh->key[ikey];
-                            EmNeigh->neighbor[ineighme][ikey] = EmNeigh->neighbor[ineighme + 4][ikey] =
-                                    EmFather->key[ikey];
-                        }
+                            EmFather->neighbor[ineigh] = EmFather->neighbor[ineigh + 4] =
+                                    EmNeigh->key;
+                            EmNeigh->neighbor[ineighme] = EmNeigh->neighbor[ineighme + 4] =
+                                    EmFather->key;
                     }
                     else
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
-                        for(ikey = 0; ikey < KEYLENGTH; ikey++)
-                            EmNeigh->neighbor[ineighme][ikey] = EmNeigh->neighbor[ineighme + 4][ikey] =
-                                    EmFather->key[ikey];
+                        EmNeigh->neighbor[ineighme] = EmNeigh->neighbor[ineighme + 4] =
+                                    EmFather->key;
                 }
             }
     }
@@ -739,17 +734,14 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                 if(EmFather->neigh_gen[ineigh] - 1 == EmFather->generation)
                     NdTemp->info = S_C_CON;
                 
-                for(ikey = 0; ikey < KEYLENGTH; ikey++)
-                {
-                    //The element I want my neighbor to update
-                    send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH + ikey] = EmFather->neighbor[ineigh][ikey];
-                    //the OLDSON who will introduce his NEWFATHER to his
-                    //neighbor on another processor
-                    send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH + ikey] = EmFather->son[ison][ikey];
-                    //the NEWFATHER element
-                    send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH + ikey] = EmFather->key[ikey];
-                    send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH + ikey] = NdTemp->key[ikey];
-                }
+                //The element I want my neighbor to update
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])), EmFather->neighbor[ineigh]);
+                //the OLDSON who will introduce his NEWFATHER to his
+                //neighbor on another processor
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])), EmFather->son[ison]);
+                //the NEWFATHER element
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->key);
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), NdTemp->key);
                 
                 isend[neigh_proc]++;
             }
@@ -810,11 +802,11 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                             //says I need to update
                             
                             //Hi I'm EmTemp
-                            EmTemp = (Element*) El_Table->lookup(&(recv[iproc][(4 * iopu + 0) * KEYLENGTH]));
+                            EmTemp = (Element*) El_Table->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 0) * KEYLENGTH])));
                             
                             //my old neighbor will introduce his NEWFATHER to me
                             for(ineigh = 0; ineigh < 8; ineigh++)
-                                if(compare_key(EmTemp->neighbor[ineigh], &(recv[iproc][(4 * iopu + 1) * KEYLENGTH])))
+                                if(EmTemp->neighbor[ineigh]==sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 1) * KEYLENGTH])))
                                     break;
                             assert(ineigh < 8); //I don't know this Element pretending to be
                             //my neighbor, I'm calling the FBI to report a suspicious
@@ -835,9 +827,8 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //which means my father will only have 1 neighbor on that side
                                 EmFather->neigh_proc[ineighmod4 + 4] = -2;
                                 
-                                for(ikey = 0; ikey < KEYLENGTH; ikey++)
-                                    EmFather->neighbor[ineighmod4][ikey] = EmFather->neighbor[ineighmod4 + 4][ikey] =
-                                            recv[iproc][(4 * iopu + 2) * KEYLENGTH + ikey];
+                                EmFather->neighbor[ineighmod4] = EmFather->neighbor[ineighmod4 + 4] =
+                                        sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH]));
                                 
                                 //I know my neighbor on the other processor is the same
                                 //generation as me because we were both unrefined and only
@@ -855,7 +846,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 {
                                     if(NdTemp->order > nodeorder)
                                         nodeorder = NdTemp->order;
-                                    NodeTable->remove(NdTemp->key, 0, stdout, myid, 12);
+                                    NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 12);
                                     delete NdTemp;
                                 }
                                 NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[ineighmod4 + 4]);
@@ -876,9 +867,8 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 
                                 EmTemp->neigh_proc[ineighmod4 + 4] = -2;
                                 
-                                for(ikey = 0; ikey < KEYLENGTH; ikey++)
-                                    EmTemp->neighbor[ineighmod4 + 4][ikey] = EmTemp->neighbor[ineighmod4][ikey] =
-                                            recv[iproc][(4 * iopu + 2) * KEYLENGTH + ikey];
+                                EmTemp->neighbor[ineighmod4 + 4] = EmTemp->neighbor[ineighmod4] =
+                                        sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH]));
                                 
                                 EmTemp->neigh_gen[ineighmod4 + 4] = EmTemp->neigh_gen[ineighmod4] =
                                         EmTemp->neigh_gen[ineighmod4] - 1;
@@ -903,11 +893,11 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 {	      //my neighbor was my generation but his father moved in
                                     NdTemp->info = S_S_CON;
                                     
-                                    NdTemp = (Node*) NodeTable->lookup(recv[iproc] + (4 * iopu + 3) * KEYLENGTH);
+                                    NdTemp = (Node*) NodeTable->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 3) * KEYLENGTH])));
                                     if(!NdTemp)
                                     {
                                         ElemBackgroundCheck(El_Table, NodeTable,
-                                                            recv[iproc] + (4 * iopu + 3) * KEYLENGTH, stdout);
+                                                            sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 3) * KEYLENGTH])), stdout);
                                         assert(NdTemp);
                                     }
                                     NdTemp->info = S_C_CON;

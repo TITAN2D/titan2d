@@ -36,6 +36,7 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
     Element* Son;
     Node* NodeTemp;
     unsigned* son_key;
+    SFC_Key change_neighbor[8];
     int which_neighbor;
     int neighbor_gen;
     int my_gen;
@@ -128,9 +129,9 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
         
         for(int k = 0; k < recv_counter[mate_proc]; k++)
         {
-            EmTemp = (Element*) HT_Elem_Ptr->lookup(recv_buffer[mate_proc][k].target_element);
+            EmTemp = (Element*) HT_Elem_Ptr->lookup(sfc_key_from_oldkey(recv_buffer[mate_proc][k].target_element));
             assert(EmTemp);
-            which_neighbor = EmTemp->which_neighbor(recv_buffer[mate_proc][k].old_neighbor);
+            which_neighbor = EmTemp->which_neighbor(sfc_key_from_oldkey(recv_buffer[mate_proc][k].old_neighbor));
             assert(which_neighbor < 4);
             neighbor_gen = recv_buffer[mate_proc][k].orig_gen;
             assert(neighbor_gen == recv_buffer[mate_proc][k].orig_gen);
@@ -143,15 +144,19 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
                 assert(my_gen >= neighbor_gen);
                 if(my_gen == neighbor_gen)
                 {
-                    EmTemp->change_neighbor(&recv_buffer[mate_proc][k].sons[0][0], which_neighbor, neighbor_proc, 10);
-                    NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + (which_neighbor + 4) * KEYLENGTH);
+                    SET_NEWKEY(change_neighbor[0],recv_buffer[mate_proc][k].sons[0]);
+                    SET_NEWKEY(change_neighbor[1],recv_buffer[mate_proc][k].sons[1]);
+                    EmTemp->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 10);
+                    NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[which_neighbor + 4]);
                     assert(NodeTemp);
                     NodeTemp->putinfo(S_C_CON); //theoretically the order doesn't have to be changed
                 }
                 else
                 {
-                    EmTemp->change_neighbor(&recv_buffer[mate_proc][k].sons[0][0], which_neighbor, neighbor_proc, 11);
-                    NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + (which_neighbor + 4) * KEYLENGTH);
+                    SET_NEWKEY(change_neighbor[0],recv_buffer[mate_proc][k].sons[0]);
+                    SET_NEWKEY(change_neighbor[1],recv_buffer[mate_proc][k].sons[1]);
+                    EmTemp->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 11);
+                    NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[which_neighbor + 4]);
                     assert(NodeTemp);
                     if(!(NodeTemp->getinfo() == S_S_CON))
                     {
@@ -162,12 +167,12 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
                     NodeTemp->putinfo(SIDE);
                     NodeTemp->put_order(*(EmTemp->get_order() + which_neighbor));
                     
-                    NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + which_neighbor * KEYLENGTH);
+                    NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[which_neighbor]);
                     if(NodeTemp->getinfo() == S_C_CON)
                         NodeTemp->putinfo(CORNER);
                     else
                     {
-                        NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + (1 + which_neighbor) * KEYLENGTH);
+                        NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[1 + which_neighbor]);
                         if(NodeTemp->getinfo() == S_C_CON)
                             NodeTemp->putinfo(CORNER);
                         
@@ -179,15 +184,17 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
             else //this element was also refined
             {
                 assert(my_gen == neighbor_gen);
-                NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode() + (which_neighbor + 4) * KEYLENGTH);
+                NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[which_neighbor + 4]);
                 assert(NodeTemp->getinfo() == S_C_CON);
                 NodeTemp->putinfo(CORNER);
                 
                 for(int l = 0; l < 2; l++)
                 {
-                    Son = (Element*) HT_Elem_Ptr->lookup(EmTemp->getson() + KEYLENGTH * SIDE_SONS[which_neighbor][l]);
-                    Son->change_neighbor(&recv_buffer[mate_proc][k].sons[l][0], which_neighbor, neighbor_proc, 11);
-                    NodeTemp = (Node*) HT_Node_Ptr->lookup(Son->getNode() + (which_neighbor + 4) * KEYLENGTH);
+                    Son = (Element*) HT_Elem_Ptr->lookup(EmTemp->getson()[SIDE_SONS[which_neighbor][l]]);
+                    SET_NEWKEY(change_neighbor[0],recv_buffer[mate_proc][k].sons[l]);
+                    //SET_NEWKEY(change_neighbor[1],recv_buffer[mate_proc][k].sons[l+1]);
+                    Son->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 11);
+                    NodeTemp = (Node*) HT_Node_Ptr->lookup(Son->getNode()[which_neighbor + 4]);
                     assert(NodeTemp);
                     NodeTemp->putinfo(SIDE);
                     NodeTemp->put_order(*(Son->get_order() + which_neighbor));

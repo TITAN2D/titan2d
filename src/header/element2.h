@@ -22,6 +22,7 @@
 #include "hashtab.h"
 #include "node.h"
 #include "struct.h"
+#include "sfc.h"
 
 #include <fstream>
 #include <iostream>
@@ -42,11 +43,11 @@ class Element
 
     friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
-    friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
+    friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
     friend void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
 
-    friend void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, unsigned *debugkey, FILE *fp);
+    friend void NodeBackgroundCheck(HashTable *El_Table, HashTable* NodeTable, const SFC_Key& nodedbkey, FILE *fp);
 
     friend void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
 
@@ -98,7 +99,7 @@ protected:
             elementType = ElementType::UnknownElementType;
 
         counted = 0;
-        father[0] = father[1] = 0; //initialize the father key to zero
+        father = 0; //initialize the father key to zero
         for(int i = 0; i < NUM_STATE_VARS; i++)
         {
             state_vars[i] = -1;
@@ -116,11 +117,11 @@ protected:
         myprocess=-1;
     }
     //! constructor that creates an original element when funky is read in
-    Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int mat, int *elm_loc_in,
-            double pile_height, int myid, unsigned *opposite_brother);
+    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+            double pile_height, int myid, const SFC_Key& opposite_brother);
 
     //! constructor that creates a son element from its father during refinement
-    Element(unsigned nodekeys[][KEYLENGTH], unsigned neigh[][KEYLENGTH], int n_pro[], BC *b, int gen, int elm_loc_in[],
+    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
             HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
@@ -138,7 +139,7 @@ public:
     void save_elem(FILE* fp, FILE* fptxt); //for restart
                    
     //! returns address of element (same as bubble node, node 8 out of 0->8) hashtable key
-    unsigned* pass_key();
+    SFC_Key* pass_key();
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
     int get_material();
@@ -147,7 +148,7 @@ public:
     void get_stiffness(HashTable*, HashTable*, double*, double*, Element*);
 
     //! returns the address of the first of 8 (nodes 0-7) node keys in an array, the node keys are used to access the nodes through the node hashtable
-    unsigned* getNode();
+    SFC_Key* getNode();
 
     //! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
     Node** getNodesPtrs();
@@ -180,19 +181,19 @@ public:
     void put_gen(int);
 
     //! store the keys for the four son "elements" in the father element, used temporarily during refinement
-    void putson(unsigned*);
+    void putson(const SFC_Key*);
 
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
-    void putbrothers(unsigned*);
+    void putbrothers(const SFC_Key*);
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
-    unsigned* get_brothers();
+    SFC_Key* get_brothers();
 
     //! this function stores the processor id "a" of neighbor "i" in the 8 element array of neighbor processors, this functionality is duplicated by put_neigh_proc which is the preferred function to use (don't use this one it's legacy)
     void putassoc(int a, int i);
 
     //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
-    void putneighbor(unsigned *n, int i);
+    void putneighbor(const SFC_Key &n, const int i);
 
     //! this function stores the processor id "proc" of neighbor "i" in the 8 element array of neighbor processors, use this function instead of putassoc.
     void put_neigh_proc(int i, int proc);
@@ -204,13 +205,13 @@ public:
     int* get_order();
 
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
-    unsigned* getfather();
+    SFC_Key getfather();
 
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
-    void put_father(unsigned fatherin[KEYLENGTH]);
+    void put_father(const SFC_Key &fatherin);
 
     //! return the element keys of this element's 4 sons, used during refinement
-    unsigned* getson();
+    SFC_Key* getson();
 
     //! stores the ?square? of the "solution" and solution error, used durring refinement
     void putel_sq(double solsq, double ellsq);
@@ -222,7 +223,7 @@ public:
     double* get_el_error();
 
     //! returns the array of keys for this element's 8 neighbors
-    unsigned* get_neighbors();
+    SFC_Key* get_neighbors();
 
     //! returns the array of processor ids for this element's 8 neighbors
     int* get_neigh_proc();
@@ -234,7 +235,7 @@ public:
     int get_gen();
 
     //! compare the FindNeigh key against the keys of this element's 8 neighbors to determine which if any neighbor FindNeigh is
-    int which_neighbor(unsigned *FindNeigh);
+    int which_neighbor(const SFC_Key &FindNeigh);
 
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag().  refined can be permanently set to GHOST (defined in constant.h) or zero or temporarily set to 1 (with in the refinement and unrefinement routines), Keith believes it's not being unset (set from 1 to 0) when it should be after the refinement is done.  Keith believes the problem is located within H_adapt() or a function called from within it, recurse down.
     int get_refined_flag();
@@ -243,7 +244,7 @@ public:
     int get_adapted_flag();
 
     //! call this function after this element's neighbor(s) have been refined, proc is processor id for neighbor[which_side+4]
-    void change_neighbor(unsigned *newneighbs, int which_side, int proc, int reg);
+    void change_neighbor(const SFC_Key *newneighbs, int which_side, int proc, int reg);
 
     //! set this element's refined flag to i, can set it to normal (hasn't just been refined and isn't a ghost cell), "temporarily" set to "refined" (has just been refined so don't refine again), or say that it's a GHOST cell, see constant.h, (which means you don't update it, instead you get new values from the processor that owns it and you don't refine it.) refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). 
     void put_refined_flag(int i);
@@ -306,10 +307,10 @@ public:
     void put_lb_weight(double dd_in);
 
     //! this function returns the load balancing key, which is used during repartitioning
-    unsigned* get_lb_key();
+    SFC_Key get_lb_key();
 
     //! this function sets the load balancing key, which is used during repartitioning
-    void put_lb_key(unsigned* in_key);
+    void put_lb_key(const SFC_Key& in_key);
 
     //! this function copies the elmenent key to the load balancing key
     void copy_key_to_lb_key();
@@ -465,7 +466,7 @@ public:
     int check_unrefinement(HashTable *El_Table, double target);
 
     //! this function updates this elements neighbor info when one of its neighbors has been unrefined
-    void change_neigh_info(unsigned *fth_key, unsigned *ng_key, int neworder, int ng_gen, int fth_proc);
+    //void change_neigh_info(unsigned *fth_key, unsigned *ng_key, int neworder, int ng_gen, int fth_proc);
 
     //! this function returns the elm_loc variable, which is used in unrefinement beyond the initial coarse grid
     int* get_elm_loc();
@@ -595,28 +596,28 @@ protected:
     double lb_weight;
 
     //! this is the key for load-balancing, if there is no constrained node, it is the element key, otherwise it is a construct of the element "bunch", keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    unsigned lb_key[KEYLENGTH];
+    SFC_Key lb_key;
 
     //! this is the element key, which has the same value as the key of the element's bubble node, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    unsigned key[KEYLENGTH];
+    SFC_Key key;
 
     //! this array holds the first 8 (0->7) of this element's nodes' keys, the n9th (8 out of 0->8) node is the bubble node it's key is not stored separately since it has the same key as the element, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    unsigned node_key[8][KEYLENGTH];
+    SFC_Key node_key[8];
 
     //!same as node_key but pointers, can be out-dated
     Node* node_keyPtr[8];
 
     //! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    unsigned neighbor[8][KEYLENGTH];
+    SFC_Key neighbor[8];
 
     //!same as neighbor but pointers, can be out-dated
     Element* neighborPtr[8];
 
     //! the key of the father it is assigned in the refine() and unrefine_elements() functions
-    unsigned father[KEYLENGTH];
+    SFC_Key father;
 
     //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    unsigned son[4][KEYLENGTH];
+    SFC_Key son[4];
 
     //! this array holds the process(or) id of this element's 8 neighbors, there can be 8 neighbors because of the 1 irregularity rule.  neigh_proc[4:7] != -2 only if it has 2 neighbors on that side, a value of -1 for neigh_proc means that this edge is a boundary of the computational domain. 
     int neigh_proc[8];
@@ -655,7 +656,7 @@ protected:
     int new_old;
 
     //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    unsigned brothers[4][KEYLENGTH];
+    SFC_Key brothers[4];
 
     //! coord holds the coordinates of the elements cell center, these are the same as the coordinates of the element's bubble node's
     double coord[DIMENSION];
@@ -771,9 +772,9 @@ inline void Element::put_ithelem(int i)
 }
 ;
 
-inline unsigned* Element::pass_key()
+inline SFC_Key* Element::pass_key()
 {
-    return key;
+    return &key;
 }
 ;
 
@@ -783,9 +784,9 @@ inline int Element::get_material()
 }
 ;
 
-inline unsigned* Element::get_brothers()
+inline SFC_Key* Element::get_brothers()
 {
-    return &brothers[0][0];
+    return brothers;
 }
 ;
 
@@ -807,7 +808,7 @@ inline void Element::put_lb_weight(double dd_in)
 }
 ;
 
-inline unsigned* Element::get_lb_key()
+inline SFC_Key Element::get_lb_key()
 {
     return lb_key;
 }
@@ -1024,9 +1025,9 @@ inline int* Element::getassoc()
     return neigh_proc;
 }
 
-inline unsigned* Element::getNode()
+inline SFC_Key* Element::getNode()
 {
-    return &(node_key[0][0]);
+    return node_key;
 }
 
 inline Node** Element::getNodesPtrs()
@@ -1041,14 +1042,14 @@ inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTa
     {
         for(i = 0; i < 8; i++)
         {
-            neighborPtr[i] = (Element*) El_Table->lookup(&neighbor[i][0]);
+            neighborPtr[i] = (Element*) El_Table->lookup(neighbor[i]);
         }
     }
     if(NodeTable != NULL)
     {
         for(i = 0; i < 8; i++)
         {
-            node_keyPtr[i] = (Node*) NodeTable->lookup(&node_key[i][0]);
+            node_keyPtr[i] = (Node*) NodeTable->lookup(node_key[i]);
         }
     }
     return;
@@ -1061,7 +1062,7 @@ inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTabl
     {
         for(i = 0; i < 8; i++)
         {
-            if(neighborPtr[i] != (Element*) El_Table->lookup(&neighbor[i][0]))
+            if(neighborPtr[i] != (Element*) El_Table->lookup(neighbor[i]))
                 count++;
         }
     }
@@ -1069,7 +1070,7 @@ inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTabl
     {
         for(i = 0; i < 8; i++)
         {
-            if(node_keyPtr[i] != (Node*) NodeTable->lookup(&node_key[i][0]))
+            if(node_keyPtr[i] != (Node*) NodeTable->lookup(node_key[i]))
                 count++;
         }
     }
@@ -1095,9 +1096,9 @@ inline void Element::put_order(int i, int ord)
     order[i] = ord;
 }
 
-inline unsigned* Element::getson()
+inline SFC_Key* Element::getson()
 {
-    return &(son[0][0]);
+    return son;
 }
 
 inline int* Element::get_order()
@@ -1105,32 +1106,24 @@ inline int* Element::get_order()
     return order;
 }
 
-inline void Element::putson(unsigned* s)
+inline void Element::putson(const SFC_Key* s)
 {
-    
     for(int i = 0; i < 4; i++)
-        for(int j = 0; j < KEYLENGTH; j++)
-            son[i][j] = *(s + i * KEYLENGTH + j);
+        son[i] = s[i];
     
     refined = 1;
     adapted = OLDFATHER;
 }
 
-inline void Element::putbrothers(unsigned* s)
+inline void Element::putbrothers(const SFC_Key* s)
 {
-    
     for(int i = 0; i < 4; i++)
-        for(int j = 0; j < KEYLENGTH; j++)
-            brothers[i][j] = *(s + i * KEYLENGTH + j);
-    
-    return;
+        brothers[i] = s[i];
 }
 
-inline void Element::putneighbor(unsigned* n, int i)
+inline void Element::putneighbor(const SFC_Key& n, const int i)
 {
-    int j;
-    for(j = 0; j < KEYLENGTH; j++)
-        neighbor[i][j] = *(n + j);
+    neighbor[i] = n;
 }
 
 inline void Element::putassoc(int a, int i)
@@ -1154,9 +1147,9 @@ inline double* Element::get_el_error()
     return el_error;
 }
 
-inline unsigned* Element::get_neighbors()
+inline SFC_Key* Element::get_neighbors()
 {
-    return &neighbor[0][0];
+    return neighbor;
 }
 
 inline int* Element::get_neigh_proc()
@@ -1262,10 +1255,9 @@ inline double* Element::get_influx()
 }
 ;
 
-inline void Element::put_father(unsigned *fatherin)
+inline void Element::put_father(const SFC_Key &fatherin)
 {
-    for(int ikey = 0; ikey < KEYLENGTH; ikey++)
-        father[ikey] = fatherin[ikey];
+    father = fatherin;
 }
 ;
 
@@ -1383,7 +1375,7 @@ public:
     Element* get(int i);
 
     //! returns the key of the ith Element whose pointer is stored in the list
-    unsigned* get_key(int i);
+    SFC_Key* get_key(int i);
 
     //! returns the number of elements in the list.
     int get_num_elem();
@@ -1431,7 +1423,7 @@ inline Element* ElemPtrList::get(int i)
     return (((i >= 0) && (i < num_elem)) ? list[i] : NULL);
 }
 ;
-inline unsigned* ElemPtrList::get_key(int i)
+inline SFC_Key* ElemPtrList::get_key(int i)
 {
     return (((i >= 0) && (i < num_elem)) ? list[i]->pass_key() : NULL);
 }
