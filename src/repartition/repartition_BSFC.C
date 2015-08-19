@@ -1813,7 +1813,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         send_array1 = (ElemPack*) malloc(num_send[1] * sizeof(ElemPack));
         //my last key is changing, update my record
-        SET_OLDKEY((MyFirstAndLastKey+1 * KEYLENGTH + ikey),(*(ElemArray[isend[1] - 1]->pass_key())));
+        SET_OLDKEY((MyFirstAndLastKey+1 * KEYLENGTH),(*(ElemArray[isend[1] - 1]->pass_key())));
         
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
