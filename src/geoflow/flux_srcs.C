@@ -137,7 +137,7 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
     
     //get corner and edge nodes
     for(inode = 0; inode < 8; inode++)
-        node[inode] = this->getNode()[inode];
+        node[inode] = node_key(inode);
     
     // center node key is same as element key
     node[8] = this->key();

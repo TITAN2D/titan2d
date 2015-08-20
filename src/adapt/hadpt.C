@@ -1278,7 +1278,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
 
                     for(inode=0;inode<8;inode++)
                     {   
-                        NdTemp=(Node*) HT_Node_Ptr->lookup(EmTemp->getNode()+inode*KEYLENGTH);
+                        NdTemp=(Node*) HT_Node_Ptr->lookup(EmTemp->node_key(inode));
                         assert(NdTemp);
                         NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem()+1);
                     }

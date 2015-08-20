@@ -330,10 +330,9 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
             }
             else
             {  //active element on this processor -- flag all nodes as being used
-                SFC_Key* nodes = EmTemp->getNode();
                 for(j = 0; j < 8; j++)
                 {
-                    NdTemp = (Node*) HT_Node_Ptr->lookup(nodes[j]);
+                    NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(j));
                     NdTemp->put_id(1);
                 }
                 NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->key());

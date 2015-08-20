@@ -36,7 +36,6 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
     Element* SonTemp1;
     Element* SonTemp2;
     
-    SFC_Key* keyP;
     SFC_Key* sonP;
     
     void* p;
@@ -317,7 +316,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                 {
                     if(recv->sender_order[0] > *(EmTemp->get_order() + recv->side))
                         EmTemp->put_order(recv->side, recv->sender_order[0]);
-                    p = HT_Node_Ptr->lookup(EmTemp->getNode()[recv->side + 4]); //-- cc
+                    p = HT_Node_Ptr->lookup(EmTemp->node_key(recv->side + 4)); //-- cc
                     assert(p);
                     Node* NdTemp = (Node*) p;
                     NdTemp->put_order(*(EmTemp->get_order() + recv->side));
@@ -328,9 +327,6 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
         
         else //-- sender's generation is diffrent from receptor's
         {
-            
-            SFC_Key* ndkey = EmTemp->getNode();
-            
             if(recv->sender_gen > EmTemp->get_gen()) //--sender is smaller than receptor
             {
                 assert(!recv->sender_refined); //-- debug window
@@ -378,7 +374,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                     int start = recv->side % 4;
                     
-                    Node* NdTemp = (Node*) (HT_Node_Ptr->lookup(ndkey[start + 4]));
+                    Node* NdTemp = (Node*) (HT_Node_Ptr->lookup(EmTemp->node_key(start + 4)));
                     
                     if(recv->sender_order[0] > *(EmTemp->get_order() + start))
                         EmTemp->put_order(start, recv->sender_order[0]);
@@ -400,8 +396,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     if(end == 4)
                         end = 0;
                     
-                    keyP = EmTemp->getNode();
-                    Node* NdTemp = (Node*) (HT_Node_Ptr->lookup(keyP[start]));
+                    Node* NdTemp = (Node*) (HT_Node_Ptr->lookup(EmTemp->node_key(start)));
                     
                     if(NdTemp->getinfo() == S_S_CON)
                     {
@@ -412,7 +407,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     else
                     {
                         int mid = -1;
-                        NdTemp = (Node*) (HT_Node_Ptr->lookup(keyP[end]));
+                        NdTemp = (Node*) (HT_Node_Ptr->lookup(EmTemp->node_key(end)));
                         EmTemp->putneighbor(sfc_key_from_oldkey(recv->sender_son2), start);
                         if(end == 0)
                             mid = 7;
@@ -435,10 +430,10 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     if(end == 4)
                         end = 0;
                     
-                    Node* NdTemp = (Node*) (HT_Node_Ptr->lookup(ndkey[start]));
+                    Node* NdTemp = (Node*) (HT_Node_Ptr->lookup(EmTemp->node_key(start)));
                     if(NdTemp->getinfo() != S_C_CON)
                     {
-                        NdTemp = (Node*) (HT_Node_Ptr->lookup(ndkey[end]));
+                        NdTemp = (Node*) (HT_Node_Ptr->lookup(EmTemp->node_key(end)));
                         //assert(NdTemp->getinfo()==S_C_CON);
                     }
                     
@@ -460,7 +455,6 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
 
 void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int side, int case_flag)
 {
-    SFC_Key* keyP;
     void* p;
     Node* NdTemp1;
     Node* NdTemp2;
@@ -469,8 +463,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
     
     if(Em1 == Em2) //--case 2
     {
-        keyP = Em1->getNode();
-        p = HT_Node_Ptr->lookup(keyP[side + 4]);
+        p = HT_Node_Ptr->lookup(Em1->node_key(side + 4));
         NdTemp1 = (Node*) p;
         NdTemp1->putinfo(S_C_CON);
     }
@@ -479,13 +472,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
         switch (side)
         {
             case 0: //--side 0 of son 0, 1
-            
-                keyP = Em1->getNode();
-                p = HT_Node_Ptr->lookup(keyP[0]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(0));
                 NdTemp1 = (Node*) p; //-- node 0 of son 0
-                p = HT_Node_Ptr->lookup(keyP[1]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(1));
                 NdTemp2 = (Node*) p; //-- node 1 of son 0
-                p = HT_Node_Ptr->lookup(keyP[4]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(4));
                 NdTemp3 = (Node*) p; //-- node 4 of son 0
                 if(case_flag == 1)
                 {
@@ -503,12 +494,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp3->putinfo(S_S_CON);  //-- node 4 of son 0 in case 3 has no dof
                 }
                 
-                keyP = Em2->getNode();
-                p = HT_Node_Ptr->lookup(keyP[0]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(0));
                 NdTemp1 = (Node*) p;  //-- node 0 of son 1
-                p = HT_Node_Ptr->lookup(keyP[1]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(1));
                 NdTemp2 = (Node*) p;  //-- node 1 of son 1
-                p = HT_Node_Ptr->lookup(keyP[4]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(4));
                 NdTemp3 = (Node*) p;  //-- node 4 of son 1
                 if(case_flag == 1)
                 {
@@ -527,13 +517,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                 break;
                 
             case 1:	      //--side 1 of son 1, 2
-            
-                keyP = Em1->getNode();
-                p = HT_Node_Ptr->lookup(keyP[1]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(1));
                 NdTemp1 = (Node*) p;	      //-- node 1 of son 1
-                p = HT_Node_Ptr->lookup(keyP[2]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(2));
                 NdTemp2 = (Node*) p;	      //-- node 2 of son 1
-                p = HT_Node_Ptr->lookup(keyP[5]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(5));
                 NdTemp3 = (Node*) p;	      //-- node 5 of son 1
                 if(case_flag == 1)
                 {
@@ -552,12 +540,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp3->putinfo(S_S_CON);  //-- node 5 of son 1 in case 3 has no dof
                 }
                 
-                keyP = Em2->getNode();
-                p = HT_Node_Ptr->lookup(keyP[1]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(1));
                 NdTemp1 = (Node*) p;  //-- node 1 of son 2
-                p = HT_Node_Ptr->lookup(keyP[2]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(2));
                 NdTemp2 = (Node*) p;  //-- node 2 of son 2
-                p = HT_Node_Ptr->lookup(keyP[5]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(5));
                 NdTemp3 = (Node*) p;  //-- node 5 of son 2
                 if(case_flag == 1)
                 {
@@ -576,12 +563,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                 break;
                 
             case 2:  //--side 2 of son 2, 3
-                keyP = Em1->getNode();
-                p = HT_Node_Ptr->lookup(keyP[2]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(2));
                 NdTemp1 = (Node*) p;  //-- node 2 of son 2
-                p = HT_Node_Ptr->lookup(keyP[3]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(3));
                 NdTemp2 = (Node*) p;  //-- node 3 of son 2
-                p = HT_Node_Ptr->lookup(keyP[6]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(6));
                 NdTemp3 = (Node*) p;  //-- node 6 of son 2
                 if(case_flag == 1)
                 {
@@ -600,12 +586,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp3->putinfo(S_S_CON);  //-- node 6 of son 2 in case 3 has no dof
                 }
                 
-                keyP = Em2->getNode();
-                p = HT_Node_Ptr->lookup(keyP[2]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(2));
                 NdTemp1 = (Node*) p;  //-- node 2 of son 3
-                p = HT_Node_Ptr->lookup(keyP[3]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(3));
                 NdTemp2 = (Node*) p;  //-- node 3 of son 3
-                p = HT_Node_Ptr->lookup(keyP[6]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(6));
                 NdTemp3 = (Node*) p;  //-- node 6 of son 3
                 if(case_flag == 1)
                 {
@@ -624,13 +609,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                 break;
                 
             case 3:
-
-                keyP = Em1->getNode();
-                p = HT_Node_Ptr->lookup(keyP[3]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(3));
                 NdTemp1 = (Node*) p;  //-- node 3 of son 3
-                p = HT_Node_Ptr->lookup(keyP[0]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(0));
                 NdTemp2 = (Node*) p;  //-- node 0 of son 3
-                p = HT_Node_Ptr->lookup(keyP[7]);
+                p = HT_Node_Ptr->lookup(Em1->node_key(7));
                 NdTemp3 = (Node*) p;  //-- node 7 of son 3
                 if(case_flag == 1)
                 {
@@ -649,12 +632,11 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp3->putinfo(S_S_CON);  //-- node 7 of son 3 in case 3 has no dof
                 }
                 
-                keyP = Em2->getNode();
-                p = HT_Node_Ptr->lookup(keyP[3]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(3));
                 NdTemp1 = (Node*) p;  //-- node 3 of son 0
-                p = HT_Node_Ptr->lookup(keyP[0]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(0));
                 NdTemp2 = (Node*) p;  //-- node 0 of son 0
-                p = HT_Node_Ptr->lookup(keyP[7]);
+                p = HT_Node_Ptr->lookup(Em2->node_key(7));
                 NdTemp3 = (Node*) p;  //-- node 7 of son 0
                 if(case_flag == 1)
                 {
@@ -678,18 +660,16 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
 void write_node_info_ext(HashTable* HT_Node_Ptr, Element* Em, int start, int mid)
 {
     
-    SFC_Key* keyP;
     Node* NdTemp;
     
     int order = *(Em->get_order() + mid - 4);
-    keyP = Em->getNode();
     
-    NdTemp = (Node*) (HT_Node_Ptr->lookup(keyP[start]));
+    NdTemp = (Node*) (HT_Node_Ptr->lookup(Em->node_key(start)));
     assert(NdTemp);
     NdTemp->putinfo(CORNER);
     NdTemp->put_order(1);
     
-    NdTemp = (Node*) (HT_Node_Ptr->lookup(keyP[mid]));
+    NdTemp = (Node*) (HT_Node_Ptr->lookup(Em->node_key(mid)));
     assert(NdTemp);
     NdTemp->putinfo(SIDE);
     NdTemp->put_order(order);

@@ -36,7 +36,7 @@ using namespace std;
 #include <hd5calls.h>
 
 //just an innocent declaration. defined at end of the file
-double interpolate_elv(HashTable *, HashTable *, Element *, int, const SFC_Key *);
+double interpolate_elv(HashTable *, HashTable *, Element *, int);
 void xdmf_fopen(char *);
 void xdmf_fclose(ofstream &);
 
@@ -54,7 +54,6 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
     // scaling factor for the momentums
     double momentum_scale = matprops_ptr->HEIGHT_SCALE
             * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE));
-    SFC_Key *nodes;
     
     /* scan HashTable and store coordinates and variables in vectors */
     Element *EmTemp = NULL;
@@ -74,10 +73,9 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
                 xmom.push_back(state_vars[2] * momentum_scale);
                 ymom.push_back(state_vars[3] * momentum_scale);
                 num_elm++;
-                nodes = EmTemp->getNode();
                 for(j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
+                    NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     coord = NodeTemp->get_coord();
                     xcoord.push_back(coord[0] * matprops_ptr->LENGTH_SCALE);
                     ycoord.push_back(coord[1] * matprops_ptr->LENGTH_SCALE);
@@ -91,7 +89,7 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
                     // hence <get a fake one> interpolate from neighbor
                     else
                     {
-                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j, nodes) * matprops_ptr->LENGTH_SCALE;
+                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j) * matprops_ptr->LENGTH_SCALE;
                         zcoord.push_back(elevation);
                     }
                     num_nodes++;
@@ -221,7 +219,6 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
     // scaling factor for the momentums
     double momentum_scale = matprops_ptr->HEIGHT_SCALE
             * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE));
-    SFC_Key *nodes;
     static double time_prev;
     
     /* generate XML file if required */
@@ -277,10 +274,9 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
             if(!EmTemp->get_refined_flag())
             {
                 num_elem++;
-                nodes = EmTemp->getNode();
                 for(j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
+                    NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     if(NodeTemp->get_con_id() < 0)
                     {
                         NodeTemp->put_con_id(id++);
@@ -315,10 +311,9 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                 pheight[ielm] = state_vars[0] * matprops_ptr->HEIGHT_SCALE;
                 xmom[ielm] = state_vars[1] * momentum_scale;
                 ymom[ielm] = state_vars[2] * momentum_scale;
-                nodes = EmTemp->getNode();
                 for(j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
+                    NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     int inode = NodeTemp->get_con_id();
                     coord = NodeTemp->get_coord();
                     xyz[3 * inode] = coord[0] * matprops_ptr->LENGTH_SCALE;
@@ -333,7 +328,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                     // hence <get a fake one> interpolate from neighbor
                     else
                     {
-                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j, nodes) * matprops_ptr->LENGTH_SCALE;
+                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j) * matprops_ptr->LENGTH_SCALE;
                         xyz[3 * inode + 2] = elevation;
                     }
                 }
@@ -454,7 +449,7 @@ void xdmf_fclose(ofstream & xmlf)
  * interpolate_elv is exactly the same code that is
  * being used in meshplotter(...), in tecplot.C
  */
-double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTemp, int j, const SFC_Key *nodes)
+double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTemp, int j)
 {
     double elev;
     int neighside, mynode;
@@ -485,10 +480,10 @@ double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTem
         mynode = 1;
         neighside = 1;
     }
-    Node* NodeTemp2 = (Node*) NodeTable->lookup(nodes[mynode]);
+    Node* NodeTemp2 = (Node*) NodeTable->lookup(EmTemp->node_key(mynode));
     elev = 0.5 * NodeTemp2->get_elevation();
     Element* EmTemp2 = (Element*) El_Table->lookup((EmTemp->get_neighbors()[neighside]));
-    NodeTemp2 = (Node*) NodeTable->lookup(EmTemp2->getNode()[j]);
+    NodeTemp2 = (Node*) NodeTable->lookup(EmTemp2->node_key(j));
     elev += 0.5 * NodeTemp2->get_elevation();
     return elev;
 }

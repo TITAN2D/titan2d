@@ -2010,7 +2010,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             
             for(inode = 0; inode < 8; inode++)
             {
-                NdTemp = (Node*) NodeTable->lookup(EmTemp->getNode()[inode]);
+                NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                 if(NdTemp == NULL)
                 {
                     //char fname2[256];
@@ -2023,7 +2023,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                     ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fpdb2);
                     fclose(fpdb2);
                     fpdb2 = fopen(fname2, "a");
-                    NodeBackgroundCheck(El_Table, NodeTable, EmTemp->getNode()[inode], fpdb2);
+                    NodeBackgroundCheck(El_Table, NodeTable, EmTemp->node_key(inode), fpdb2);
                     //unsigned tempkey[2]={695892755,2973438897};
                     //printf(
                     
@@ -2632,7 +2632,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 
                 for(inode = 0; inode < 8; inode++)
                 {
-                    NdTemp = (Node*) NodeTable->lookup(EmTemp->getNode()[inode]);
+                    NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                     assert(NdTemp);
                     NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
                 }

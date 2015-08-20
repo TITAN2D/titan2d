@@ -261,9 +261,8 @@ double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *Em
     SFC_Key nodes[9];
 
     //get corner and edge nodes
-    SFC_Key *node_key = EmTemp->getNode();
     for(int inode = 0; inode < 8; inode++)
-        nodes[inode] = node_key[inode];
+        nodes[inode] = EmTemp->node_key(inode);
 
     //get center node
     nodes[8] = EmTemp->key();

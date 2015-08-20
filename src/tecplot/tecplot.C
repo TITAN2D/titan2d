@@ -778,7 +778,6 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
     Element *EmTemp;
     Node *NodeTemp;
     HashEntry *entryp;
-    SFC_Key *nodes;
     char filename[256];
     
     if(myid == TARGETPROCB)
@@ -879,12 +878,11 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                         order = help_order;
                 }
                 
-                nodes = EmTemp->getNode();
                 double *state_vars = EmTemp->get_state_vars();
                 double err = sqrt(*(EmTemp->get_el_error()));
                 for(int j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
+                    NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     assert(NodeTemp);
                     //int* dof = NodeTemp->getdof();
                     int jj = j;
@@ -950,7 +948,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                             neighside = 1;
                             //assert(0);
                         }
-                        Node *NodeTemp2 = (Node *) NodeTable->lookup(nodes[mynode]);
+                        Node *NodeTemp2 = (Node *) NodeTable->lookup(EmTemp->node_key(mynode));
                         assert(NodeTemp2);
                         
                         elev = .5 * NodeTemp2->get_elevation();
@@ -958,7 +956,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 (EmTemp->get_neighbors()[neighside]));
                         assert(EmTemp2);
                         
-                        NodeTemp2 = (Node *) NodeTable->lookup(EmTemp2->getNode()[j]);
+                        NodeTemp2 = (Node *) NodeTable->lookup(EmTemp2->node_key(j));
                         elev += .5 * NodeTemp2->get_elevation();
 
                         unsigned tmpkey[KEYLENGTH];
@@ -1125,12 +1123,11 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                         order = help_order;
                 }
                 
-                nodes = EmTemp->getNode();
                 double *state_vars = EmTemp->get_state_vars();
                 double err = sqrt(*(EmTemp->get_el_error()));
                 for(int j = 0; j < 4; j++)
                 {
-                    NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
+                    NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     unsigned tmpkey[KEYLENGTH];
                     SET_OLDKEY(tmpkey,EmTemp->key());
                     //int* dof = NodeTemp->getdof();

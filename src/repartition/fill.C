@@ -40,7 +40,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     
     for(i = 0; i < 8; i++)
     {
-        SET_OLDKEY(elem->node_key[i], sendel->node_key[i]);
+        SET_OLDKEY(elem->node_key[i], sendel->node_key(i));
         SET_OLDKEY(elem->neighbor[i], sendel->neighbor[i]);
         if(i < 4)
             SET_OLDKEY(elem->son[i], sendel->son[i]);

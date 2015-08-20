@@ -334,7 +334,6 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                     double* state_vars = Curr_El->get_state_vars();
                     
                     //calculate volume passing through "discharge planes"
-                    SFC_Key *nodes = Curr_El->getNode();
                     Node** nodesPtr = Curr_El->getNodesPtrs();
                     double nodescoord[9][2], *coord;
                     Node* node;

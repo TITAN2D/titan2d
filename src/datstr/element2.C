@@ -65,7 +65,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     set_key(nodekeys[8]); //--using bubble key to represent the element
     
     for(i = 0; i < 8; i++)
-        node_key[i] = nodekeys[i];
+        set_node_key(i, nodekeys[i]);
     
     for(i = 0; i < 4; i++)
     {
@@ -240,7 +240,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     elm_loc[1] = elm_loc_in[1];
     
     for(i = 0; i < 8; i++)
-        node_key[i] = nodekeys[i];
+        set_node_key(i, nodekeys[i]);
     
     for(i = 0; i < 4; i++)
     {
@@ -358,7 +358,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     int i, j, ison, isonneigh, ineigh;
     
-    set_key(sons[2]->getNode()[0]);
+    set_key(sons[2]->node_key(0));
     
     for(ison = 0; ison < 4; ison++)
     {
@@ -370,7 +370,6 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     set_lb_key(sfc_key_zero);
     lb_weight = 1.0;
     new_old = NEW;
-    SFC_Key* son_nodes[4];
     opposite_brother_flag = 0;
     stoppedflags = 2;
     for(i = 0; i < EQUATIONS; i++)
@@ -378,20 +377,19 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     for(ison = 0; ison < 4; ison++)
     {
-        son_nodes[ison] = sons[ison]->getNode();
         if(sons[ison]->stoppedflags < stoppedflags)
             stoppedflags = sons[ison]->stoppedflags;
     }
     
     father = sfc_key_zero;
-    node_key[0] = son_nodes[0][0];
-    node_key[1] = son_nodes[1][1];
-    node_key[2] = son_nodes[2][2];
-    node_key[3] = son_nodes[3][3];
-    node_key[4] = son_nodes[0][1];
-    node_key[5] = son_nodes[1][2];
-    node_key[6] = son_nodes[2][3];
-    node_key[7] = son_nodes[3][0];
+    set_node_key(0, sons[0]->node_key(0));
+    set_node_key(1, sons[1]->node_key(1));
+    set_node_key(2, sons[2]->node_key(2));
+    set_node_key(3, sons[3]->node_key(3));
+    set_node_key(4, sons[0]->node_key(1));
+    set_node_key(5, sons[1]->node_key(2));
+    set_node_key(6, sons[2]->node_key(3));
+    set_node_key(7, sons[3]->node_key(0));
 
     for(int ikey = 0; ikey < KEYLENGTH; ikey++)
     {
@@ -657,16 +655,16 @@ SFC_Key Element::getfather()
     switch (which_son)
     {
         case 0:
-            return node_key[2];
+            return node_key(2);
             break;
         case 1:
-            return node_key[3];
+            return node_key(3);
             break;
         case 2:
-            return node_key[0];
+            return node_key(0);
             break;
         case 3:
-            return node_key[1];
+            return node_key(1);
             break;
     }
     cout<<"my key is "<<key()<<" in getfather on proc "<<myprocess<<endl;
@@ -812,7 +810,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
             int a = j - 1;
             if(a == -1)
                 a = 3;
-            NodePtr = (Node*) (NodeTable->lookup(node_key[a]));
+            NodePtr = (Node*) (NodeTable->lookup(node_key(a)));
             assert(NodePtr);
             
             if(NodePtr->getinfo() == S_C_CON)
@@ -821,7 +819,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
             a = j + 1;
             if(a == 4)
                 a = 0;
-            NodePtr = (Node*) (NodeTable->lookup(node_key[a]));
+            NodePtr = (Node*) (NodeTable->lookup(node_key(a)));
             assert(NodePtr);
             
             if(NodePtr->getinfo() == S_C_CON)
@@ -861,7 +859,7 @@ void Element::find_positive_x_side(HashTable* nodetable)
     
     for(i = 4; i < 8; i++)
     {
-        nodeptr = (Node*) (nodetable->lookup(node_key[i]));
+        nodeptr = (Node*) (nodetable->lookup(node_key(i)));
         double xcoord = nodeptr->coord[0];
         if(xcoord > xmax)
         {
@@ -1028,15 +1026,15 @@ void Element::calculate_dx(HashTable* NodeTable)
     
     Node *np, *nm;
     
-    np = (Node*) NodeTable->lookup(node_key[xp + 4]);
-    nm = (Node*) NodeTable->lookup(node_key[xm + 4]);
+    np = (Node*) NodeTable->lookup(node_key(xp + 4));
+    nm = (Node*) NodeTable->lookup(node_key(xm + 4));
     
     dx[0] = (np->coord[0] - nm->coord[0]) /*(zeta[0]*zeta[0]+1)*/;
     if(dx[0] == 0)
         printf("np %p,nm %p,dx, np_coord, nm_coord %e %e\n", np, nm, np->coord[0], nm->coord[0]);
     
-    np = (Node*) NodeTable->lookup(node_key[yp + 4]);
-    nm = (Node*) NodeTable->lookup(node_key[ym + 4]);
+    np = (Node*) NodeTable->lookup(node_key(yp + 4));
+    nm = (Node*) NodeTable->lookup(node_key(ym + 4));
     
     dx[1] = (np->coord[1] - nm->coord[1]) /*(zeta[1]*zeta[1]+1)*/;
     
@@ -2911,22 +2909,22 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     
     double fluxxp[3], fluxyp[3], fluxxm[3], fluxym[3];
     
-    Node* nxp = (Node*) NodeTable->lookup(node_key[xp + 4]);
+    Node* nxp = (Node*) NodeTable->lookup(node_key(xp + 4));
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         fluxxp[i] = nxp->flux[i];
     }
-    Node* nyp = (Node*) NodeTable->lookup(node_key[yp + 4]);
+    Node* nyp = (Node*) NodeTable->lookup(node_key(yp + 4));
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         fluxyp[i] = nyp->flux[i];
     }
-    Node* nxm = (Node*) NodeTable->lookup(node_key[xm + 4]);
+    Node* nxm = (Node*) NodeTable->lookup(node_key(xm + 4));
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         fluxxm[i] = nxm->flux[i];
     }
-    Node* nym = (Node*) NodeTable->lookup(node_key[ym + 4]);
+    Node* nym = (Node*) NodeTable->lookup(node_key(ym + 4));
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         fluxym[i] = nym->flux[i];
@@ -3479,10 +3477,10 @@ void Element::calc_flux_balance(HashTable* NodeTable)
             break;
     }
     Node *nd_xp, *nd_xn, *nd_yp, *nd_yn;
-    nd_xp = (Node*) NodeTable->lookup(node_key[xp + 4]);
-    nd_xn = (Node*) NodeTable->lookup(node_key[xm + 4]);
-    nd_yp = (Node*) NodeTable->lookup(node_key[yp + 4]);
-    nd_yn = (Node*) NodeTable->lookup(node_key[ym + 4]);
+    nd_xp = (Node*) NodeTable->lookup(node_key(xp + 4));
+    nd_xn = (Node*) NodeTable->lookup(node_key(xm + 4));
+    nd_yp = (Node*) NodeTable->lookup(node_key(yp + 4));
+    nd_yn = (Node*) NodeTable->lookup(node_key(ym + 4));
     for(j = 0; j < 3; j++)
         flux[j] = dabs(nd_xp->refinementflux[j] - nd_xn->refinementflux[j])
                 + dabs(nd_yp->refinementflux[j] - nd_yn->refinementflux[j]);
@@ -4274,10 +4272,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     
     for(itemp = 0; itemp < 8; itemp++)
     {
-        sfc_key_write_to_space(node_key[itemp],writespace,Itemp);
-#ifdef DEBUG_SAVE_ELEM
+        sfc_key_write_to_space(node_key(itemp),writespace,Itemp);
+/*#ifdef DEBUG_SAVE_ELEM
         fprintf(fpdb,"(%u %u) ",node_key[itemp][0],node_key[itemp][1]);
-#endif 
+#endif */
     }
     assert(Itemp == 52);
     
@@ -4516,7 +4514,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 36);
     
     for(itemp = 0; itemp < 8; itemp++)
-        sfc_key_read_from_space(node_key[itemp],readspace,Itemp);
+        set_node_key(itemp,sfc_key_read_from_space(readspace,Itemp));
     assert(Itemp == 52);
     
     for(itemp = 0; itemp < 8; itemp++)

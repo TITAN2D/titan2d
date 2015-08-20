@@ -315,14 +315,14 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
                 
                 for(inode = 0; inode < 4; inode++)
                 {
-                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->getNode()[inode]);
+                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
                     assert(NdTemp);
                     NdTemp->putinfo(CORNER);
                 }
                 
                 for(inode = 4; inode < 8; inode++)
                 {
-                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->getNode()[inode]);
+                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
                     assert(NdTemp);
                     NdTemp->putinfo(SIDE);
                 }

@@ -150,22 +150,17 @@ public:
     void get_stiffness(HashTable*, HashTable*, double*, double*, Element*);
 
     //! returns the address of the first of 8 (nodes 0-7) node keys in an array, the node keys are used to access the nodes through the node hashtable
-    SFC_Key* getNode();
+    const SFC_Key& node_key(const int i) const {return node_key_[i];}
+    void set_node_key(const int i,const SFC_Key& new_key){node_key_[i]=new_key;}
 
     //! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
-    Node** getNodesPtrs();
+    Node** getNodesPtrs(){return &(node_keyPtr[0]);}
 
     //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
-    Node* getNodePtr(int i)
-    {
-        return node_keyPtr[i];
-    }
+    Node* getNodePtr(int i){return node_keyPtr[i];}
     
     //! returns the pointers to the i-th of 8 (elements 0-7) elements , careful pointers can be outdated
-    Element* getNeighborPtr(int i)
-    {
-        return neighborPtr[i];
-    }
+    Element* getNeighborPtr(int i){return neighborPtr[i];}
     
     //!update neighbors pointers from hash table
     void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
@@ -603,7 +598,7 @@ protected:
     SFC_Key key_;
 
     //! this array holds the first 8 (0->7) of this element's nodes' keys, the n9th (8 out of 0->8) node is the bubble node it's key is not stored separately since it has the same key as the element, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key node_key[8];
+    SFC_Key node_key_[8];
 
     //!same as node_key but pointers, can be out-dated
     Node* node_keyPtr[8];
@@ -1017,15 +1012,6 @@ inline int* Element::getassoc()
     return neigh_proc;
 }
 
-inline SFC_Key* Element::getNode()
-{
-    return node_key;
-}
-
-inline Node** Element::getNodesPtrs()
-{
-    return &(node_keyPtr[0]);
-}
 
 inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable)
 {
@@ -1041,7 +1027,7 @@ inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTa
     {
         for(i = 0; i < 8; i++)
         {
-            node_keyPtr[i] = (Node*) NodeTable->lookup(node_key[i]);
+            node_keyPtr[i] = (Node*) NodeTable->lookup(node_key(i));
         }
     }
     return;
@@ -1062,7 +1048,7 @@ inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTabl
     {
         for(i = 0; i < 8; i++)
         {
-            if(node_keyPtr[i] != (Node*) NodeTable->lookup(node_key[i]))
+            if(node_keyPtr[i] != (Node*) NodeTable->lookup(node_key(i)))
                 count++;
         }
     }

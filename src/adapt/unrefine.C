@@ -332,13 +332,13 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
     
     for(inode = 4; inode < 8; inode++)
     {
-        NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[inode]);
+        NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
         if(!NdTemp)
         {
             ElemBackgroundCheck(El_Table, NodeTable, EmFather->key(), stdout);
             printf("inode=%d is missing\n", inode);
             fflush(stdout);
-            NodeBackgroundCheck(El_Table, NodeTable, EmFather->node_key[inode], stdout);
+            NodeBackgroundCheck(El_Table, NodeTable, EmFather->node_key(inode), stdout);
         }
         assert(NdTemp);
         nodeorder[inode] = NdTemp->order;
@@ -371,7 +371,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         
         //delete son to son edge nodes
         inode = (ison + 1) % 4 + 4;
-        NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
+        NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
         assert(NdTemp);
         NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 8);
         delete NdTemp;
@@ -385,7 +385,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
         if((EmFather->neigh_gen[ineigh] == EmFather->generation) || (EmFather->neigh_proc[ineigh] == -1))
         {
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
+            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
             {
                 if(NdTemp->order > nodeorder[inode])
@@ -397,7 +397,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         else if(EmFather->neigh_proc[ineigh] == myid)
         {
             assert(EmFather->neigh_gen[ineigh] == EmFather->generation + 1);
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
+            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
             NdTemp->info = S_S_CON;
         }
@@ -410,7 +410,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
         if((EmFather->neigh_gen[ineigh] == EmFather->generation) || (EmFather->neigh_proc[ineigh % 4] == -1))
         {
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
+            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
             {
                 if(NdTemp->order > nodeorder[inode])
@@ -420,17 +420,17 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
                 delete NdTemp;
             }
             
-            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[inode]);
+            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
             assert(NdTemp);
             NdTemp->info = SIDE;
         }
         else if(EmFather->neigh_proc[ineigh] == myid)
         {
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
+            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
             NdTemp->info = S_S_CON;
             
-            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[inode]);
+            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
             assert(NdTemp);
             NdTemp->info = S_C_CON;
             nodeorder[inode] = NdTemp->order;
@@ -444,7 +444,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
     
     for(inode = 4; inode < 8; inode++)
     {
-        NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[inode]);
+        NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
         NdTemp->order = nodeorder[inode];
     }
     inode = 8;
@@ -728,7 +728,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                         assert(0);
                 }
                 
-                NdTemp = (Node*) NodeTable->lookup(EmFather->node_key[ineigh % 4 + 4]);
+                NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineigh % 4 + 4));
                 assert(NdTemp);
                 
                 if(EmFather->neigh_gen[ineigh] - 1 == EmFather->generation)
@@ -841,7 +841,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //all the other neighbor information remains the same but
                                 //must delete 2 nodes I'll do 1 now and the other one was
                                 //just done previous or will be deleted next
-                                NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key[ineighmod4 + 4]);
+                                NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key(ineighmod4 + 4));
                                 if(NdTemp)
                                 {
                                     if(NdTemp->order > nodeorder)
@@ -849,7 +849,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                     NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 12);
                                     delete NdTemp;
                                 }
-                                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[ineighmod4 + 4]);
+                                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(ineighmod4 + 4));
                                 NdTemp->order = nodeorder;
                                 NdTemp->info = SIDE;
                                 
@@ -885,7 +885,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //int and unsigned an the first bit of the unsigned would be the
                                 //sign of the int so you wouldn't need 2 unsigneds to communicate
                                 //the generation.
-                                NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key[ineighmod4 + 4]);
+                                NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key(ineighmod4 + 4));
                                 assert(NdTemp);
                                 if(EmTemp->neigh_gen[ineighmod4] == EmTemp->generation)
                                     NdTemp->info = SIDE;

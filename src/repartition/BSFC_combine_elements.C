@@ -79,7 +79,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         next_side = 3;
     if(next_side < 4)
     {
-        nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key[next_side + 4]);
+        nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(next_side + 4));
         if(nd->getinfo() == S_S_CON)
         {
             if(next_side == EmTemp->which_son)
@@ -137,7 +137,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         i = 4;
         while (i < 8 && side == -1)
         {
-            nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key[i]);
+            nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(i));
             if(nd->getinfo() == S_S_CON)
                 side = i - 4;
             i++;
@@ -185,7 +185,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 next_side = 3;
             if(next_side < 4)
             {
-                nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key[next_side + 4]);
+                nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(next_side + 4));
                 if(nd->getinfo() == S_S_CON)
                 {
                     if(next_side == EmTemp->which_son)
@@ -269,17 +269,17 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
             assert(j > 1);
         if(j == 2)
         {  // 2 elements get shared side node key as the representative key...
-            orig_elem->set_lb_key(orig_elem->node_key[orig_side_number + 4]);
+            orig_elem->set_lb_key(orig_elem->node_key(orig_side_number + 4));
         }
         else
         { // 3 or more elements get parent's bubble key as the representative key...
             if(elm_bunch[0] != NULL)
             {
-                orig_elem->set_lb_key(elm_bunch[0]->node_key[2]);
+                orig_elem->set_lb_key(elm_bunch[0]->node_key(2));
             }
             else
             {
-                orig_elem->set_lb_key(elm_bunch[1]->node_key[3]);
+                orig_elem->set_lb_key(elm_bunch[1]->node_key(3));
             }
         }
     }
