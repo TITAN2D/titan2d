@@ -61,7 +61,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(coordi + i);
     
-    key = keyi;
+    set_key(keyi);
     dof[0] = INIT;
     dof[1] = INIT;
     zero_flux();
@@ -110,7 +110,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(coordi + i);
     
-    key = keyi;
+    set_key(keyi);
     dof[0] = INIT;
     dof[1] = INIT;
     
@@ -165,7 +165,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(coordi + i);
     
-    key = keyi;
+    set_key(keyi);
     dof[0] = INIT;
     dof[1] = INIT;
     
@@ -255,12 +255,12 @@ void Node::save_node(FILE* fp)
     unsigned writespace[13];
     
     int Itemp = 0, itemp;
-    sfc_key_write_to_space(key,writespace,Itemp);
+    sfc_key_write_to_space(get_key(),writespace,Itemp);
     assert(Itemp == 2);
-#ifdef DEBUG_SAVE_NODE
+/*#ifdef DEBUG_SAVE_NODE
     FILE *fpdb=fopen("save_node.debug","w");
     fprintf(fpdb,"key=%u %u\n",key[0],key[1]);
-#endif
+#endif*/
     
     for(itemp = 0; itemp < DIMENSION; itemp++)
     {
@@ -344,7 +344,7 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
     fread(readspace, sizeof(unsigned), 8, fp);
     
     //KEYLENGTH should be 2 but put it in a loop to make it generic.
-    sfc_key_read_from_space(key,readspace,Itemp);
+    sfc_key_read_from_space(get_ref_key(),readspace,Itemp);
     assert(Itemp == 2);
     
     //DIMENSION should be 2 but put it in a loop to make it generic.

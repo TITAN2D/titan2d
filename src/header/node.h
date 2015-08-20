@@ -109,10 +109,10 @@ public:
     void putinfo(int in);
 
     //! this function returns the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
-    const SFC_Key& get_key() const {return key;}
-    SFC_Key& get_ref_key() {return key;}
-    void set_key(const SFC_Key& new_key){key=new_key;}
-    void set_key(const unsigned int *new_key){SET_NEWKEY(key,new_key);}
+    const SFC_Key& get_key() const {return key_;}
+    SFC_Key& get_ref_key() {return key_;}
+    void set_key(const SFC_Key& new_key){key_=new_key;}
+    void set_key(const unsigned int *new_key){SET_NEWKEY(key_,new_key);}
 
     //! this function returns the global x and y coordinates of the node, in the finite difference version of Titan this is not always reliable, use the coordinates of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
     double* get_coord();
@@ -198,7 +198,7 @@ protected:
     double coord[DIMENSION];
 
     //! this is the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
-    SFC_Key key;
+    SFC_Key key_;
 
     //! points to the next node
     void* nextptr;

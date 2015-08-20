@@ -366,14 +366,14 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         assert(NdTemp);
         if(NdTemp->order > nodeorder[8])
             nodeorder[8] = NdTemp->order;
-        NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 7);
+        NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 7);
         delete NdTemp;
         
         //delete son to son edge nodes
         inode = (ison + 1) % 4 + 4;
         NdTemp = (Node *) NodeTable->lookup(EmSon->node_key[inode]);
         assert(NdTemp);
-        NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 8);
+        NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 8);
         delete NdTemp;
         
         //check 2 other edge nodes per son and delete if necessary
@@ -390,7 +390,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
             {
                 if(NdTemp->order > nodeorder[inode])
                     nodeorder[inode] = NdTemp->order;
-                NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 9);
+                NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 9);
                 delete NdTemp;
             }
         }
@@ -416,7 +416,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
                 if(NdTemp->order > nodeorder[inode])
                     nodeorder[inode] = NdTemp->order;
                 
-                NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 10);
+                NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 10);
                 delete NdTemp;
             }
             
@@ -741,7 +741,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])), EmFather->son[ison]);
                 //the NEWFATHER element
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->get_key());
-                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), NdTemp->key);
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), NdTemp->get_key());
                 
                 isend[neigh_proc]++;
             }
@@ -846,7 +846,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 {
                                     if(NdTemp->order > nodeorder)
                                         nodeorder = NdTemp->order;
-                                    NodeTable->remove(NdTemp->key);//, 0, stdout, myid, 12);
+                                    NodeTable->remove(NdTemp->get_key());//, 0, stdout, myid, 12);
                                     delete NdTemp;
                                 }
                                 NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[ineighmod4 + 4]);

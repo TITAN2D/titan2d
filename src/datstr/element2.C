@@ -62,7 +62,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     for(i = 0; i < EQUATIONS; i++)
         el_error[i] = 0.0;
     
-    key = nodekeys[8]; //--using bubble key to represent the element
+    set_key(nodekeys[8]); //--using bubble key to represent the element
     
     for(i = 0; i < 8; i++)
         node_key[i] = nodekeys[i];
@@ -234,7 +234,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     for(i = 0; i < EQUATIONS; i++)
         el_error[i] = 0.0;
     
-    key = nodekeys[8]; //--using buble key to represent the element
+    set_key(nodekeys[8]); //--using buble key to represent the element
     
     elm_loc[0] = elm_loc_in[0];
     elm_loc[1] = elm_loc_in[1];
@@ -358,7 +358,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     int i, j, ison, isonneigh, ineigh;
     
-    key = sons[2]->getNode()[0];
+    set_key(sons[2]->getNode()[0]);
     
     for(ison = 0; ison < 4; ison++)
     {
