@@ -106,8 +106,9 @@ inline void fprintf_sfc_key(FILE *fout, const SFC_Key& obj)
 
 }
 
-constexpr int sfc_key_zero=0;
+//constexpr int sfc_key_zero=0;
 //#define sfc_key_null SFC_Key(0)
+extern SFC_Key sfc_key_zero;
 extern SFC_Key sfc_key_null;
 
 inline uint64_t get_ukey_from_sfc_key(const SFC_Key& key){return (((uint64_t) key.key[0]) << 32) | key.key[1];};

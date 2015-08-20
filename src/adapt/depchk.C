@@ -58,7 +58,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
             if((neigh_proc != -1) && (neigh_proc != -2))
             { //-- if there is a neighbor
             
-                Neigh = (Element*) (El_Table->lookup(element->get_neighbors()[i]));
+                Neigh = (Element*) (El_Table->lookup(element->neighbor(i)));
                 
                 //assert(Neigh);
                 if(Neigh != NULL && neigh_proc == myid)

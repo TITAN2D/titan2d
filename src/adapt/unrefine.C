@@ -547,7 +547,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                 //only update the information of on processor neighbors in
                 //this function.
                 
-                EmNeigh = (Element*) El_Table->lookup(EmFather->neighbor[ineigh]);
+                EmNeigh = (Element*) El_Table->lookup(EmFather->neighbor(ineigh));
                 assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
                 
                 if(EmNeigh->adapted != NEWFATHER)
@@ -568,8 +568,8 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     isonB = (isonA + 1) % 4;
                     
                     for(ineighme = 0; ineighme < 4; ineighme++)
-                        if((EmNeigh->neighbor[ineighme]==EmFather->son[isonA]) || (
-                                EmNeigh->neighbor[ineighme]==EmFather->son[isonB]))
+                        if((EmNeigh->neighbor(ineighme)==EmFather->son[isonA]) || (
+                                EmNeigh->neighbor(ineighme)==EmFather->son[isonB]))
                             break;
                     if(!(ineighme < 4))
                         printf("DANGER\n");
@@ -590,16 +590,18 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                         
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
-                            EmFather->neighbor[ineigh] = EmFather->neighbor[ineigh + 4] =
-                                    EmNeigh->key();
-                            EmNeigh->neighbor[ineighme] = EmNeigh->neighbor[ineighme + 4] =
-                                    EmFather->key();
+                            EmFather->set_neighbor(ineigh, EmNeigh->key());
+                            EmFather->set_neighbor(ineigh + 4, EmNeigh->key());
+                            EmNeigh->set_neighbor(ineighme, EmFather->key());
+                            EmNeigh->set_neighbor(ineighme + 4, EmFather->key());
                     }
                     else
+                    {
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
-                        EmNeigh->neighbor[ineighme] = EmNeigh->neighbor[ineighme + 4] =
-                                    EmFather->key();
+                        EmNeigh->set_neighbor(ineighme, EmFather->key());
+                        EmNeigh->set_neighbor(ineighme + 4, EmFather->key());
+                    }
                 }
             }
     }
@@ -735,7 +737,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                     NdTemp->info = S_C_CON;
                 
                 //The element I want my neighbor to update
-                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])), EmFather->neighbor[ineigh]);
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])), EmFather->neighbor(ineigh));
                 //the OLDSON who will introduce his NEWFATHER to his
                 //neighbor on another processor
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])), EmFather->son[ison]);
@@ -806,7 +808,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                             
                             //my old neighbor will introduce his NEWFATHER to me
                             for(ineigh = 0; ineigh < 8; ineigh++)
-                                if(EmTemp->neighbor[ineigh]==sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 1) * KEYLENGTH])))
+                                if(EmTemp->neighbor(ineigh)==sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 1) * KEYLENGTH])))
                                     break;
                             assert(ineigh < 8); //I don't know this Element pretending to be
                             //my neighbor, I'm calling the FBI to report a suspicious
@@ -827,16 +829,16 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //which means my father will only have 1 neighbor on that side
                                 EmFather->neigh_proc[ineighmod4 + 4] = -2;
                                 
-                                EmFather->neighbor[ineighmod4] = EmFather->neighbor[ineighmod4 + 4] =
-                                        sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH]));
+                                EmFather->set_neighbor(ineighmod4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
+                                EmFather->set_neighbor(ineighmod4 + 4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 
                                 //I know my neighbor on the other processor is the same
                                 //generation as me because we were both unrefined and only
                                 //one of us would have been able to unrefine if we were of
                                 //different generations, that means our NEWFATHERs are the
                                 //same generation as each other too
-                                EmFather->neigh_gen[ineighmod4] = EmFather->neigh_gen[ineighmod4 + 4] = EmFather
-                                        ->generation;
+                                EmFather->neigh_gen[ineighmod4] = EmFather->generation;
+                                EmFather->neigh_gen[ineighmod4 + 4] = EmFather->generation;
                                 
                                 //all the other neighbor information remains the same but
                                 //must delete 2 nodes I'll do 1 now and the other one was
@@ -867,11 +869,11 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 
                                 EmTemp->neigh_proc[ineighmod4 + 4] = -2;
                                 
-                                EmTemp->neighbor[ineighmod4 + 4] = EmTemp->neighbor[ineighmod4] =
-                                        sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH]));
+                                EmTemp->set_neighbor(ineighmod4 + 4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
+                                EmTemp->set_neighbor(ineighmod4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 
-                                EmTemp->neigh_gen[ineighmod4 + 4] = EmTemp->neigh_gen[ineighmod4] =
-                                        EmTemp->neigh_gen[ineighmod4] - 1;
+                                EmTemp->neigh_gen[ineighmod4 + 4] = EmTemp->neigh_gen[ineighmod4] - 1;
+                                EmTemp->neigh_gen[ineighmod4] = EmTemp->neigh_gen[ineighmod4] - 1;
                                 //(recv[iproc][(4*iopu+3)*KEYLENGTH+0]?-1:1)*
                                 //(recv[iproc][(4*iopu+3)*KEYLENGTH+1]);
                                 

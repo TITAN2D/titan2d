@@ -482,7 +482,7 @@ double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTem
     }
     Node* NodeTemp2 = (Node*) NodeTable->lookup(EmTemp->node_key(mynode));
     elev = 0.5 * NodeTemp2->get_elevation();
-    Element* EmTemp2 = (Element*) El_Table->lookup((EmTemp->get_neighbors()[neighside]));
+    Element* EmTemp2 = (Element*) El_Table->lookup((EmTemp->neighbor(neighside)));
     NodeTemp2 = (Node*) NodeTable->lookup(EmTemp2->node_key(j));
     elev += 0.5 * NodeTemp2->get_elevation();
     return elev;

@@ -185,12 +185,11 @@ public:
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
     SFC_Key* get_brothers();
+    const SFC_Key& brother(const int i) const {return brothers[i];}
+    void brother(const int i,const SFC_Key& new_key){brothers[i]=new_key;}
 
     //! this function stores the processor id "a" of neighbor "i" in the 8 element array of neighbor processors, this functionality is duplicated by put_neigh_proc which is the preferred function to use (don't use this one it's legacy)
     void putassoc(int a, int i);
-
-    //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
-    void putneighbor(const SFC_Key &n, const int i);
 
     //! this function stores the processor id "proc" of neighbor "i" in the 8 element array of neighbor processors, use this function instead of putassoc.
     void put_neigh_proc(int i, int proc);
@@ -205,7 +204,7 @@ public:
     SFC_Key getfather();
 
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
-    void put_father(const SFC_Key &fatherin);
+    void put_father(const SFC_Key &fatherin){father = fatherin;}
 
     //! return the element keys of this element's 4 sons, used during refinement
     SFC_Key* getson();
@@ -219,8 +218,10 @@ public:
     //! returns the element's error vector
     double* get_el_error();
 
-    //! returns the array of keys for this element's 8 neighbors
-    SFC_Key* get_neighbors();
+    //! returns the key for this element's 8 neighbors
+    const SFC_Key& neighbor(const int i) const {return neighbors_[i];}
+    //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
+    void set_neighbor(const int i, const SFC_Key &new_key){neighbors_[i] = new_key;}
 
     //! returns the array of processor ids for this element's 8 neighbors
     int* get_neigh_proc();
@@ -604,7 +605,7 @@ protected:
     Node* node_keyPtr[8];
 
     //! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key neighbor[8];
+    SFC_Key neighbors_[8];
 
     //!same as neighbor but pointers, can be out-dated
     Element* neighborPtr[8];
@@ -1020,7 +1021,7 @@ inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTa
     {
         for(i = 0; i < 8; i++)
         {
-            neighborPtr[i] = (Element*) El_Table->lookup(neighbor[i]);
+            neighborPtr[i] = (Element*) El_Table->lookup(neighbor(i));
         }
     }
     if(NodeTable != NULL)
@@ -1040,7 +1041,7 @@ inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTabl
     {
         for(i = 0; i < 8; i++)
         {
-            if(neighborPtr[i] != (Element*) El_Table->lookup(neighbor[i]))
+            if(neighborPtr[i] != (Element*) El_Table->lookup(neighbor(i)))
                 count++;
         }
     }
@@ -1099,11 +1100,6 @@ inline void Element::putbrothers(const SFC_Key* s)
         brothers[i] = s[i];
 }
 
-inline void Element::putneighbor(const SFC_Key& n, const int i)
-{
-    neighbor[i] = n;
-}
-
 inline void Element::putassoc(int a, int i)
 {
     neigh_proc[i] = a;
@@ -1125,10 +1121,7 @@ inline double* Element::get_el_error()
     return el_error;
 }
 
-inline SFC_Key* Element::get_neighbors()
-{
-    return neighbor;
-}
+
 
 inline int* Element::get_neigh_proc()
 {
@@ -1230,12 +1223,6 @@ inline void Element::zero_influx()
 inline double* Element::get_influx()
 {
     return Influx;
-}
-;
-
-inline void Element::put_father(const SFC_Key &fatherin)
-{
-    father = fatherin;
 }
 ;
 

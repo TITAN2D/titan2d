@@ -149,7 +149,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                             //printf("update neighbor is %u %u on proc %d to proc %d \n", *(EmTemp->get_neighbors()+j*KEYLENGTH+0), *(EmTemp->get_neighbors()+j*KEYLENGTH+1), myid, neigh_proc[j]);
 
                             SET_OLDKEY((&(send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1)])),
-                                    EmTemp->get_neighbors()[j]);
+                                    EmTemp->neighbor(j));
                             SET_OLDKEY((&(send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1) + 2 ])),
                                     EmTemp->key());
 
@@ -189,7 +189,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                     {
                         if(neigh_proc[j] == myid)
                         {
-                            Element* EmNeigh = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[j]);
+                            Element* EmNeigh = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(j));
                             k = EmNeigh->which_neighbor(EmTemp->key());
                             EmNeigh->put_neigh_proc(k, EmTemp->get_myprocess());
                             neigh_proc[j] = EmNeigh->get_myprocess();

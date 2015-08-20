@@ -16,3 +16,4 @@
 #include "../header/sfc.h"
 
 SFC_Key sfc_key_null=0;
+SFC_Key sfc_key_zero=0;

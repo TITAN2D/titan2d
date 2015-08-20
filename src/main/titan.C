@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
     
     //init some titan staff
     sfc_key_null=0;
+    sfc_key_zero=0;
     
     if(argc > 0)
     {

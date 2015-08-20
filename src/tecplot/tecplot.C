@@ -300,12 +300,12 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         EmArray[1] = EmArray[2] = EmArray[3] = NULL;
                         
                         //The Primary Neighbor
-                        EmArray[1] = (Element *) El_Table->lookup(EmTemp->get_neighbors()[i_neigh]);
+                        EmArray[1] = (Element *) El_Table->lookup(EmTemp->neighbor(i_neigh));
                         assert(EmArray[1]);
                         tec_nodes_in_tec_quad[1] = EmArray[1]->get_ithelem();
                         
                         //The Secondary Neighbor
-                        EmArray[2] = (Element *) El_Table->lookup(EmTemp->get_neighbors()[i_neigh + 4]);
+                        EmArray[2] = (Element *) El_Table->lookup(EmTemp->neighbor(i_neigh + 4));
                         assert(EmArray[2]);
                         tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[2]->get_ithelem();
                         
@@ -424,8 +424,8 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     
     //yada++;
     
-    EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[xm + 4]);
-    EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[ym]);
+    EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->neighbor(xm + 4));
+    EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->neighbor(ym));
     
     if(!(((neigh_proc[xm + 4] == myid) || ((neigh_proc[xm + 4] == -2) && (neigh_proc[xm] == myid))) || (neigh_proc[ym]
             == myid)))
@@ -444,7 +444,7 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
             EmArray[1] = EmArray[2] = EmArray[3] = NULL;
             return 0;
         }
-        EmArray[3] = (Element *) El_Table->lookup(EmArray[1]->get_neighbors()[zmym + 4]);
+        EmArray[3] = (Element *) El_Table->lookup(EmArray[1]->neighbor(zmym + 4));
         //printf("left then down\n");
         //yada++;
         
@@ -460,7 +460,7 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
             EmArray[1] = EmArray[2] = EmArray[3] = NULL;
             return 0;
         }
-        EmArray[3] = (Element *) El_Table->lookup(EmArray[2]->get_neighbors()[zmxm]);
+        EmArray[3] = (Element *) El_Table->lookup(EmArray[2]->neighbor(zmxm));
     }
     
     if(!(EmArray[3]))
@@ -507,11 +507,11 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     if((neigh_proc[xpfirst] != INIT) && (neigh_proc[yp] != INIT))
     {
         
-        EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[yp]);
+        EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->neighbor(yp));
         if(!EmArray[2])
         {
             ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->key(),stdout);
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors()[yp],stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->neighbor(yp),stdout);
             
         }
         assert(EmArray[2]);
@@ -519,11 +519,11 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         get_elem_orient(EmArray[2], &ypxm, &ypxp, &ypym, &ypyp);
         yneigh_neigh_proc = EmArray[2]->get_neigh_proc();
         
-        EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[xp]);
+        EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->neighbor(xp));
         if(!EmArray[1])
         {
             ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->key(),stdout);
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors()[xp],stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->neighbor(xp),stdout);
         }
         assert(EmArray[1]);
         get_elem_orient(EmArray[1], &xpxm, &xpxp, &xpym, &xpyp);
@@ -953,7 +953,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                         
                         elev = .5 * NodeTemp2->get_elevation();
                         Element *EmTemp2 = (Element *) El_Table->lookup(
-                                (EmTemp->get_neighbors()[neighside]));
+                                (EmTemp->neighbor(neighside)));
                         assert(EmTemp2);
                         
                         NodeTemp2 = (Node *) NodeTable->lookup(EmTemp2->node_key(j));

@@ -2777,7 +2777,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                     
                     //make a double precision version of the neighbor's key
                     unsigned tmpkey[KEYLENGTH];
-                    SET_OLDKEY(tmpkey,EmTemp->get_neighbors()[ineigh]);
+                    SET_OLDKEY(tmpkey,EmTemp->neighbor(ineigh));
                     doublekey =  tmpkey[0];
                     for(ikey = 1; ikey < KEYLENGTH; ikey++)
                         doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];

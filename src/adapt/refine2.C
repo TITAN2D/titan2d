@@ -171,12 +171,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // fourth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[0]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(0));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -194,12 +194,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[4]->putinfo(-1);
         // fifth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[4]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(4));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -271,12 +271,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // eighth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[1]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(1));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -294,12 +294,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is set based on side 0 neigbor not being more refined or never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[5]->putinfo(-1);
         // thirteenth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[5]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(5));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -370,12 +370,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // fourteenth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[6]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(6));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -393,12 +393,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[6]->putinfo(-1);
         // fifteenth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[2]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(2));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -468,12 +468,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
             other_proc = 0;
         
         // sixth new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[7]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(7));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -491,12 +491,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
             NodeTemp[7]->putinfo(-1);
         // eleventh new node
-        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[3]);
+        neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(3));
         i = 0;
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
+            if(neigh_elm->neighbor(i)==EmTemp->key())
                 which = i;
             i++;
         }
@@ -610,7 +610,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     SFC_Key nodes[9];
     SFC_Key neigh[8];
-    SFC_Key* orig_neighbors = EmTemp->get_neighbors();
     int* orig_neigh_proc = EmTemp->get_neigh_proc();
     int neigh_proc[8];
     BC* bcptr = NULL;
@@ -639,13 +638,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     for(i = 0; i < DIMENSION; i++)
         coord[i] = *(n1->get_coord() + i);
     //neighbors
-    neigh[0] = neigh[4] = orig_neighbors[0]; //Why is this ok if not ok for 3 down
+    neigh[0] = neigh[4] = EmTemp->neighbor(0); //Why is this ok if not ok for 3 down
     neigh[1] = neigh[5] = NewNodeKey[1];
     neigh[2] = neigh[6] = NewNodeKey[3];
     if(EmTemp->get_neigh_proc()[7] != -2)
-        neigh[3] = neigh[7] = orig_neighbors[7]; //This should be okay no matter what
+        neigh[3] = neigh[7] = EmTemp->neighbor(7); //This should be okay no matter what
     else
-        neigh[3] = neigh[7] = orig_neighbors[3]; //This is only ok if neigh_proc==-2
+        neigh[3] = neigh[7] = EmTemp->neighbor(3); //This is only ok if neigh_proc==-2
     
     //process of the neighbors
     
@@ -726,10 +725,10 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //neighbors
     if(*(EmTemp->get_neigh_proc() + 4) != -2)
-        neigh[0] = neigh[4] = orig_neighbors[4]; //this should be ok now matter what
+        neigh[0] = neigh[4] = EmTemp->neighbor(4); //this should be ok now matter what
     else
-        neigh[0] = neigh[4] = orig_neighbors[0]; //this is only ok if neigh_proc==-2
-    neigh[1] = neigh[5] = orig_neighbors[1];
+        neigh[0] = neigh[4] = EmTemp->neighbor(0); //this is only ok if neigh_proc==-2
+    neigh[1] = neigh[5] = EmTemp->neighbor(1);
     neigh[2] = neigh[6] = NewNodeKey[2];
     neigh[3] = neigh[7] = NewNodeKey[0];
     
@@ -806,10 +805,10 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[1];
     if(*(EmTemp->get_neigh_proc() + 5) != -2)
-        neigh[1] = neigh[5] = orig_neighbors[5]; //This should be ok no matter what
+        neigh[1] = neigh[5] = EmTemp->neighbor(5); //This should be ok no matter what
     else
-        neigh[1] = neigh[5] = orig_neighbors[1]; //this is only ok is neigh_proc==-2
-    neigh[2] = neigh[6] = orig_neighbors[2];
+        neigh[1] = neigh[5] = EmTemp->neighbor(1); //this is only ok is neigh_proc==-2
+    neigh[2] = neigh[6] = EmTemp->neighbor(2);
     neigh[3] = neigh[6] = NewNodeKey[3];
         
     
@@ -887,11 +886,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     neigh[0] = neigh[4] = NewNodeKey[0];
     neigh[1] = neigh[5] = NewNodeKey[2];
     if(*(EmTemp->get_neigh_proc() + 6) != -2)
-        neigh[2] = neigh[6] = orig_neighbors[6];
+        neigh[2] = neigh[6] = EmTemp->neighbor(6);
     else
-        neigh[2] = neigh[6] = orig_neighbors[2];
+        neigh[2] = neigh[6] = EmTemp->neighbor(2);
 
-    neigh[3] = neigh[6] = orig_neighbors[3];
+    neigh[3] = neigh[6] = EmTemp->neighbor(3);
 
     
     //process of the neighbors

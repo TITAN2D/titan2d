@@ -119,7 +119,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                         if((neigh_proc[ineigh] >= 0) && (neigh_proc[ineigh] != myid)
                            && ((neigh_proc[ineigh] == 0) || (neigh_proc[ineigh] == 1)))
                         {
-                            fprintf_sfc_key(fpelem2,EmTemp->get_neighbors()[ineigh]);
+                            fprintf_sfc_key(fpelem2,EmTemp->neighbor(ineigh));
                         }
                     fprintf(fpelem2, "\n");
                     

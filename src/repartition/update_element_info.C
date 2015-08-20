@@ -134,7 +134,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
 void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int side)
 {
     Element* Neighbor;
-    Neighbor = (Element*) HT_Elem_Ptr->lookup(r_element->get_neighbors()[side]);
+    Neighbor = (Element*) HT_Elem_Ptr->lookup(r_element->neighbor(side));
     //r_element->put_neigh_gen(side, Neighbor->get_gen());// added by jp 9.30
     
     int which = Neighbor->which_neighbor(r_element->key());
@@ -152,7 +152,7 @@ void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int sid
     ELinkPtr EL_new;
     ELinkPtr EL_temp;
     
-    EL_new = new ElementLink(r_element->key(), r_element->get_neighbors()[side],
+    EL_new = new ElementLink(r_element->key(), r_element->neighbor(side),
                              r_element->getassoc()[side], new_proc);
     
     if(!(*EL_head))
@@ -191,7 +191,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->new_old = elem2->new_old;
     for(i = 0; i < 4; i++)
     {
-        SET_NEWKEY(newelement->brothers[i], elem2->brothers[i]);
+        newelement->brother(i, sfc_key_from_oldkey(elem2->brothers[i]));
     }
     
     newelement->set_key(sfc_key_from_oldkey(elem2->key));
@@ -199,7 +199,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < 8; i++)
     {
         newelement->set_node_key(i, sfc_key_from_oldkey(elem2->node_key[i]));
-        SET_NEWKEY(newelement->neighbor[i], elem2->neighbor[i]);
+        newelement->set_neighbor(i, sfc_key_from_oldkey(elem2->neighbor[i]));
         if(i < 4)
         {
             SET_NEWKEY(newelement->son[i], elem2->son[i]);
@@ -320,7 +320,6 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
 {
     
     int* neigh_proc = newelement->getassoc();
-    SFC_Key* neigh_key = newelement->get_neighbors();
     Element* neighbor;
     int which;
     
@@ -328,7 +327,7 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
     {
         if(*(neigh_proc + i) == myid)
         {
-            neighbor = (Element*) HT_Elem_Ptr->lookup(neigh_key[i]);
+            neighbor = (Element*) HT_Elem_Ptr->lookup(newelement->neighbor(i));
             which = neighbor->which_neighbor(newelement->key());
             neighbor->change_neighbor_process(which, myid);
         }
