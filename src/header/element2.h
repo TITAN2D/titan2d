@@ -408,12 +408,6 @@ public:
     //! this function returns the precomputed local terrain curvature.  Curvature itself is the inverse of radius of curvature.  The exact value of curvature  is the spatial second derivative of the normal coordinate of the surface along directions tangent to the surface at that point (local x and y).  However I believe that Laercio Namikawa implemented it approximately, i.e. as the global x and y second derivatives of terrain elevation. 
     double* get_curvature();
 
-    //! the only place this function is called is in move_data.C, I believe it is legacy titan code and could probably be removed
-    void put_lam(double lam_in);
-
-    //! this function is never called in the finite difference/volume version of titan, it is legacy (I believe titan rather than afeapi legacy code) that probably should be removed
-    double get_lam();
-
     //! this function is called in element_weight.C, it is used in computing the load balancing weight
     void calc_flux_balance(HashTable *NodeTable);
 
@@ -915,18 +909,6 @@ inline double* Element::get_d_gravity()
 inline double* Element::get_curvature()
 {
     return curvature;
-}
-;
-
-inline void Element::put_lam(double lam_in)
-{
-    lam = lam_in;
-}
-;
-
-inline double Element::get_lam()
-{
-    return lam;
 }
 ;
 

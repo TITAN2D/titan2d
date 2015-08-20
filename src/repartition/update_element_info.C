@@ -302,7 +302,6 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         newelement->d_state_vars[i] = elem2->d_state_vars[i];
     newelement->shortspeed = elem2->shortspeed;
-    newelement->lam = elem2->lam;
     newelement->lb_weight = elem2->lb_weight;
     newelement->elm_loc[0] = elem2->elm_loc[0];
     newelement->elm_loc[1] = elem2->elm_loc[1];
