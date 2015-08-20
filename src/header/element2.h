@@ -143,7 +143,7 @@ public:
     const SFC_Key& get_key() const {return key_;}
     SFC_Key& get_ref_key() {return key_;}
     void set_key(const SFC_Key& new_key){key_=new_key;}
-    void set_key(const unsigned int *new_key){SET_NEWKEY(key_,new_key);}
+    //void set_key(const unsigned int *new_key){SET_NEWKEY(key_,new_key);}
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
     int get_material();
@@ -311,7 +311,7 @@ public:
     void put_lb_weight(double dd_in);
 
     //! this function returns the load balancing key, which is used during repartitioning
-    SFC_Key get_lb_key();
+    const SFC_Key& get_lb_key() const {return lb_key;}
 
     //! this function sets the load balancing key, which is used during repartitioning
     void put_lb_key(const SFC_Key& in_key);
@@ -808,11 +808,6 @@ inline void Element::put_lb_weight(double dd_in)
 }
 ;
 
-inline SFC_Key Element::get_lb_key()
-{
-    return lb_key;
-}
-;
 
 inline void Element::put_myprocess(int in_proc)
 {
