@@ -190,7 +190,7 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
                 
                 for(int l = 0; l < 2; l++)
                 {
-                    Son = (Element*) HT_Elem_Ptr->lookup(EmTemp->getson()[SIDE_SONS[which_neighbor][l]]);
+                    Son = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(SIDE_SONS[which_neighbor][l]));
                     SET_NEWKEY(change_neighbor[0],recv_buffer[mate_proc][k].sons[l]);
                     //SET_NEWKEY(change_neighbor[1],recv_buffer[mate_proc][k].sons[l+1]);
                     Son->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 11);

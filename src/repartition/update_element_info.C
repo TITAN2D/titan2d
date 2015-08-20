@@ -202,7 +202,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->set_neighbor(i, sfc_key_from_oldkey(elem2->neighbor[i]));
         if(i < 4)
         {
-            SET_NEWKEY(newelement->son[i], elem2->son[i]);
+            newelement->set_son(i,sfc_key_from_oldkey(elem2->son[i]));
         }
 
     }

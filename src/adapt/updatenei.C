@@ -57,7 +57,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 assert(EmTemp);
                 
                 for(ison = 0; ison < 4; ison++)
-                    if(EmTemp->son[ison]==debugkey)
+                    if(EmTemp->son(ison)==debugkey)
                     {
                         EmDebugFather.add(EmTemp);
                         break;
@@ -207,7 +207,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 assert(EmTemp);
                 
                 for(ison = 0; ison < 4; ison++)
-                    if(EmTemp->son[ison]==EmDebug->key())
+                    if(EmTemp->son(ison)==EmDebug->key())
                     {
                         EmDebugFather.add(EmTemp);
                         break;
@@ -1108,14 +1108,14 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     if(!EmSon[isonA])
                     { //to save a little work, only lookup this
                       //son if I don't already know him
-                        EmSon[isonA] = (Element*) El_Table->lookup(EmFather->son[isonA]);
+                        EmSon[isonA] = (Element*) El_Table->lookup(EmFather->son(isonA));
                         assert(EmSon[isonA]);
                     }
                     
                     if(!EmSon[isonB])
                     {	    //to save a little work, only lookup "other"
                         //son if I don't already know him
-                        EmSon[isonB] = (Element*) El_Table->lookup(EmFather->son[isonB]);
+                        EmSon[isonB] = (Element*) El_Table->lookup(EmFather->son(isonB));
                         assert(EmSon[isonB]);
                     }
                     
@@ -1211,7 +1211,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 if(!EmSon[isonB])
                                 {	      //to save a little work, only lookup this
                                     //son if I don't already know him
-                                    EmSon[isonB] = (Element*) El_Table->lookup(EmFather->son[isonB]);
+                                    EmSon[isonB] = (Element*) El_Table->lookup(EmFather->son(isonB));
                                     assert(EmSon[isonB]);
                                 }
                                 
@@ -1312,15 +1312,15 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             //I know he couldn't have just refined and I know I have to
                             //introduce him to sonA
                             
-                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])),EmFather->son[isonA]);
-                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])),EmFather->son[isonA]);
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])),EmFather->son(isonA));
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])),EmFather->son(isonA));
                             
                             break;
                         case 0: //I'm the same generation as my old neighbor so I
                             //know I have to introduce him to both my sons
 
-                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])),EmFather->son[isonB]);
-                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])),EmFather->son[isonA]);
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])),EmFather->son(isonB));
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])),EmFather->son(isonA));
                             break;
                         default:
                             printf("FUBAR\n");
@@ -1344,8 +1344,8 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     //ME
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->key());
 
-                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->son[isonB]);
-                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), EmFather->son[isonB]);
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->son(isonB));
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), EmFather->son(isonB));
                     
                     isend[neigh_proc]++;
                 }
@@ -1380,7 +1380,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
         //These are my sons, I'm going to introduce them to my neighbors
         for(isonA = 0; isonA < 4; isonA++)
         {
-            EmSon[isonA] = (Element*) El_Table->lookup(EmFather->son[isonA]);
+            EmSon[isonA] = (Element*) El_Table->lookup(EmFather->son(isonA));
             assert(EmSon[isonA]); //MY son has been abducted call the FBI!!!
             
             NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->key());
@@ -1497,10 +1497,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             //this is a case C
                             inewcase = 2;
                             
-                            EmNeighNew[0] = (Element*) El_Table->lookup(EmNeighOld[0]->son[(ineighme + 1) % 4]);
+                            EmNeighNew[0] = (Element*) El_Table->lookup(EmNeighOld[0]->son((ineighme + 1) % 4));
                             assert(EmNeighNew[0]);
                             
-                            EmNeighNew[1] = (Element*) El_Table->lookup(EmNeighOld[0]->son[ineighme]);
+                            EmNeighNew[1] = (Element*) El_Table->lookup(EmNeighOld[0]->son(ineighme));
                             assert(EmNeighNew[1]);
                             EmNeighNew[2] = EmNeighNew[3] = NULL;
                         }
@@ -1529,10 +1529,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             
                             if(EmNeighOld[0]->adapted == OLDFATHER)
                             {
-                                EmNeighNew[0] = (Element*) El_Table->lookup(EmNeighOld[0]->son[(ineighme + 1) % 4]);
+                                EmNeighNew[0] = (Element*) El_Table->lookup(EmNeighOld[0]->son((ineighme + 1) % 4));
                                 assert(EmNeighNew[0]);
                                 
-                                EmNeighNew[1] = (Element*) El_Table->lookup(EmNeighOld[0]->son[ineighme]);
+                                EmNeighNew[1] = (Element*) El_Table->lookup(EmNeighOld[0]->son(ineighme));
                                 assert(EmNeighNew[1]);
                             }
                             else
@@ -1540,10 +1540,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             
                             if(EmNeighOld[1]->adapted == OLDFATHER)
                             {
-                                EmNeighNew[2] = (Element*) El_Table->lookup(EmNeighOld[1]->son[(ineighme + 1) % 4]);
+                                EmNeighNew[2] = (Element*) El_Table->lookup(EmNeighOld[1]->son((ineighme + 1) % 4));
                                 assert(EmNeighNew[2]);
                                 
-                                EmNeighNew[3] = (Element*) El_Table->lookup(EmNeighOld[1]->son[ineighme]);
+                                EmNeighNew[3] = (Element*) El_Table->lookup(EmNeighOld[1]->son(ineighme));
                                 assert(EmNeighNew[3]);
                             }
                             else
@@ -1951,10 +1951,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 NdTemp->info = CORNER;
                                 
                                 EmSon[0] = EmSon[1] = EmSon[2] = EmSon[3] = NULL;
-                                EmSon[isonA] = (Element*) El_Table->lookup(EmTemp->son[isonA]);
+                                EmSon[isonA] = (Element*) El_Table->lookup(EmTemp->son(isonA));
                                 assert(EmSon[isonA]);
                                 
-                                EmSon[isonB] = (Element*) El_Table->lookup(EmTemp->son[isonB]);
+                                EmSon[isonB] = (Element*) El_Table->lookup(EmTemp->son(isonB));
                                 assert(EmSon[isonA]);
                                 
                                 
@@ -2378,8 +2378,6 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
     
     //printf("H_ADAPT  IN  SUBDOMAIN %d  ELEMENTS REFINED: %d\n",myid, count);
     
-    SFC_Key* Sons;
-    SFC_Key* NeighSons;
     int MyGeneration;
     int NeighGeneration;
     int NeighRefined;
@@ -2393,7 +2391,6 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
         EmTemp = RefinedList->get(i); //-- element ready for refinement
         
         orig_neigh_proc = EmTemp->get_neigh_proc();
-        Sons = EmTemp->getson();
         MyGeneration = EmTemp->get_gen();
         SFC_Key Mykey = EmTemp->key();
         
@@ -2446,8 +2443,8 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             reg = 6;
                         }
                         
-                        NewNeighbor[0] = Sons[a];
-                        NewNeighbor[1] = Sons[b];
+                        NewNeighbor[0] = EmTemp->son(a);
+                        NewNeighbor[1] = EmTemp->son(b);
 
                         Neighbor->change_neighbor(NewNeighbor, which_side, myid, reg);
                     }
@@ -2473,15 +2470,13 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             if(b2 == 4)
                                 b2 = 0;
                             
-                            NewNeighbor[0] = NewNeighbor[1] = Sons[a];
+                            NewNeighbor[0] = NewNeighbor[1] = EmTemp->son(a);
                             reg = 6; //changed from 4
                             
-                            SFC_Key* NeiSon = Neighbor->getson();
-                            
-                            Neighbor = (Element*) (HT_Elem_Ptr->lookup(NeiSon[b1]));
+                            Neighbor = (Element*) (HT_Elem_Ptr->lookup(Neighbor->son(b1)));
                             Neighbor->change_neighbor(NewNeighbor, which_side, myid, reg);
                             
-                            Neighbor = (Element*) (HT_Elem_Ptr->lookup(NeiSon[b2]));
+                            Neighbor = (Element*) (HT_Elem_Ptr->lookup(Neighbor->son(b2)));
                             Neighbor->change_neighbor(NewNeighbor, which_side, myid, reg);
                             
                         }
@@ -2489,7 +2484,6 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                         else if(NeighGeneration == MyGeneration) //-- case 2
                         {
                             which_side = Neighbor->which_neighbor(Mykey);
-                            NeighSons = Neighbor->getson();
                             
                             a = j + 1;
                             if(a == 4)
@@ -2498,15 +2492,15 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             if(b == 4)
                                 b = 0;
                             
-                            NewNeighbor[0] = NewNeighbor[1] = NeighSons[which_side];
+                            NewNeighbor[0] = NewNeighbor[1] = Neighbor->son(which_side);
                             
-                            Element* EmSon = (Element*) HT_Elem_Ptr->lookup(Sons[a]);
+                            Element* EmSon = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(a));
                             
                             EmSon->change_neighbor(NewNeighbor, j, myid, 6); //changed to 6 from 2 lend
                                                    
-                            NewNeighbor[0] = NewNeighbor[1] = NeighSons[b];
+                            NewNeighbor[0] = NewNeighbor[1] = Neighbor->son(b);
                             
-                            EmSon = (Element*) HT_Elem_Ptr->lookup(Sons[j]);
+                            EmSon = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(j));
                             
                             EmSon->change_neighbor(NewNeighbor, j, myid, 6); //changed to 6 from 2 lend
                         }
@@ -2520,7 +2514,6 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             }
                             
                             which_side = Neighbor->which_neighbor(Mykey);
-                            NeighSons = Neighbor->getson();
                             
                             a = which_side;
                             if(which_side >= 4)
@@ -2531,7 +2524,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             b = j + 1;
                             if(b == 4)
                                 b = 0;
-                            Neighbor = (Element*) (HT_Elem_Ptr->lookup(NeighSons[a]));
+                            Neighbor = (Element*) (HT_Elem_Ptr->lookup(Neighbor->son(a)));
                             
                             int edge_of_son;
                             if(a == which_side)
@@ -2539,8 +2532,8 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             else
                                 edge_of_son = which_side - 4;
                             
-                            NewNeighbor[0] = Sons[b];
-                            NewNeighbor[1] = Sons[j];
+                            NewNeighbor[0] = EmTemp->son(b);
+                            NewNeighbor[1] = EmTemp->son(j);
 
                             Neighbor->change_neighbor(NewNeighbor, edge_of_son, myid, 3);
                             
@@ -2560,12 +2553,12 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                     {
                         assert(j < 4);
                         refined_new->set_parameters(*(orig_neigh_proc + j), EmTemp->neighbor(j), Mykey,
-                                                    Sons, SIDE_SONS[j], MyGeneration, 1);
+                                                    EmTemp, SIDE_SONS[j], MyGeneration, 1);
                     }
                     
                     else
                         refined_new->set_parameters(*(orig_neigh_proc + j), EmTemp->neighbor(j), Mykey,
-                                                    Sons, &(SIDE_SONS[j % 4][j / 4]), MyGeneration, 2); //the neighbor is younger...
+                                                    EmTemp, &(SIDE_SONS[j % 4][j / 4]), MyGeneration, 2); //the neighbor is younger...
                                                     
                     refined_current = refined_new;
                     
@@ -2580,7 +2573,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             NdTemp->put_order(*(EmTemp->get_order() + j));
                             for(int k = 0; k < 2; k++)
                             {
-                                SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->getson()[SIDE_SONS[j][k]]);
+                                SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(SIDE_SONS[j][k]));
                                 NdTemp = (Node*) HT_Node_Ptr->lookup(SonTemp->node_key(j + 4));
                                 assert(NdTemp);
                                 NdTemp->putinfo(S_S_CON);
@@ -2593,7 +2586,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             NdTemp->putinfo(CORNER);
                             for(int k = 0; k < 2; k++)
                             {
-                                SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->getson()[SIDE_SONS[j][k]]);
+                                SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(SIDE_SONS[j][k]));
                                 NdTemp = (Node*) HT_Node_Ptr->lookup(SonTemp->node_key(j + 4));
                                 assert(NdTemp);
                                 NdTemp->putinfo(SIDE);

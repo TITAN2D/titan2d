@@ -177,16 +177,15 @@ public:
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
     void put_gen(int);
 
-    //! store the keys for the four son "elements" in the father element, used temporarily during refinement
-    void putson(const SFC_Key*);
+    
 
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
     void putbrothers(const SFC_Key*);
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
     SFC_Key* get_brothers();
-    const SFC_Key& brother(const int i) const {return brothers[i];}
-    void brother(const int i,const SFC_Key& new_key){brothers[i]=new_key;}
+    const SFC_Key& brother(const int i) const {return brothersABCD[i];}
+    void brother(const int i,const SFC_Key& new_key){brothersABCD[i]=new_key;}
 
     //! this function stores the processor id "a" of neighbor "i" in the 8 element array of neighbor processors, this functionality is duplicated by put_neigh_proc which is the preferred function to use (don't use this one it's legacy)
     void putassoc(int a, int i);
@@ -208,7 +207,10 @@ public:
     void set_father(const SFC_Key &fatherin){father_ = fatherin;}
 
     //! return the element keys of this element's 4 sons, used during refinement
-    SFC_Key* getson();
+    const SFC_Key& son(const int i) const {return son_[i];}
+    void set_son(const int i,const SFC_Key& new_key){son_[i]=new_key;}
+    //! store the keys for the four son "elements" in the father element, used temporarily during refinement
+    void set_sons(const SFC_Key*);
 
     //! stores the ?square? of the "solution" and solution error, used durring refinement
     void putel_sq(double solsq, double ellsq);
@@ -615,7 +617,7 @@ protected:
     SFC_Key father_;
 
     //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key son[4];
+    SFC_Key son_[4];
 
     //! this array holds the process(or) id of this element's 8 neighbors, there can be 8 neighbors because of the 1 irregularity rule.  neigh_proc[4:7] != -2 only if it has 2 neighbors on that side, a value of -1 for neigh_proc means that this edge is a boundary of the computational domain. 
     int neigh_proc[8];
@@ -654,7 +656,7 @@ protected:
     int new_old;
 
     //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key brothers[4];
+    SFC_Key brothersABCD[4];
 
     //! coord holds the coordinates of the elements cell center, these are the same as the coordinates of the element's bubble node's
     double coord[DIMENSION];
@@ -780,7 +782,7 @@ inline int Element::get_material()
 
 inline SFC_Key* Element::get_brothers()
 {
-    return brothers;
+    return brothersABCD;
 }
 ;
 
@@ -1076,20 +1078,17 @@ inline void Element::put_order(int i, int ord)
     order[i] = ord;
 }
 
-inline SFC_Key* Element::getson()
-{
-    return son;
-}
+
 
 inline int* Element::get_order()
 {
     return order;
 }
 
-inline void Element::putson(const SFC_Key* s)
+inline void Element::set_sons(const SFC_Key* s)
 {
     for(int i = 0; i < 4; i++)
-        son[i] = s[i];
+        set_son(i, s[i]);
     
     refined = 1;
     adapted = OLDFATHER;
@@ -1098,7 +1097,7 @@ inline void Element::putson(const SFC_Key* s)
 inline void Element::putbrothers(const SFC_Key* s)
 {
     for(int i = 0; i < 4; i++)
-        brothers[i] = s[i];
+        brothersABCD[i] = s[i];
 }
 
 inline void Element::putassoc(int a, int i)

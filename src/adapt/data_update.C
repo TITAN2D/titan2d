@@ -36,7 +36,6 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
     Element* SonTemp1;
     Element* SonTemp2;
     
-    SFC_Key* sonP;
     
     void* p;
     
@@ -53,17 +52,15 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                 /*-- case 1:(refer to my note book to know the definition of each case)
                  sender and receptor were both refined and they are on the same generation-----*/
                 /*-- case 3:
-                 sender was not refined but receptor was and they are on the same generation---*/
-
-                sonP = EmTemp->getson();
+                 sender was not refined but receptor was and they are on the same generation---*/;
                 
                 switch (recv->side)
                 {
                     
                     case 0: //-- filling the neigbor info for son 0 and 1
                     
-                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(sonP[0]); //--son 0, side 0
-                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(sonP[1]); //--son 1, side 0
+                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(0)); //--son 0, side 0
+                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(1)); //--son 1, side 0
                                 
                         if(recv->sender_refined) //--sender was refined, case 1
                         {
@@ -105,8 +102,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                         
                     case 1: //-- son 1 and 2
                     
-                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(sonP[1]); //--son 1, side 1
-                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(sonP[2]); //--son 2, side 1
+                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(1)); //--son 1, side 1
+                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(2)); //--son 2, side 1
                                 
                         if(recv->sender_refined)
                         {
@@ -148,8 +145,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                         
                     case 2: //-- son 2 and 3
                     
-                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(sonP[2]); //--son 2, side 2
-                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(sonP[3]); //--son 3, side 2
+                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(2)); //--son 2, side 2
+                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(3)); //--son 3, side 2
                                 
                         if(recv->sender_refined)
                         {
@@ -191,8 +188,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                         
                     case 3: //-- son 3 and 0
                     
-                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(sonP[3]); //--son 3, side 3
-                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(sonP[0]); //--son 0, side 3
+                        SonTemp1 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(3)); //--son 3, side 3
+                        SonTemp2 = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(0)); //--son 0, side 3
                                 
                         if(recv->sender_refined)
                         {
@@ -339,8 +336,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     else if(a > 3)
                         a = a - 3;
                     
-                    sonP = EmTemp->getson();
-                    SonTemp1 = (Element*) (HT_Elem_Ptr->lookup(sonP[a]));
+                    SonTemp1 = (Element*) (HT_Elem_Ptr->lookup(EmTemp->son(a)));
                     
                     int start;
                     int end;

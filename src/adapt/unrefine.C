@@ -236,7 +236,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
     }
     while (i < 4 && unrefine_flag == 1)
     {
-        Element* EmTemp = (Element*) El_Table->lookup(brothers[i]);
+        Element* EmTemp = (Element*) El_Table->lookup(brothersABCD[i]);
         if(EmTemp == NULL) //|| EmTemp->refined != 0)
             return 0;
         else if(EmTemp->adapted != NOTRECADAPTED) //this should be sufficient
@@ -350,10 +350,10 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
     
     for(ison = 0; ison < 4; ison++)
     {
-        EmSon = (Element *) El_Table->lookup(EmFather->son[ison]);
+        EmSon = (Element *) El_Table->lookup(EmFather->son(ison));
         if(EmSon == NULL)
         {
-            cout<<"delete_oldsons() null son, ison="<<ison<<" son={"<<EmFather->son[ison]<<"}\n";
+            cout<<"delete_oldsons() null son, ison="<<ison<<" son={"<<EmFather->son(ison)<<"}\n";
             int yada;
             scanf("%d", &yada);
         }
@@ -362,7 +362,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         EmSon->adapted = TOBEDELETED;
         
         //delete son's bubble nodes
-        NdTemp = (Node *) NodeTable->lookup(EmFather->son[ison]);
+        NdTemp = (Node *) NodeTable->lookup(EmFather->son(ison));
         assert(NdTemp);
         if(NdTemp->order > nodeorder[8])
             nodeorder[8] = NdTemp->order;
@@ -568,8 +568,8 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     isonB = (isonA + 1) % 4;
                     
                     for(ineighme = 0; ineighme < 4; ineighme++)
-                        if((EmNeigh->neighbor(ineighme)==EmFather->son[isonA]) || (
-                                EmNeigh->neighbor(ineighme)==EmFather->son[isonB]))
+                        if((EmNeigh->neighbor(ineighme)==EmFather->son(isonA)) || (
+                                EmNeigh->neighbor(ineighme)==EmFather->son(isonB)))
                             break;
                     if(!(ineighme < 4))
                         printf("DANGER\n");
@@ -740,7 +740,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])), EmFather->neighbor(ineigh));
                 //the OLDSON who will introduce his NEWFATHER to his
                 //neighbor on another processor
-                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])), EmFather->son[ison]);
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])), EmFather->son(ison));
                 //the NEWFATHER element
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->key());
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), NdTemp->get_key());

@@ -948,7 +948,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     HT_Elem_Ptr->add(nodes[8], Quad9P);
     
     //---CHANGING THE FATHER---
-    EmTemp->putson(NewNodeKey);
+    EmTemp->set_sons(NewNodeKey);
     // putting in brother info
     for(i = 0; i < 4; i++)
     {

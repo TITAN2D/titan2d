@@ -71,7 +71,7 @@ struct refined_neighbor
         }
         next = NULL;
     };
-    void set_parameters(int proc, const SFC_Key& target, const SFC_Key& old, const SFC_Key* new_sons, const int * which, int og,
+    void set_parameters(int proc, const SFC_Key& target, const SFC_Key& old, const Element* EmTemp, const int * which, int og,
                             int case_flag)
     {
         target_proc = proc;
@@ -82,12 +82,12 @@ struct refined_neighbor
 
         if(case_flag == 1)
         {
-            SET_OLDKEY(sons[0], new_sons[which[1]]);
-            SET_OLDKEY(sons[1], new_sons[which[0]]);
+            SET_OLDKEY(sons[0], EmTemp->son(which[1]));
+            SET_OLDKEY(sons[1], EmTemp->son(which[0]));
         }
         else if(case_flag == 2)
         {
-            SET_OLDKEY(sons[0], new_sons[which[0]]);
+            SET_OLDKEY(sons[0], EmTemp->son(which[0]));
             SET_OLDKEY(sons[1], SFC_Key(0));
         }
 

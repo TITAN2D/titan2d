@@ -613,7 +613,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
-                                    EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson()[ison]);
+                                    EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
                                     TempList.add(EmSon);
                                 }
                             else
@@ -695,7 +695,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
-                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson()[ison]);
+                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
                                     TempList.add(EmSon);
                                 }
                             else
@@ -985,7 +985,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
-                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->getson()[ison]);
+                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
                                     TempList.add(EmSon);
                                 }
                             else

@@ -36,14 +36,14 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     SET_OLDKEY(elem->key, sendel->key());
     
     for(i = 0; i < 4; i++)
-        SET_OLDKEY(elem->brothers[i], sendel->brothers[i]);
+        SET_OLDKEY(elem->brothers[i], sendel->brothersABCD[i]);
     
     for(i = 0; i < 8; i++)
     {
         SET_OLDKEY(elem->node_key[i], sendel->node_key(i));
         SET_OLDKEY(elem->neighbor[i], sendel->neighbor(i));
         if(i < 4)
-            SET_OLDKEY(elem->son[i], sendel->son[i]);
+            SET_OLDKEY(elem->son[i], sendel->son(i));
     }
     for(i = 0; i < EQUATIONS; i++)
     {
