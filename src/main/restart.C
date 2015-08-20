@@ -525,7 +525,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
         if(inode < 0)
             printf("inode=%d\n", inode);
         NodeP = new Node(fp, matprops_ptr);
-        (*NodeTable)->add(NodeP->pass_key(), NodeP);
+        (*NodeTable)->add(NodeP->get_key(), NodeP);
     }
     printf("inode=%d Node_Num=%d NodeP=%u\n", inode, Node_Num, NodeP);
     

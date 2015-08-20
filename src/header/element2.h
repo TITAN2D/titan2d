@@ -140,10 +140,10 @@ public:
     void save_elem(FILE* fp, FILE* fptxt); //for restart
                    
     //! returns address of element (same as bubble node, node 8 out of 0->8) hashtable key
-    const SFC_Key& get_key() const {return key;}
-    SFC_Key& get_ref_key() {return key;}
-    void set_key(const SFC_Key& new_key){key=new_key;}
-    void set_key(const unsigned int *new_key){SET_NEWKEY(key,new_key);}
+    const SFC_Key& get_key() const {return key_;}
+    SFC_Key& get_ref_key() {return key_;}
+    void set_key(const SFC_Key& new_key){key_=new_key;}
+    void set_key(const unsigned int *new_key){SET_NEWKEY(key_,new_key);}
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
     int get_material();
@@ -603,7 +603,7 @@ protected:
     SFC_Key lb_key;
 
     //! this is the element key, which has the same value as the key of the element's bubble node, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key key;
+    SFC_Key key_;
 
     //! this array holds the first 8 (0->7) of this element's nodes' keys, the n9th (8 out of 0->8) node is the bubble node it's key is not stored separately since it has the same key as the element, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key node_key[8];
