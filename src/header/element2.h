@@ -18,6 +18,7 @@
 #ifndef ELEMENT_H
 #define ELEMENT_H
 #include <math.h>
+#include <assert.h>
 #include "boundary.h"
 #include "hashtab.h"
 #include "node.h"
@@ -139,7 +140,10 @@ public:
     void save_elem(FILE* fp, FILE* fptxt); //for restart
                    
     //! returns address of element (same as bubble node, node 8 out of 0->8) hashtable key
-    SFC_Key* pass_key();
+    const SFC_Key& get_key() const {return key;}
+    SFC_Key& get_ref_key() {return key;}
+    void set_key(const SFC_Key& new_key){key=new_key;}
+    void set_key(const unsigned int *new_key){SET_NEWKEY(key,new_key);}
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
     int get_material();
@@ -772,11 +776,7 @@ inline void Element::put_ithelem(int i)
 }
 ;
 
-inline SFC_Key* Element::pass_key()
-{
-    return &key;
-}
-;
+
 
 inline int Element::get_material()
 {
@@ -1375,7 +1375,7 @@ public:
     Element* get(int i);
 
     //! returns the key of the ith Element whose pointer is stored in the list
-    SFC_Key* get_key(int i);
+    const SFC_Key& get_key(int i) const;
 
     //! returns the number of elements in the list.
     int get_num_elem();
@@ -1423,9 +1423,11 @@ inline Element* ElemPtrList::get(int i)
     return (((i >= 0) && (i < num_elem)) ? list[i] : NULL);
 }
 ;
-inline SFC_Key* ElemPtrList::get_key(int i)
+inline const SFC_Key& ElemPtrList::get_key(int i) const
 {
-    return (((i >= 0) && (i < num_elem)) ? list[i]->pass_key() : NULL);
+    //assert((i < 0) || (i > num_elem-1));
+    if((i < 0) || (i > num_elem-1))return sfc_key_null;
+    else return list[i]->get_key();
 }
 ;
 inline int ElemPtrList::get_inewstart()

@@ -309,7 +309,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
                 
                 EmTemp->put_myprocess(myid);
                 
-                NdTemp = (Node*) (*NodeTable)->lookup(*(EmTemp->pass_key()));
+                NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->get_key());
                 assert(NdTemp);
                 NdTemp->putinfo(BUBBLE);
                 

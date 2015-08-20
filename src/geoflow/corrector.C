@@ -159,7 +159,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         
         if(print_vars)
         {
-            cout<<"ElemKey: "<<*(EmTemp->pass_key())<<endl;
+            cout<<"ElemKey: "<<EmTemp->get_key()<<endl;
             printf("Kactxy = %10.5f%10.5f\n", kactxy[0], kactxy[1]);
             printf("BedFrict: %10.5f: IntFrict: %10.5f\n", bedfrict, matprops2_ptr->intfrict);
             printf("state_vars: \n");

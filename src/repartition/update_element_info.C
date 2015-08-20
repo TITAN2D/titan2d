@@ -74,7 +74,7 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
         }
     }
     
-    HT_Elem_Ptr->remove(r_element->key);//, 1, stdout, myid, 26);
+    HT_Elem_Ptr->remove(r_element->get_key());//, 1, stdout, myid, 26);
     
 }
 
@@ -90,7 +90,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
     
     construct_el(newelement, elem2, HT_Node_Ptr, myid, e_error);
     
-    HT_Elem_Ptr->add(*(newelement->pass_key()), newelement);
+    HT_Elem_Ptr->add(newelement->get_key(), newelement);
     
     if(!newelement->get_refined_flag()) //if parent .... don't care about neighbor info
         check_neighbor_info(newelement, HT_Elem_Ptr, myid);
@@ -104,7 +104,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
     double e_error = 0;
     construct_el(newelement, elem2, HT_Node_Ptr, myid, &e_error);
     
-    Element* EmTemp = (Element*) HT_Elem_Ptr->lookup(*(newelement->pass_key()));
+    Element* EmTemp = (Element*) HT_Elem_Ptr->lookup(newelement->get_key());
     if(EmTemp != NULL)
     { // update this element
       // first check that it is the same element
@@ -120,8 +120,8 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
         HT_Elem_Ptr->remove(*(elem2->key));//, 1, stdout, myid, 27);
         delete EmTemp;
     }
-    if(!((*(newelement->pass_key() + 0) == 0) && (*(newelement->pass_key() + 1) == 0)))
-        HT_Elem_Ptr->add(*(newelement->pass_key()), newelement);
+    if(newelement->get_key()!=sfc_key_null)
+        HT_Elem_Ptr->add(newelement->get_key(), newelement);
     else
         delete newelement;
     //printf("processor %d just added element %u %u\n",myid, elem2->key[0], elem2->key[1]);
@@ -137,7 +137,7 @@ void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int 
     Neighbor = (Element*) HT_Elem_Ptr->lookup(r_element->get_neighbors()[side]);
     //r_element->put_neigh_gen(side, Neighbor->get_gen());// added by jp 9.30
     
-    int which = Neighbor->which_neighbor(*(r_element->pass_key()));
+    int which = Neighbor->which_neighbor(r_element->get_key());
     int gen = r_element->get_gen();    // added by jp 9.30
             
     Neighbor->change_neighbor_process(which, target_proc);
@@ -152,7 +152,7 @@ void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int sid
     ELinkPtr EL_new;
     ELinkPtr EL_temp;
     
-    EL_new = new ElementLink(*(r_element->pass_key()), r_element->get_neighbors()[side],
+    EL_new = new ElementLink(r_element->get_key(), r_element->get_neighbors()[side],
                              r_element->getassoc()[side], new_proc);
     
     if(!(*EL_head))
@@ -194,7 +194,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         SET_NEWKEY(newelement->brothers[i], elem2->brothers[i]);
     }
     
-    SET_NEWKEY(newelement->key, elem2->key);
+    SET_NEWKEY(newelement->get_ref_key(), elem2->key);
     
     for(i = 0; i < 8; i++)
     {
@@ -329,7 +329,7 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
         if(*(neigh_proc + i) == myid)
         {
             neighbor = (Element*) HT_Elem_Ptr->lookup(neigh_key[i]);
-            which = neighbor->which_neighbor(*(newelement->pass_key()));
+            which = neighbor->which_neighbor(newelement->get_key());
             neighbor->change_neighbor_process(which, myid);
         }
         

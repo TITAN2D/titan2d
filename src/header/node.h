@@ -109,7 +109,7 @@ public:
     void putinfo(int in);
 
     //! this function returns the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
-    SFC_Key* pass_key();
+    const SFC_Key& pass_key() const {return key;}
 
     //! this function returns the global x and y coordinates of the node, in the finite difference version of Titan this is not always reliable, use the coordinates of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
     double* get_coord();
@@ -314,10 +314,6 @@ inline int Node::getglnum()
     return glnum;
 }
 
-inline SFC_Key* Node::pass_key()
-{
-    return &key;
-}
 
 inline int Node::get_order()
 {

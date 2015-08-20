@@ -51,7 +51,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
 //void  unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable,				   int nump, int myid, int NumOtherProcUpdate, 				   Element **OtherProcUpdate);
 
 //! only used in debugging
-int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch);
+//int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch);
 
 //! only used in debugging
 void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr);

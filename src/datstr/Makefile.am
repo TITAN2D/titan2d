@@ -6,7 +6,7 @@
 
 noinst_LIBRARIES = libdatstr.a
 
-libdatstr_a_SOURCES = hashtab2.C element2.C htflush.C Makefile.am node.C 
+libdatstr_a_SOURCES = hashtab2.C element2.C htflush.C Makefile.am node.C  sfc.C
 
 
 

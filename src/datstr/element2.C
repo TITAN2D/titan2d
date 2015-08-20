@@ -106,7 +106,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     elm_loc[1] = elm_loc_in[1];
     calc_which_son();
     
-    brothers[which_son] = key;
+    brothers[which_son] = get_key();
     brothers[(which_son + 2) % 4] = opposite_brother;
 
     switch (which_son)
@@ -363,8 +363,8 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     for(ison = 0; ison < 4; ison++)
     {
         sons[ison]->put_adapted_flag(OLDSON);
-        son[ison] = *(sons[ison]->pass_key());
-        sons[ison]->put_father(key);
+        son[ison] = sons[ison]->get_key();
+        sons[ison]->put_father(get_key());
     }
     
     lb_key = sfc_key_zero;
@@ -460,7 +460,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     switch (which_son)
     {
         case 0:
-            brothers[0] = key;
+            brothers[0] = get_key();
             if(neigh_proc[1] == -1)
             {
                 brothers[1] = sfc_key_zero;
@@ -497,7 +497,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
                 assert(0);
             break;
         case 1:
-            brothers[1] = key;
+            brothers[1] = get_key();
             if(neigh_proc[3] == -1)
             {
                 brothers[0] = sfc_key_zero;
@@ -536,7 +536,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             break;
         case 2:
-            brothers[2] = key;
+            brothers[2] = get_key();
             if(neigh_proc[0] == -1)
             {
                 brothers[1] = sfc_key_zero;
@@ -575,7 +575,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             break;
         case 3:
-            brothers[3] = key;
+            brothers[3] = get_key();
             if(neigh_proc[0] == -1)
             {
                 brothers[0] = sfc_key_zero;
@@ -669,7 +669,7 @@ SFC_Key Element::getfather()
             return node_key[1];
             break;
     }
-    cout<<"my key is "<<key<<" in getfather on proc "<<myprocess<<endl;
+    cout<<"my key is "<<get_key()<<" in getfather on proc "<<myprocess<<endl;
     assert(0); // 0 <= which_son <= 3 !!!
 }
 
@@ -799,7 +799,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
         if(ElemPtr)
         {
             int j = 0; //<---indicates which son it is
-            while (ElemPtr->son[j] != key)
+            while (ElemPtr->son[j] != get_key())
             {
                 j++;
                 if(j == 4)
@@ -854,7 +854,7 @@ void Element::find_positive_x_side(HashTable* nodetable)
     double xmax;
     Node* nodeptr;
     
-    nodeptr = (Node*) (nodetable->lookup(key));
+    nodeptr = (Node*) (nodetable->lookup(get_key()));
     xmax = nodeptr->coord[0];
     coord[0] = xmax;
     coord[1] = nodeptr->coord[1];
@@ -1049,7 +1049,7 @@ void Element::calculate_dx(HashTable* NodeTable)
 void Element::insert_coord(HashTable* NodeTable)
 {
     
-    Node* node = (Node*) (NodeTable->lookup(key));
+    Node* node = (Node*) (NodeTable->lookup(get_key()));
     int i;
     for(i = 0; i < DIMENSION; i++)
         coord[i] = node->coord[i];
@@ -1234,7 +1234,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
     
     if(iwetnode == 8)
     {
-        cout<<"calc_elem_edge_wet_fraction(): key={"<<key<<"} adapted="<<adapted<<"\n";
+        cout<<"calc_elem_edge_wet_fraction(): key={"<<get_key()<<"} adapted="<<adapted<<"\n";
         printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode, Awet, Swet, drypoint[0], drypoint[1]);
         assert(iwetnode != 8);
     }
@@ -2416,7 +2416,7 @@ void Element::zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matp
 {
     double dz = 0.0;
     
-    int ineigh = which_neighbor(*EmNeigh->pass_key());
+    int ineigh = which_neighbor(EmNeigh->get_key());
     if(!((-1 < ineigh) && (ineigh < 8)))
     {
         printf("zdirflux: ineigh=%d, dir=%d\n", ineigh, dir);
@@ -2574,7 +2574,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
             if(neigh_proc[zp + 4] == myid)
             {
-                zm2 = elm2->which_neighbor(*pass_key()) % 4;
+                zm2 = elm2->which_neighbor(get_key()) % 4;
                 nm2 = elm2->node_keyPtr[zm2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
                 
                 riemannflux(elm2->elementType,hfv, hfv2, nm2->flux);
@@ -2651,7 +2651,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 nm1 = NULL;
                 np2 = NULL;
                 
-                zelmpos = elm1->which_neighbor(*pass_key());
+                zelmpos = elm1->which_neighbor(get_key());
                 assert(zelmpos > -1);
                 nm1 = elm1->node_keyPtr[zelmpos % 4 + 4]; //(Node*) NodeTable->lookup(&elm1->node_key[zelmpos % 4 + 4][0]);
                 
@@ -2663,7 +2663,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 
                 if(*(elm1->get_neigh_proc() + (zelmpos + 4) % 8) == myid)
                 {
-                    zp2 = elm2->which_neighbor(*(elm1->pass_key())) % 4;
+                    zp2 = elm2->which_neighbor(elm1->get_key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     riemannflux(elm2->elementType,hfv2, hfv1, np2->flux);
                     riemannflux(elm2->elementType,hrfv2, hrfv1, np2->refinementflux);
@@ -2712,7 +2712,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 nm1 = NULL;
                 nm2 = NULL;
                 
-                zelmpos = elm1->which_neighbor(*pass_key()) % 4;
+                zelmpos = elm1->which_neighbor(get_key()) % 4;
                 nm1 = elm1->node_keyPtr[zelmpos + 4]; //(Node*) NodeTable->lookup(&elm1->node_key[zelmpos + 4][0]);
                 
                 elm2 = neighborPtr[zp + 4]; //(Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
@@ -2723,7 +2723,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 
                 if(neigh_proc[zp + 4] == myid)
                 {
-                    zelmpos_2 = elm2->which_neighbor(*pass_key()) % 4;
+                    zelmpos_2 = elm2->which_neighbor(get_key()) % 4;
                     nm2 = elm2->node_keyPtr[zelmpos_2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
                     riemannflux(elm2->elementType,hfv, hfv2, nm2->flux);
                     riemannflux(elm2->elementType,hrfv, hrfv2, nm2->refinementflux);
@@ -2843,7 +2843,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
                 if(neigh_proc[zm + 4] == myid)
                 {
-                    zp2 = elm2->which_neighbor(*pass_key()) % 4;
+                    zp2 = elm2->which_neighbor(get_key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     
                     riemannflux(elm2->elementType,hfv2, hfv, np2->flux);
@@ -3504,7 +3504,7 @@ void Element::put_lb_key(const SFC_Key& in_key)
 
 void Element::copy_key_to_lb_key()
 {
-    lb_key = key;
+    lb_key = get_key();
 }
 
 void Element::put_coord(double* coord_in)
@@ -3913,7 +3913,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<get_key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor[ineigh]<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
@@ -3932,7 +3932,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<get_key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor[ineigh]<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
@@ -3969,7 +3969,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<get_key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor[ineigh]<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
@@ -3989,7 +3989,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<get_key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor[ineigh]<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
@@ -4008,7 +4008,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<get_key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor[ineigh]<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
@@ -4124,8 +4124,8 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor[ineigh]);
                 if(!ElemNeigh)
                 {
-                    cout<<"Elem={"<<key<<"} missing neighbor ineigh="<<ineigh<<" {"<<neighbor[ineigh]<<"}\n";
-                    ElemBackgroundCheck(ElemTable, NodeTable, key, stdout);
+                    cout<<"Elem={"<<get_key()<<"} missing neighbor ineigh="<<ineigh<<" {"<<neighbor[ineigh]<<"}\n";
+                    ElemBackgroundCheck(ElemTable, NodeTable, get_key(), stdout);
                     assert(ElemNeigh);
                 }
                 //assert(ElemNeigh->get_adapted_flag()!=0);
@@ -4275,11 +4275,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     }
     assert(Itemp == 34);
     
-    sfc_key_write_to_space(key,writespace,Itemp);
+    sfc_key_write_to_space(get_key(),writespace,Itemp);
     assert(Itemp == 36);
-#ifdef DEBUG_SAVE_ELEM
+/*#ifdef DEBUG_SAVE_ELEM
     fprintf(fpdb,"}\nkey=%u %u\nnode_key={ ",key[0],key[1]);
-#endif  
+#endif  */
     
     for(itemp = 0; itemp < 8; itemp++)
     {
@@ -4521,7 +4521,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     }
     assert(Itemp == 34);
     
-    sfc_key_read_from_space(key,readspace,Itemp);
+    sfc_key_read_from_space(get_ref_key(),readspace,Itemp);
     assert(Itemp == 36);
     
     for(itemp = 0; itemp < 8; itemp++)

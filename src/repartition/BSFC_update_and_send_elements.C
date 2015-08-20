@@ -151,7 +151,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                             SET_OLDKEY((&(send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1)])),
                                     EmTemp->get_neighbors()[j]);
                             SET_OLDKEY((&(send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1) + 2 ])),
-                                    (*(EmTemp->pass_key())));
+                                    EmTemp->get_key());
 
                             send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1) + 4] =
                                     (unsigned) EmTemp->get_myprocess();
@@ -190,7 +190,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                         if(neigh_proc[j] == myid)
                         {
                             Element* EmNeigh = (Element*) HT_Elem_Ptr->lookup(EmTemp->get_neighbors()[j]);
-                            k = EmNeigh->which_neighbor(*(EmTemp->pass_key()));
+                            k = EmNeigh->which_neighbor(EmTemp->get_key());
                             EmNeigh->put_neigh_proc(k, EmTemp->get_myprocess());
                             neigh_proc[j] = EmNeigh->get_myprocess();
                         }
@@ -252,7 +252,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                     assert(myprocess >= 0 && myprocess < numprocs);
                     Pack_element(EmTemp, (send_elm_array + counter_send_proc[myprocess]), HT_Node_Ptr, myprocess);
                     counter_send_proc[myprocess] += 1;
-                    HT_Elem_Ptr->remove(*(EmTemp->pass_key()));//, 1);
+                    HT_Elem_Ptr->remove(EmTemp->get_key());//, 1);
                     delete EmTemp;
                 }
             }
@@ -325,7 +325,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
             if(EmTemp->get_refined_flag() != 0)
             {  // not an active element
                 EmTemp->void_bcptr();  // don't remove bc's
-                HT_Elem_Ptr->remove(*(EmTemp->pass_key()));
+                HT_Elem_Ptr->remove(EmTemp->get_key());
                 delete EmTemp;
             }
             else
@@ -336,7 +336,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
                     NdTemp = (Node*) HT_Node_Ptr->lookup(nodes[j]);
                     NdTemp->put_id(1);
                 }
-                NdTemp = (Node*) HT_Node_Ptr->lookup(*(EmTemp->pass_key()));
+                NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->get_key());
                 NdTemp->put_id(1);
             }
         }
@@ -352,7 +352,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
             entryp = entryp->next;
             if(NdTemp->get_id() == 0)
             {
-                HT_Node_Ptr->remove(*(NdTemp->pass_key()));
+                HT_Node_Ptr->remove(NdTemp->pass_key());
                 delete NdTemp;
             }
         }

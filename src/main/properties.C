@@ -266,7 +266,7 @@ double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *Em
         nodes[inode] = node_key[inode];
 
     //get center node
-    nodes[8] = *(EmTemp->pass_key());
+    nodes[8] = EmTemp->get_key();
 
     double node_pile_height[9];
     double sum_node_pile_height[9];

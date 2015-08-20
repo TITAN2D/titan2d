@@ -81,6 +81,9 @@ int main(int argc, char *argv[])
     init_cxxtitan();
     PyRun_SimpleString("from titan import *");
     
+    //init some titan staff
+    sfc_key_null=0;
+    
     if(argc > 0)
     {
         Py_Main(argc, argv);

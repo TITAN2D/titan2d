@@ -140,7 +140,7 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
         node[inode] = this->getNode()[inode];
     
     // center node key is same as element key
-    node[8] = *(this->pass_key());
+    node[8] = this->get_key();
     
     for(inode = 0; inode < 9; inode++)
     {

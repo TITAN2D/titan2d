@@ -32,7 +32,9 @@ constexpr uint64_t oldkey_1mask=~0U;
 class SFC_Key
 {
 public:
-    SFC_Key(){}
+    SFC_Key(){
+        //for(int i=0;i<KEYLENGTH;++i)key[i]=0;
+    }
     //!copy constructor at this point implicit copy constructor should work fine
     SFC_Key(const SFC_Key& other ){
         for(int i=0;i<KEYLENGTH;++i)key[i]=other.key[i];
@@ -105,7 +107,8 @@ inline void fprintf_sfc_key(FILE *fout, const SFC_Key& obj)
 }
 
 constexpr int sfc_key_zero=0;
-#define sfc_key_null SFC_Key(0)
+//#define sfc_key_null SFC_Key(0)
+extern SFC_Key sfc_key_null;
 
 inline uint64_t get_ukey_from_sfc_key(const SFC_Key& key){return (((uint64_t) key.key[0]) << 32) | key.key[1];};
 
