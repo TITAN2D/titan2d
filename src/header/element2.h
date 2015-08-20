@@ -673,9 +673,6 @@ protected:
     //! the spatial (x and y) derivatives of the local z component of the gravity vector
     double d_gravity[DIMENSION];
 
-    //! legacy titan not really used, lam :=p_{bed}/(rho*g_z*h)
-    double lam;
-
     //! part of the new stopping criteria under development, has a 0 if flow is not stopped, has the value 1 if it should not be sliding but should be slumping, has the value 2 if it should neither be sliding or slumping (it should be completely stopped), I (Keith) am rather confident in the criteria used to set this the problem is determining what to do about it after you know the flow SHOULD be stopped
     int stoppedflags;
 
