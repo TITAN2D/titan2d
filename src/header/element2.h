@@ -661,9 +661,6 @@ protected:
     //! maximum x and y direction wavespeeds for this element, wavespeeds are eigenvalues of the flux jacobians
     double eigenvxymax[DIMENSION];
 
-    //! this is legacy afeapi not used in titan
-    double coefABCD[4];
-
     //! k active/passive in the x and y directions, k active/passive is part of the coulomb friction model for Granular Flows
     double kactxy[DIMENSION];
 
