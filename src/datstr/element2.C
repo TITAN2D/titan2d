@@ -48,7 +48,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         d_state_vars[i] = 0.;
 
-    father=sfc_key_zero;
+    set_father(sfc_key_zero);
     for(i = 0; i < 4; i++){
         brothers[i]=sfc_key_zero;
         son[i]=sfc_key_zero;
@@ -225,7 +225,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         d_state_vars[i] = 0.;
     
-    father=sfc_key_zero;
+    set_father(sfc_key_zero);
     for(i = 0; i < 4; i++){
         brothers[i]=sfc_key_zero;
         son[i]=sfc_key_zero;
@@ -359,7 +359,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     for(int i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         d_state_vars[i] = 0.;
     
-    father=sfc_key_zero;
+    set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){
         brother(i, sfc_key_zero);
         son[i]=sfc_key_zero;
@@ -374,7 +374,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     {
         sons[ison]->put_adapted_flag(OLDSON);
         son[ison] = sons[ison]->key();
-        sons[ison]->put_father(key());
+        sons[ison]->set_father(key());
     }
     
     set_lb_key(sfc_key_zero);
@@ -391,7 +391,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             stoppedflags = sons[ison]->stoppedflags;
     }
     
-    father = sfc_key_zero;
+    set_father(sfc_key_zero);
     set_node_key(0, sons[0]->node_key(0));
     set_node_key(1, sons[1]->node_key(1));
     set_node_key(2, sons[2]->node_key(2));
@@ -481,7 +481,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(1));
                 assert(EmTemp);
-                brother(1, EmTemp->getfather());
+                brother(1, EmTemp->father());
             }
             else
             {
@@ -499,7 +499,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(2));
                 assert(EmTemp);
-                brother(3, EmTemp->getfather());
+                brother(3, EmTemp->father());
             }
             else
                 assert(0);
@@ -518,7 +518,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(3));
                 assert(EmTemp);
-                brother(0, EmTemp->getfather());
+                brother(0, EmTemp->father());
             }
             else
             {
@@ -536,7 +536,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(2));
                 assert(EmTemp);
-                brother(2, EmTemp->getfather());
+                brother(2, EmTemp->father());
             }
             else
             {
@@ -557,7 +557,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(0));
                 assert(EmTemp);
-                brothers[1] = EmTemp->getfather();
+                brothers[1] = EmTemp->father();
             }
             else
             {
@@ -575,7 +575,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(3));
                 assert(EmTemp);
-                brothers[3] = EmTemp->getfather();
+                brothers[3] = EmTemp->father();
             }
             else
             {
@@ -596,7 +596,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(0));
                 assert(EmTemp);
-                brothers[0] = EmTemp->getfather();
+                brothers[0] = EmTemp->father();
             }
             else
             {
@@ -614,7 +614,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(1));
                 assert(EmTemp);
-                brothers[2] = EmTemp->getfather();
+                brothers[2] = EmTemp->father();
             }
             else
             {
@@ -660,7 +660,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     return;
 }
 
-SFC_Key Element::getfather()
+const SFC_Key& Element::father() const
 {
     switch (which_son)
     {
@@ -804,7 +804,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
     
     if(generation) //filling up icon array
     {
-        ElemPtr = (Element*) HT_Elem_Ptr->lookup(getfather()); //if the father is not there it is not a constrained element
+        ElemPtr = (Element*) HT_Elem_Ptr->lookup(father()); //if the father is not there it is not a constrained element
                 
         if(ElemPtr)
         {
@@ -4437,7 +4437,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
 {
     counted = 0; //for debugging only
 
-    father=sfc_key_zero;
+    set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){
         brothers[i]=sfc_key_zero;
         son[i]=sfc_key_zero;

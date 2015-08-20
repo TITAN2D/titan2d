@@ -100,7 +100,7 @@ protected:
             elementType = ElementType::UnknownElementType;
 
         counted = 0;
-        father = 0; //initialize the father key to zero
+        set_father(sfc_key_zero); //initialize the father key to zero
         for(int i = 0; i < NUM_STATE_VARS; i++)
         {
             state_vars[i] = -1;
@@ -201,10 +201,11 @@ public:
     int* get_order();
 
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
-    SFC_Key getfather();
-
+    const SFC_Key& Element::father() const;
+    //!only used in unrefinement
+    const SFC_Key& Element::father_by_ref() const{return father_;}
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
-    void put_father(const SFC_Key &fatherin){father = fatherin;}
+    void set_father(const SFC_Key &fatherin){father_ = fatherin;}
 
     //! return the element keys of this element's 4 sons, used during refinement
     SFC_Key* getson();
@@ -611,7 +612,7 @@ protected:
     Element* neighborPtr[8];
 
     //! the key of the father it is assigned in the refine() and unrefine_elements() functions
-    SFC_Key father;
+    SFC_Key father_;
 
     //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key son[4];

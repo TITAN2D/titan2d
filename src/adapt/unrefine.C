@@ -559,7 +559,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     if(EmNeigh->adapted == OLDSON)
                     {
                         //I am introduced to a NEWFATHER neighbor by his OLDSON
-                        EmNeigh = (Element*) El_Table->lookup(EmNeigh->father);
+                        EmNeigh = (Element*) El_Table->lookup(EmNeigh->father_by_ref());
                         assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
                     }
                     
@@ -823,7 +823,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //we can use my father's key directly instead of having to
                                 //use get_father() because we know that my father's key
                                 //was assigned to me in unrefine_elements()
-                                EmFather = (Element*) El_Table->lookup(EmTemp->father);
+                                EmFather = (Element*) El_Table->lookup(EmTemp->father_by_ref());
                                 assert(EmFather);
                                 
                                 //which means my father will only have 1 neighbor on that side
