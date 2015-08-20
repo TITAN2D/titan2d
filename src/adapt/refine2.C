@@ -953,7 +953,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     for(i = 0; i < 4; i++)
     {
         EmTemp = (Element*) HT_Elem_Ptr->lookup(NewNodeKey[i]);
-        EmTemp->putbrothers(NewNodeKey);  //was  EmTemp->putbrothers(&NewNodeKey[i][0]);
+        EmTemp->set_brothers(NewNodeKey);  //was  EmTemp->putbrothers(&NewNodeKey[i][0]);
     }
     
     return;

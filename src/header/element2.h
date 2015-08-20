@@ -177,15 +177,11 @@ public:
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
     void put_gen(int);
 
-    
-
-    //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
-    void putbrothers(const SFC_Key*);
-
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
-    SFC_Key* get_brothers();
-    const SFC_Key& brother(const int i) const {return brothersABCD[i];}
-    void brother(const int i,const SFC_Key& new_key){brothersABCD[i]=new_key;}
+    const SFC_Key& brother(const int i) const {return brothers_[i];}
+    void set_brother(const int i,const SFC_Key& new_key){brothers_[i]=new_key;}
+    //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
+    void set_brothers(const SFC_Key*);
 
     //! this function stores the processor id "a" of neighbor "i" in the 8 element array of neighbor processors, this functionality is duplicated by put_neigh_proc which is the preferred function to use (don't use this one it's legacy)
     void putassoc(int a, int i);
@@ -252,18 +248,6 @@ public:
 
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. These values are defined in constant.h.  The NEWSON value has allowed Keith to provide one time only immunity from unrefinement to recently refined elements, after which the "adapted" flag is resent to NOTRECADAPTED.
     void put_adapted_flag(int new_adapted_status);
-
-    //! this function is only called in htflush.C to initialize it to zero, I (Keith) think it is afeapi legacy that isn't being used anymore but I'm not sure about that 
-    void put_send_flag(int, int);
-
-    //! this function is only called in htflush.C to initialize it to zero, I (Keith) think it is afeapi legacy that isn't being used anymore but I'm not sure about that 
-    void put_recv_flag(int, int);
-
-    //! this function isn't being called anywhere, which means it is afeapi legacy
-    int get_send_flag(int);
-
-    //! this function isn't being called anywhere, which means it is afeapi legacy
-    int get_recv_flag(int);
 
     //! this function returns an array holding the generation of all 8 of this element's neighbors
     int* get_neigh_gen();
@@ -405,15 +389,6 @@ public:
 
     //! this function computes the velocity, either V=hV/h or shortspeed in the direction of hV/h, if the pile is short, that is h is less than the defined (nondimensional) value of GEOFLOW_SHORT, see geoflow.h, it chooses the speed to be min(|hV/h|,shortspeed) if h is greater than GEOFLOW_SHORT it chooses hV/h regardless of which one is smaller.
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
-
-
-
-    //! this function is legacy afeapi code, it is never called in the finite difference/volume version of titan
-    double* get_coefABCD()
-    {
-        return coefABCD;
-    }
-    ;
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
     double* get_kactxy();
@@ -656,19 +631,13 @@ protected:
     int new_old;
 
     //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key brothersABCD[4];
+    SFC_Key brothers_[4];
 
     //! coord holds the coordinates of the elements cell center, these are the same as the coordinates of the element's bubble node's
     double coord[DIMENSION];
 
     //! elm_loc is used in unrefining beyond the original coarse mesh
-    int elm_loc[2];
-
-    //! this is afeapi legacy
-    int send[8];
-
-    //! this is afeapi legacy
-    int recv[8];
+    int elm_loc[DIMENSION];
 
     /* variables for hyperbolic geoflow problem */
 
@@ -777,12 +746,6 @@ inline void Element::put_ithelem(int i)
 inline int Element::get_material()
 {
     return material;
-}
-;
-
-inline SFC_Key* Element::get_brothers()
-{
-    return brothersABCD;
 }
 ;
 
@@ -1094,10 +1057,10 @@ inline void Element::set_sons(const SFC_Key* s)
     adapted = OLDFATHER;
 }
 
-inline void Element::putbrothers(const SFC_Key* s)
+inline void Element::set_brothers(const SFC_Key* s)
 {
     for(int i = 0; i < 4; i++)
-        brothersABCD[i] = s[i];
+        set_brother(i, s[i]);
 }
 
 inline void Element::putassoc(int a, int i)
@@ -1156,26 +1119,6 @@ inline int Element::get_adapted_flag()
 inline void Element::put_adapted_flag(int new_adapted_status)
 {
     adapted = new_adapted_status;
-}
-
-inline void Element::put_send_flag(int i, int j)
-{
-    send[i] = j;
-}
-
-inline int Element::get_send_flag(int i)
-{
-    return send[i];
-}
-
-inline void Element::put_recv_flag(int i, int j)
-{
-    recv[i] = j;
-}
-
-inline int Element::get_recv_flag(int i)
-{
-    return recv[i];
 }
 
 inline int* Element::get_neigh_gen()

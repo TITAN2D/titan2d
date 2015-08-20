@@ -50,7 +50,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
 
     set_father(sfc_key_zero);
     for(i = 0; i < 4; i++){
-        brothersABCD[i]=sfc_key_zero;
+        set_brother(i, sfc_key_zero);
         set_son(i, sfc_key_zero);
     }
     set_lb_key(sfc_key_zero);
@@ -100,37 +100,32 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     refined = 0;
     
-    for(i = 0; i < 8; i++)
-    {
-        recv[i] = 0;
-        send[i] = 0;
-    }
     
     myprocess = myid;
     elm_loc[0] = elm_loc_in[0];
     elm_loc[1] = elm_loc_in[1];
     calc_which_son();
     
-    brother(which_son, key());
-    brother((which_son + 2) % 4, opposite_brother);
+    set_brother(which_son, key());
+    set_brother((which_son + 2) % 4, opposite_brother);
 
     switch (which_son)
     {
         case 0:
-            brother(1, neighbor(1));
-            brother(3, neighbor(2));
+            set_brother(1, neighbor(1));
+            set_brother(3, neighbor(2));
             break;
         case 1:
-            brother(0, neighbor(3));
-            brother(2, neighbor(2));
+            set_brother(0, neighbor(3));
+            set_brother(2, neighbor(2));
             break;
         case 2:
-            brother(1, neighbor(0));
-            brother(3, neighbor(3));
+            set_brother(1, neighbor(0));
+            set_brother(3, neighbor(3));
             break;
         case 3:
-            brother(0, neighbor(0));
-            brother(2, neighbor(1));
+            set_brother(0, neighbor(0));
+            set_brother(2, neighbor(1));
             break;
     }
     opposite_brother_flag = 1;
@@ -227,7 +222,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     set_father(sfc_key_zero);
     for(i = 0; i < 4; i++){
-        brothersABCD[i]=sfc_key_zero;
+        set_brother(i, sfc_key_zero);
         set_son(i, sfc_key_zero);
     }
     set_lb_key(sfc_key_zero);
@@ -282,11 +277,6 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     refined = 0;
     
-    for(i = 0; i < 8; i++)
-    {
-        recv[i] = 0;
-        send[i] = 0;
-    }
     
     new_old = NEW;
     //geoflow stuff
@@ -361,7 +351,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){
-        brother(i, sfc_key_zero);
+        set_brother(i, sfc_key_zero);
         set_son(i, sfc_key_zero);
     }
 
@@ -410,11 +400,6 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     material = sons[0]->get_material();
     no_of_eqns = EQUATIONS;
     
-    for(i = 0; i < 8; i++)
-    {
-        recv[i] = 0;
-        send[i] = 0;
-    }
     calc_which_son();
     bcptr = sons[0]->get_bcptr();
     //order information -- keep the highest order
@@ -468,20 +453,20 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     switch (which_son)
     {
         case 0:
-            brother(0, key());
+            set_brother(0, key());
             if(neigh_proc[1] == -1)
             {
-                brother(1, sfc_key_zero);
+                set_brother(1, sfc_key_zero);
             }
             else if(neigh_gen[1] == generation)
             {
-                brother(1, neighbor(1));
+                set_brother(1, neighbor(1));
             }
             else if(neigh_gen[1] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(1));
                 assert(EmTemp);
-                brother(1, EmTemp->father());
+                set_brother(1, EmTemp->father());
             }
             else
             {
@@ -489,36 +474,36 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             if(neigh_proc[2] == -1)
             {
-                brother(3, sfc_key_zero);
+                set_brother(3, sfc_key_zero);
             }
             else if(neigh_gen[2] == generation)
             {
-                brother(3, neighbor(2));
+                set_brother(3, neighbor(2));
             }
             else if(neigh_gen[2] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(2));
                 assert(EmTemp);
-                brother(3, EmTemp->father());
+                set_brother(3, EmTemp->father());
             }
             else
                 assert(0);
             break;
         case 1:
-            brother(1, key());
+            set_brother(1, key());
             if(neigh_proc[3] == -1)
             {
-                brother(0, sfc_key_zero);
+                set_brother(0, sfc_key_zero);
             }
             else if(neigh_gen[3] == generation)
             {
-                brother(0, neighbor(3));
+                set_brother(0, neighbor(3));
             }
             else if(neigh_gen[3] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(3));
                 assert(EmTemp);
-                brother(0, EmTemp->father());
+                set_brother(0, EmTemp->father());
             }
             else
             {
@@ -526,17 +511,17 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             if(neigh_proc[2] == -1)
             {
-                brother(2, sfc_key_zero);
+                set_brother(2, sfc_key_zero);
             }
             else if(neigh_gen[2] == generation)
             {
-                brother(2, neighbor(2));
+                set_brother(2, neighbor(2));
             }
             else if(neigh_gen[2] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(2));
                 assert(EmTemp);
-                brother(2, EmTemp->father());
+                set_brother(2, EmTemp->father());
             }
             else
             {
@@ -544,20 +529,20 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             break;
         case 2:
-            brothersABCD[2] = key();
+            set_brother(2, key());
             if(neigh_proc[0] == -1)
             {
-                brother(1, sfc_key_zero);
+                set_brother(1, sfc_key_zero);
             }
             else if(neigh_gen[0] == generation)
             {
-                brother(1, neighbor(0));
+                set_brother(1, neighbor(0));
             }
             else if(neigh_gen[0] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(0));
                 assert(EmTemp);
-                brothersABCD[1] = EmTemp->father();
+                set_brother(1, EmTemp->father());
             }
             else
             {
@@ -565,17 +550,17 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             if(neigh_proc[3] == -1)
             {
-                brothersABCD[3] = sfc_key_zero;
+                set_brother(3, sfc_key_zero);
             }
             else if(neigh_gen[3] == generation)
             {
-                brothersABCD[3] = neighbor(3);
+                set_brother(3, neighbor(3));
             }
             else if(neigh_gen[3] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(3));
                 assert(EmTemp);
-                brothersABCD[3] = EmTemp->father();
+                set_brother(3, EmTemp->father());
             }
             else
             {
@@ -583,20 +568,20 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             break;
         case 3:
-            brothersABCD[3] = key();
+            set_brother(3, key());
             if(neigh_proc[0] == -1)
             {
-                brothersABCD[0] = sfc_key_zero;
+                set_brother(0, sfc_key_zero);
             }
             else if(neigh_gen[0] == generation)
             {
-                brothersABCD[0] = neighbor(0);
+                set_brother(0, neighbor(0));
             }
             else if(neigh_gen[0] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(0));
                 assert(EmTemp);
-                brothersABCD[0] = EmTemp->father();
+                set_brother(0, EmTemp->father());
             }
             else
             {
@@ -604,17 +589,17 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             }
             if(neigh_proc[1] == -1)
             {
-                brothersABCD[2] = sfc_key_zero;
+                set_brother(2, sfc_key_zero);
             }
             else if(neigh_gen[1] == generation)
             {
-                brothersABCD[2] = neighbor(1);
+                set_brother(2, neighbor(1));
             }
             else if(neigh_gen[1] == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(1));
                 assert(EmTemp);
-                brothersABCD[2] = EmTemp->father();
+                set_brother(2, EmTemp->father());
             }
             else
             {
@@ -3546,11 +3531,11 @@ void Element::find_opposite_brother(HashTable* El_Table)
     if(opposite_brother_flag == 1)
         return;
     
-    brothersABCD[(which_son + 2) % 4] = sfc_key_zero;
+    set_brother((which_son + 2) % 4, sfc_key_zero);
 
     SFC_Key nullkey = 0;
 
-    if(!((brothersABCD[(which_son + 1) % 4]==nullkey) && (brothersABCD[(which_son + 3) % 4]==nullkey)))
+    if(!((brother((which_son + 1) % 4)==sfc_key_null) && (brother((which_son + 3) % 4)==sfc_key_null)))
     {
         //use space filling curve to compute the key of opposite
         //brother from it's bubble node coordinates
@@ -3569,7 +3554,7 @@ void Element::find_opposite_brother(HashTable* El_Table)
             bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] - dx[1] - *(El_Table->get_Yrange() + 0));
         
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
-        SET_NEWKEY(brothersABCD[(which_son + 2) % 4],oldkey);
+        set_brother((which_son + 2) % 4,sfc_key_from_oldkey(oldkey));
         
         opposite_brother_flag = 1;
     }
@@ -4308,9 +4293,9 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif 
     for(itemp = 0; itemp < 4; itemp++)
     {
-        sfc_key_write_to_space(brothersABCD[itemp],writespace,Itemp);
+        sfc_key_write_to_space(brother(itemp),writespace,Itemp);
 #ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"(%u %u) ",brothersABCD[itemp][0],brothersABCD[itemp][1]);
+        //fprintf(fpdb,"(%u %u) ",brother(itemp)[0],brother(itemp)[1]);
 #endif 
     }
     assert(Itemp == 76);
@@ -4439,7 +4424,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
 
     set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){
-        brothersABCD[i]=sfc_key_zero;
+        set_brother(i, sfc_key_zero);
         set_son(i, sfc_key_zero);
     }
     set_lb_key(sfc_key_zero);
@@ -4534,7 +4519,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 68);
     
     for(itemp = 0; itemp < 4; itemp++)
-        sfc_key_read_from_space(brothersABCD[itemp],readspace,Itemp);
+        set_brother(itemp,sfc_key_read_from_space(readspace,Itemp));
     assert(Itemp == 76);
     
     for(itemp = 0; itemp < 4; itemp++)

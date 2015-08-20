@@ -76,7 +76,7 @@ void htflush(HashTable* ht_elem_ptr, HashTable* ht_node_ptr, int option)
                     entryp = entryp->next;
                 }
             }
-            for(i = 0; i < e_buckets; i++)
+            /*for(i = 0; i < e_buckets; i++)
             {
                 entryp = *(ht_elem_ptr->getbucketptr() + i);
                 while (entryp)
@@ -89,6 +89,6 @@ void htflush(HashTable* ht_elem_ptr, HashTable* ht_node_ptr, int option)
                     }
                     entryp = entryp->next;
                 }
-            }
+            }*/
     }
 }

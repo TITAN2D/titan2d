@@ -236,7 +236,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
     }
     while (i < 4 && unrefine_flag == 1)
     {
-        Element* EmTemp = (Element*) El_Table->lookup(brothersABCD[i]);
+        Element* EmTemp = (Element*) El_Table->lookup(brother(i));
         if(EmTemp == NULL) //|| EmTemp->refined != 0)
             return 0;
         else if(EmTemp->adapted != NOTRECADAPTED) //this should be sufficient

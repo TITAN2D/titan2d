@@ -36,7 +36,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     SET_OLDKEY(elem->key, sendel->key());
     
     for(i = 0; i < 4; i++)
-        SET_OLDKEY(elem->brothers[i], sendel->brothersABCD[i]);
+        SET_OLDKEY(elem->brothers[i], sendel->brother(i));
     
     for(i = 0; i < 8; i++)
     {

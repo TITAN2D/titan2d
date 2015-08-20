@@ -45,32 +45,32 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         switch (EmTemp->which_son)
         {
             case 0:
-                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                 break;
             case 1:
-                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                 break;
             case 2:
-                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                 break;
             case 3:
-                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                 break;
         }
     else
         switch (EmTemp->which_son)
         {
             case 0:
-                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                 break;
             case 1:
-                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                 break;
             case 2:
-                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                 break;
             case 3:
-                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                 break;
         }
     // check the next side
@@ -86,32 +86,32 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                         break;
                     case 1:
-                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                         break;
                     case 2:
-                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                         break;
                     case 3:
-                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                         break;
                 }
             else
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                        elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                         break;
                     case 1:
-                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                        elm_bunch[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                         break;
                     case 2:
-                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                        elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                         break;
                     case 3:
-                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                        elm_bunch[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                         break;
                 }
         }
@@ -127,7 +127,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
     if(orig_elem->get_opposite_brother_flag() == 0)
         orig_elem->find_opposite_brother(HT_Elem_Ptr);
     if(orig_elem->get_opposite_brother_flag() == 1)
-        EmTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[next_elm]);
+        EmTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(next_elm));
     else
         EmTemp = NULL;
     
@@ -151,32 +151,32 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                         break;
                     case 1:
-                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                         break;
                     case 2:
-                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                         break;
                     case 3:
-                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                         break;
                 }
             else
                 switch (EmTemp->which_son)
                 {
                     case 0:
-                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                        elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                         break;
                     case 1:
-                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                        elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                         break;
                     case 2:
-                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                        elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                         break;
                     case 3:
-                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                        elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                         break;
                 }
             // check the next side
@@ -192,32 +192,32 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                         switch (EmTemp->which_son)
                         {
                             case 0:
-                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                                 break;
                             case 1:
-                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                                 break;
                             case 2:
-                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                                 break;
                             case 3:
-                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                                 break;
                         }
                     else
                         switch (EmTemp->which_son)
                         {
                             case 0:
-                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[3]);
+                                elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
                                 break;
                             case 1:
-                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[0]);
+                                elm_bunch2[0] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(0));
                                 break;
                             case 2:
-                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[1]);
+                                elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
                                 break;
                             case 3:
-                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brothersABCD[2]);
+                                elm_bunch2[2] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(2));
                                 break;
                         }
                 }

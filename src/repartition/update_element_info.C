@@ -191,7 +191,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->new_old = elem2->new_old;
     for(i = 0; i < 4; i++)
     {
-        newelement->brother(i, sfc_key_from_oldkey(elem2->brothers[i]));
+        newelement->set_brother(i, sfc_key_from_oldkey(elem2->brothers[i]));
     }
     
     newelement->set_key(sfc_key_from_oldkey(elem2->key));
