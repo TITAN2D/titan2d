@@ -140,10 +140,8 @@ public:
     void save_elem(FILE* fp, FILE* fptxt); //for restart
                    
     //! returns address of element (same as bubble node, node 8 out of 0->8) hashtable key
-    const SFC_Key& get_key() const {return key_;}
-    SFC_Key& get_ref_key() {return key_;}
+    const SFC_Key& key() const {return key_;}
     void set_key(const SFC_Key& new_key){key_=new_key;}
-    //void set_key(const unsigned int *new_key){SET_NEWKEY(key_,new_key);}
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
     int get_material();
@@ -311,13 +309,12 @@ public:
     void put_lb_weight(double dd_in);
 
     //! this function returns the load balancing key, which is used during repartitioning
-    const SFC_Key& get_lb_key() const {return lb_key;}
-
+    const SFC_Key& lb_key() const {return lb_key_;}
     //! this function sets the load balancing key, which is used during repartitioning
-    void put_lb_key(const SFC_Key& in_key);
+    void set_lb_key(const SFC_Key& new_key){lb_key_=new_key;}
 
     //! this function copies the elmenent key to the load balancing key
-    void copy_key_to_lb_key();
+    void copy_key_to_lb_key(){set_lb_key(key());}
 
     //! this function sets the process(or) id of an element, it says which processor owns the element.
     void put_myprocess(int in_proc);
@@ -600,7 +597,7 @@ protected:
     double lb_weight;
 
     //! this is the key for load-balancing, if there is no constrained node, it is the element key, otherwise it is a construct of the element "bunch", keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key lb_key;
+    SFC_Key lb_key_;
 
     //! this is the element key, which has the same value as the key of the element's bubble node, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key key_;
@@ -1422,7 +1419,7 @@ inline const SFC_Key& ElemPtrList::get_key(int i) const
 {
     //assert((i < 0) || (i > num_elem-1));
     if((i < 0) || (i > num_elem-1))return sfc_key_null;
-    else return list[i]->get_key();
+    else return list[i]->key();
 }
 ;
 inline int ElemPtrList::get_inewstart()

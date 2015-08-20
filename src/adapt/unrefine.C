@@ -257,7 +257,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
         //    printf("creating father %u %u from %u %u\n", *(bros[1]->getfather()), *(bros[1]->getfather() + 1),
         //           *(bros[1]->pass_key()), *(bros[1]->pass_key() + 1));
         bros[0] = El_Table->generateElement((bros + 1), NodeTable, El_Table, matprops_ptr);
-        El_Table->add(bros[0]->get_key(), bros[0]);
+        El_Table->add(bros[0]->key(), bros[0]);
         assert(bros[0]);  // a copy of the parent should always be on the same process as the sons
         NewFatherList->add(bros[0]);
         
@@ -335,7 +335,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         NdTemp = (Node *) NodeTable->lookup(EmFather->node_key[inode]);
         if(!NdTemp)
         {
-            ElemBackgroundCheck(El_Table, NodeTable, EmFather->get_key(), stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmFather->key(), stdout);
             printf("inode=%d is missing\n", inode);
             fflush(stdout);
             NodeBackgroundCheck(El_Table, NodeTable, EmFather->node_key[inode], stdout);
@@ -344,7 +344,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         nodeorder[inode] = NdTemp->order;
     }
     inode = 8;
-    NdTemp = (Node *) NodeTable->lookup(EmFather->get_key());
+    NdTemp = (Node *) NodeTable->lookup(EmFather->key());
     assert(NdTemp);
     nodeorder[inode] = NdTemp->order;
     
@@ -437,7 +437,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         }
         
         //Now delete this oldson Element
-        El_Table->remove(EmSon->get_key());
+        El_Table->remove(EmSon->key());
         EmSon->void_bcptr();
         delete EmSon;
     }
@@ -449,7 +449,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
     }
     inode = 8;
     
-    NdTemp = (Node *) NodeTable->lookup(EmFather->get_key());
+    NdTemp = (Node *) NodeTable->lookup(EmFather->key());
     NdTemp->order = nodeorder[inode];
     NdTemp->info = BUBBLE;
     
@@ -591,15 +591,15 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
                             EmFather->neighbor[ineigh] = EmFather->neighbor[ineigh + 4] =
-                                    EmNeigh->get_key();
+                                    EmNeigh->key();
                             EmNeigh->neighbor[ineighme] = EmNeigh->neighbor[ineighme + 4] =
-                                    EmFather->get_key();
+                                    EmFather->key();
                     }
                     else
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
                         EmNeigh->neighbor[ineighme] = EmNeigh->neighbor[ineighme + 4] =
-                                    EmFather->get_key();
+                                    EmFather->key();
                 }
             }
     }
@@ -740,7 +740,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                 //neighbor on another processor
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])), EmFather->son[ison]);
                 //the NEWFATHER element
-                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->get_key());
+                SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->key());
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), NdTemp->get_key());
                 
                 isend[neigh_proc]++;

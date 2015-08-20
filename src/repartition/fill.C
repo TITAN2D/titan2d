@@ -5,7 +5,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
 {
     int j, i = 0;
     Element *sendel = (Element *) sendel_in;
-    if(sendel->get_key() == sfc_key_null)
+    if(sendel->key() == sfc_key_null)
     {
         printf("Element key={0,0} is being packed\n");
         i++;
@@ -33,7 +33,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     elem->which_son = sendel->which_son;
     elem->new_old = sendel->new_old;
     
-    SET_OLDKEY(elem->key, sendel->get_key());
+    SET_OLDKEY(elem->key, sendel->key());
     
     for(i = 0; i < 4; i++)
         SET_OLDKEY(elem->brothers[i], sendel->brothers[i]);

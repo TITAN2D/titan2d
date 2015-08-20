@@ -42,7 +42,7 @@ void DumpString(FILE * fp, char *str);
 
 void testkey(HashTable * El_Table, Element * EmTemp)
 {
-    Element *EmTemp2 = (Element *) El_Table->lookup(EmTemp->get_key());
+    Element *EmTemp2 = (Element *) El_Table->lookup(EmTemp->key());
     if(EmTemp != EmTemp2)
     {
         printf("Element can't look up self with key");
@@ -358,7 +358,7 @@ int get_elem_elev(HashTable * NodeTable, MatProps * matprops, Element * EmTemp, 
     double resolution, xcoord, ycoord;
     Node *NdTemp;
     
-    NdTemp = (Node *) NodeTable->lookup(EmTemp->get_key());
+    NdTemp = (Node *) NodeTable->lookup(EmTemp->key());
     
     if(NdTemp == NULL)
     {
@@ -467,7 +467,7 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     {
         printf("myid=%d xm=%d xp=%d ym=%d yp=%d zmxm=%d zmxp=%d zmym=%d zmyp=%d EmArray[0]->key={\n", myid, xm,
                xp, ym, yp, zmxm, zmxp, zmym, zmyp);
-        cout<<EmArray[0]->get_key()<<"}\n";
+        cout<<EmArray[0]->key()<<"}\n";
         scanf("%d", &yada);
     }
     assert(EmArray[3]);          //make this full proof
@@ -510,7 +510,7 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[yp]);
         if(!EmArray[2])
         {
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_key(),stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->key(),stdout);
             ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors()[yp],stdout);
             
         }
@@ -522,7 +522,7 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->get_neighbors()[xp]);
         if(!EmArray[1])
         {
-            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_key(),stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->key(),stdout);
             ElemBackgroundCheck(El_Table, NodeTable, EmArray[0]->get_neighbors()[xp],stdout);
         }
         assert(EmArray[1]);
@@ -703,11 +703,11 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
             if(EmTemp->get_adapted_flag() > 0)
             {
                 double *state_vars = EmTemp->get_state_vars();
-                Node *NdTemp = (Node *) NodeTable->lookup(EmTemp->get_key());
+                Node *NdTemp = (Node *) NodeTable->lookup(EmTemp->key());
                 if(state_vars[0] < GEOFLOW_TINY)
                 {
                     double zero = 0;
-                    fprintf_sfc_key(fp, EmTemp->get_key());
+                    fprintf_sfc_key(fp, EmTemp->key());
                     fprintf(fp, "%f %f %f %f %f %f %f %f %d %f \n",
                             (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                             (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
@@ -720,7 +720,7 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     {
                         double Vel[4];
                         EmTemp->eval_velocity(0.0, 0.0, Vel);
-                        fprintf_sfc_key(fp, EmTemp->get_key());
+                        fprintf_sfc_key(fp, EmTemp->key());
                         fprintf(fp, " %f %f %f %f %f %f %f %f %d %f \n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
@@ -733,7 +733,7 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     {
                         double VxVy[2];
                         EmTemp->eval_velocity(0.0, 0.0, VxVy);
-                        fprintf_sfc_key(fp, EmTemp->get_key());
+                        fprintf_sfc_key(fp, EmTemp->key());
                         fprintf(fp, "%f %f %f %f %f %f %f %f %d %f \n",
                                 (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
@@ -891,7 +891,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                     if(1)
                     {           //NodeTemp->getinfo() != S_C_CON) {
                         unsigned tmpkey[KEYLENGTH];
-                        SET_OLDKEY(tmpkey,EmTemp->get_key());
+                        SET_OLDKEY(tmpkey,EmTemp->key());
 #ifdef TWO_PHASES 
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
@@ -962,7 +962,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                         elev += .5 * NodeTemp2->get_elevation();
 
                         unsigned tmpkey[KEYLENGTH];
-                        SET_OLDKEY(tmpkey,EmTemp->get_key());
+                        SET_OLDKEY(tmpkey,EmTemp->key());
 #ifdef TWO_PHASES 
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
@@ -1132,7 +1132,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                 {
                     NodeTemp = (Node *) NodeTable->lookup(nodes[j]);
                     unsigned tmpkey[KEYLENGTH];
-                    SET_OLDKEY(tmpkey,EmTemp->get_key());
+                    SET_OLDKEY(tmpkey,EmTemp->key());
                     //int* dof = NodeTemp->getdof();
 #ifdef TWO_PHASES 
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",

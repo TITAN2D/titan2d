@@ -269,17 +269,17 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
             assert(j > 1);
         if(j == 2)
         {  // 2 elements get shared side node key as the representative key...
-            orig_elem->lb_key = orig_elem->node_key[orig_side_number + 4];
+            orig_elem->set_lb_key(orig_elem->node_key[orig_side_number + 4]);
         }
         else
         { // 3 or more elements get parent's bubble key as the representative key...
             if(elm_bunch[0] != NULL)
             {
-                orig_elem->lb_key = elm_bunch[0]->node_key[2];
+                orig_elem->set_lb_key(elm_bunch[0]->node_key[2]);
             }
             else
             {
-                orig_elem->lb_key = elm_bunch[1]->node_key[3];
+                orig_elem->set_lb_key(elm_bunch[1]->node_key[3]);
             }
         }
     }

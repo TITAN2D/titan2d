@@ -111,9 +111,9 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                 if(0 && ifprint && (timeprops_ptr->iter == 279))
                 {
                     fprintf(fpelem1, "___%d___==============================\n", numprocsrint);
-                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fpelem1);
+                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fpelem1);
                     fprintf(fpelem2, "%03d:  : {", numprocsrint);
-                    fprintf_sfc_key(fpelem2,EmTemp->get_key());
+                    fprintf_sfc_key(fpelem2,EmTemp->key());
                     fprintf(fpelem2, "}:");
                     for(ineigh = 0; ineigh < 8; ineigh++)
                         if((neigh_proc[ineigh] >= 0) && (neigh_proc[ineigh] != myid)
@@ -264,7 +264,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                             construct_el(new_elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
                             if((new_elm->get_adapted_flag() < 0) && (new_elm->get_adapted_flag() >= -BUFFER))
                                 new_elm->put_myprocess(iproc);
-                            El_Table->add(new_elm->get_key(), new_elm);
+                            El_Table->add(new_elm->key(), new_elm);
                             add_counter++;
                         } //if(elm == NULL)
                         else
@@ -353,7 +353,7 @@ void delete_ghost_elms(HashTable* El_Table, int myid)
             )
             { //this is a GHOST element
                 EmTemp->void_bcptr();
-                El_Table->remove(EmTemp->get_key());//, 1, stdout, myid, 26);
+                El_Table->remove(EmTemp->key());//, 1, stdout, myid, 26);
                 delete EmTemp;
                 delete_counter++;
             }

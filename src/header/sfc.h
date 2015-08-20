@@ -138,6 +138,13 @@ inline void sfc_key_read_from_space(SFC_Key &key, const unsigned readspace[],int
         key.key[i]=readspace[pos++];
     }
 }
+inline SFC_Key sfc_key_read_from_space(const unsigned readspace[],int & pos)
+{
+    SFC_Key tmp;
+    SET_NEWKEY(tmp,(readspace+pos));
+    pos+=KEYLENGTH;
+    return tmp;
+}
 
 /*class SFC_Key_Hash
 {

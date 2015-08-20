@@ -121,7 +121,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
                 NewOrder[i][a] = NewOrder[i][b] = order[j];
     }
     
-    NodeTemp[8] = (Node*) HT_Node_Ptr->lookup(EmTemp->get_key()); //-- bubble
+    NodeTemp[8] = (Node*) HT_Node_Ptr->lookup(EmTemp->key()); //-- bubble
             
     //SIDE 0
     if(*(EmTemp->get_neigh_proc()) == -1)
@@ -178,7 +178,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -202,7 +202,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -280,7 +280,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -304,7 +304,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -381,7 +381,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -405,7 +405,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -481,7 +481,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -505,7 +505,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         which = -1;
         while (i < 4 && which == -1)
         {
-            if(neigh_elm->get_neighbors()[i]==EmTemp->get_key())
+            if(neigh_elm->get_neighbors()[i]==EmTemp->key())
                 which = i;
             i++;
         }
@@ -531,7 +531,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     which = 7;
     // geoflow info
     n1 = (Node*) HT_Node_Ptr->lookup(EmTemp->getNode()[4]);
-    n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->get_key());
+    n2 = (Node*) HT_Node_Ptr->lookup(EmTemp->key());
     
     create_new_node(which, 4, 8, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[0][1],
                     matprops_ptr);
@@ -637,7 +637,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     nodes[0] = KeyTemp[0];
     nodes[1] = KeyTemp[4];
-    nodes[2] = EmTemp->get_key();
+    nodes[2] = EmTemp->key();
     nodes[3] = KeyTemp[7];
     nodes[4] = NewNodeKey[4];
     nodes[5] = NewNodeKey[7];
@@ -705,12 +705,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(0);  //--by jp, 0 means son 0
             
     Quad9P->putel_sq(sol, err);  //added by jp oct11
-    Element* old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->get_key());
+    Element* old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->get_key());//, 1, stdout, myid, 16);
+        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 16);
         delete old_elm;
     }
     
@@ -723,7 +723,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     nodes[0] = KeyTemp[4];
     nodes[1] = KeyTemp[1];
     nodes[2] = KeyTemp[5];
-    nodes[3] = EmTemp->get_key();
+    nodes[3] = EmTemp->key();
     nodes[4] = NewNodeKey[5];
     nodes[5] = NewNodeKey[8];
     nodes[6] = NewNodeKey[10];
@@ -785,12 +785,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(1); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->get_key());
+    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->get_key());//, 1, stdout, myid, 17);
+        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 17);
         delete old_elm;
     }
     
@@ -799,7 +799,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     //---2nd new element---
     
     //the nodes
-    nodes[0] = EmTemp->get_key();
+    nodes[0] = EmTemp->key();
     nodes[1] = KeyTemp[5];
     nodes[2] = KeyTemp[2];
     nodes[3] = KeyTemp[6];
@@ -865,12 +865,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(2); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->get_key());
+    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->get_key());//, 1, stdout, myid, 18);
+        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 18);
         delete old_elm;
     }
     
@@ -880,7 +880,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //the nodes
     nodes[0] = KeyTemp[7];
-    nodes[1] = EmTemp->get_key();
+    nodes[1] = EmTemp->key();
     nodes[2] = KeyTemp[6];
     nodes[3] = KeyTemp[3];
     nodes[4] = NewNodeKey[9];
@@ -947,12 +947,12 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P->put_which_son(3); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->get_key());
+    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
         old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->get_key());//, 1, stdout, myid, 19);
+        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 19);
         delete old_elm;
     }
     

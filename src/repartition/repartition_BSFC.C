@@ -166,7 +166,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
             if(!EmTemp->get_refined_flag() && EmTemp->get_new_old() > 0)
             {
                 sfc_vert_ptr[j].lb_weight = EmTemp->get_lb_weight();
-                SET_OLDKEY(sfc_vert_ptr[j].sfc_key,EmTemp->get_lb_key());
+                SET_OLDKEY(sfc_vert_ptr[j].sfc_key,EmTemp->lb_key());
                 
                 j++;
             }
@@ -758,7 +758,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             {
                 //delete the non active elements
                 EmTemp->void_bcptr();
-                El_Table->remove(EmTemp->get_key());//, 1, stdout, myid, 1);
+                El_Table->remove(EmTemp->key());//, 1, stdout, myid, 1);
                 delete EmTemp;
             }
         } //while(currentPtr)
@@ -805,7 +805,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
             {
                 unsigned tmpkey[KEYLENGTH];
-                SET_OLDKEY(tmpkey,EmTemp->get_key());
+                SET_OLDKEY(tmpkey,EmTemp->key());
                 DoubleKeyArray[ielem] = tmpkey[0];
 
                 for(ikey = 1; ikey < KEYLENGTH; ikey++)
@@ -856,7 +856,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     unsigned MyFirstAndLastKey[2 * KEYLENGTH];
     
     //store my first key
-    SET_OLDKEY(((MyFirstAndLastKey+0 * KEYLENGTH)),ElemArray[0]->get_key());
+    SET_OLDKEY(((MyFirstAndLastKey+0 * KEYLENGTH)),ElemArray[0]->key());
     
     //DoubleArray now becomes the cumulative sum of the load balancing
     //weights (lb_weight);
@@ -868,7 +868,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     //sum instead of before it, because I know ElemArray[num_elem-1] 
     //will be in cache now because I just used him, so save a SMALL 
     //amount of time  
-    SET_OLDKEY(((MyFirstAndLastKey+1 * KEYLENGTH)),ElemArray[num_elem - 1]->get_key())
+    SET_OLDKEY(((MyFirstAndLastKey+1 * KEYLENGTH)),ElemArray[num_elem - 1]->key())
     
     /*
      if(myid==1) MPI_Barrier(MPI_COMM_WORLD);
@@ -1153,7 +1153,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             
             //compute the double precision equivalent of this element's key
             unsigned tmpkey[KEYLENGTH];
-            SET_OLDKEY(tmpkey,(ElemArray[ielem]->get_key()));
+            SET_OLDKEY(tmpkey,(ElemArray[ielem]->key()));
             doublekey =  tmpkey[0];
             for(ikey = 1; ikey < KEYLENGTH; ikey++)
                 doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
@@ -1185,7 +1185,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             
             //compute the double precision equivalent of this element's key
             unsigned tmpkey[KEYLENGTH];
-            SET_OLDKEY(tmpkey,ElemArray[ielem]->get_key());
+            SET_OLDKEY(tmpkey,ElemArray[ielem]->key());
             doublekey =  tmpkey[0];
             for(ikey = 1; ikey < KEYLENGTH; ikey++)
                 doublekey = doublekey * doublekeyrange1 + tmpkey[ikey];
@@ -1742,7 +1742,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         send_array0 = (ElemPack*) malloc(num_send[0] * sizeof(ElemPack));
         //my first key is changing, update my record
-        SET_OLDKEY( (MyFirstAndLastKey+0 * KEYLENGTH), ElemArray[isend[0] + 1]->get_key());
+        SET_OLDKEY( (MyFirstAndLastKey+0 * KEYLENGTH), ElemArray[isend[0] + 1]->key());
         
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
@@ -1813,7 +1813,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         send_array1 = (ElemPack*) malloc(num_send[1] * sizeof(ElemPack));
         //my last key is changing, update my record
-        SET_OLDKEY((MyFirstAndLastKey+1 * KEYLENGTH),ElemArray[isend[1] - 1]->get_key());
+        SET_OLDKEY((MyFirstAndLastKey+1 * KEYLENGTH),ElemArray[isend[1] - 1]->key());
         
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
@@ -1922,7 +1922,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
             fprintf(fpdb2, "    deleting %dth element: key={", ielem);
-            fprintf_sfc_key(fpdb2, ElemArray[ielem]->get_key());
+            fprintf_sfc_key(fpdb2, ElemArray[ielem]->key());
             fprintf(fpdb2, "}\n");
         }
         
@@ -1931,7 +1931,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
             fprintf(fpdb2, "    deleting %dth element: key={", ielem);
-            fprintf_sfc_key(fpdb2, ElemArray[ielem]->get_key());
+            fprintf_sfc_key(fpdb2, ElemArray[ielem]->key());
             fprintf(fpdb2, "}\n");
         }
 
@@ -1949,7 +1949,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
             ElemArray[ielem]->void_bcptr();
-            El_Table->remove(ElemArray[ielem]->get_key());//, 1, stdout, myid, 2);
+            El_Table->remove(ElemArray[ielem]->key());//, 1, stdout, myid, 2);
             delete ElemArray[ielem];
         }
     
@@ -1957,7 +1957,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     {
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
-            El_Table->remove(ElemArray[ielem]->get_key());//, 1, stdout, myid, 3);
+            El_Table->remove(ElemArray[ielem]->key());//, 1, stdout, myid, 3);
             delete ElemArray[ielem];
         }
     }
@@ -2004,7 +2004,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             EmTemp = (Element*) (currentPtr->value);
             currentPtr = currentPtr->next;
             assert(EmTemp);
-            NdTemp = (Node*) NodeTable->lookup(EmTemp->get_key());
+            NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
             assert(NdTemp);
             NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
             
@@ -2020,7 +2020,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                     //fpdb2=stdout;
                     fprintf(fpdb2, "myid=%d iter=%d iseqsend=%d node inode=%d is missing\n", myid, timeprops_ptr->iter,
                             iseqsend, inode);
-                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fpdb2);
+                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fpdb2);
                     fclose(fpdb2);
                     fpdb2 = fopen(fname2, "a");
                     NodeBackgroundCheck(El_Table, NodeTable, EmTemp->getNode()[inode], fpdb2);
@@ -2397,7 +2397,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                && (EmTemp->get_adapted_flag() >= -BUFFER))
             {
                 unsigned tmpkey[KEYLENGTH];
-                SET_OLDKEY(tmpkey,EmTemp->get_key());
+                SET_OLDKEY(tmpkey,EmTemp->key());
                 doublekey = tmpkey[0];
 
                 for(ikey = 1; ikey < KEYLENGTH; ikey++)
@@ -2415,7 +2415,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
             {
                 unsigned tmpkey[KEYLENGTH];
-                SET_OLDKEY(tmpkey,EmTemp->get_key());
+                SET_OLDKEY(tmpkey,EmTemp->key());
                 doublekey = tmpkey[0];
 
                 for(ikey = 1; ikey < KEYLENGTH; ikey++)
@@ -2626,7 +2626,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 EmTemp = (Element*) (currentPtr->value);
                 currentPtr = currentPtr->next;
                 assert(EmTemp);
-                NdTemp = (Node*) NodeTable->lookup(EmTemp->get_key());
+                NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
                 assert(NdTemp);
                 NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
                 
@@ -2915,7 +2915,7 @@ void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, i
         //printf("myid=%d num_recv=%d ielem=%d\n",myid,num_recv,ielem);
         
         construct_el(EmNew, recv_array + ielem, NodeTable, myid, &not_used);
-        El_Table->add(EmNew->get_key(), EmNew);
+        El_Table->add(EmNew->key(), EmNew);
     }
     
     return;

@@ -72,7 +72,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                         {
                             int flag = 1;
                             for(int m = 0; m < TempList.get_num_elem(); m++)
-                                if(TempList.get_key(m)==Neigh->get_key())
+                                if(TempList.get_key(m)==Neigh->key())
                                 {
                                     flag = 0;
                                     break;

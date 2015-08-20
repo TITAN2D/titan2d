@@ -78,7 +78,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
         if(EmDebugFather.get_num_elem() > 0)
         {
             fprintf(fp, "EmDebug={");
-            fprintf_sfc_key(fp,EmDebug->get_key());
+            fprintf_sfc_key(fp,EmDebug->key());
             fprintf(fp, "} has %d Father(s)\n",EmDebugFather.get_num_elem());
 
             for(int iFather = 0; iFather < EmDebugFather.get_num_elem(); iFather++)
@@ -113,7 +113,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
             if(EmDebug->neigh_proc[ineigh] < 0)
                 uniqueneigh--;
 
-        fprintf(fp, "EmDebug={");fprintf_sfc_key(fp, EmDebug->get_key());fprintf(fp, "} ");
+        fprintf(fp, "EmDebug={");fprintf_sfc_key(fp, EmDebug->key());fprintf(fp, "} ");
         fprintf(fp, "proc=%d ", EmDebug->myprocess);
         fprintf(fp, "gen=%d ", EmDebug->generation);
         fprintf(fp, "adapted=%d ", EmDebug->adapted);
@@ -207,14 +207,14 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 assert(EmTemp);
                 
                 for(ison = 0; ison < 4; ison++)
-                    if(EmTemp->son[ison]==EmDebug->get_key())
+                    if(EmTemp->son[ison]==EmDebug->key())
                     {
                         EmDebugFather.add(EmTemp);
                         break;
                     }
                 
                 for(ineigh = 0; ineigh < 8; ineigh++)
-                    if(EmTemp->neighbor[ineigh]==EmDebug->get_key())
+                    if(EmTemp->neighbor[ineigh]==EmDebug->key())
                     {
                         EmDebugNeigh.add(EmTemp);
                         break;
@@ -228,7 +228,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         if(EmDebugFather.get_num_elem() > 0)
         {
             fprintf(fp, "EmDebug={");
-            fprintf_sfc_key(fp, EmDebug->get_key());
+            fprintf_sfc_key(fp, EmDebug->key());
             fprintf(fp, "} has %d Father(s)\n", EmDebugFather.get_num_elem());
             for(int iFather = 0; iFather < EmDebugFather.get_num_elem(); iFather++)
             {
@@ -262,7 +262,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
             if(EmDebug->neigh_proc[ineigh] < 0)
                 uniqueneigh--;
         fprintf(fp, "EmDebug={ ");
-        fprintf_sfc_key(fp, EmDebug->get_key());
+        fprintf_sfc_key(fp, EmDebug->key());
         fprintf(fp, "} ");
         fprintf(fp, "proc=%d ", EmDebug->myprocess);
         fprintf(fp, "gen=%d ", EmDebug->generation);
@@ -282,7 +282,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         if(EmDebugNeigh.get_num_elem() > 0)
         {
             fprintf(fp, "The following %d elements have {", EmDebugNeigh.get_num_elem());
-            fprintf_sfc_key(fp, EmDebug->get_key());
+            fprintf_sfc_key(fp, EmDebug->key());
             fprintf(fp, "} as a neighbor:\n");
             for(ineigh = 0; ineigh < EmDebugNeigh.get_num_elem(); ineigh++)
             {
@@ -349,7 +349,7 @@ void NodeBackgroundCheck(HashTable *El_Table, HashTable* NodeTable, const SFC_Ke
                         break;
                     }
                 
-                if(EmTemp->get_key()==nodedbkey)
+                if(EmTemp->key()==nodedbkey)
                     ElemList.add(EmTemp);
                 
             }
@@ -478,7 +478,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             if(!((EmTemp->get_adapted_flag() >= OLDSON) && (EmTemp->get_adapted_flag() <= BUFFER)
                  && (EmTemp->get_adapted_flag() != -NEWBUFFER)))
             {
-                ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fp);
+                ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
                 fclose(fp);
                 assert(0);
             }
@@ -500,7 +500,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             
             if(EmTemp->adapted >= NOTRECADAPTED)
             {
-                NdTemp = (Node*) NodeTable->lookup(EmTemp->get_key());
+                NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
                 if(EmTemp->adapted >= NOTRECADAPTED)
                 {
                     assert(NdTemp);
@@ -552,7 +552,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 assert((coord[0] - tol <= xmax) && (xmax <= coord[0] + tol) && (coord[1] - tol <= ymax)
                        && (ymax <= coord[1] + tol));
                 
-                NdTemp = (Node*) NodeTable->lookup(EmTemp->get_key());
+                NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
                 assert(NdTemp);
                 coord = NdTemp->get_coord();
                 assert((coord[0] - tol <= xmean) && (xmean <= coord[0] + tol) && (coord[1] - tol <= ymean)
@@ -575,7 +575,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                         {
                             //if(myid==TARGETPROC) {
                             fprintf(stdout, "neighbor %d is missing\n", ineigh);
-                            ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), stdout);
+                            ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), stdout);
                             //}
                             fclose(fp);
                             assert(EmNeigh[0]);
@@ -598,29 +598,29 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                 
                                 //which of my neighbor's neighbors am I
                                 for(ineighme = 0; ineighme < 8; ineighme++)
-                                    if((EmNeigh[i]->neighbor[ineighme]==EmTemp->get_key()))
+                                    if((EmNeigh[i]->neighbor[ineighme]==EmTemp->key()))
                                         break;
                                 
                                 assert(ineighme < 8);
                                 assert((ineighme + 2) % 4 == ineigh); //correct sides match up
                                 if(!(EmTemp->neigh_gen[ineigh + 4 * i] == EmNeigh[i]->generation))
                                 {
-                                    fprintf(fp, "EmTemp={");fprintf_sfc_key(fp,EmTemp->get_key());fprintf(fp, "}\n");
+                                    fprintf(fp, "EmTemp={");fprintf_sfc_key(fp,EmTemp->key());fprintf(fp, "}\n");
 
-                                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fp);
+                                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
 
-                                    fprintf(fp, "EmNeigh={");fprintf_sfc_key(fp,EmNeigh[i]->get_key());fprintf(fp, "} ineigh=%d\n",ineigh + 4 * i);
-                                    ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[i]->get_key(), fp);
+                                    fprintf(fp, "EmNeigh={");fprintf_sfc_key(fp,EmNeigh[i]->key());fprintf(fp, "} ineigh=%d\n",ineigh + 4 * i);
+                                    ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[i]->key(), fp);
                                     fclose(fp);
                                     
                                     assert(EmTemp->neigh_gen[ineigh + 4 * i] == EmNeigh[i]->generation);
                                 }
                                 if(!(EmNeigh[i]->neigh_gen[ineighme] == EmTemp->generation))
                                 {
-                                    fprintf(fp, "EmTemp={");fprintf_sfc_key(fp,EmTemp->get_key());fprintf(fp, "}\n");
-                                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fp);
-                                    fprintf(fp, "EmNeigh={");fprintf_sfc_key(fp,EmNeigh[i]->get_key());fprintf(fp, "} ineigh=%d\n",ineigh + 4 * i);
-                                    ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[i]->get_key(), fp);
+                                    fprintf(fp, "EmTemp={");fprintf_sfc_key(fp,EmTemp->key());fprintf(fp, "}\n");
+                                    ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
+                                    fprintf(fp, "EmNeigh={");fprintf_sfc_key(fp,EmNeigh[i]->key());fprintf(fp, "} ineigh=%d\n",ineigh + 4 * i);
+                                    ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[i]->key(), fp);
                                     fclose(fp);
                                     assert(EmNeigh[i]->neigh_gen[ineighme] == EmTemp->generation);
                                 }
@@ -689,11 +689,11 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                             {
                                                 fprintf(fp, "iside=%d ineigh=%d ineighme=%d i=%d\n", iside, ineigh,
                                                         ineighme, i);
-                                                ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fp);
+                                                ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
                                                 fprintf(fp, "[i=0]\n");
-                                                ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[0]->get_key(), fp);
+                                                ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[0]->key(), fp);
                                                 fprintf(fp, "[i=1]\n");
-                                                ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[1]->get_key(), fp);
+                                                ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[1]->key(), fp);
                                                 //fprintf(fp,"stop me\n");
                                                 fclose(fp);
                                                 assert((EmTemp->node_key[ineigh]==EmNeigh[i]->node_key[(ineighme + 1) % 4]));
@@ -759,11 +759,11 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                                     {
                                                         fprintf(fp, "iside=%d ineigh=%d ineighme=%d i=%d\n", iside,
                                                                 ineigh, ineighme, i);
-                                                        ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), fp);
+                                                        ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
                                                         fprintf(fp, "[i=0]\n");
-                                                        ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[0]->get_key(), fp);
+                                                        ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[0]->key(), fp);
                                                         fprintf(fp, "[i=1]\n");
-                                                        ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[1]->get_key(), fp);
+                                                        ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[1]->key(), fp);
                                                         fclose(fp);
                                                         
                                                         assert((EmTemp->node_key[ineigh]==EmNeigh[i]->node_key[(ineighme + 1) % 4]));
@@ -891,9 +891,9 @@ int IfNeighProcChange(HashTable* El_Table, HashTable* NodeTable, int myid, Eleme
         if(*(EmDebug->get_neigh_proc() + 1) == 2)
         {
             printf("changed neigh_proc element\n");
-            ElemBackgroundCheck(El_Table, NodeTable, EmDebug->get_key(), stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmDebug->key(), stdout);
             printf("element who mistakenly changed the neigh_proc\n");
-            ElemBackgroundCheck(El_Table, NodeTable, EmTemp->get_key(), stdout);
+            ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), stdout);
             return 1;
         }
     
@@ -1166,7 +1166,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 assert(EmNeighNew[0]);
                                 
                                 for(ineighme = 0; ineighme < 4; ineighme++)
-                                    if(EmFather->get_key()==EmNeighNew[0]->neighbor[ineighme])
+                                    if(EmFather->key()==EmNeighNew[0]->neighbor[ineighme])
                                         break;
                                 
                                 assert(ineighme < 4);
@@ -1175,7 +1175,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 EmSon[isonB]->neighbor[ineighm4] = EmSon[isonB]->neighbor[ineighp4] =
                                         EmFather->neighbor[ineighother];
                                 EmNeighNew[0]->neighbor[ineighme] =
-                                        EmNeighNew[0]->neighbor[ineighmep4] = EmSon[isonB]->get_key();
+                                        EmNeighNew[0]->neighbor[ineighmep4] = EmSon[isonB]->key();
                                 
                                 EmSon[isonB]->neigh_gen[ineighm4] = EmSon[isonB]->neigh_gen[ineighp4] = EmNeighNew[0]
                                         ->generation;
@@ -1306,7 +1306,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     //The element I want my neighbor proc to update
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])),EmFather->neighbor[ineigh]);
                     //ME
-                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->get_key());
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->key());
                     
                     switch (EmFather->generation - EmFather->neigh_gen[ineigh])
                     {
@@ -1344,7 +1344,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     //The element I want my neighbor proc to update
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])),EmFather->neighbor[ineigh]);
                     //ME
-                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->get_key());
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->key());
 
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->son[isonB]);
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), EmFather->son[isonB]);
@@ -1375,7 +1375,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
         assert(EmFather); //Help I've been abducted call the FBI!!!
         assert(EmFather->adapted==OLDFATHER); //sanity check
         
-        NdTemp = (Node*) NodeTable->lookup(EmFather->get_key());
+        NdTemp = (Node*) NodeTable->lookup(EmFather->key());
         assert(NdTemp);
         NdTemp->info = CORNER;
         
@@ -1385,7 +1385,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
             EmSon[isonA] = (Element*) El_Table->lookup(EmFather->son[isonA]);
             assert(EmSon[isonA]); //MY son has been abducted call the FBI!!!
             
-            NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->get_key());
+            NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->key());
             assert(NdTemp);
             NdTemp->info = BUBBLE;
             
@@ -1449,14 +1449,14 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                 
                 for(ineighme = 0; ineighme < 8; ineighme++)
                 {
-                    if(EmFather->get_key()==EmNeighOld[1]->neighbor[ineighme])
+                    if(EmFather->key()==EmNeighOld[1]->neighbor[ineighme])
                         break;
                     
                 }
                 if(!(ineighme < 8))
                 {
-                    cout<<"FUBAR 0 detected in refine_neigh_update\nEmFather={"<<EmFather->get_key()<<"}\n";
-                    cout<<"EmNeighOld[0]={"<<EmNeighOld[0]->get_key()<<"} ineigh="<<ineigh<<" isonA="<<isonA<<" isonB="<<isonB<<"\n";
+                    cout<<"FUBAR 0 detected in refine_neigh_update\nEmFather={"<<EmFather->key()<<"}\n";
+                    cout<<"EmNeighOld[0]={"<<EmNeighOld[0]->key()<<"} ineigh="<<ineigh<<" isonA="<<isonA<<" isonB="<<isonB<<"\n";
                     cout<<"aborting!!"<<endl;
                     
                     assert(ineighme < 8);
@@ -1588,12 +1588,12 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     case 1:
                         //case B
                         //new neighbor generation is my (the OLDFATHER) generation
-                        EmNeighNew[0]->neighbor[ineighme] = EmSon[isonB]->get_key();
-                        EmNeighNew[0]->neighbor[ineighmep4] = EmSon[isonA]->get_key();
+                        EmNeighNew[0]->neighbor[ineighme] = EmSon[isonB]->key();
+                        EmNeighNew[0]->neighbor[ineighmep4] = EmSon[isonA]->key();
 
                         EmSon[isonA]->neighbor[ineigh] = EmSon[isonA]->neighbor[ineighp4] = EmSon[isonB]
                                 ->neighbor[ineigh] = EmSon[isonB]->neighbor[ineighp4] = EmNeighNew[0]
-                                ->get_key();
+                                ->key();
                         
                         EmNeighNew[0]->neigh_gen[ineighme] = EmNeighNew[0]->neigh_gen[ineighmep4] = EmSon[isonA]
                                 ->generation;
@@ -1642,14 +1642,14 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         //cases C & D
                         //new neighbor generation is my son's generation
                         EmNeighNew[0]->neighbor[ineighme] = EmNeighNew[0]->neighbor[ineighmep4] =
-                                EmSon[isonA]->get_key();
+                                EmSon[isonA]->key();
                         EmNeighNew[1]->neighbor[ineighme] = EmNeighNew[1]->neighbor[ineighmep4] =
-                                EmSon[isonB]->get_key();
+                                EmSon[isonB]->key();
                         
                         EmSon[isonA]->neighbor[ineigh] = EmSon[isonA]->neighbor[ineighp4] =
-                                EmNeighNew[0]->get_key();
+                                EmNeighNew[0]->key();
                         EmSon[isonB]->neighbor[ineigh] = EmSon[isonB]->neighbor[ineighp4] =
-                                EmNeighNew[1]->get_key();
+                                EmNeighNew[1]->key();
                         
                         EmNeighNew[0]->neigh_gen[ineighme] = EmNeighNew[0]->neigh_gen[ineighmep4] = EmNeighNew[1]
                                 ->neigh_gen[ineighme] = EmNeighNew[1]->neigh_gen[ineighmep4] = EmSon[isonA]->generation;
@@ -1734,17 +1734,17 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             
                         EmNeighNew[0]->neighbor[ineighme] = EmNeighNew[0]->neighbor[ineighmep4] =
                                 EmNeighNew[1]->neighbor[ineighme] =
-                                        EmNeighNew[1]->neighbor[ineighmep4] = EmSon[isonA]->get_key();
+                                        EmNeighNew[1]->neighbor[ineighmep4] = EmSon[isonA]->key();
 
                         EmNeighNew[2]->neighbor[ineighme] = EmNeighNew[2]->neighbor[ineighmep4] =
                                 EmNeighNew[3]->neighbor[ineighme] =
-                                        EmNeighNew[3]->neighbor[ineighmep4] = EmSon[isonB]->get_key();
+                                        EmNeighNew[3]->neighbor[ineighmep4] = EmSon[isonB]->key();
 
-                        EmSon[isonA]->neighbor[ineigh] = EmNeighNew[0]->get_key();
-                        EmSon[isonA]->neighbor[ineighp4] = EmNeighNew[1]->get_key();
+                        EmSon[isonA]->neighbor[ineigh] = EmNeighNew[0]->key();
+                        EmSon[isonA]->neighbor[ineighp4] = EmNeighNew[1]->key();
 
-                        EmSon[isonB]->neighbor[ineigh] = EmNeighNew[2]->get_key();
-                        EmSon[isonB]->neighbor[ineighp4] = EmNeighNew[3]->get_key();
+                        EmSon[isonB]->neighbor[ineigh] = EmNeighNew[2]->key();
+                        EmSon[isonB]->neighbor[ineighp4] = EmNeighNew[3]->key();
                         
                         //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
                         
@@ -1906,23 +1906,23 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             EmNeigh = (Element*) El_Table->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH])));
                             if(EmNeigh)
                             {
-                                if(!(sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH]))==EmNeigh->get_key()))
+                                if(!(sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH]))==EmNeigh->key()))
                                 {
                                     printf("refine_neigh_update(): myid=%d receiving from iproc=%d, %dth element being received is {%10u,%10u}\n That element is supposed to have an onprocessor element {%10u,%10u} as a neighbor but that \"on processor element\" thinks it key is ",
                                            myid, iproc, irecvd, recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 0],
                                            recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 1],
                                            recv[iproc][(4 * irecvd + 1) * KEYLENGTH + 0],
                                            recv[iproc][(4 * irecvd + 1) * KEYLENGTH + 1]);
-                                    cout<<"{"<<EmNeigh->get_key()<<"}\n";
+                                    cout<<"{"<<EmNeigh->key()<<"}\n";
                                     ElemBackgroundCheck(El_Table, NodeTable,
                                                         sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 0) * KEYLENGTH])), stdout);
                                     ElemBackgroundCheck(El_Table, NodeTable,
                                                         sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH])), stdout);
-                                    ElemBackgroundCheck(El_Table, NodeTable, EmNeigh->get_key(), stdout);
+                                    ElemBackgroundCheck(El_Table, NodeTable, EmNeigh->key(), stdout);
                                     assert(EmNeigh);
                                 }
                                 
-                                El_Table->remove(EmNeigh->get_key());//, 1, stdout, myid, 13);
+                                El_Table->remove(EmNeigh->key());//, 1, stdout, myid, 13);
                                 EmNeigh->void_bcptr();
                                 delete EmNeigh;
                             }
@@ -2280,7 +2280,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
         assert(EmFather->refined == 1);
         EmFather->adapted = TOBEDELETED; //I've lived a good life, it's my time to die
         EmFather->void_bcptr();
-        El_Table->remove(EmFather->get_key());//, 1, stdout, myid, 15);
+        El_Table->remove(EmFather->key());//, 1, stdout, myid, 15);
         delete EmFather;
     }
     //RefinedList->set_inewstart(RefinedList->get_num_elem());
@@ -2394,7 +2394,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
         orig_neigh_proc = EmTemp->get_neigh_proc();
         Sons = EmTemp->getson();
         MyGeneration = EmTemp->get_gen();
-        SFC_Key Mykey = EmTemp->get_key();
+        SFC_Key Mykey = EmTemp->key();
         
         assert((EmTemp->get_adapted_flag()==OLDFATHER)|| (EmTemp->get_adapted_flag()==TOBEDELETED));
         

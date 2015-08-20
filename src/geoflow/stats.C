@@ -423,7 +423,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                                || (!((state_vars[5] <= 0.0) || (0.0 <= state_vars[5]))))
                             {
                                 //v_ave is NaN
-                                cout<<"calc_stats(): NaN detected in element={"<<Curr_El->get_key()<<"} at iter="<<timeprops->iter<<"\n";
+                                cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
                                 printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
                                        *(Curr_El->get_prev_state_vars() + 0), *(Curr_El->get_prev_state_vars() + 1),
                                        *(Curr_El->get_prev_state_vars() + 2), *(Curr_El->get_prev_state_vars() + 3),
@@ -459,7 +459,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                             {
                                 //v_ave is NaN
 
-                                cout<<"calc_stats(): NaN detected in element={"<<Curr_El->get_key()<<"} at iter="<<timeprops->iter<<"\n";
+                                cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
                                 printf("prevu={%12.6g,%12.6g,%12.6g}\n", *(Curr_El->get_prev_state_vars() + 0),
                                        *(Curr_El->get_prev_state_vars() + 1), *(Curr_El->get_prev_state_vars() + 2));
                                 printf("    u={%12.6g,%12.6g,%12.6g}\n", state_vars[0], state_vars[1], state_vars[2]);
@@ -672,7 +672,7 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         || (Curr_El->get_adapted_flag() == BUFFER)))
                 {
                     cout<<"FUBAR 1 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->get_key();
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
                     cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
 
                     assert(0);
@@ -683,7 +683,7 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         || (Curr_El->get_adapted_flag() == BUFFER)))
                 {
                     cout<<"FUBAR 2 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->get_key();
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
                     cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
@@ -692,7 +692,7 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         && (Curr_El->get_adapted_flag() >= -BUFFER)))
                 {
                     cout<<"FUBAR 3 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->get_key();
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
                     cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
@@ -701,7 +701,7 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         && (Curr_El->get_adapted_flag() >= -BUFFER)))
                 {
                     cout<<"FUBAR 4 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->get_key();
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
                     cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
@@ -710,7 +710,7 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         || (Curr_El->get_adapted_flag() == OLDFATHER) || (Curr_El->get_adapted_flag() == OLDSON)))
                 {
                     cout<<"FUBAR 5 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->get_key();
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
                     cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }
@@ -719,7 +719,7 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                         || (Curr_El->get_adapted_flag() == OLDFATHER) || (Curr_El->get_adapted_flag() == OLDSON)))
                 {
                     cout<<"FUBAR 6 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->get_key();
+                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
                     cout<<"} myprocess="<<Curr_El->get_myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
                     assert(0);
                 }

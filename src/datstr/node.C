@@ -344,7 +344,7 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
     fread(readspace, sizeof(unsigned), 8, fp);
     
     //KEYLENGTH should be 2 but put it in a loop to make it generic.
-    sfc_key_read_from_space(get_ref_key(),readspace,Itemp);
+    set_key(sfc_key_read_from_space(readspace,Itemp));
     assert(Itemp == 2);
     
     //DIMENSION should be 2 but put it in a loop to make it generic.
