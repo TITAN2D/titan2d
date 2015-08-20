@@ -22,12 +22,13 @@ bin/
 *.out
 *.app
 
-# Eclipse
+# Eclipse and other IDE
 .autotools
 .cproject
 .project
 .settings/
 /.pydevproject
+/nbproject
 
 #autotols generated files
 autom4te.cache
@@ -42,6 +43,7 @@ Makefile.in
 /config.h.in~
 /config.h.in
 /aclocal.m4
+/config.log
 #configure generated file, for thouse who like to compile in source
 Makefile
 
