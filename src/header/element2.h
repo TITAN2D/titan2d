@@ -186,9 +186,9 @@ public:
     void set_neigh_proc(const int i, const int& proc){neigh_proc_[i] = proc;}
 
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    const int order(int i) const{return order_[i];}    
+    const int order(const int i) const{return order_[i];}    
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    void set_order(int i, int ord){order_[i] = ord;}
+    void set_order(const int i, const int ord){order_[i] = ord;}
     
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
     const SFC_Key& Element::father() const;
@@ -241,10 +241,10 @@ public:
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. These values are defined in constant.h.  The NEWSON value has allowed Keith to provide one time only immunity from unrefinement to recently refined elements, after which the "adapted" flag is resent to NOTRECADAPTED.
     void put_adapted_flag(int new_adapted_status);
 
-    //! this function returns an array holding the generation of all 8 of this element's neighbors
-    int* get_neigh_gen(){return neigh_gen;}
+    //! this function returns an the generation of i-th this element's neighbors
+    const int neigh_gen(const int i) const{return neigh_gen_[i];}
     //! this function sets the ith neighbor's generation to "gen"
-    void put_neigh_gen(int i, int gen){neigh_gen[i] = gen;}
+    void get_neigh_gen(const int i, const int gen){neigh_gen_[i] = gen;}
 
     //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
     void put_which_son(int);
@@ -580,7 +580,7 @@ protected:
     int order_[5];
 
     //! neigh_gen is an array that holds the "generation" (how refined it is) of this element's 8 neighbors, there can-be/are 2 neighbors to a side because of the 1 irregularity rule
-    int neigh_gen[8];
+    int neigh_gen_[8];
 
     //! pointer to the boundary condition class, if this element is not a boundary element the pointer holds the NULL value
     BC* bcptr;

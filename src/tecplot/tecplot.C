@@ -75,7 +75,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
 {
     int i_buck, i_neigh;          //indices
     int xp, xm, yp, ym;           //x plus, x minus, y plus, y minus directions
-    int gen, *neigh_gen;          //level of grid refinement
+    int gen;          //level of grid refinement
     int numprocs;                 //number of processes
     int myid;        //process id's
             
@@ -160,12 +160,11 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         num_tec_tri++;
                     
                     gen = EmTemp->get_gen();
-                    neigh_gen = EmTemp->get_neigh_gen();
                     //one triangle is added to an element for each side whose
                     //neighboring element is more refined than current element 
                     //provided the triangle wouldn't fall on a domain boundary
                     for(i_neigh = 0; i_neigh < 4; i_neigh++)
-                        if((neigh_gen[i_neigh] > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
+                        if((EmTemp->neigh_gen(i_neigh) > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
                             num_tec_tri++;
                 }               //if(EmTemp->get_adapted_flag()>TOBEDELETED)
             }                   //if((EmTemp->get_adapted_flag()!=TOBEDELETED)&&
@@ -232,7 +231,6 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
             if((EmTemp->get_adapted_flag() > TOBEDELETED) && (EmTemp->get_adapted_flag() <= BUFFER))
             {
                 gen = EmTemp->get_gen();
-                neigh_gen = EmTemp->get_neigh_gen();
                 
                 switch (get_ll_polygon(El_Table, NodeTable, myid, EmArray))
                 {
@@ -286,7 +284,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                 /**********************************************************/
                 tec_nodes_in_tec_quad[0] = EmTemp->get_ithelem();
                 for(i_neigh = 0; i_neigh < 4; i_neigh++)
-                    if((neigh_gen[i_neigh] > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
+                    if((EmTemp->neigh_gen(i_neigh) > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
                     {
                         /* draw triangles as quads with the last corner of
                          the triangle repeated.  The three corners are
@@ -397,7 +395,6 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     int xm, xp, ym, yp;           //this element's  left right down up 
     int zmxm, zmxp, zmym, zmyp;   //left/down neighbor's left right down up
     int gen = EmArray[0]->get_gen();
-    int *neigh_gen = EmArray[0]->get_neigh_gen();
     
     
     int yada = 0;
@@ -419,8 +416,11 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     int neigh_proc_xm_p_4 = EmArray[0]->neigh_proc(xm+4);
     int neigh_proc_ym = EmArray[0]->neigh_proc(ym);
     
+    int neigh_gen_xm=EmArray[0]->neigh_gen(xm);
+    int neigh_gen_ym=EmArray[0]->neigh_gen(ym);
     
-    if(((neigh_proc_xm == INIT) || (neigh_proc_ym == INIT)) || (((neigh_gen[xm] < gen) || (neigh_gen[ym] < gen))
+    
+    if(((neigh_proc_xm == INIT) || (neigh_proc_ym == INIT)) || (((neigh_gen_xm < gen) || (neigh_gen_ym < gen))
             && (EmArray[0]->get_which_son() != 0)))
         return 0;
     
@@ -489,7 +489,7 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     int xm, xp, ym, yp;           //this  element's  left right down up 
     int xpxm, xpxp, xpym, xpyp;   //right neighbor's left right down up
     int ypxm, ypxp, ypym, ypyp;   //up    neighbor's left right down up
-    int gen, *neigh_gen, *neigh_neigh_gen;
+    int gen;
     
     assert(EmArray[0]);
     EmArray[1] = EmArray[2] = EmArray[3] = NULL;
@@ -497,9 +497,8 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     //determine which ways are left (xm) and down (ym)
     get_elem_orient(EmArray[0], &xm, &xp, &ym, &yp);
     gen = EmArray[0]->get_gen();
-    neigh_gen = EmArray[0]->get_neigh_gen();
     int xpfirst = xp;
-    if(neigh_gen[xp] > gen)
+    if(EmArray[0]->neigh_gen(xp) > gen)
         xp += 4;                    //account for more refined neighbors
     
     
@@ -526,9 +525,8 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         }
         assert(EmArray[1]);
         get_elem_orient(EmArray[1], &xpxm, &xpxp, &xpym, &xpyp);
-        neigh_neigh_gen = EmArray[1]->get_neigh_gen();
         //account for more refined neighbor's neighbors
-        if(neigh_neigh_gen[xpyp] > neigh_gen[xp])
+        if(EmArray[1]->neigh_gen(xpyp) > EmArray[0]->neigh_gen(xp))
             xpyp += 4;
         
         //check if it's a lower left corner of another subdomain

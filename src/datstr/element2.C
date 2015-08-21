@@ -88,7 +88,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
         set_order(i, POWER);   //--used in initial uniform mesh
                 
     for(i = 0; i < 8; i++)
-        neigh_gen[i] = 0;
+        get_neigh_gen(i, 0);
     
     no_of_eqns = EQUATIONS;
     
@@ -256,7 +256,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
             set_neighbor(i + 4, sfc_key_zero);
         }
         
-        neigh_gen[i] = neigh_gen[i + 4] = gen_neigh[i];
+        get_neigh_gen(i, gen_neigh[i]);
+        get_neigh_gen(i + 4, gen_neigh[i]);
     }
     
     bcptr = b;
@@ -432,15 +433,15 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     {
         isonneigh = ison;
         ineigh = isonneigh;
-        neigh_gen[ineigh] = sons[ison]->get_neigh_gen()[isonneigh];
+        get_neigh_gen(ineigh, sons[ison]->neigh_gen(isonneigh));
         set_neighbor(ineigh, sons[ison]->neighbor(isonneigh));
         set_neigh_proc(ineigh, sons[ison]->neigh_proc(isonneigh));
         
         isonneigh = (ison + 3) % 4;
         ineigh = isonneigh + 4;
-        neigh_gen[ineigh] = sons[ison]->get_neigh_gen()[isonneigh];
+        get_neigh_gen(ineigh, sons[ison]->neigh_gen(isonneigh));
         set_neighbor(ineigh, sons[ison]->neighbor(isonneigh));
-        if((sons[ison]->neigh_gen[isonneigh] == generation) || (sons[ison]->neigh_proc(isonneigh)== -1))
+        if((sons[ison]->neigh_gen(isonneigh) == generation) || (sons[ison]->neigh_proc(isonneigh)== -1))
             set_neigh_proc(ineigh, -2);
         else
             set_neigh_proc(ineigh, sons[ison]->neigh_proc(isonneigh));
@@ -458,11 +459,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(1, sfc_key_zero);
             }
-            else if(neigh_gen[1] == generation)
+            else if(neigh_gen(1) == generation)
             {
                 set_brother(1, neighbor(1));
             }
-            else if(neigh_gen[1] == generation + 1)
+            else if(neigh_gen(1) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(1));
                 assert(EmTemp);
@@ -476,11 +477,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(3, sfc_key_zero);
             }
-            else if(neigh_gen[2] == generation)
+            else if(neigh_gen(2) == generation)
             {
                 set_brother(3, neighbor(2));
             }
-            else if(neigh_gen[2] == generation + 1)
+            else if(neigh_gen(2) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(2));
                 assert(EmTemp);
@@ -495,11 +496,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(0, sfc_key_zero);
             }
-            else if(neigh_gen[3] == generation)
+            else if(neigh_gen(3) == generation)
             {
                 set_brother(0, neighbor(3));
             }
-            else if(neigh_gen[3] == generation + 1)
+            else if(neigh_gen(3) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(3));
                 assert(EmTemp);
@@ -513,11 +514,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(2, sfc_key_zero);
             }
-            else if(neigh_gen[2] == generation)
+            else if(neigh_gen(2) == generation)
             {
                 set_brother(2, neighbor(2));
             }
-            else if(neigh_gen[2] == generation + 1)
+            else if(neigh_gen(2) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(2));
                 assert(EmTemp);
@@ -534,11 +535,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(1, sfc_key_zero);
             }
-            else if(neigh_gen[0] == generation)
+            else if(neigh_gen(0) == generation)
             {
                 set_brother(1, neighbor(0));
             }
-            else if(neigh_gen[0] == generation + 1)
+            else if(neigh_gen(0) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(0));
                 assert(EmTemp);
@@ -552,11 +553,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(3, sfc_key_zero);
             }
-            else if(neigh_gen[3] == generation)
+            else if(neigh_gen(3) == generation)
             {
                 set_brother(3, neighbor(3));
             }
-            else if(neigh_gen[3] == generation + 1)
+            else if(neigh_gen(3) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(3));
                 assert(EmTemp);
@@ -573,11 +574,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(0, sfc_key_zero);
             }
-            else if(neigh_gen[0] == generation)
+            else if(neigh_gen(0) == generation)
             {
                 set_brother(0, neighbor(0));
             }
-            else if(neigh_gen[0] == generation + 1)
+            else if(neigh_gen(0) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(0));
                 assert(EmTemp);
@@ -591,11 +592,11 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 set_brother(2, sfc_key_zero);
             }
-            else if(neigh_gen[1] == generation)
+            else if(neigh_gen(1) == generation)
             {
                 set_brother(2, neighbor(1));
             }
-            else if(neigh_gen[1] == generation + 1)
+            else if(neigh_gen(1) == generation + 1)
             {
                 EmTemp = (Element*) El_Table->lookup(neighbor(1));
                 assert(EmTemp);
@@ -690,7 +691,8 @@ void Element::change_neighbor(const SFC_Key * newneighbs, int which_side, int pr
             set_neighbor(which_side, newneighbs[0]);
             set_neighbor(which_side + 4, newneighbs[1]);
             set_neigh_proc(which_side + 4, proc); //assuming no element movement
-            neigh_gen[which_side] = neigh_gen[which_side + 4] = neigh_gen[which_side] + 1;
+            get_neigh_gen(which_side, neigh_gen(which_side) + 1);
+            get_neigh_gen(which_side + 4, neigh_gen(which_side) + 1);
             break;
         case 4:
             j = 0;
@@ -698,13 +700,14 @@ void Element::change_neighbor(const SFC_Key * newneighbs, int which_side, int pr
             j = 0;
         case 5:
             set_neighbor(which_side, newneighbs[0]);
-            neigh_gen[which_side] = neigh_gen[which_side] + 1;
+            get_neigh_gen(which_side, neigh_gen(which_side) + 1);
             break;
             
         case 6:
             set_neighbor(which_side, newneighbs[0]);
             set_neighbor(which_side + 4, newneighbs[0]);
-            neigh_gen[which_side] = neigh_gen[which_side + 4] = neigh_gen[which_side] + 1;
+            get_neigh_gen(which_side, neigh_gen(which_side) + 1);
+            get_neigh_gen(which_side + 4, neigh_gen(which_side) + 1);
             break;
             
             /*Andrew's section called from update_interproc*/
@@ -715,13 +718,15 @@ void Element::change_neighbor(const SFC_Key * newneighbs, int which_side, int pr
 
             set_neigh_proc(which_side + 4, proc);
             
-            neigh_gen[which_side] = neigh_gen[which_side + 4] = neigh_gen[which_side] + 1;
+            get_neigh_gen(which_side, neigh_gen(which_side) + 1);
+            get_neigh_gen(which_side + 4, neigh_gen(which_side) + 1);
             break;
             
         case 11:
             set_neighbor(which_side, newneighbs[0]);
             set_neighbor(which_side + 4, newneighbs[0]);
-            neigh_gen[which_side] = neigh_gen[which_side + 4] = neigh_gen[which_side] + 1;
+            get_neigh_gen(which_side, neigh_gen(which_side) + 1);
+            get_neigh_gen(which_side + 4, neigh_gen(which_side) + 1);
             break;
             
     }
@@ -1242,7 +1247,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
     }
     int ineighm4 = ineigh % 4;
     
-    if((neigh_gen[ineighm4 + 4] == -2) || ifusewholeside)
+    if((neigh_gen(ineighm4 + 4) == -2) || ifusewholeside)
     {
         //there is only one neighbor on this side
         switch (iwetnode)
@@ -3900,7 +3905,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3919,7 +3924,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3956,7 +3961,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3976,7 +3981,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3995,7 +4000,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -4253,10 +4258,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
     for(itemp = 0; itemp < 8; itemp++)
     {
-        temp4.i = neigh_gen[itemp];
+        temp4.i = neigh_gen(itemp);
         writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"%d ",neigh_gen[itemp]);
+        fprintf(fpdb,"%d ",neigh_gen(itemp));
 #endif 
     }
     assert(Itemp == 34);
@@ -4503,7 +4508,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     for(itemp = 0; itemp < 8; itemp++)
     {
         temp4.u = readspace[Itemp++];
-        neigh_gen[itemp] = temp4.i;
+        get_neigh_gen(itemp, temp4.i);
     }
     assert(Itemp == 34);
     

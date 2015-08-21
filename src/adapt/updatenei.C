@@ -103,7 +103,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                     fprintf_sfc_key(fp,EmDebugFather.get(iFather)->neighbor(0));
                     fprintf(fp, "}  proc=%d gen=%d\n",
                             EmDebugFather.get(iFather)->neigh_proc(ineigh),
-                            EmDebugFather.get(iFather)->neigh_gen[ineigh]);
+                            EmDebugFather.get(iFather)->neigh_gen(ineigh));
                 }
             }
         }
@@ -127,7 +127,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
         {
             fprintf(fp, " %d:   {", ineigh);
             fprintf_sfc_key(fp, EmDebug->neighbor(ineigh));
-            fprintf(fp, "}  proc=%d gen=%d\n",EmDebug->neigh_proc(ineigh), EmDebug->neigh_gen[ineigh]);
+            fprintf(fp, "}  proc=%d gen=%d\n",EmDebug->neigh_proc(ineigh), EmDebug->neigh_gen(ineigh));
         }
         if(EmDebugNeigh.get_num_elem() > 0)
         {
@@ -252,7 +252,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                     fprintf_sfc_key(fp, EmDebugFather.get(iFather)->neighbor(ineigh));
                     fprintf(fp, "}  proc=%d gen=%d\n",
                             EmDebugFather.get(iFather)->neigh_proc(ineigh),
-                            EmDebugFather.get(iFather)->neigh_gen[ineigh]);
+                            EmDebugFather.get(iFather)->neigh_gen(ineigh));
                 }
             }
         }
@@ -277,7 +277,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         {
             fprintf(fp, " %d:   {", ineigh);
             fprintf_sfc_key(fp,  EmDebug->neighbor(ineigh));
-            fprintf(fp, "}  proc=%d gen=%d\n", EmDebug->neigh_proc(ineigh), EmDebug->neigh_gen[ineigh]);
+            fprintf(fp, "}  proc=%d gen=%d\n", EmDebug->neigh_proc(ineigh), EmDebug->neigh_gen(ineigh));
         }
         if(EmDebugNeigh.get_num_elem() > 0)
         {
@@ -603,7 +603,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                 
                                 assert(ineighme < 8);
                                 assert((ineighme + 2) % 4 == ineigh); //correct sides match up
-                                if(!(EmTemp->neigh_gen[ineigh + 4 * i] == EmNeigh[i]->generation))
+                                if(!(EmTemp->neigh_gen(ineigh + 4 * i) == EmNeigh[i]->generation))
                                 {
                                     fprintf(fp, "EmTemp={");fprintf_sfc_key(fp,EmTemp->key());fprintf(fp, "}\n");
 
@@ -613,16 +613,16 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                     ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[i]->key(), fp);
                                     fclose(fp);
                                     
-                                    assert(EmTemp->neigh_gen[ineigh + 4 * i] == EmNeigh[i]->generation);
+                                    assert(EmTemp->neigh_gen(ineigh + 4 * i) == EmNeigh[i]->generation);
                                 }
-                                if(!(EmNeigh[i]->neigh_gen[ineighme] == EmTemp->generation))
+                                if(!(EmNeigh[i]->neigh_gen(ineighme) == EmTemp->generation))
                                 {
                                     fprintf(fp, "EmTemp={");fprintf_sfc_key(fp,EmTemp->key());fprintf(fp, "}\n");
                                     ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
                                     fprintf(fp, "EmNeigh={");fprintf_sfc_key(fp,EmNeigh[i]->key());fprintf(fp, "} ineigh=%d\n",ineigh + 4 * i);
                                     ElemBackgroundCheck(El_Table, NodeTable, EmNeigh[i]->key(), fp);
                                     fclose(fp);
-                                    assert(EmNeigh[i]->neigh_gen[ineighme] == EmTemp->generation);
+                                    assert(EmNeigh[i]->neigh_gen(ineighme) == EmTemp->generation);
                                 }
                                 
                                 if(EmTemp->generation <= EmNeigh[i]->generation)
@@ -1119,14 +1119,14 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         assert(EmSon[isonB]);
                     }
                     
-                    switch (EmFather->generation - EmFather->neigh_gen[ineigh])
+                    switch (EmFather->generation - EmFather->neigh_gen(ineigh))
                     {
                         case -1:
                             EmSon[isonA]->set_neighbor(ineighm4, EmFather->neighbor(ineigh));
                             EmSon[isonA]->set_neighbor(ineighp4, EmFather->neighbor(ineigh));
                             
-                            EmSon[isonA]->neigh_gen[ineighm4] = EmSon[isonA]->neigh_gen[ineighp4] = EmSon[isonA]
-                                    ->generation;
+                            EmSon[isonA]->get_neigh_gen(ineighm4, EmSon[isonA]->generation);
+                            EmSon[isonA]->get_neigh_gen(ineighp4, EmSon[isonA]->generation);
                             
                             EmSon[isonA]->set_neigh_proc(ineighm4, neigh_proc);
                             EmSon[isonA]->set_neigh_proc(ineighp4, -2);
@@ -1177,9 +1177,11 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonB]->key());
                                 EmNeighNew[0]->set_neighbor(ineighmep4, EmSon[isonB]->key());
                                 
-                                EmSon[isonB]->neigh_gen[ineighm4] = EmSon[isonB]->neigh_gen[ineighp4] = EmNeighNew[0]->generation;
+                                EmSon[isonB]->get_neigh_gen(ineighm4, EmNeighNew[0]->generation);
+                                EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
                                 
-                                EmNeighNew[0]->neigh_gen[ineighme] = EmNeighNew[0]->neigh_gen[ineighmep4] = EmSon[isonB]->generation;
+                                EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonB]->generation);
+                                EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonB]->generation);
                                 
                                 EmSon[isonB]->set_neigh_proc(ineighm4, myid);
                                 EmSon[isonB]->set_neigh_proc(ineighp4, -2);
@@ -1220,9 +1222,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 EmSon[isonB]->set_neighbor(ineighm4, EmFather->neighbor(ineigh));
                                 EmSon[isonB]->set_neighbor(ineighp4, EmFather->neighbor(ineigh));
                                 
-                                EmSon[isonA]->neigh_gen[ineighm4] = EmSon[isonA]->neigh_gen[ineighp4] = EmSon[isonB]
-                                        ->neigh_gen[ineighm4] = EmSon[isonB]->neigh_gen[ineighp4] =
-                                        EmFather->generation;
+                                EmSon[isonA]->get_neigh_gen(ineighm4, EmFather->generation);
+                                EmSon[isonA]->get_neigh_gen(ineighp4, EmFather->generation);
+                                EmSon[isonB]->get_neigh_gen(ineighm4, EmFather->generation);
+                                EmSon[isonB]->get_neigh_gen(ineighp4, EmFather->generation);
                                 
                                 EmSon[isonA]->set_neigh_proc(ineighm4, neigh_proc);
                                 EmSon[isonB]->set_neigh_proc(ineighm4, neigh_proc);
@@ -1308,7 +1311,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     //ME
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->key());
                     
-                    switch (EmFather->generation - EmFather->neigh_gen[ineigh])
+                    switch (EmFather->generation - EmFather->neigh_gen(ineigh))
                     {
                         case -1: //I'm one generation older than my old neighbor so
                             //I know he couldn't have just refined and I know I have to
@@ -1411,8 +1414,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                 EmSon[isonB]->set_neighbor(ineigh, sfc_key_zero);
                 EmSon[isonB]->set_neighbor(ineighp4, sfc_key_zero);
 
-                EmSon[isonA]->neigh_gen[ineigh] = EmSon[isonA]->neigh_gen[ineighp4] = EmSon[isonB]->neigh_gen[ineigh] =
-                        EmSon[isonB]->neigh_gen[ineighp4] = 0;
+                EmSon[isonA]->get_neigh_gen(ineigh, 0);
+                EmSon[isonA]->get_neigh_gen(ineighp4, 0);
+                EmSon[isonB]->get_neigh_gen(ineigh, 0);
+                EmSon[isonB]->get_neigh_gen(ineighp4, 0);
                 
                 EmSon[isonA]->set_neigh_proc(ineigh, -1);
                 EmSon[isonB]->set_neigh_proc(ineigh, -1);
@@ -1600,12 +1605,13 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         EmSon[isonB]->set_neighbor(ineigh, EmNeighNew[0]->key());
                         EmSon[isonB]->set_neighbor(ineighp4, EmNeighNew[0]->key());
                         
-                        EmNeighNew[0]->neigh_gen[ineighme] = EmNeighNew[0]->neigh_gen[ineighmep4] = EmSon[isonA]
-                                ->generation;
+                        EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
                         
-                        EmSon[isonA]->neigh_gen[ineigh] = EmSon[isonA]->neigh_gen[ineighp4] =
-                                EmSon[isonB]->neigh_gen[ineigh] = EmSon[isonB]->neigh_gen[ineighp4] = EmNeighNew[0]
-                                        ->generation;
+                        EmSon[isonA]->get_neigh_gen(ineigh, EmNeighNew[0]->generation);
+                        EmSon[isonA]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
+                        EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[0]->generation);
+                        EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
                         
                         EmSon[isonA]->set_neigh_proc(ineighp4, -2);
                         EmSon[isonB]->set_neigh_proc(ineighp4, -2);
@@ -1657,20 +1663,20 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         EmSon[isonB]->set_neighbor(ineigh, EmNeighNew[1]->key());
                         EmSon[isonB]->set_neighbor(ineighp4, EmNeighNew[1]->key());
                         
-                        EmNeighNew[0]->neigh_gen[ineighme] = EmSon[isonA]->generation;
-                        EmNeighNew[0]->neigh_gen[ineighmep4] = EmSon[isonA]->generation;
-                        EmNeighNew[1]->neigh_gen[ineighme] = EmSon[isonA]->generation;
-                        EmNeighNew[1]->neigh_gen[ineighmep4] = EmSon[isonA]->generation;
+                        EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
+                        EmNeighNew[1]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[1]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
                         
                         EmNeighNew[0]->set_neigh_proc(ineighmep4, -2);
                         EmNeighNew[1]->set_neigh_proc(ineighmep4, -2);
                         EmSon[isonA]->set_neigh_proc(ineighp4, -2);
                         EmSon[isonB]->set_neigh_proc(ineighp4, -2);
                         
-                        EmSon[isonA]->neigh_gen[ineigh] =  EmNeighNew[0]->generation;
-                        EmSon[isonA]->neigh_gen[ineighp4] = EmNeighNew[0]->generation;
-                        EmSon[isonB]->neigh_gen[ineigh] =  EmNeighNew[0]->generation;
-                        EmSon[isonB]->neigh_gen[ineighp4] = EmNeighNew[0]->generation;
+                        EmSon[isonA]->get_neigh_gen(ineigh, EmNeighNew[0]->generation);
+                        EmSon[isonA]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
+                        EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[0]->generation);
+                        EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
                         
                         EmSon[isonA]->set_neigh_proc(ineigh, EmNeighNew[0]->myprocess);
                         
@@ -1685,7 +1691,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         //will no longer conserve mass/volume in a dramatically
                         //observable fashion
                         
-                        if(EmSon[isonA]->neigh_gen[(ineigh + 3) % 4] == EmSon[isonA]->generation)
+                        if(EmSon[isonA]->neigh_gen((ineigh + 3) % 4) == EmSon[isonA]->generation)
                         {
                             //neighbor before (tested here) and after this (the ineigh)
                             //corner (i.e. the ineigh neighbor) are the same generation
@@ -1710,7 +1716,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         assert(NdTemp);
                         NdTemp->putinfo(SIDE);
                         
-                        if(EmSon[isonB]->neigh_gen[(ineigh + 1) % 4] == EmSon[isonB]->generation)
+                        if(EmSon[isonB]->neigh_gen((ineigh + 1) % 4) == EmSon[isonB]->generation)
                         {
                             //neighbor before (i.e. the ineigh neighbor) and after
                             //(tested here) this (the (ineigh+1)%4) corner are the
@@ -1762,19 +1768,20 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         
                         //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
                         
-                        EmNeighNew[0]->neigh_gen[ineighme] = EmSon[isonA]->generation;
-                        EmNeighNew[0]->neigh_gen[ineighmep4] = EmSon[isonA]->generation;
-                        EmNeighNew[1]->neigh_gen[ineighme] = EmSon[isonA]->generation;
-                        EmNeighNew[1]->neigh_gen[ineighmep4] =EmSon[isonA]->generation;
-                        EmNeighNew[2]->neigh_gen[ineighme] = EmSon[isonA]->generation;
-                        EmNeighNew[2]->neigh_gen[ineighmep4] =EmSon[isonA]->generation;
-                        EmNeighNew[3]->neigh_gen[ineighme] = EmSon[isonA]->generation;
-                        EmNeighNew[3]->neigh_gen[ineighmep4] = EmSon[isonA]->generation;
+                        EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
+                        EmNeighNew[1]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[1]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
+                        EmNeighNew[2]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[2]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
+                        EmNeighNew[3]->get_neigh_gen(ineighme, EmSon[isonA]->generation);
+                        EmNeighNew[3]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation);
                         
-                        EmSon[isonA]->neigh_gen[ineigh] = EmNeighNew[0]->generation;
-                        EmSon[isonA]->neigh_gen[ineighp4] = EmNeighNew[0]->generation;
+                        EmSon[isonA]->get_neigh_gen(ineigh, EmNeighNew[0]->generation);
+                        EmSon[isonA]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
                         
-                        EmSon[isonB]->neigh_gen[ineigh] = EmSon[isonB]->neigh_gen[ineighp4] = EmNeighNew[2]->generation;
+                        EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[2]->generation);
+                        EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[2]->generation);
                         
                         EmNeighNew[0]->set_neigh_proc(ineighmep4, -2);
                         EmNeighNew[1]->set_neigh_proc(ineighmep4, -2);
@@ -1982,9 +1989,10 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 EmSon[isonB]->set_neighbor(ineigh, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 3) * KEYLENGTH])));
                                 EmSon[isonB]->set_neighbor(ineighp4, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 3) * KEYLENGTH])));
 
-                                EmSon[isonA]->neigh_gen[ineigh] = EmSon[isonA]->neigh_gen[ineighp4] = EmSon[isonB]
-                                        ->neigh_gen[ineigh] = EmSon[isonB]->neigh_gen[ineighp4] = EmSon[isonA]
-                                        ->generation;
+                                EmSon[isonA]->get_neigh_gen(ineigh, EmSon[isonA]->generation);
+                                EmSon[isonA]->get_neigh_gen(ineighp4, EmSon[isonA]->generation);
+                                EmSon[isonB]->get_neigh_gen(ineigh, EmSon[isonA]->generation);
+                                EmSon[isonB]->get_neigh_gen(ineighp4, EmSon[isonA]->generation);
                                 
                                 EmSon[isonA]->set_neigh_proc(ineigh, iproc);
                                 EmSon[isonB]->set_neigh_proc(ineigh, iproc);
@@ -2008,7 +2016,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             { //my oldneighbor was either a generation older than me
                               //or he was my generation,
                             
-                                if(EmTemp->neigh_gen[ineigh] == EmTemp->generation)
+                                if(EmTemp->neigh_gen(ineigh) == EmTemp->generation)
                                 {
                                     //he was my generation so the two corner nodes we
                                     //shared are CORNER and not S_C_CONs
@@ -2028,7 +2036,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                     //generation so if my neighbor element's who share the
                                     //corner's I share with the new son are my generation,
                                     //then these shared corners are CORNERs and not S_C_CONs
-                                    if(EmTemp->neigh_gen[(ineigh + 3) % 4] == EmTemp->generation)
+                                    if(EmTemp->neigh_gen((ineigh + 3) % 4) == EmTemp->generation)
                                     {
                                         inode = ineigh;
                                         NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
@@ -2036,7 +2044,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                         NdTemp->info = CORNER;
                                     }
                                     
-                                    if(EmTemp->neigh_gen[(ineigh + 1) % 4] == EmTemp->generation)
+                                    if(EmTemp->neigh_gen((ineigh + 1) % 4) == EmTemp->generation)
                                     {
                                         inode = (ineigh + 1) % 4;
                                         NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
@@ -2049,7 +2057,8 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
 
                                 EmTemp->set_neighbor(ineighp4, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 3) * KEYLENGTH])));
 
-                                EmTemp->neigh_gen[ineighp4] = EmTemp->neigh_gen[ineigh] = EmTemp->neigh_gen[ineigh] + 1;
+                                EmTemp->get_neigh_gen(ineighp4, EmTemp->neigh_gen(ineigh) + 1);
+                                EmTemp->get_neigh_gen(ineigh, EmTemp->neigh_gen(ineigh) + 1);
                                 
                                 EmTemp->set_neigh_proc(ineigh, iproc);
                                 
@@ -2073,7 +2082,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                      */
                                 }
                                 
-                                if(EmTemp->generation > EmTemp->neigh_gen[ineigh])
+                                if(EmTemp->generation > EmTemp->neigh_gen(ineigh))
                                 {
                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(EmTemp->get_which_son()));
                                     assert(NdTemp);
@@ -2566,7 +2575,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                     refined_new = new refined_neighbor();
                     refined_current->next = refined_new;
                     
-                    NeighGeneration = *(EmTemp->get_neigh_gen() + j);
+                    NeighGeneration = EmTemp->neigh_gen(j);
                     
                     if(NeighGeneration == MyGeneration)
                     {

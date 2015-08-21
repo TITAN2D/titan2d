@@ -127,7 +127,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || *(EmTemp->get_neigh_gen()) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(0) <= EmTemp->get_gen())
     {
         RefinedNeigh = 0;
         info = S_S_CON;
@@ -222,7 +222,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || *(EmTemp->get_neigh_gen() + 1) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(1) <= EmTemp->get_gen())
     {
         RefinedNeigh = 0;
         info = S_S_CON;
@@ -321,7 +321,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || *(EmTemp->get_neigh_gen() + 2) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(2) <= EmTemp->get_gen())
     {
         info = S_S_CON;
         
@@ -420,7 +420,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || *(EmTemp->get_neigh_gen() + 3) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(3) <= EmTemp->get_gen())
     {
         info = S_S_CON;
         
@@ -614,7 +614,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     BC* bcptr = NULL;
     BC* orig_bcptr = EmTemp->get_bcptr();
     int generation = EmTemp->get_gen() + 1;
-    int* orig_neigh_gen = EmTemp->get_neigh_gen();
     int neigh_gen[4];
     int material = EmTemp->get_material();
     
@@ -657,10 +656,10 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
     
-    neigh_gen[0] = *orig_neigh_gen;
+    neigh_gen[0] = EmTemp->neigh_gen(0);
     neigh_gen[1] = generation;
     neigh_gen[2] = generation;
-    neigh_gen[3] = *(orig_neigh_gen + 3);
+    neigh_gen[3] = EmTemp->neigh_gen(3);
     
     //boundary conditions
     if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
@@ -740,8 +739,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
     
-    neigh_gen[0] = *orig_neigh_gen;
-    neigh_gen[1] = *(orig_neigh_gen + 1);
+    neigh_gen[0] = EmTemp->neigh_gen(0);
+    neigh_gen[1] = EmTemp->neigh_gen(1);
     neigh_gen[2] = generation;
     neigh_gen[3] = generation;
     
@@ -821,8 +820,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
     
     neigh_gen[0] = generation;
-    neigh_gen[1] = *(orig_neigh_gen + 1);
-    neigh_gen[2] = *(orig_neigh_gen + 2);
+    neigh_gen[1] = EmTemp->neigh_gen(1);
+    neigh_gen[2] = EmTemp->neigh_gen(2);
     neigh_gen[3] = generation;
     
     bcptr = NULL;
@@ -903,8 +902,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     neigh_gen[0] = generation;
     neigh_gen[1] = generation;
-    neigh_gen[2] = *(orig_neigh_gen + 2);
-    neigh_gen[3] = *(orig_neigh_gen + 3);
+    neigh_gen[2] = EmTemp->neigh_gen(2);
+    neigh_gen[3] = EmTemp->neigh_gen(3);
     
     bcptr = NULL;
     //boundary conditions

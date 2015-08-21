@@ -141,7 +141,7 @@ void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int 
     int gen = r_element->get_gen();    // added by jp 9.30
             
     Neighbor->set_neigh_proc(which, target_proc);
-    Neighbor->put_neigh_gen(which, gen);    // added by jp 9.30
+    Neighbor->get_neigh_gen(which, gen);    // added by jp 9.30
                             
 }
 
@@ -178,7 +178,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < 8; i++)
     {
         newelement->set_neigh_proc(i, elem2->neigh_proc[i]);
-        newelement->neigh_gen[i] = elem2->neigh_gen[i];
+        newelement->get_neigh_gen(i, elem2->neigh_gen[i]);
     }
     for(i = 0; i < 5; i++)
         newelement->set_order(i, elem2->order[i]);

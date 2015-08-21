@@ -69,13 +69,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             if(recv->sender_order[1] > SonTemp1->order(0))
                                 SonTemp1->set_order(0, recv->sender_order[1]);
                             SonTemp1->set_neigh_proc(0, recv->sender_id);
-                            SonTemp1->put_neigh_gen(0, recv->sender_gen + 1); //--999
+                            SonTemp1->get_neigh_gen(0, recv->sender_gen + 1); //--999
                                     
                             SonTemp2->set_neighbor(0, sfc_key_from_oldkey(recv->sender_son1));
                             if(recv->sender_order[0] > SonTemp2->order(0))
                                 SonTemp2->set_order(0, recv->sender_order[0]);
                             SonTemp2->set_neigh_proc(0, recv->sender_id);
-                            SonTemp2->put_neigh_gen(0, recv->sender_gen + 1); //--999
+                            SonTemp2->get_neigh_gen(0, recv->sender_gen + 1); //--999
                                     
                             write_node_info(HT_Node_Ptr, SonTemp1, SonTemp2, 0, 1);
                             
@@ -85,13 +85,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(0, EmTemp->neighbor(0));
                             SonTemp1->set_neigh_proc(0, recv->sender_id);
-                            SonTemp1->put_neigh_gen(0, recv->sender_gen); //--999
+                            SonTemp1->get_neigh_gen(0, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp1->order(0))
                                 SonTemp1->set_order(0, recv->sender_order[0]);
                             
                             SonTemp2->set_neigh_proc(0, recv->sender_id);
                             SonTemp2->set_neighbor(0, sfc_key_from_oldkey(recv->sender));
-                            SonTemp2->put_neigh_gen(0, recv->sender_gen); //--999
+                            SonTemp2->get_neigh_gen(0, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(0))
                                 SonTemp2->set_order(0, recv->sender_order[0]);
                             
@@ -110,13 +110,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(1, sfc_key_from_oldkey(recv->sender_son2));
                             SonTemp1->set_neigh_proc(1, recv->sender_id);
-                            SonTemp1->put_neigh_gen(1, recv->sender_gen + 1); //--999
+                            SonTemp1->get_neigh_gen(1, recv->sender_gen + 1); //--999
                             if(recv->sender_order[1] > SonTemp1->order(1))
                                 SonTemp1->set_order(1, recv->sender_order[1]);
                             
                             SonTemp2->set_neighbor(1, sfc_key_from_oldkey(recv->sender_son1));
                             SonTemp2->set_neigh_proc(1, recv->sender_id);
-                            SonTemp2->put_neigh_gen(1, recv->sender_gen + 1); //--999
+                            SonTemp2->get_neigh_gen(1, recv->sender_gen + 1); //--999
                             if(recv->sender_order[0] > SonTemp2->order(1))
                                 SonTemp2->set_order(1, recv->sender_order[0]);
                             
@@ -128,13 +128,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(1, sfc_key_from_oldkey(recv->sender));
                             SonTemp1->set_neigh_proc(1, recv->sender_id);
-                            SonTemp1->put_neigh_gen(1, recv->sender_gen); //--999
+                            SonTemp1->get_neigh_gen(1, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(1))
                                 SonTemp1->set_order(1, recv->sender_order[0]);
                             
                             SonTemp2->set_neighbor(1, sfc_key_from_oldkey(recv->sender));
                             SonTemp2->set_neigh_proc(1, recv->sender_id);
-                            SonTemp2->put_neigh_gen(1, recv->sender_gen); //--999
+                            SonTemp2->get_neigh_gen(1, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(1))
                                 SonTemp1->set_order(1, recv->sender_order[0]);
                             
@@ -153,13 +153,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(2, sfc_key_from_oldkey(recv->sender_son2));
                             SonTemp1->set_neigh_proc(2, recv->sender_id);
-                            SonTemp1->put_neigh_gen(2, recv->sender_gen + 1); //--999
+                            SonTemp1->get_neigh_gen(2, recv->sender_gen + 1); //--999
                             if(recv->sender_order[1] > SonTemp1->order(2))
                                 SonTemp1->set_order(2, recv->sender_order[1]);
                             
                             SonTemp2->set_neighbor(2, sfc_key_from_oldkey(recv->sender_son1));
                             SonTemp2->set_neigh_proc(2, recv->sender_id);
-                            SonTemp2->put_neigh_gen(2, recv->sender_gen + 1); //--999
+                            SonTemp2->get_neigh_gen(2, recv->sender_gen + 1); //--999
                             if(recv->sender_order[0] > SonTemp2->order(2))
                                 SonTemp2->set_order(2, recv->sender_order[1]);
                             
@@ -171,13 +171,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(2, sfc_key_from_oldkey(recv->sender));
                             SonTemp1->set_neigh_proc(2, recv->sender_id);
-                            SonTemp1->put_neigh_gen(2, recv->sender_gen); //--999
+                            SonTemp1->get_neigh_gen(2, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(2))
                                 SonTemp1->set_order(2, recv->sender_order[0]);
                             
                             SonTemp2->set_neighbor(2, sfc_key_from_oldkey(recv->sender));
                             SonTemp2->set_neigh_proc(2, recv->sender_id);
-                            SonTemp2->put_neigh_gen(2, recv->sender_gen); //--999
+                            SonTemp2->get_neigh_gen(2, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(2))
                                 SonTemp1->set_order(2, recv->sender_order[0]);
                             
@@ -196,13 +196,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(3, sfc_key_from_oldkey(recv->sender_son2));
                             SonTemp1->set_neigh_proc(3, recv->sender_id);
-                            SonTemp1->put_neigh_gen(3, recv->sender_gen + 1); //--999
+                            SonTemp1->get_neigh_gen(3, recv->sender_gen + 1); //--999
                             if(recv->sender_order[1] > SonTemp1->order(3))
                                 SonTemp1->set_order(3, recv->sender_order[1]);
                             
                             SonTemp2->set_neighbor(3, sfc_key_from_oldkey(recv->sender_son1));
                             SonTemp2->set_neigh_proc(3, recv->sender_id);
-                            SonTemp2->put_neigh_gen(3, recv->sender_gen + 1); //--999
+                            SonTemp2->get_neigh_gen(3, recv->sender_gen + 1); //--999
                             if(recv->sender_order[0] > SonTemp2->order(3))
                                 SonTemp2->set_order(3, recv->sender_order[1]);
                             
@@ -214,13 +214,13 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             
                             SonTemp1->set_neighbor(3, sfc_key_from_oldkey(recv->sender));
                             SonTemp1->set_neigh_proc(3, recv->sender_id);
-                            SonTemp1->put_neigh_gen(3, recv->sender_gen); //--999
+                            SonTemp1->get_neigh_gen(3, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(3))
                                 SonTemp1->set_order(3, recv->sender_order[0]);
                             
                             SonTemp2->set_neighbor(3, sfc_key_from_oldkey(recv->sender));
                             SonTemp2->set_neigh_proc(3, recv->sender_id);
-                            SonTemp2->put_neigh_gen(3, recv->sender_gen); //--999
+                            SonTemp2->get_neigh_gen(3, recv->sender_gen); //--999
                             if(recv->sender_order[0] > SonTemp2->order(3))
                                 SonTemp1->set_order(3, recv->sender_order[0]);
                             
@@ -251,8 +251,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             EmTemp->set_neigh_proc(4, recv->sender_id);
                             EmTemp->set_neighbor(0, sfc_key_from_oldkey(recv->sender_son2));
                             EmTemp->set_neighbor(4, sfc_key_from_oldkey(recv->sender_son1));
-                            EmTemp->put_neigh_gen(0, recv->sender_gen + 1); //--999
-                            EmTemp->put_neigh_gen(4, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(0, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(4, recv->sender_gen + 1); //--999
                                     
                             if(recv->sender_order[0] > EmTemp->order(0))
                                 EmTemp->set_order(0, recv->sender_order[0]);
@@ -266,8 +266,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             EmTemp->set_neigh_proc(5, recv->sender_id);
                             EmTemp->set_neighbor(1, sfc_key_from_oldkey(recv->sender_son2));
                             EmTemp->set_neighbor(5, sfc_key_from_oldkey(recv->sender_son1));
-                            EmTemp->put_neigh_gen(1, recv->sender_gen + 1); //--999
-                            EmTemp->put_neigh_gen(5, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(1, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(5, recv->sender_gen + 1); //--999
                                     
                             if(recv->sender_order[0] > EmTemp->order(0))
                                 EmTemp->set_order(1, recv->sender_order[0]);
@@ -281,8 +281,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             EmTemp->set_neigh_proc(6, recv->sender_id);
                             EmTemp->set_neighbor(2, sfc_key_from_oldkey(recv->sender_son2));
                             EmTemp->set_neighbor(6, sfc_key_from_oldkey(recv->sender_son1));
-                            EmTemp->put_neigh_gen(2, recv->sender_gen + 1); //--999
-                            EmTemp->put_neigh_gen(6, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(2, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(6, recv->sender_gen + 1); //--999
                                     
                             if(recv->sender_order[0] > EmTemp->order(0))
                                 EmTemp->set_order(2, recv->sender_order[0]);
@@ -296,8 +296,8 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                             EmTemp->set_neigh_proc(7, recv->sender_id);
                             EmTemp->set_neighbor(3, sfc_key_from_oldkey(recv->sender_son2));
                             EmTemp->set_neighbor(7, sfc_key_from_oldkey(recv->sender_son1));
-                            EmTemp->put_neigh_gen(3, recv->sender_gen + 1); //--999
-                            EmTemp->put_neigh_gen(7, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(3, recv->sender_gen + 1); //--999
+                            EmTemp->get_neigh_gen(7, recv->sender_gen + 1); //--999
                                     
                             if(recv->sender_order[0] > EmTemp->order(0))
                                 EmTemp->set_order(3, recv->sender_order[0]);
@@ -360,7 +360,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     }
                     
                     SonTemp1->set_neighbor(start, sfc_key_from_oldkey(recv->sender));
-                    SonTemp1->put_neigh_gen(start, recv->sender_gen);
+                    SonTemp1->get_neigh_gen(start, recv->sender_gen);
                     SonTemp1->set_neigh_proc(start, recv->sender_id); //--maybe surplus
                                              
                 }
@@ -413,7 +413,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                         
                     }
                     
-                    EmTemp->put_neigh_gen(start, recv->sender_gen + 1);
+                    EmTemp->get_neigh_gen(start, recv->sender_gen + 1);
                     EmTemp->set_neigh_proc(start, recv->sender_id);
                     
                 }

@@ -97,7 +97,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                 else
                 { //-- need neighbor's generation infomation
                 
-                    if(element->get_gen() > *(element->get_neigh_gen() + i))
+                    if(element->get_gen() > element->neigh_gen(i))
                     { //--stop this round of refinement
                     
                         *ifg = 0;
