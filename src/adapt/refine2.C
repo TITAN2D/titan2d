@@ -122,7 +122,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     NodeTemp[8] = (Node*) HT_Node_Ptr->lookup(EmTemp->key()); //-- bubble
             
     //SIDE 0
-    if(*(EmTemp->get_neigh_proc()) == -1)
+    if(EmTemp->neigh_proc(0) == -1)
         boundary = 1;
     else
         boundary = 0;
@@ -131,7 +131,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         RefinedNeigh = 0;
         info = S_S_CON;
-        if(*(EmTemp->get_neigh_proc()) != myid)
+        if(EmTemp->neigh_proc(0) != myid)
         {
             other_proc = 1;
             info = -1;
@@ -164,8 +164,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         
         //Keith Added this if
-        if((*(EmTemp->get_neigh_proc()) != myid) || ((*(EmTemp->get_neigh_proc() + 4) != myid)
-                && (*(EmTemp->get_neigh_proc() + 4) != -2)))
+        if((EmTemp->neigh_proc(0) != myid) || ((EmTemp->neigh_proc(4) != myid)
+                && (EmTemp->neigh_proc(4) != -2)))
             other_proc = 1;
         else
             other_proc = 0;
@@ -217,7 +217,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
 //+++++++++++++++++++++++++++SIDE1
     
-    if(*(EmTemp->get_neigh_proc() + 1) == -1)
+    if(EmTemp->neigh_proc(1) == -1)
         boundary = 1;
     else
         boundary = 0;
@@ -226,7 +226,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         RefinedNeigh = 0;
         info = S_S_CON;
-        if(*(EmTemp->get_neigh_proc() + 1) != myid)    // && *(EmTemp->get_neigh_proc()+1)>0)
+        if(EmTemp->neigh_proc(1) != myid)    // && *(EmTemp->get_neigh_proc()+1)>0)
         {
             other_proc = 1;
             info = -1;
@@ -264,8 +264,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
     {
         //Keith Added this if
-        if((*(EmTemp->get_neigh_proc() + 1) != myid) || ((*(EmTemp->get_neigh_proc() + 5) != myid)
-                && (*(EmTemp->get_neigh_proc() + 5) != -2)))
+        if((EmTemp->neigh_proc(1) != myid) || ((EmTemp->neigh_proc(5) != myid)
+                && (EmTemp->neigh_proc(5) != -2)))
             other_proc = 1;
         else
             other_proc = 0;
@@ -316,7 +316,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //+++++++++++++++++++++++++++SIDE2
     
-    if(EmTemp->get_neigh_proc()[2] == -1)
+    if(EmTemp->neigh_proc(2) == -1)
         boundary = 1;
     else
         boundary = 0;
@@ -325,7 +325,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         info = S_S_CON;
         
-        if(*(EmTemp->get_neigh_proc() + 2) != myid)    // && *(EmTemp->get_neigh_proc()+2)>0)
+        if(EmTemp->neigh_proc(2) != myid)    // && *(EmTemp->get_neigh_proc()+2)>0)
         {
             other_proc = 1;
             info = -1;
@@ -363,8 +363,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
     {
         //Keith Added this if
-        if((*(EmTemp->get_neigh_proc() + 2) != myid) || ((*(EmTemp->get_neigh_proc() + 6) != myid)
-                && (*(EmTemp->get_neigh_proc() + 6) != -2)))
+        if((EmTemp->neigh_proc(2) != myid) || ((EmTemp->neigh_proc(6) != myid)
+                && (EmTemp->neigh_proc(6) != -2)))
             other_proc = 1;
         else
             other_proc = 0;
@@ -415,7 +415,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //+++++++++++++++++++++++++++SIDE 3
     
-    if(*(EmTemp->get_neigh_proc() + 3) == -1)
+    if(EmTemp->neigh_proc(3) == -1)
         boundary = 1;
     else
         boundary = 0;
@@ -424,7 +424,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         info = S_S_CON;
         
-        if(*(EmTemp->get_neigh_proc() + 3) != myid)  //&& *(EmTemp->get_neigh_proc()+3)>0)
+        if(EmTemp->neigh_proc(3) != myid)  //&& *(EmTemp->get_neigh_proc()+3)>0)
         {
             other_proc = 1;
             info = -1;
@@ -461,8 +461,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
     {
         //Keith Added this if
-        if((*(EmTemp->get_neigh_proc() + 3) != myid) || ((*(EmTemp->get_neigh_proc() + 7) != myid)
-                && (*(EmTemp->get_neigh_proc() + 7) != -2)))
+        if((EmTemp->neigh_proc(3) != myid) || ((EmTemp->neigh_proc(7) != myid)
+                && (EmTemp->neigh_proc(7) != -2)))
             other_proc = 1;
         else
             other_proc = 0;
@@ -610,7 +610,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     SFC_Key nodes[9];
     SFC_Key neigh[8];
-    int* orig_neigh_proc = EmTemp->get_neigh_proc();
     int neigh_proc[8];
     BC* bcptr = NULL;
     BC* orig_bcptr = EmTemp->get_bcptr();
@@ -641,20 +640,20 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     neigh[0] = neigh[4] = EmTemp->neighbor(0); //Why is this ok if not ok for 3 down
     neigh[1] = neigh[5] = NewNodeKey[1];
     neigh[2] = neigh[6] = NewNodeKey[3];
-    if(EmTemp->get_neigh_proc()[7] != -2)
+    if(EmTemp->neigh_proc(7) != -2)
         neigh[3] = neigh[7] = EmTemp->neighbor(7); //This should be okay no matter what
     else
         neigh[3] = neigh[7] = EmTemp->neighbor(3); //This is only ok if neigh_proc==-2
     
     //process of the neighbors
     
-    neigh_proc[0] = *(orig_neigh_proc);
+    neigh_proc[0] = EmTemp->neigh_proc(0);
     neigh_proc[1] = myid;
     neigh_proc[2] = myid;
-    if(*(orig_neigh_proc + 7) != -2)
-        neigh_proc[3] = *(orig_neigh_proc + 7); //depending if the neighboring element is already refined
+    if(EmTemp->neigh_proc(7) != -2)
+        neigh_proc[3] = EmTemp->neigh_proc(7); //depending if the neighboring element is already refined
     else
-        neigh_proc[3] = *(orig_neigh_proc + 3);
+        neigh_proc[3] = EmTemp->neigh_proc(3);
     
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
     
@@ -724,7 +723,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         coord[i] = *(n1->get_coord() + i);
     
     //neighbors
-    if(*(EmTemp->get_neigh_proc() + 4) != -2)
+    if(EmTemp->neigh_proc(4) != -2)
         neigh[0] = neigh[4] = EmTemp->neighbor(4); //this should be ok now matter what
     else
         neigh[0] = neigh[4] = EmTemp->neighbor(0); //this is only ok if neigh_proc==-2
@@ -734,8 +733,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //process of the neighbors
     
-    neigh_proc[0] = (*(orig_neigh_proc + 4) != -2) ? *(orig_neigh_proc + 4) : *(orig_neigh_proc);
-    neigh_proc[1] = *(orig_neigh_proc + 1);
+    neigh_proc[0] = (EmTemp->neigh_proc(4) != -2) ? EmTemp->neigh_proc(4) : EmTemp->neigh_proc(0);
+    neigh_proc[1] = EmTemp->neigh_proc(1);
     neigh_proc[2] = myid;
     neigh_proc[3] = myid;
     
@@ -804,7 +803,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[1];
-    if(*(EmTemp->get_neigh_proc() + 5) != -2)
+    if(EmTemp->neigh_proc(5) != -2)
         neigh[1] = neigh[5] = EmTemp->neighbor(5); //This should be ok no matter what
     else
         neigh[1] = neigh[5] = EmTemp->neighbor(1); //this is only ok is neigh_proc==-2
@@ -815,8 +814,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     //process of the neighbors
     
     neigh_proc[0] = myid;
-    neigh_proc[1] = (*(orig_neigh_proc + 5) != -2) ? *(orig_neigh_proc + 5) : *(orig_neigh_proc + 1);
-    neigh_proc[2] = *(orig_neigh_proc + 2);
+    neigh_proc[1] = (EmTemp->neigh_proc(5) != -2) ? EmTemp->neigh_proc(5) : EmTemp->neigh_proc(1);
+    neigh_proc[2] = EmTemp->neigh_proc(2);
     neigh_proc[3] = myid;
     
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
@@ -885,7 +884,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[0];
     neigh[1] = neigh[5] = NewNodeKey[2];
-    if(*(EmTemp->get_neigh_proc() + 6) != -2)
+    if(EmTemp->neigh_proc(6) != -2)
         neigh[2] = neigh[6] = EmTemp->neighbor(6);
     else
         neigh[2] = neigh[6] = EmTemp->neighbor(2);
@@ -897,8 +896,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     neigh_proc[0] = myid;
     neigh_proc[1] = myid;
-    neigh_proc[2] = (*(orig_neigh_proc + 6) != -2) ? *(orig_neigh_proc + 6) : *(orig_neigh_proc + 2);
-    neigh_proc[3] = *(orig_neigh_proc + 3);
+    neigh_proc[2] = (EmTemp->neigh_proc(6) != -2) ? EmTemp->neigh_proc(6) : EmTemp->neigh_proc(2);
+    neigh_proc[3] = EmTemp->neigh_proc(3);
     
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
     

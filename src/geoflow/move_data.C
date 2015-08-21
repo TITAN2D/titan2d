@@ -76,7 +76,6 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
     /* count how many elements we should send and receive from other procs */
     HashEntryPtr* buck = El_Table->getbucketptr();
     HashEntryPtr entryp;
-    int *neigh_proc;
     int ifprint, numprocsrint = 0; //for debug
             
     for(ibuck = 0; ibuck < El_Table->get_no_of_buckets(); ibuck++)
@@ -94,17 +93,16 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                 
                 num_elem_on_proc++;
                 
-                neigh_proc = EmTemp->get_neigh_proc();
                 ifprint = 0;
                 for(ineigh = 0; ineigh < 8; ineigh++)
                 {
-                    if(neigh_proc[ineigh] >= 0)
+                    if(EmTemp->neigh_proc(ineigh) >= 0)
                         num_neighbors++;
                     
-                    if((neigh_proc[ineigh] >= 0) && (neigh_proc[ineigh] != myid))
+                    if((EmTemp->neigh_proc(ineigh) >= 0) && (EmTemp->neigh_proc(ineigh) != myid))
                     {
-                        num_send_recv[neigh_proc[ineigh]] += 1;
-                        if((neigh_proc[ineigh] == 0) || (neigh_proc[ineigh] == 1))
+                        num_send_recv[EmTemp->neigh_proc(ineigh)] += 1;
+                        if((EmTemp->neigh_proc(ineigh) == 0) || (EmTemp->neigh_proc(ineigh) == 1))
                             ifprint = 1;
                     }
                 }
@@ -116,8 +114,8 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                     fprintf_sfc_key(fpelem2,EmTemp->key());
                     fprintf(fpelem2, "}:");
                     for(ineigh = 0; ineigh < 8; ineigh++)
-                        if((neigh_proc[ineigh] >= 0) && (neigh_proc[ineigh] != myid)
-                           && ((neigh_proc[ineigh] == 0) || (neigh_proc[ineigh] == 1)))
+                        if((EmTemp->neigh_proc(ineigh) >= 0) && (EmTemp->neigh_proc(ineigh) != myid)
+                           && ((EmTemp->neigh_proc(ineigh) == 0) || (EmTemp->neigh_proc(ineigh) == 1)))
                         {
                             fprintf_sfc_key(fpelem2,EmTemp->neighbor(ineigh));
                         }
@@ -189,10 +187,9 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
             {
                 //if this element should not be on this processor don't involve!!!
                 
-                neigh_proc = EmTemp->get_neigh_proc();
                 for(ineigh = 0; ineigh < 8; ineigh++)
                 {
-                    iproc = neigh_proc[ineigh];
+                    iproc = EmTemp->neigh_proc(ineigh);
                     if((iproc != myid) && (iproc >= 0))
                     {
                         assert(IfSendDone[iproc] < num_send_recv[iproc]);

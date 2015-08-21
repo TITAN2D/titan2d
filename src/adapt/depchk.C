@@ -53,7 +53,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
         for(i = 0; i < 4; i++)
         { //-- checking the four neighbors to identify which must be refined
         
-            int neigh_proc = *(element->get_neigh_proc() + i);
+            int neigh_proc = element->neigh_proc(i);
             
             if((neigh_proc != -1) && (neigh_proc != -2))
             { //-- if there is a neighbor

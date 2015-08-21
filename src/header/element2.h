@@ -168,9 +168,8 @@ public:
     //!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
     int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
-    //! returns the array of 8 processors for the 8 neigbors of this element
-    int* getassoc();
 
+    
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
     int get_no_of_dof();
 
@@ -183,18 +182,22 @@ public:
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
     void set_brothers(const SFC_Key*);
 
-    //! this function stores the processor id "a" of neighbor "i" in the 8 element array of neighbor processors, this functionality is duplicated by put_neigh_proc which is the preferred function to use (don't use this one it's legacy)
-    void putassoc(int a, int i);
-
+    //! returns the array of 8 processors for the 8 neighbours of this element
+    int* get_neigh_proc(){return neigh_proc_;}
+    
+    
+    //! returns the processors for the i-th neighbours of this element
+    const int& neigh_proc(const int i) const {return neigh_proc_[i];}
     //! this function stores the processor id "proc" of neighbor "i" in the 8 element array of neighbor processors, use this function instead of putassoc.
-    void put_neigh_proc(int i, int proc);
+    void set_neigh_proc(const int i, const int& proc){neigh_proc_[i] = proc;}
 
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    void put_order(int, int);
-
+    int* get_order(){return orderABCD;}
+    int* order(int i){return orderABCD[i];}
+    
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    int* get_order();
-
+    void order(int i, int ord){orderABCD[i] = ord;}
+    
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
     const SFC_Key& Element::father() const;
     //!only used in unrefinement
@@ -221,9 +224,6 @@ public:
     const SFC_Key& neighbor(const int i) const {return neighbors_[i];}
     //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
     void set_neighbor(const int i, const SFC_Key &new_key){neighbors_[i] = new_key;}
-
-    //! returns the array of processor ids for this element's 8 neighbors
-    int* get_neigh_proc();
 
     //! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
     BC* get_bcptr();
@@ -272,9 +272,6 @@ public:
 
     //! this function is legacy afeapi code, the function is defined in element2.C but it is never called anywhere in the finite difference/volume version of titan because it's finite element (including Discontinuous Galerkin) specific code
     void update_ndof();
-
-    //! this function is called during repartitioning when one of an element's neighbors is sent to another processor
-    void change_neighbor_process(int which, int newp);
 
     //! the function returns the vector of element "error", element error is used to say when a function should be refined
     double* get_el_err();
@@ -541,10 +538,7 @@ public:
     double convect_dryline(double VxVy[2], double dt);
 
     //! sgn of double
-    double sgn(double a)
-    {
-        return (a < 0 ? -1. : 1);
-    }
+    double sgn(double a){return (a < 0.0 ? -1.0 : 1.0);}
 
 protected:
     //! Element type
@@ -589,10 +583,10 @@ protected:
     SFC_Key son_[4];
 
     //! this array holds the process(or) id of this element's 8 neighbors, there can be 8 neighbors because of the 1 irregularity rule.  neigh_proc[4:7] != -2 only if it has 2 neighbors on that side, a value of -1 for neigh_proc means that this edge is a boundary of the computational domain. 
-    int neigh_proc[8];
+    int neigh_proc_[8];
 
     //! this is legacy afeapi, all finite volume "elements"/cells are piece wise constant, but I believe this is actually used in the DG (Discontinuous Galerkin) version of titan
-    int order[5];
+    int orderABCD[5];
 
     //! neigh_gen is an array that holds the "generation" (how refined it is) of this element's 8 neighbors, there can-be/are 2 neighbors to a side because of the 1 irregularity rule
     int neigh_gen[8];
@@ -951,12 +945,6 @@ inline int Element::get_stoppedflags()
 /* agreed, but keeping it outside class body makes class definition cleaner and easier to read
 */
 
-inline int* Element::getassoc()
-{
-    return neigh_proc;
-}
-
-
 inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable)
 {
     int i;
@@ -1008,22 +996,7 @@ inline void Element::put_gen(int g)
     generation = g;
 }
 
-inline void Element::put_neigh_proc(int i, int proc)
-{
-    neigh_proc[i] = proc;
-}
 
-inline void Element::put_order(int i, int ord)
-{
-    order[i] = ord;
-}
-
-
-
-inline int* Element::get_order()
-{
-    return order;
-}
 
 inline void Element::set_sons(const SFC_Key* s)
 {
@@ -1040,11 +1013,6 @@ inline void Element::set_brothers(const SFC_Key* s)
         set_brother(i, s[i]);
 }
 
-inline void Element::putassoc(int a, int i)
-{
-    neigh_proc[i] = a;
-}
-
 inline void Element::putel_sq(double solsq, double errsq)
 {
     el_solution[0] = solsq;
@@ -1059,13 +1027,6 @@ inline double* Element::get_el_solution()
 inline double* Element::get_el_error()
 {
     return el_error;
-}
-
-
-
-inline int* Element::get_neigh_proc()
-{
-    return neigh_proc;
 }
 
 inline BC* Element::get_bcptr()
@@ -1126,11 +1087,6 @@ inline int Element::get_new_old()
 inline void Element::put_new_old(int i)
 {
     new_old = i;
-}
-
-inline void Element::change_neighbor_process(int which, int newp)
-{
-    neigh_proc[which] = newp;
 }
 
 inline void Element::zero_influx()

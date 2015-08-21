@@ -262,7 +262,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
         NewFatherList->add(bros[0]);
         
         for(int ineigh = 0; ineigh < 8; ineigh++)
-            if((bros[0]->neigh_proc[ineigh] >= 0) && (bros[0]->neigh_proc[ineigh] != myid))
+            if((bros[0]->neigh_proc(ineigh) >= 0) && (bros[0]->neigh_proc(ineigh) != myid))
             {
                 OtherProcUpdate->add(bros[0]);
                 break;
@@ -297,7 +297,7 @@ int Element::check_unrefinement(HashTable* El_Table, double target)
 
     for(int ineigh = 0; ineigh < 8; ineigh++)
     {
-        if(((neigh_proc[i] != myprocess) && (neigh_proc[i] >= 0) && (generation <= 0)) || (neigh_gen[i] > generation))
+        if(((neigh_proc(i) != myprocess) && (neigh_proc(i) >= 0) && (generation <= 0)) || (neigh_gen[i] > generation))
             return (0);
         i++;
     }
@@ -383,7 +383,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         ineigh = ison;
         
         //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-        if((EmFather->neigh_gen[ineigh] == EmFather->generation) || (EmFather->neigh_proc[ineigh] == -1))
+        if((EmFather->neigh_gen[ineigh] == EmFather->generation) || (EmFather->neigh_proc(ineigh) == -1))
         {
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
@@ -394,7 +394,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
                 delete NdTemp;
             }
         }
-        else if(EmFather->neigh_proc[ineigh] == myid)
+        else if(EmFather->neigh_proc(ineigh) == myid)
         {
             assert(EmFather->neigh_gen[ineigh] == EmFather->generation + 1);
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
@@ -408,7 +408,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         ineigh = inode;
         
         //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-        if((EmFather->neigh_gen[ineigh] == EmFather->generation) || (EmFather->neigh_proc[ineigh % 4] == -1))
+        if((EmFather->neigh_gen[ineigh] == EmFather->generation) || (EmFather->neigh_proc(ineigh % 4) == -1))
         {
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
@@ -424,7 +424,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
             assert(NdTemp);
             NdTemp->info = SIDE;
         }
-        else if(EmFather->neigh_proc[ineigh] == myid)
+        else if(EmFather->neigh_proc(ineigh) == myid)
         {
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
@@ -542,7 +542,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
          */
 
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(EmFather->neigh_proc[ineigh] == myid)
+            if(EmFather->neigh_proc(ineigh) == myid)
             {
                 //only update the information of on processor neighbors in
                 //this function.
@@ -578,7 +578,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     //Give my neighbor my contact information
                     EmNeigh->neigh_gen[ineighme] = EmNeigh->neigh_gen[ineighme + 4] = EmFather->generation;
                     
-                    EmNeigh->neigh_proc[ineighme + 4] = -2;
+                    EmNeigh->set_neigh_proc(ineighme + 4, -2);
                     
                     if(EmNeigh->adapted == NEWFATHER)
                     {
@@ -586,7 +586,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                         //information about him too
                         EmFather->neigh_gen[ineigh] = EmFather->neigh_gen[ineigh + 4] = EmNeigh->generation;
                         
-                        EmFather->neigh_proc[ineigh + 4] = -2;
+                        EmFather->set_neigh_proc(ineigh + 4, -2);
                         
                         //EmNeigh is inside this if() so only one loop through
                         //KEYLENGTH is made, it saves on overhead
@@ -638,7 +638,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
         assert(EmFather->myprocess == myid);
         for(ineigh = 0; ineigh < 8; ineigh++)
         {
-            neigh_proc = EmFather->neigh_proc[ineigh];
+            neigh_proc = EmFather->neigh_proc(ineigh);
             if((neigh_proc >= 0) && (neigh_proc != myid))
                 num_send[neigh_proc]++;
         }
@@ -704,7 +704,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
         assert(EmFather);
         for(ineigh = 0; ineigh < 8; ineigh++)
         {
-            neigh_proc = EmFather->neigh_proc[ineigh];
+            neigh_proc = EmFather->neigh_proc(ineigh);
             if((neigh_proc >= 0) && (neigh_proc != myid))
             {
                 
@@ -827,7 +827,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 assert(EmFather);
                                 
                                 //which means my father will only have 1 neighbor on that side
-                                EmFather->neigh_proc[ineighmod4 + 4] = -2;
+                                EmFather->set_neigh_proc(ineighmod4 + 4, -2);
                                 
                                 EmFather->set_neighbor(ineighmod4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 EmFather->set_neighbor(ineighmod4 + 4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
@@ -867,7 +867,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //my generation. Either way his FATHER will be the only
                                 //neighbor I have on that side
                                 
-                                EmTemp->neigh_proc[ineighmod4 + 4] = -2;
+                                EmTemp->set_neigh_proc(ineighmod4 + 4, -2);
                                 
                                 EmTemp->set_neighbor(ineighmod4 + 4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 EmTemp->set_neighbor(ineighmod4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));

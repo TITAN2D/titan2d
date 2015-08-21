@@ -2772,7 +2772,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             EmTemp->put_myprocess(myid);
             
             for(ineigh = 0; ineigh < 8; ineigh++)
-                if(*(EmTemp->get_neigh_proc() + ineigh) >= 0)
+                if(EmTemp->neigh_proc(ineigh) >= 0)
                 {
                     
                     //make a double precision version of the neighbor's key
@@ -2788,7 +2788,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                         if((NewProcDoubleKeyBoundaries[iproc] < doublekey) && (NewProcDoubleKeyBoundaries[iproc + 1]
                                 >= doublekey))
                         {
-                            EmTemp->put_neigh_proc(ineigh, iproc);
+                            EmTemp->set_neigh_proc(ineigh, iproc);
                             break;
                         }
                     

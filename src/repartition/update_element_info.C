@@ -65,11 +65,11 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
     {
         for(i = 0; i < 8; i++)
         {
-            if(r_element->neigh_proc[i] == myid)
+            if(r_element->neigh_proc(i) == myid)
                 same_proc(r_element, HT_Elem_Ptr, target_proc, i);
             
-            else if(r_element->neigh_proc[i] != myid && r_element->neigh_proc[i] != target_proc
-                    && r_element->neigh_proc[i] >= 0)
+            else if(r_element->neigh_proc(i) != myid && r_element->neigh_proc(i) != target_proc
+                    && r_element->neigh_proc(i) >= 0)
                 diff_proc(r_element, HT_Elem_Ptr, target_proc, i, EL_head);
         }
     }
@@ -140,7 +140,7 @@ void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int 
     int which = Neighbor->which_neighbor(r_element->key());
     int gen = r_element->get_gen();    // added by jp 9.30
             
-    Neighbor->change_neighbor_process(which, target_proc);
+    Neighbor->set_neigh_proc(which, target_proc);
     Neighbor->put_neigh_gen(which, gen);    // added by jp 9.30
                             
 }
@@ -153,7 +153,7 @@ void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int sid
     ELinkPtr EL_temp;
     
     EL_new = new ElementLink(r_element->key(), r_element->neighbor(side),
-                             r_element->getassoc()[side], new_proc);
+                             r_element->neigh_proc(side), new_proc);
     
     if(!(*EL_head))
         *EL_head = EL_new;
@@ -177,11 +177,11 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     
     for(i = 0; i < 8; i++)
     {
-        newelement->neigh_proc[i] = elem2->neigh_proc[i];
+        newelement->set_neigh_proc(i, elem2->neigh_proc[i]);
         newelement->neigh_gen[i] = elem2->neigh_gen[i];
     }
     for(i = 0; i < 5; i++)
-        newelement->order[i] = elem2->order[i];
+        newelement->orderABCD[i] = elem2->order[i];
     
     newelement->ndof = elem2->ndof;
     newelement->no_of_eqns = elem2->no_of_eqns;
@@ -317,18 +317,16 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
 
 void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
 {
-    
-    int* neigh_proc = newelement->getassoc();
     Element* neighbor;
     int which;
     
     for(int i = 0; i < 8; i++)
     {
-        if(*(neigh_proc + i) == myid)
+        if(newelement->neigh_proc(i) == myid)
         {
             neighbor = (Element*) HT_Elem_Ptr->lookup(newelement->neighbor(i));
             which = neighbor->which_neighbor(newelement->key());
-            neighbor->change_neighbor_process(which, myid);
+            neighbor->set_neigh_proc(which, myid);
         }
         
     }
@@ -346,7 +344,7 @@ void diff_proc1_2(int counter, NeighborPack packed_neighbor_info[], HashTable* H
         element = (Element*) HT_Elem_Ptr->lookup(sfc_key_from_oldkey(packed_neighbor_info[i].targetkey));
         assert(element);
         which = element->which_neighbor(sfc_key_from_oldkey(packed_neighbor_info[i].elkey));
-        element->change_neighbor_process(which, packed_neighbor_info[i].new_proc);
+        element->set_neigh_proc(which, packed_neighbor_info[i].new_proc);
         
     }
     

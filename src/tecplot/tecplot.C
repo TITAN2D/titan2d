@@ -77,7 +77,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
     int xp, xm, yp, ym;           //x plus, x minus, y plus, y minus directions
     int gen, *neigh_gen;          //level of grid refinement
     int numprocs;                 //number of processes
-    int myid, *neigh_proc;        //process id's
+    int myid;        //process id's
             
     int done = 1;
     unsigned key[2];
@@ -159,14 +159,13 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     if(get_ur_tri(El_Table, NodeTable, myid, EmArray))
                         num_tec_tri++;
                     
-                    neigh_proc = EmTemp->get_neigh_proc();
                     gen = EmTemp->get_gen();
                     neigh_gen = EmTemp->get_neigh_gen();
                     //one triangle is added to an element for each side whose
                     //neighboring element is more refined than current element 
                     //provided the triangle wouldn't fall on a domain boundary
                     for(i_neigh = 0; i_neigh < 4; i_neigh++)
-                        if((neigh_gen[i_neigh] > gen) && (neigh_proc[i_neigh] != INIT))
+                        if((neigh_gen[i_neigh] > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
                             num_tec_tri++;
                 }               //if(EmTemp->get_adapted_flag()>TOBEDELETED)
             }                   //if((EmTemp->get_adapted_flag()!=TOBEDELETED)&&
@@ -232,8 +231,6 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
             entryp = entryp->next;
             if((EmTemp->get_adapted_flag() > TOBEDELETED) && (EmTemp->get_adapted_flag() <= BUFFER))
             {
-                
-                neigh_proc = EmTemp->get_neigh_proc();
                 gen = EmTemp->get_gen();
                 neigh_gen = EmTemp->get_neigh_gen();
                 
@@ -289,7 +286,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                 /**********************************************************/
                 tec_nodes_in_tec_quad[0] = EmTemp->get_ithelem();
                 for(i_neigh = 0; i_neigh < 4; i_neigh++)
-                    if((neigh_gen[i_neigh] > gen) && (neigh_proc[i_neigh] != INIT))
+                    if((neigh_gen[i_neigh] > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
                     {
                         /* draw triangles as quads with the last corner of
                          the triangle repeated.  The three corners are
@@ -401,7 +398,7 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     int zmxm, zmxp, zmym, zmyp;   //left/down neighbor's left right down up
     int gen = EmArray[0]->get_gen();
     int *neigh_gen = EmArray[0]->get_neigh_gen();
-    int *neigh_proc = EmArray[0]->get_neigh_proc();
+    
     
     int yada = 0;
     
@@ -418,7 +415,12 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     //determine which ways are left (xm) and down (ym)
     get_elem_orient(EmArray[0], &xm, &xp, &ym, &yp);
     
-    if(((neigh_proc[xm] == INIT) || (neigh_proc[ym] == INIT)) || (((neigh_gen[xm] < gen) || (neigh_gen[ym] < gen))
+    int neigh_proc_xm = EmArray[0]->neigh_proc(xm);
+    int neigh_proc_xm_p_4 = EmArray[0]->neigh_proc(xm+4);
+    int neigh_proc_ym = EmArray[0]->neigh_proc(ym);
+    
+    
+    if(((neigh_proc_xm == INIT) || (neigh_proc_ym == INIT)) || (((neigh_gen[xm] < gen) || (neigh_gen[ym] < gen))
             && (EmArray[0]->get_which_son() != 0)))
         return 0;
     
@@ -427,19 +429,19 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->neighbor(xm + 4));
     EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->neighbor(ym));
     
-    if(!(((neigh_proc[xm + 4] == myid) || ((neigh_proc[xm + 4] == -2) && (neigh_proc[xm] == myid))) || (neigh_proc[ym]
+    if(!(((neigh_proc_xm_p_4 == myid) || ((neigh_proc_xm_p_4 == -2) && (neigh_proc_xm == myid))) || (neigh_proc_ym
             == myid)))
         //can't get to lower left neighbor by taking either route
         //because lower and left neighbors are both ghost cells
         //so draw a lower left triangle instead of a lower left quad
         return 3;
     
-    if((neigh_proc[xm + 4] == myid) || ((neigh_proc[xm + 4] == -2) && (neigh_proc[xm] == myid)))
+    if((neigh_proc_xm_p_4 == myid) || ((neigh_proc_xm_p_4 == -2) && (neigh_proc_xm == myid)))
     {
         //can get to lower left neighbor by going left then down
         assert(EmArray[1]);
         get_elem_orient(EmArray[1], &zmxm, &zmxp, &zmym, &zmyp);
-        if(*(EmArray[1]->get_neigh_proc() + zmym) == -1)
+        if(EmArray[1]->neigh_proc(zmym) == -1)
         {
             EmArray[1] = EmArray[2] = EmArray[3] = NULL;
             return 0;
@@ -450,12 +452,12 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
         
     }
     else
-    {                           //neigh_proc[ym]==myid
+    {                           //neigh_proc_ym==myid
         //printf("down then left\n");
         //can get to lower left neighbor by going down then left
         assert(EmArray[2]);
         get_elem_orient(EmArray[2], &zmxm, &zmxp, &zmym, &zmyp);
-        if(*(EmArray[2]->get_neigh_proc() + zmxm) == -1)
+        if(EmArray[2]->neigh_proc(zmxm) == -1)
         {
             EmArray[1] = EmArray[2] = EmArray[3] = NULL;
             return 0;
@@ -488,7 +490,6 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     int xpxm, xpxp, xpym, xpyp;   //right neighbor's left right down up
     int ypxm, ypxp, ypym, ypyp;   //up    neighbor's left right down up
     int gen, *neigh_gen, *neigh_neigh_gen;
-    int *neigh_proc, *xneigh_neigh_proc, *yneigh_neigh_proc;
     
     assert(EmArray[0]);
     EmArray[1] = EmArray[2] = EmArray[3] = NULL;
@@ -500,11 +501,10 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     int xpfirst = xp;
     if(neigh_gen[xp] > gen)
         xp += 4;                    //account for more refined neighbors
-        
-    neigh_proc = EmArray[0]->get_neigh_proc();
+    
     
     //make sure it's not a domain boundary
-    if((neigh_proc[xpfirst] != INIT) && (neigh_proc[yp] != INIT))
+    if((EmArray[0]->neigh_proc(xpfirst) != INIT) && (EmArray[0]->neigh_proc(yp) != INIT))
     {
         
         EmArray[2] = (Element *) El_Table->lookup(EmArray[0]->neighbor(yp));
@@ -517,7 +517,6 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         assert(EmArray[2]);
         
         get_elem_orient(EmArray[2], &ypxm, &ypxp, &ypym, &ypyp);
-        yneigh_neigh_proc = EmArray[2]->get_neigh_proc();
         
         EmArray[1] = (Element *) El_Table->lookup(EmArray[0]->neighbor(xp));
         if(!EmArray[1])
@@ -532,11 +531,9 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
         if(neigh_neigh_gen[xpyp] > neigh_gen[xp])
             xpyp += 4;
         
-        xneigh_neigh_proc = EmArray[1]->get_neigh_proc();
-        
         //check if it's a lower left corner of another subdomain
-        if((yneigh_neigh_proc[ypxp] != INIT) && (yneigh_neigh_proc[ypxp] != neigh_proc[xp])
-           && (yneigh_neigh_proc[ypxp] != neigh_proc[yp]) && (yneigh_neigh_proc[ypxp] == xneigh_neigh_proc[xpyp]))
+        if((EmArray[2]->neigh_proc(ypxp) != INIT) && (EmArray[2]->neigh_proc(ypxp) != EmArray[0]->neigh_proc(xp))
+           && (EmArray[2]->neigh_proc(ypxp) != EmArray[0]->neigh_proc(yp)) && (EmArray[2]->neigh_proc(ypxp) == EmArray[1]->neigh_proc(xpyp)))
             return (3);
     }
     

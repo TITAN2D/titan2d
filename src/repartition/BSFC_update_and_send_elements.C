@@ -62,10 +62,9 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                 if(myid != EmTemp->get_myprocess())
                 { // this element will get moved to a new processor
                   // neigh info
-                    int* neigh_proc = EmTemp->get_neigh_proc();
                     for(j = 0; j < 8; j++)
-                        if(neigh_proc[j] != myid && neigh_proc[j] >= 0)
-                            send_info[neigh_proc[j] * 2] += 1;
+                        if(EmTemp->neigh_proc(j) != myid && EmTemp->neigh_proc(j) >= 0)
+                            send_info[EmTemp->neigh_proc(j) * 2] += 1;
                     
                     // element info
                     send_info[EmTemp->get_myprocess() * 2 + 1] += 1;
@@ -142,21 +141,20 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             {
                 if(myid != EmTemp->get_myprocess())
                 { // this element will get moved to a new processor
-                    int* neigh_proc = EmTemp->get_neigh_proc();
                     for(j = 0; j < 8; j++)
-                        if(neigh_proc[j] != myid && neigh_proc[j] > -1)
+                        if(EmTemp->neigh_proc(j) != myid && EmTemp->neigh_proc(j) > -1)
                         {
-                            //printf("update neighbor is %u %u on proc %d to proc %d \n", *(EmTemp->get_neighbors()+j*KEYLENGTH+0), *(EmTemp->get_neighbors()+j*KEYLENGTH+1), myid, neigh_proc[j]);
+                            //printf("update neighbor is %u %u on proc %d to proc %d \n", *(EmTemp->get_neighbors()+j*KEYLENGTH+0), *(EmTemp->get_neighbors()+j*KEYLENGTH+1), myid, neigh_proc(j));
 
-                            SET_OLDKEY((&(send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1)])),
+                            SET_OLDKEY((&(send_neigh_array[counter_send_proc[EmTemp->neigh_proc(j)] * (2 * KEYLENGTH + 1)])),
                                     EmTemp->neighbor(j));
-                            SET_OLDKEY((&(send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1) + 2 ])),
+                            SET_OLDKEY((&(send_neigh_array[counter_send_proc[EmTemp->neigh_proc(j)] * (2 * KEYLENGTH + 1) + 2 ])),
                                     EmTemp->key());
 
-                            send_neigh_array[counter_send_proc[neigh_proc[j]] * (2 * KEYLENGTH + 1) + 4] =
+                            send_neigh_array[counter_send_proc[EmTemp->neigh_proc(j)] * (2 * KEYLENGTH + 1) + 4] =
                                     (unsigned) EmTemp->get_myprocess();
                             
-                            counter_send_proc[neigh_proc[j]] += 1;
+                            counter_send_proc[EmTemp->neigh_proc(j)] += 1;
                         }
                 }
             }
@@ -184,15 +182,14 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                 if(myid != EmTemp->get_myprocess())
                 { // this element will get moved to a new processor
                   // neigh info
-                    int* neigh_proc = EmTemp->get_neigh_proc();
                     for(j = 0; j < 8; j++)
                     {
-                        if(neigh_proc[j] == myid)
+                        if(EmTemp->neigh_proc(j) == myid)
                         {
                             Element* EmNeigh = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(j));
                             k = EmNeigh->which_neighbor(EmTemp->key());
-                            EmNeigh->put_neigh_proc(k, EmTemp->get_myprocess());
-                            neigh_proc[j] = EmNeigh->get_myprocess();
+                            EmNeigh->set_neigh_proc(k, EmTemp->get_myprocess());
+                            EmTemp->set_neigh_proc(j, EmNeigh->get_myprocess());
                         }
                     }
                 }
@@ -212,7 +209,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             {
                 EmTemp = (Element*) HT_Elem_Ptr->lookup(sfc_key_from_oldkey(recv_neigh_array + j * (2 * KEYLENGTH + 1)));
                 k = EmTemp->which_neighbor(sfc_key_from_oldkey(recv_neigh_array + j * (2 * KEYLENGTH + 1) + KEYLENGTH));
-                EmTemp->put_neigh_proc(k, recv_neigh_array[j * (2 * KEYLENGTH + 1) + 2 * KEYLENGTH]);
+                EmTemp->set_neigh_proc(k, recv_neigh_array[j * (2 * KEYLENGTH + 1) + 2 * KEYLENGTH]);
             }
             counter += recv_info[2 * i];
         }

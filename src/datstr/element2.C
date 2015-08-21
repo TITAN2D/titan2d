@@ -69,9 +69,9 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     for(i = 0; i < 4; i++)
     {
-        neigh_proc[i] = n_pro[i];
-        neigh_proc[i + 4] = -2; //-- -2 means regular element
-        if(neigh_proc[i] != -1){
+        set_neigh_proc(i, n_pro[i]);
+        set_neigh_proc(i + 4, -2); //-- -2 means regular element
+        if(neigh_proc(i) != -1){
             set_neighbor(i, neigh[i]);
             set_neighbor(i + 4, neigh[i]);
         }
@@ -85,7 +85,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     bcptr = b;
     
     for(i = 0; i < 5; i++)
-        order[i] = POWER;   //--used in initial uniform mesh
+        orderABCD[i] = POWER;   //--used in initial uniform mesh
                 
     for(i = 0; i < 8; i++)
         neigh_gen[i] = 0;
@@ -94,8 +94,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     int help = 0;
     for(i = 0; i < 4; i++)
-        help += order[i] * (no_of_eqns);
-    help += pow((float) (order[4] - 1), 2) * (no_of_eqns);
+        help += orderABCD[i] * (no_of_eqns);
+    help += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
     ndof = help;
     
     refined = 0;
@@ -244,9 +244,9 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     for(i = 0; i < 4; i++)
     {
-        neigh_proc[i] = n_pro[i];
-        neigh_proc[i + 4] = -2; //-- -2 means regular element
-        if(neigh_proc[i] != -1){
+        set_neigh_proc(i, n_pro[i]);
+        set_neigh_proc(i + 4, -2); //-- -2 means regular element
+        if(neigh_proc(i) != -1){
             set_neighbor(i, neigh[i]);
             set_neighbor(i + 4, neigh[i]);
         }
@@ -263,7 +263,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     for(i = 0; i < 5; i++)
     {
-        order[i] = *(ord + i);   //--used in initial uniform mesh
+        orderABCD[i] = *(ord + i);   //--used in initial uniform mesh
         //cout<<"In the constructor the order"<<order[i]<<"\n\n"<<flush;
     }
     
@@ -271,8 +271,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     int help = 0;
     for(i = 0; i < 4; i++)
-        help += order[i] * (no_of_eqns);
-    help += pow((float) (order[4] - 1), 2) * (no_of_eqns);
+        help += orderABCD[i] * (no_of_eqns);
+    help += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
     ndof = help;
     
     refined = 0;
@@ -403,27 +403,27 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     calc_which_son();
     bcptr = sons[0]->get_bcptr();
     //order information -- keep the highest order
-    order[0] = *(sons[0]->get_order());
-    if(order[0] < *(sons[1]->get_order()))
-        order[0] = *(sons[1]->get_order());
-    order[1] = *(sons[1]->get_order() + 1);
-    if(order[1] < *(sons[2]->get_order() + 1))
-        order[1] = *(sons[2]->get_order() + 1);
-    order[2] = *(sons[2]->get_order() + 2);
-    if(order[2] < *(sons[3]->get_order() + 2))
-        order[2] = *(sons[3]->get_order() + 2);
-    order[3] = *(sons[3]->get_order() + 3);
-    if(order[3] < *(sons[0]->get_order() + 3))
-        order[3] = *(sons[0]->get_order() + 3);
-    order[4] = *(sons[0]->get_order() + 4);
+    orderABCD[0] = *(sons[0]->get_order());
+    if(orderABCD[0] < *(sons[1]->get_order()))
+        orderABCD[0] = *(sons[1]->get_order());
+    orderABCD[1] = *(sons[1]->get_order() + 1);
+    if(orderABCD[1] < *(sons[2]->get_order() + 1))
+        orderABCD[1] = *(sons[2]->get_order() + 1);
+    orderABCD[2] = *(sons[2]->get_order() + 2);
+    if(orderABCD[2] < *(sons[3]->get_order() + 2))
+        orderABCD[2] = *(sons[3]->get_order() + 2);
+    orderABCD[3] = *(sons[3]->get_order() + 3);
+    if(orderABCD[3] < *(sons[0]->get_order() + 3))
+        orderABCD[3] = *(sons[0]->get_order() + 3);
+    orderABCD[4] = *(sons[0]->get_order() + 4);
     for(i = 1; i < 4; i++)
-        if(order[4] < *(sons[i]->get_order() + 4))
-            order[4] = *(sons[i]->get_order() + 4);
+        if(orderABCD[4] < *(sons[i]->get_order() + 4))
+            orderABCD[4] = *(sons[i]->get_order() + 4);
     
     ndof = 0;
     for(i = 0; i < 4; i++)
-        ndof += order[i] * (no_of_eqns);
-    ndof += pow((float) (order[4] - 1), 2) * (no_of_eqns);
+        ndof += orderABCD[i] * (no_of_eqns);
+    ndof += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
     
     refined = 1; // not an active element yet!!!
             
@@ -434,16 +434,16 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
         ineigh = isonneigh;
         neigh_gen[ineigh] = sons[ison]->get_neigh_gen()[isonneigh];
         set_neighbor(ineigh, sons[ison]->neighbor(isonneigh));
-        neigh_proc[ineigh] = sons[ison]->get_neigh_proc()[isonneigh];
+        set_neigh_proc(ineigh, sons[ison]->neigh_proc(isonneigh));
         
         isonneigh = (ison + 3) % 4;
         ineigh = isonneigh + 4;
         neigh_gen[ineigh] = sons[ison]->get_neigh_gen()[isonneigh];
         set_neighbor(ineigh, sons[ison]->neighbor(isonneigh));
-        if((sons[ison]->get_neigh_gen()[isonneigh] == generation) || (sons[ison]->get_neigh_proc()[isonneigh]== -1))
-            neigh_proc[ineigh] = -2;
+        if((sons[ison]->neigh_gen[isonneigh] == generation) || (sons[ison]->neigh_proc(isonneigh)== -1))
+            set_neigh_proc(ineigh, -2);
         else
-            neigh_proc[ineigh] = sons[ison]->get_neigh_proc()[isonneigh];
+            set_neigh_proc(ineigh, sons[ison]->neigh_proc(isonneigh));
     }
     
     /* brother information -- requires that atleast one of this
@@ -454,7 +454,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     {
         case 0:
             set_brother(0, key());
-            if(neigh_proc[1] == -1)
+            if(neigh_proc(1) == -1)
             {
                 set_brother(1, sfc_key_zero);
             }
@@ -472,7 +472,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 assert(0);
             }
-            if(neigh_proc[2] == -1)
+            if(neigh_proc(2) == -1)
             {
                 set_brother(3, sfc_key_zero);
             }
@@ -491,7 +491,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             break;
         case 1:
             set_brother(1, key());
-            if(neigh_proc[3] == -1)
+            if(neigh_proc(3) == -1)
             {
                 set_brother(0, sfc_key_zero);
             }
@@ -509,7 +509,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 assert(0);
             }
-            if(neigh_proc[2] == -1)
+            if(neigh_proc(2) == -1)
             {
                 set_brother(2, sfc_key_zero);
             }
@@ -530,7 +530,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             break;
         case 2:
             set_brother(2, key());
-            if(neigh_proc[0] == -1)
+            if(neigh_proc(0) == -1)
             {
                 set_brother(1, sfc_key_zero);
             }
@@ -548,7 +548,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 assert(0);
             }
-            if(neigh_proc[3] == -1)
+            if(neigh_proc(3) == -1)
             {
                 set_brother(3, sfc_key_zero);
             }
@@ -569,7 +569,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             break;
         case 3:
             set_brother(3, key());
-            if(neigh_proc[0] == -1)
+            if(neigh_proc(0) == -1)
             {
                 set_brother(0, sfc_key_zero);
             }
@@ -587,7 +587,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             {
                 assert(0);
             }
-            if(neigh_proc[1] == -1)
+            if(neigh_proc(1) == -1)
             {
                 set_brother(2, sfc_key_zero);
             }
@@ -670,7 +670,7 @@ int Element::which_neighbor(const SFC_Key &FindNeigh)
 {
     int i;
     for(i = 0; i < 8; i++)
-        if((neighbor(i)==FindNeigh) && (neigh_proc[i] >= 0))
+        if((neighbor(i)==FindNeigh) && (neigh_proc(i) >= 0))
             return i;
     
     assert(i < 8);
@@ -689,7 +689,7 @@ void Element::change_neighbor(const SFC_Key * newneighbs, int which_side, int pr
             assert(which_side < 4);
             set_neighbor(which_side, newneighbs[0]);
             set_neighbor(which_side + 4, newneighbs[1]);
-            neigh_proc[which_side + 4] = proc; //assuming no element movement
+            set_neigh_proc(which_side + 4, proc); //assuming no element movement
             neigh_gen[which_side] = neigh_gen[which_side + 4] = neigh_gen[which_side] + 1;
             break;
         case 4:
@@ -713,7 +713,7 @@ void Element::change_neighbor(const SFC_Key * newneighbs, int which_side, int pr
             set_neighbor(which_side, newneighbs[0]);
             set_neighbor(which_side + 4, newneighbs[1]);
 
-            neigh_proc[which_side + 4] = proc;
+            set_neigh_proc(which_side + 4, proc);
             
             neigh_gen[which_side] = neigh_gen[which_side + 4] = neigh_gen[which_side] + 1;
             break;
@@ -731,9 +731,9 @@ void Element::update_ndof()
 {
     int help = 0;
     for(int i = 0; i < 4; i++)
-        help += order[i] * (no_of_eqns);
+        help += orderABCD[i] * (no_of_eqns);
     
-    help += pow((float) (order[4] - 1), 2) * (no_of_eqns);
+    help += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
     ndof = help;
 }
 
@@ -760,7 +760,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
     
     for(i = 0; i < 4; i++)
     {
-        if(neigh_proc[i] == -1)
+        if(neigh_proc(i) == -1)
         {
             
             if(bcptr == NULL)
@@ -876,7 +876,7 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     /* check to see if this is a boundary */
     while (j < 4 && bc == 0)
     {
-        if(neigh_proc[j] == INIT)
+        if(neigh_proc(j) == INIT)
             bc = 1;
         j++;
     }
@@ -922,13 +922,13 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     if(ndtemp->info == S_C_CON)
     {
         ep2 = neighborPtr[xp + 4]; //(Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
-        assert(neigh_proc[xp + 4] >= 0 && ep2);
+        assert(neigh_proc(xp + 4) >= 0 && ep2);
     }
     ndtemp = node_keyPtr[xm + 4]; //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
     if(ndtemp->info == S_C_CON)
     {
         em2 = neighborPtr[xm + 4]; //(Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
-        assert(neigh_proc[xm + 4] >= 0 && em2);
+        assert(neigh_proc(xm + 4) >= 0 && em2);
     }
     
     double dp, dm, dc, dxp, dxm;
@@ -958,18 +958,18 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     if(ndtemp->info == S_C_CON)
     {
         ep2 = neighborPtr[yp + 4];		//(Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
-        assert(neigh_proc[yp + 4] >= 0 && ep2);
+        assert(neigh_proc(yp + 4) >= 0 && ep2);
     }
     ndtemp = node_keyPtr[ym + 4];		//(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
     if(ndtemp->info == S_C_CON)
     {
         em2 = neighborPtr[ym + 4];		//(Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
-        if(!(neigh_proc[ym + 4] >= 0 && em2))
+        if(!(neigh_proc(ym + 4) >= 0 && em2))
         {
-            printf("ym=%d neigh_proc[ym+4]=%d em2=%p\n", ym, neigh_proc[ym + 4], em2);
+            printf("ym=%d neigh_proc[ym+4]=%d em2=%p\n", ym, neigh_proc(ym + 4), em2);
         }
 
-        assert(neigh_proc[ym + 4] >= 0 && em2);
+        assert(neigh_proc(ym + 4) >= 0 && em2);
     }
     
     dxp = ep->coord[1] - coord[1];
@@ -1086,7 +1086,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
     
     for(ineigh = 0; ineigh < 4; ineigh++)
     {
-        if(neigh_proc[ineigh] == -1)
+        if(neigh_proc(ineigh) == -1)
             //edge of map and cell has same wetness as the cell 
             ifsidewet[ineigh] = (state_vars[0] > GEOFLOW_TINY) ? 1 : 0;
         else
@@ -1095,7 +1095,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
             if(*(EmTemp->get_state_vars() + 0) > GEOFLOW_TINY)
                 //first neighbor on this side is wet
                 ifsidewet[ineigh] = 1;
-            else if(neigh_proc[ineigh + 4] == -2)
+            else if(neigh_proc(ineigh + 4) == -2)
                 //only one neighbor on this side and it's not wet
                 ifsidewet[ineigh] = 0;
             else
@@ -2537,7 +2537,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
         
         np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
         
-        if(neigh_proc[zp] == -1)
+        if(neigh_proc(zp) == -1)
         {
             nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
             *outflow += (nm->flux[0]) * dx[!side];
@@ -2549,7 +2549,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 np->refinementflux[ivar] = nm->refinementflux[ivar];
             }
         }
-        else if(neigh_proc[zp] != myid)
+        else if(neigh_proc(zp) != myid)
         {
             np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
             elm1 = neighborPtr[zp]; //(Element*) El_Table->lookup(&neighbor(zp)[0]);
@@ -2567,7 +2567,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv2, hrfv2, this, dt);
             
             //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
-            if(neigh_proc[zp + 4] == myid)
+            if(neigh_proc(zp + 4) == myid)
             {
                 zm2 = elm2->which_neighbor(key()) % 4;
                 nm2 = elm2->node_keyPtr[zm2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
@@ -2656,7 +2656,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, elm2, dt);
                 elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv2, hrfv2, elm1, dt);
                 
-                if(*(elm1->get_neigh_proc() + (zelmpos + 4) % 8) == myid)
+                if(elm1->neigh_proc((zelmpos + 4) % 8) == myid)
                 {
                     zp2 = elm2->which_neighbor(elm1->key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
@@ -2716,7 +2716,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
                 elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv2, hrfv2, this, dt);
                 
-                if(neigh_proc[zp + 4] == myid)
+                if(neigh_proc(zp + 4) == myid)
                 {
                     zelmpos_2 = elm2->which_neighbor(key()) % 4;
                     nm2 = elm2->node_keyPtr[zelmpos_2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
@@ -2753,10 +2753,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             
         }
         
-        if(neigh_proc[zm] != myid)
+        if(neigh_proc(zm) != myid)
         {
             
-            if(neigh_proc[zm] == -1)
+            if(neigh_proc(zm) == -1)
             {
                 np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
                 nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
@@ -2836,7 +2836,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv2, hrfv2, this, dt);
                 
                 //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
-                if(neigh_proc[zm + 4] == myid)
+                if(neigh_proc(zm + 4) == myid)
                 {
                     zp2 = elm2->which_neighbor(key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
@@ -3893,14 +3893,14 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
     if(state_vars[0] >= contour_height)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0)
+            if(neigh_proc(ineigh) >= 0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3912,14 +3912,14 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
     else
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0)
+            if(neigh_proc(ineigh) >= 0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3949,14 +3949,14 @@ int Element::if_source_boundary(HashTable *ElemTable)
     if(Influx[0] > 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0)
+            if(neigh_proc(ineigh) >= 0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3969,14 +3969,14 @@ int Element::if_source_boundary(HashTable *ElemTable)
     else if(Influx[0] == 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0.0)
+            if(neigh_proc(ineigh) >= 0.0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -3988,14 +3988,14 @@ int Element::if_source_boundary(HashTable *ElemTable)
     else if(Influx[0] < 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0.0)
+            if(neigh_proc(ineigh) >= 0.0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
                     cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
-                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc[ineigh]<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen[ineigh]<<"\n\n";
                     cout.flush();
                 }
                 assert(ElemNeigh);
@@ -4023,7 +4023,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
     if((state_vars[0] < contour_height) && (Influx[0] == 0.0))
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0)
+            if(neigh_proc(ineigh) >= 0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 /*
@@ -4066,7 +4066,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
     {/* if((state_vars[0]>=contour_height)||
      (Influx[0]>0)){*/
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0)
+            if(neigh_proc(ineigh) >= 0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 assert(ElemNeigh);
@@ -4105,7 +4105,7 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
     //(state_vars[0]>=GEOFLOW_TINY)
     )
         for(ineigh = 0; ineigh < 8; ineigh++)
-            if(neigh_proc[ineigh] >= 0)
+            if(neigh_proc(ineigh) >= 0)
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 if(!ElemNeigh)
@@ -4170,10 +4170,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
     for(itemp = 0; itemp < 5; itemp++)
     {
-        temp4.i = order[itemp];
+        temp4.i = orderABCD[itemp];
         writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"%d ",order[itemp]);
+        fprintf(fpdb,"%d ",orderABCD[itemp]);
 #endif
     }
 #ifdef DEBUG_SAVE_ELEM
@@ -4241,10 +4241,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
     for(itemp = 0; itemp < 8; itemp++)
     {
-        temp4.i = neigh_proc[itemp];
+        temp4.i = neigh_proc(itemp);
         writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"%d ",neigh_proc[itemp]);
+        fprintf(fpdb,"%d ",neigh_proc(itemp));
 #endif
     }
     assert(Itemp == 26);
@@ -4457,7 +4457,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     for(itemp = 0; itemp < 5; itemp++)
     {
         temp4.u = readspace[Itemp++];
-        order[itemp] = temp4.i;
+        orderABCD[itemp] = temp4.i;
     }
     assert(Itemp == 8);
     
@@ -4496,7 +4496,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     for(itemp = 0; itemp < 8; itemp++)
     {
         temp4.u = readspace[Itemp++];
-        neigh_proc[itemp] = temp4.i;
+        set_neigh_proc(itemp, temp4.i);
     }
     assert(Itemp == 26);
     

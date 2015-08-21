@@ -182,7 +182,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         /* apply bc's */
 #ifdef APPLY_BC
         for(j = 0; j < 4; j++)
-            if(*(Curr_El->get_neigh_proc() + j) == INIT)   // this is a boundary!
+            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(k = 0; k < NUM_STATE_VARS; k++)
                     *(Curr_El->get_state_vars() + k) = 0;
 #endif
@@ -283,7 +283,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         
 #ifdef APPLY_BC
         for(j = 0; j < 4; j++)
-            if(*(Curr_El->get_neigh_proc() + j) == INIT)   // this is a boundary!
+            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(k = 0; k < NUM_STATE_VARS; k++)
                     *(Curr_El->get_state_vars() + k) = 0;
 #endif

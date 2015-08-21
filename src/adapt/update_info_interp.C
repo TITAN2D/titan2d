@@ -136,7 +136,7 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
             neighbor_gen = recv_buffer[mate_proc][k].orig_gen;
             assert(neighbor_gen == recv_buffer[mate_proc][k].orig_gen);
             my_gen = EmTemp->get_gen();
-            neighbor_proc = *(EmTemp->get_neigh_proc() + which_neighbor);
+            neighbor_proc = EmTemp->neigh_proc(which_neighbor);
             
             //dealing with the different cases then
             if(!EmTemp->get_refined_flag())
