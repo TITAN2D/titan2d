@@ -255,7 +255,7 @@ void Node::save_node(FILE* fp)
     unsigned writespace[13];
     
     int Itemp = 0, itemp;
-    sfc_key_write_to_space(get_key(),writespace,Itemp);
+    sfc_key_write_to_space(key(),writespace,Itemp);
     assert(Itemp == 2);
 /*#ifdef DEBUG_SAVE_NODE
     FILE *fpdb=fopen("save_node.debug","w");

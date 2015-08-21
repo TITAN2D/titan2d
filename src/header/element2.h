@@ -632,6 +632,7 @@ protected:
 
     //! elm_loc is used in unrefining beyond the original coarse mesh
     int elm_loc[DIMENSION];
+    
 
     /* variables for hyperbolic geoflow problem */
 

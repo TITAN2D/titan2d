@@ -351,7 +351,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
             entryp = entryp->next;
             if(NdTemp->get_id() == 0)
             {
-                HT_Node_Ptr->remove(NdTemp->get_key());
+                HT_Node_Ptr->remove(NdTemp->key());
                 delete NdTemp;
             }
         }
