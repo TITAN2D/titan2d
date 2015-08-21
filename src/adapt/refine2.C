@@ -79,7 +79,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     }
     
     for(i = 0; i < 5; i++)
-        order[i] = *(EmTemp->get_order() + i);
+        order[i] = EmTemp->order(i);
     
     /*filling up the new order array
      str: side orders remain;

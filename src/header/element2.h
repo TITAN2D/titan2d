@@ -168,8 +168,6 @@ public:
     //!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
     int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
-
-    
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
     int get_no_of_dof();
 
@@ -182,21 +180,15 @@ public:
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
     void set_brothers(const SFC_Key*);
 
-    //! returns the array of 8 processors for the 8 neighbours of this element
-    int* get_neigh_proc(){return neigh_proc_;}
-    
-    
     //! returns the processors for the i-th neighbours of this element
     const int& neigh_proc(const int i) const {return neigh_proc_[i];}
     //! this function stores the processor id "proc" of neighbor "i" in the 8 element array of neighbor processors, use this function instead of putassoc.
     void set_neigh_proc(const int i, const int& proc){neigh_proc_[i] = proc;}
 
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    int* get_order(){return orderABCD;}
-    int* order(int i){return orderABCD[i];}
-    
+    const int order(int i) const{return order_[i];}    
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    void order(int i, int ord){orderABCD[i] = ord;}
+    void set_order(int i, int ord){order_[i] = ord;}
     
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
     const SFC_Key& Element::father() const;
@@ -250,10 +242,9 @@ public:
     void put_adapted_flag(int new_adapted_status);
 
     //! this function returns an array holding the generation of all 8 of this element's neighbors
-    int* get_neigh_gen();
-
+    int* get_neigh_gen(){return neigh_gen;}
     //! this function sets the ith neighbor's generation to "gen"
-    void put_neigh_gen(int i, int gen);
+    void put_neigh_gen(int i, int gen){neigh_gen[i] = gen;}
 
     //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
     void put_which_son(int);
@@ -586,7 +577,7 @@ protected:
     int neigh_proc_[8];
 
     //! this is legacy afeapi, all finite volume "elements"/cells are piece wise constant, but I believe this is actually used in the DG (Discontinuous Galerkin) version of titan
-    int orderABCD[5];
+    int order_[5];
 
     //! neigh_gen is an array that holds the "generation" (how refined it is) of this element's 8 neighbors, there can-be/are 2 neighbors to a side because of the 1 irregularity rule
     int neigh_gen[8];
@@ -1059,15 +1050,7 @@ inline void Element::put_adapted_flag(int new_adapted_status)
     adapted = new_adapted_status;
 }
 
-inline int* Element::get_neigh_gen()
-{
-    return neigh_gen;
-}
 
-inline void Element::put_neigh_gen(int i, int gen)
-{
-    neigh_gen[i] = gen;
-}
 
 inline void Element::put_which_son(int i)
 {

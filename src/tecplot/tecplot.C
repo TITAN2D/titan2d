@@ -870,7 +870,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                 order = 1;
                 for(int k = 0; k < 5; k++)
                 {
-                    int help_order = *(EmTemp->get_order() + k);
+                    int help_order = EmTemp->order(k);
                     if(help_order > order)
                         order = help_order;
                 }
@@ -1115,7 +1115,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                 order = 1;
                 for(int k = 0; k < 5; k++)
                 {
-                    int help_order = *(EmTemp->get_order() + k);
+                    int help_order = EmTemp->order(k);
                     if(help_order > order)
                         order = help_order;
                 }

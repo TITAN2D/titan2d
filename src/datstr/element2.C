@@ -85,7 +85,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     bcptr = b;
     
     for(i = 0; i < 5; i++)
-        orderABCD[i] = POWER;   //--used in initial uniform mesh
+        set_order(i, POWER);   //--used in initial uniform mesh
                 
     for(i = 0; i < 8; i++)
         neigh_gen[i] = 0;
@@ -94,8 +94,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     int help = 0;
     for(i = 0; i < 4; i++)
-        help += orderABCD[i] * (no_of_eqns);
-    help += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
+        help += order(i) * (no_of_eqns);
+    help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
     ndof = help;
     
     refined = 0;
@@ -263,7 +263,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     for(i = 0; i < 5; i++)
     {
-        orderABCD[i] = *(ord + i);   //--used in initial uniform mesh
+        set_order(i, *(ord + i));   //--used in initial uniform mesh
         //cout<<"In the constructor the order"<<order[i]<<"\n\n"<<flush;
     }
     
@@ -271,8 +271,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     int help = 0;
     for(i = 0; i < 4; i++)
-        help += orderABCD[i] * (no_of_eqns);
-    help += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
+        help += order(i) * (no_of_eqns);
+    help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
     ndof = help;
     
     refined = 0;
@@ -403,27 +403,27 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     calc_which_son();
     bcptr = sons[0]->get_bcptr();
     //order information -- keep the highest order
-    orderABCD[0] = *(sons[0]->get_order());
-    if(orderABCD[0] < *(sons[1]->get_order()))
-        orderABCD[0] = *(sons[1]->get_order());
-    orderABCD[1] = *(sons[1]->get_order() + 1);
-    if(orderABCD[1] < *(sons[2]->get_order() + 1))
-        orderABCD[1] = *(sons[2]->get_order() + 1);
-    orderABCD[2] = *(sons[2]->get_order() + 2);
-    if(orderABCD[2] < *(sons[3]->get_order() + 2))
-        orderABCD[2] = *(sons[3]->get_order() + 2);
-    orderABCD[3] = *(sons[3]->get_order() + 3);
-    if(orderABCD[3] < *(sons[0]->get_order() + 3))
-        orderABCD[3] = *(sons[0]->get_order() + 3);
-    orderABCD[4] = *(sons[0]->get_order() + 4);
+    set_order(0, sons[0]->order(0));
+    if(order(0) < sons[1]->order(0))
+        set_order(0, sons[1]->order(0));
+    set_order(1, sons[1]->order(1));
+    if(order(1) < sons[2]->order(1))
+        set_order(1, sons[2]->order(1));
+    set_order(2, sons[2]->order(2));
+    if(order(2) < sons[3]->order(2))
+        set_order(2, sons[3]->order(2));
+    set_order(3, sons[3]->order(3));
+    if(order(3) < sons[0]->order(3))
+        set_order(3, sons[0]->order(3));
+    set_order(4, sons[0]->order(4));
     for(i = 1; i < 4; i++)
-        if(orderABCD[4] < *(sons[i]->get_order() + 4))
-            orderABCD[4] = *(sons[i]->get_order() + 4);
+        if(order(4) < sons[i]->order(4))
+            set_order(4, sons[i]->order(4));
     
     ndof = 0;
     for(i = 0; i < 4; i++)
-        ndof += orderABCD[i] * (no_of_eqns);
-    ndof += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
+        ndof += order(i) * (no_of_eqns);
+    ndof += pow((float) (order(4) - 1), 2) * (no_of_eqns);
     
     refined = 1; // not an active element yet!!!
             
@@ -731,9 +731,9 @@ void Element::update_ndof()
 {
     int help = 0;
     for(int i = 0; i < 4; i++)
-        help += orderABCD[i] * (no_of_eqns);
+        help += order(i) * (no_of_eqns);
     
-    help += pow((float) (orderABCD[4] - 1), 2) * (no_of_eqns);
+    help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
     ndof = help;
 }
 
@@ -4170,10 +4170,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
     for(itemp = 0; itemp < 5; itemp++)
     {
-        temp4.i = orderABCD[itemp];
+        temp4.i = order(itemp);
         writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"%d ",orderABCD[itemp]);
+        fprintf(fpdb,"%d ",order(itemp));
 #endif
     }
 #ifdef DEBUG_SAVE_ELEM
@@ -4457,7 +4457,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     for(itemp = 0; itemp < 5; itemp++)
     {
         temp4.u = readspace[Itemp++];
-        orderABCD[itemp] = temp4.i;
+        set_order(itemp, temp4.i);
     }
     assert(Itemp == 8);
     

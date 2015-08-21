@@ -181,7 +181,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->neigh_gen[i] = elem2->neigh_gen[i];
     }
     for(i = 0; i < 5; i++)
-        newelement->orderABCD[i] = elem2->order[i];
+        newelement->set_order(i, elem2->order[i]);
     
     newelement->ndof = elem2->ndof;
     newelement->no_of_eqns = elem2->no_of_eqns;

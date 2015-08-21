@@ -24,7 +24,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->neigh_gen[i] = sendel->neigh_gen[i];
     }
     for(i = 0; i < 5; i++)
-        elem->order[i] = sendel->orderABCD[i];
+        elem->order[i] = sendel->order(i);
     
     elem->ndof = sendel->ndof;
     elem->no_of_eqns = sendel->no_of_eqns;
