@@ -170,8 +170,8 @@ public:
     int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
-    int no_of_dof() const {return ndofABCD;}
-    void no_of_dof(const int new_ndof){ndofABCD=new_ndof;}
+    int ndof() const {return ndof_;}
+    void set_ndof(const int new_ndof){ndof_=new_ndof;}
     
     //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
     int generation() const{return generation_;}
@@ -594,7 +594,7 @@ protected:
     BC* bcptr_;
 
     //! the number of degrees of freedom, since Titan is a finite difference/volume code, ndof is afeapi legacy, but the DG (Discontinuous Galerkin) version of Titan actually uses this
-    int ndofABCD;
+    int ndof_;
 
     //! this is legacy afeapi, it is not used, but do not remove it, it could cause problems if you do
     int no_of_eqns;

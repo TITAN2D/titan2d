@@ -96,7 +96,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     for(i = 0; i < 4; i++)
         help += order(i) * (no_of_eqns);
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
-    ndofABCD = help;
+    set_ndof(help);
     
     refined = 0;
     
@@ -274,7 +274,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     for(i = 0; i < 4; i++)
         help += order(i) * (no_of_eqns);
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
-    ndofABCD = help;
+    set_ndof(help);
     
     refined = 0;
     
@@ -421,10 +421,10 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
         if(order(4) < sons[i]->order(4))
             set_order(4, sons[i]->order(4));
     
-    ndofABCD = 0;
+    set_ndof(0);
     for(i = 0; i < 4; i++)
-        ndofABCD += order(i) * (no_of_eqns);
-    ndofABCD += pow((float) (order(4) - 1), 2) * (no_of_eqns);
+        set_ndof(ndof() + order(i) * (no_of_eqns));
+    set_ndof(ndof() + pow((float) (order(4) - 1), 2) * (no_of_eqns));
     
     refined = 1; // not an active element yet!!!
             
@@ -739,7 +739,7 @@ void Element::update_ndof()
         help += order(i) * (no_of_eqns);
     
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
-    ndofABCD = help;
+    set_ndof(help);
 }
 
 void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* Nelb, int* icon)
@@ -749,7 +749,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
 {
     int i;
     int ifg = 2;
-    int Nc = ndofABCD;
+    int Nc = ndof();
     double bc_value[4]; //--for poisson equ
     Node* NodePtr;
     Element* ElemPtr;
@@ -4209,11 +4209,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"material=%d\n",material());
 #endif
     
-    temp4.i = ndofABCD;
+    temp4.i = ndof();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 12);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"ndof=%d\n",ndofABCD);
+    fprintf(fpdb,"ndof=%d\n",ndof());
 #endif
     
     temp4.i = refined;
@@ -4481,7 +4481,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 11);
     
     temp4.u = readspace[Itemp++];
-    ndofABCD = temp4.i;
+    set_ndof(temp4.i);
     assert(Itemp == 12);
     
     temp4.u = readspace[Itemp++];

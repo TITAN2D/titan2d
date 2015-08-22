@@ -183,7 +183,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < 5; i++)
         newelement->set_order(i, elem2->order[i]);
     
-    newelement->ndofABCD = elem2->ndof;
+    newelement->set_ndof(elem2->ndof);
     newelement->no_of_eqns = elem2->no_of_eqns;
     newelement->refined = elem2->refined;
     newelement->adapted = elem2->adapted;
