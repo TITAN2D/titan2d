@@ -124,9 +124,9 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
     Element* elm_bunch2[4];
     for(i = 0; i < 4; i++)
         elm_bunch2[i] = NULL;
-    if(orig_elem->get_opposite_brother_flag() == 0)
+    if(orig_elem->opposite_brother_flag() == 0)
         orig_elem->find_opposite_brother(HT_Elem_Ptr);
-    if(orig_elem->get_opposite_brother_flag() == 1)
+    if(orig_elem->opposite_brother_flag() == 1)
         EmTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(next_elm));
     else
         EmTemp = NULL;

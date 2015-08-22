@@ -228,10 +228,10 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
     int i = 0, j;
     int unrefine_flag = 1;
     Element* bros[5];
-    if(opposite_brother_flag == 0)
+    if(opposite_brother_flag() == 0)
     {
         find_opposite_brother(El_Table);
-        if(opposite_brother_flag == 0)
+        if(opposite_brother_flag() == 0)
             return 0;
     }
     while (i < 4 && unrefine_flag == 1)

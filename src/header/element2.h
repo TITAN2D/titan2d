@@ -296,7 +296,8 @@ public:
     void set_myprocess(const int in_proc){myprocess_ = in_proc;}
     
     //! this function returns the opposite_brother_flag, I (Keith) am not entirely sure what this flag is for, but I know that it is used in repartioning, see BSFC_combine_elements, I think it says if an element has an opposite brother, that is, can it be combined with it's brothers to form their father
-    int get_opposite_brother_flag();
+    int opposite_brother_flag() const {return opposite_brother_flag_;}
+    void set_opposite_brother_flag(int new_opposite_brother_flag){opposite_brother_flag_=new_opposite_brother_flag;}
 
     //! this function computes searches for an element's brother, i.e. the brother (son of the same father) that is located diagonally from it, to get the brother information requires that atleast one of this element's neighboring brothers is on this process in order to get information onthe brother that is not a neighbor
     void find_opposite_brother(HashTable*);
@@ -546,7 +547,7 @@ protected:
     int generation_;
 
     //! opposite_brother_flag indicate if we have the correct key for the non-neighbor brother (0:= don't have info, 1:= have info)
-    int opposite_brother_flag;
+    int opposite_brother_flag_;
 
     //! the material flag indicates which material should be used to set this element's bed friction, this is for when a GIS material map, specifying different materials in different spatial regions of the map, the GIS material map is a non standard grass map format that Laercio Namikawa developed, it's stored in the "cats" folder under a grass mapset directory
     int material;/*! ! ! THE MAT. FLAG ! ! !*/
@@ -741,12 +742,6 @@ inline void Element::put_lb_weight(double dd_in)
 }
 ;
 
-
-inline int Element::get_opposite_brother_flag()
-{
-    return opposite_brother_flag;
-}
-;
 
 inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom)
 {

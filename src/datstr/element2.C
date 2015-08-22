@@ -128,7 +128,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
             set_brother(2, neighbor(1));
             break;
     }
-    opposite_brother_flag = 1;
+    set_opposite_brother_flag(1);
     
     new_old = OLD;
     if(elementType() == ElementType::SinglePhase)
@@ -229,7 +229,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     lb_weight = 1.0;
     set_myprocess(myid);
     generation(gen); //--first generation
-    opposite_brother_flag = 1;
+    set_opposite_brother_flag(1);
     material = mat;
     for(i = 0; i < EQUATIONS; i++)
         el_error[i] = 0.0;
@@ -371,7 +371,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     set_lb_key(sfc_key_zero);
     lb_weight = 1.0;
     new_old = NEW;
-    opposite_brother_flag = 0;
+    set_opposite_brother_flag(0);
     stoppedflags = 2;
     for(i = 0; i < EQUATIONS; i++)
         el_error[i] = 0.0;
@@ -3533,7 +3533,7 @@ void Element::calc_which_son()
 void Element::find_opposite_brother(HashTable* El_Table)
 {
     
-    if(opposite_brother_flag == 1)
+    if(opposite_brother_flag() == 1)
         return;
     
     set_brother((which_son + 2) % 4, sfc_key_zero);
@@ -3561,7 +3561,7 @@ void Element::find_opposite_brother(HashTable* El_Table)
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
         set_brother((which_son + 2) % 4,sfc_key_from_oldkey(oldkey));
         
-        opposite_brother_flag = 1;
+        set_opposite_brother_flag(1);
     }
     
     return;
@@ -4186,11 +4186,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
     assert(Itemp == 8);
     
-    temp4.i = opposite_brother_flag;
+    temp4.i = opposite_brother_flag();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 9);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"opposite_brother_flag=%d\n",opposite_brother_flag);
+    fprintf(fpdb,"opposite_brother_flag=%d\n",opposite_brother_flag());
 #endif
     
     temp4.i = new_old;
@@ -4467,7 +4467,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 8);
     
     temp4.u = readspace[Itemp++];
-    opposite_brother_flag = temp4.i;
+    set_opposite_brother_flag(temp4.i);
     assert(Itemp == 9);
     
     temp4.u = readspace[Itemp++];
