@@ -93,11 +93,11 @@ protected:
     Element()
     {
         if(NUM_STATE_VARS == 3)
-            elementType = ElementType::SinglePhase;
+            elementType(ElementType::SinglePhase);
         else if(NUM_STATE_VARS == 6)
-            elementType = ElementType::TwoPhases;
+            elementType(ElementType::TwoPhases);
         else
-            elementType = ElementType::UnknownElementType;
+            elementType(ElementType::UnknownElementType);
 
         counted = 0;
         set_father(sfc_key_zero); //initialize the father key to zero
@@ -533,10 +533,13 @@ public:
 
     //! sgn of double
     double sgn(double a){return (a < 0.0 ? -1.0 : 1.0);}
+    
+    const ElementType& elementType(){return elementType_;}
+    void elementType(const ElementType& new_element_type){elementType_=new_element_type;}
 
 protected:
     //! Element type
-    ElementType elementType;
+    ElementType elementType_;
     //! myprocess is id of the process(or) that owns this element
     int myprocess;
 
@@ -797,11 +800,11 @@ inline void Element::put_height_mom(double pile_height, double xmom, double ymom
 
 inline void Element::put_height(double pile_height)
 {
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         put_height_mom(pile_height, 1., 0., 0.);
     }
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         put_height_mom(pile_height, 0.0, 0.0);
     }

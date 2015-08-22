@@ -33,9 +33,9 @@
 Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
                  int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
-    if(NUM_STATE_VARS==3)elementType=ElementType::SinglePhase;
-    else if(NUM_STATE_VARS==6)elementType=ElementType::TwoPhases;
-    else elementType=ElementType::UnknownElementType;
+    if(NUM_STATE_VARS==3)elementType(ElementType::SinglePhase);
+    else if(NUM_STATE_VARS==6)elementType(ElementType::TwoPhases);
+    else elementType(ElementType::UnknownElementType);
 
     int ikey;
     int i, j;
@@ -131,7 +131,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     opposite_brother_flag = 1;
     
     new_old = OLD;
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         state_vars[0] = pile_height;
         state_vars[1] = 0;
@@ -140,7 +140,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
         state_vars[2] = 0;
     }
 
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         state_vars[0] = pile_height;
         state_vars[1] = pile_height;
@@ -156,7 +156,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     Awet = Swet = (pile_height > GEOFLOW_TINY) ? 1.0 : 0.0;
     
 
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         prev_state_vars[0] = pile_height;
         prev_state_vars[1] = pile_height;
@@ -165,7 +165,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
             prev_state_vars[2] = prev_state_vars[4] = 0.0001;
         prev_state_vars[3] = prev_state_vars[5] = 0;
     }
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         prev_state_vars[0] = pile_height;
         prev_state_vars[1] = 0;
@@ -184,7 +184,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     stoppedflags = 2;
 
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         // initialize kactxy
         kactxy[0] = kactxy[1] = 0.;
@@ -200,11 +200,11 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
                  double Awetfather, double *drypoint_in)
 {
     if(NUM_STATE_VARS == 3)
-        elementType = ElementType::SinglePhase;
+        elementType(ElementType::SinglePhase);
     else if(NUM_STATE_VARS == 6)
-        elementType = ElementType::TwoPhases;
+        elementType(ElementType::TwoPhases);
     else
-        elementType = ElementType::UnknownElementType;
+        elementType(ElementType::UnknownElementType);
 
     int i;
     int ikey;
@@ -332,11 +332,11 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
 Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
 {
     if(NUM_STATE_VARS == 3)
-        elementType = ElementType::SinglePhase;
+        elementType(ElementType::SinglePhase);
     else if(NUM_STATE_VARS == 6)
-        elementType = ElementType::TwoPhases;
+        elementType(ElementType::TwoPhases);
     else
-        elementType = ElementType::UnknownElementType;
+        elementType(ElementType::UnknownElementType);
 
     counted = 0; //for debugging only
             
@@ -1656,7 +1656,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
     
     double a; //speed of sound
     double VxVy[2]; //will be rarefaction velocity non-dimensionalized by cell size
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         VxVy[0] = state_vars[2] / state_vars[1];
         if(VxVy[0] != 0.0)
@@ -1672,7 +1672,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
         }
     }
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         VxVy[0] = state_vars[1] / state_vars[0];
         if(VxVy[0] != 0.0)
@@ -1872,7 +1872,7 @@ double Element::convect_dryline(double VxVy[2], double dt)
 void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
                        double hrfv[3][MAX_NUM_STATE_VARS])
 {
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
         int i, j;
@@ -2019,7 +2019,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
                 hrfv[i][j] = hfv[i][j];
     #endif
     }
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         double speed, speed2, a, VxVy[2];
 
@@ -2143,7 +2143,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
                        double hrfv[3][MAX_NUM_STATE_VARS])
 {
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         MatPropsTwoPhases* matprops_ptr=(MatPropsTwoPhases*)matprops_ptr2;
         int i, j;
@@ -2286,7 +2286,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
                 hrfv[i][j] = hfv[i][j];
     #endif
     }
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         double speed, speed2, a, VxVy[2];
         
@@ -2563,8 +2563,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(elm1->elementType,hfv, hfv1, np->flux);
-            riemannflux(elm1->elementType,hrfv, hrfv1, np->refinementflux);
+            riemannflux(elm1->elementType(),hfv, hfv1, np->flux);
+            riemannflux(elm1->elementType(),hrfv, hrfv1, np->refinementflux);
             
             elm2 = neighborPtr[zp + 4]; //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
             assert(elm2);
@@ -2577,8 +2577,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 zm2 = elm2->which_neighbor(key()) % 4;
                 nm2 = elm2->node_keyPtr[zm2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
                 
-                riemannflux(elm2->elementType,hfv, hfv2, nm2->flux);
-                riemannflux(elm2->elementType,hrfv, hrfv2, nm2->refinementflux);
+                riemannflux(elm2->elementType(),hfv, hfv2, nm2->flux);
+                riemannflux(elm2->elementType(),hrfv, hrfv2, nm2->refinementflux);
                 
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 {
@@ -2588,11 +2588,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             }
             else
             {
-                riemannflux(elm2->elementType,hfv, hfv2, ghostflux);
+                riemannflux(elm2->elementType(),hfv, hfv2, ghostflux);
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     np->flux[ivar] = 0.5 * (np->flux[ivar] + ghostflux[ivar]);
                 
-                riemannflux(elm2->elementType,hrfv, hrfv2, ghostflux);
+                riemannflux(elm2->elementType(),hrfv, hrfv2, ghostflux);
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     np->refinementflux[ivar] = 0.5 * (np->refinementflux[ivar] + ghostflux[ivar]);
             }
@@ -2608,8 +2608,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(elm1->elementType,hfv, hfv1, np->flux);
-            riemannflux(elm1->elementType,hrfv, hrfv1, np->refinementflux);
+            riemannflux(elm1->elementType(),hfv, hfv1, np->flux);
+            riemannflux(elm1->elementType(),hrfv, hrfv1, np->refinementflux);
             
             /* CASE I
              ------------------- -------------------               
@@ -2665,8 +2665,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 {
                     zp2 = elm2->which_neighbor(elm1->key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
-                    riemannflux(elm2->elementType,hfv2, hfv1, np2->flux);
-                    riemannflux(elm2->elementType,hrfv2, hrfv1, np2->refinementflux);
+                    riemannflux(elm2->elementType(),hfv2, hfv1, np2->flux);
+                    riemannflux(elm2->elementType(),hrfv2, hrfv1, np2->refinementflux);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2677,11 +2677,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 else
                 {
                     
-                    riemannflux(elm2->elementType,hfv2, hfv1, ghostflux);
+                    riemannflux(elm2->elementType(),hfv2, hfv1, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm1->flux[ivar] = 0.5 * (np->flux[ivar] + ghostflux[ivar]);
                     
-                    riemannflux(elm2->elementType,hrfv2, hrfv1, ghostflux);
+                    riemannflux(elm2->elementType(),hrfv2, hrfv1, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm1->refinementflux[ivar] = 0.5 * (np->refinementflux[ivar] + ghostflux[ivar]);
                 }
@@ -2725,8 +2725,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 {
                     zelmpos_2 = elm2->which_neighbor(key()) % 4;
                     nm2 = elm2->node_keyPtr[zelmpos_2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
-                    riemannflux(elm2->elementType,hfv, hfv2, nm2->flux);
-                    riemannflux(elm2->elementType,hrfv, hrfv2, nm2->refinementflux);
+                    riemannflux(elm2->elementType(),hfv, hfv2, nm2->flux);
+                    riemannflux(elm2->elementType(),hrfv, hrfv2, nm2->refinementflux);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2739,14 +2739,14 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 }
                 else
                 {
-                    riemannflux(elm2->elementType,hfv, hfv2, ghostflux);
+                    riemannflux(elm2->elementType(),hfv, hfv2, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
                         nm1->flux[ivar] = np->flux[ivar];
                         np->flux[ivar] = 0.5 * (nm1->flux[ivar] + ghostflux[ivar]);
                     }
                     
-                    riemannflux(elm2->elementType,hrfv, hrfv2, ghostflux);
+                    riemannflux(elm2->elementType(),hrfv, hrfv2, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
                         nm1->refinementflux[ivar] = np->refinementflux[ivar];
@@ -2831,8 +2831,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm1, dt);
                 elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, this, dt);
-                riemannflux(elm1->elementType,hfv1, hfv, nm->flux);
-                riemannflux(elm1->elementType,hrfv1, hrfv, nm->refinementflux);
+                riemannflux(elm1->elementType(),hfv1, hfv, nm->flux);
+                riemannflux(elm1->elementType(),hrfv1, hrfv, nm->refinementflux);
                 
                 elm2 = neighborPtr[zm + 4]; //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
                 assert(elm2);
@@ -2846,8 +2846,8 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                     zp2 = elm2->which_neighbor(key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     
-                    riemannflux(elm2->elementType,hfv2, hfv, np2->flux);
-                    riemannflux(elm2->elementType,hrfv2, hrfv, np2->refinementflux);
+                    riemannflux(elm2->elementType(),hfv2, hfv, np2->flux);
+                    riemannflux(elm2->elementType(),hrfv2, hrfv, np2->refinementflux);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2857,11 +2857,11 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 }
                 else
                 {
-                    riemannflux(elm2->elementType,hfv2, hfv, ghostflux);
+                    riemannflux(elm2->elementType(),hfv2, hfv, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm->flux[ivar] = 0.5 * (nm->flux[ivar] + ghostflux[ivar]);
                     
-                    riemannflux(elm2->elementType,hrfv2, hrfv, ghostflux);
+                    riemannflux(elm2->elementType(),hrfv2, hrfv, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm->refinementflux[ivar] = 0.5 * (nm->refinementflux[ivar] + ghostflux[ivar]);
                 }
@@ -3025,12 +3025,12 @@ void Element::calc_shortspeed(double inv_dt)
         if(state_vars[0] > GEOFLOW_TINY)
         {
             double Vmag;
-            if(elementType == ElementType::TwoPhases)
+            if(elementType() == ElementType::TwoPhases)
             {
                 Vmag=sqrt(state_vars[2]*state_vars[2]+
                     state_vars[3]*state_vars[3]);
             }
-            if(elementType == ElementType::SinglePhase)
+            if(elementType() == ElementType::SinglePhase)
             {
                 Vmag = pow(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2], 0.5);
             }
@@ -3040,11 +3040,11 @@ void Element::calc_shortspeed(double inv_dt)
 
             double invnormhv = 1.0 / Vmag;
 
-            if(elementType == ElementType::TwoPhases)
+            if(elementType() == ElementType::TwoPhases)
             {
                 Vmag/=state_vars[1];
             }
-            if(elementType == ElementType::SinglePhase)
+            if(elementType() == ElementType::SinglePhase)
             {
                 Vmag /= state_vars[0];
             }
@@ -3055,7 +3055,7 @@ void Element::calc_shortspeed(double inv_dt)
             double doubleswap_h;
             double doubleswap_hvx;
             double doubleswap_hvy;
-            if(elementType == ElementType::TwoPhases)
+            if(elementType() == ElementType::TwoPhases)
             {
                 doubleswap_h =(state_vars[2]*d_state_vars[1]+
                     state_vars[3]*d_state_vars[NUM_STATE_VARS+1])*invnormhv;
@@ -3064,7 +3064,7 @@ void Element::calc_shortspeed(double inv_dt)
                 doubleswap_hvy=(state_vars[2]*d_state_vars[3]+
                     state_vars[3]*d_state_vars[NUM_STATE_VARS+3])*invnormhv;
             }
-            if(elementType == ElementType::SinglePhase)
+            if(elementType() == ElementType::SinglePhase)
             {
                 doubleswap_h = (state_vars[1] * d_state_vars[0] + state_vars[2] * d_state_vars[3]) * invnormhv;
                 doubleswap_hvx = (state_vars[1] * d_state_vars[1] + state_vars[2] * d_state_vars[4]) * invnormhv;
@@ -3079,13 +3079,13 @@ void Element::calc_shortspeed(double inv_dt)
             
             for(inewt = 0; inewt < 15; inewt++)
             { //should only need about 5 newton iterations
-                if(elementType == ElementType::TwoPhases)
+                if(elementType() == ElementType::TwoPhases)
                 {
                     doubleswap_h_2 =((state_vars[1]-prev_state_vars[1])*inv_dt+Vmag*doubleswap_h );
                     doubleswap_hvx_2=((state_vars[2]-prev_state_vars[2])*inv_dt+Vmag*doubleswap_hvx);
                     doubleswap_hvy_2=((state_vars[3]-prev_state_vars[3])*inv_dt+Vmag*doubleswap_hvy);
                 }
-                if(elementType == ElementType::SinglePhase)
+                if(elementType() == ElementType::SinglePhase)
                 {
                     doubleswap_h_2 = ((state_vars[0] - prev_state_vars[0]) * inv_dt + Vmag * doubleswap_h);
                     doubleswap_hvx_2 = ((state_vars[1] - prev_state_vars[1]) * inv_dt + Vmag * doubleswap_hvx);
@@ -3167,7 +3167,7 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
         temp_state_vars[ivar] = state_vars[ivar] + d_state_vars[ivar] * xoffset +  //distfromcenter[0]+
                                 d_state_vars[NUM_STATE_VARS + ivar] * yoffset;  //distfromcenter[1];
                                 
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         if(!(temp_state_vars[0] > 0))
         {
@@ -3216,7 +3216,7 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
         }
         return Vel;
     }
-    if(elementType == ElementType::SinglePhase)
+    if(elementType() == ElementType::SinglePhase)
     {
         if(!(temp_state_vars[0] > 0))
         {
@@ -3803,7 +3803,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
 #endif
     
     stoppedflags = 0;
-    if(elementType == ElementType::TwoPhases)
+    if(elementType() == ElementType::TwoPhases)
     {
         return;
     }
