@@ -26,7 +26,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     for(i = 0; i < 5; i++)
         elem->order[i] = sendel->order(i);
     
-    elem->ndof = sendel->ndof;
+    elem->ndof = sendel->ndofABCD;
     elem->no_of_eqns = sendel->no_of_eqns;
     elem->refined = sendel->refined;
     elem->adapted = sendel->adapted;
@@ -109,7 +109,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         elem->d_state_vars[i] = sendel->d_state_vars[i];
     elem->shortspeed = sendel->shortspeed;
-    elem->lb_weight = sendel->lb_weight;
+    elem->lb_weight = sendel->lb_weight();
     elem->elm_loc[0] = sendel->elm_loc[0];
     elem->elm_loc[1] = sendel->elm_loc[1];
     

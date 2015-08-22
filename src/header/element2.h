@@ -170,12 +170,13 @@ public:
     int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
-    int get_no_of_dof();
-
+    int no_of_dof() const {return ndofABCD;}
+    void no_of_dof(const int new_ndof){ndofABCD=new_ndof;}
+    
     //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
     int generation() const{return generation_;}
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
-    void generation(int g){generation_ = g;}
+    void generation(const int g){generation_ = g;}
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
     const SFC_Key& brother(const int i) const {return brothers_[i];}
@@ -277,10 +278,10 @@ public:
 
 
     //! this function returns the Load Balancing weight of an element which is used in repartitioning
-    double get_lb_weight();
-
+    double lb_weight() const {return lb_weight_;}
     //! this function stores an element's load balancing weight, which is used during repartitioning
-    void put_lb_weight(double dd_in);
+    void set_lb_weight(double dd_in){lb_weight_ = dd_in;}
+
 
     //! this function returns the load balancing key, which is used during repartitioning
     const SFC_Key& lb_key() const {return lb_key_;}
@@ -554,7 +555,7 @@ protected:
     int material_;/*! ! ! THE MAT. FLAG ! ! !*/
     
     //! this is the load-balancing weight
-    double lb_weight;
+    double lb_weight_;
 
     //! this is the key for load-balancing, if there is no constrained node, it is the element key, otherwise it is a construct of the element "bunch", keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key lb_key_;
@@ -593,7 +594,7 @@ protected:
     BC* bcptr_;
 
     //! the number of degrees of freedom, since Titan is a finite difference/volume code, ndof is afeapi legacy, but the DG (Discontinuous Galerkin) version of Titan actually uses this
-    int ndof;
+    int ndofABCD;
 
     //! this is legacy afeapi, it is not used, but do not remove it, it could cause problems if you do
     int no_of_eqns;
@@ -721,19 +722,6 @@ inline void Element::put_ithelem(int i)
     ithelem = i;
 }
 ;
-
-inline double Element::get_lb_weight()
-{
-    return lb_weight;
-}
-;
-
-inline void Element::put_lb_weight(double dd_in)
-{
-    lb_weight = dd_in;
-}
-;
-
 
 inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom)
 {
@@ -951,10 +939,6 @@ inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTabl
         }
     }
     return count;
-}
-inline int Element::get_no_of_dof()
-{
-    return ndof;
 }
 
 inline void Element::set_sons(const SFC_Key* s)

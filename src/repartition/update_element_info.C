@@ -183,7 +183,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < 5; i++)
         newelement->set_order(i, elem2->order[i]);
     
-    newelement->ndof = elem2->ndof;
+    newelement->ndofABCD = elem2->ndof;
     newelement->no_of_eqns = elem2->no_of_eqns;
     newelement->refined = elem2->refined;
     newelement->adapted = elem2->adapted;
@@ -302,7 +302,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         newelement->d_state_vars[i] = elem2->d_state_vars[i];
     newelement->shortspeed = elem2->shortspeed;
-    newelement->lb_weight = elem2->lb_weight;
+    newelement->set_lb_weight(elem2->lb_weight);
     newelement->elm_loc[0] = elem2->elm_loc[0];
     newelement->elm_loc[1] = elem2->elm_loc[1];
     

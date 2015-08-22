@@ -258,11 +258,11 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
             {
                 //printf("new_old value for %u %u\n", *(elm_bunch[i]->pass_key()), *(elm_bunch[i]->pass_key()+1));
                 j++;
-                sum_lb_weights += elm_bunch[i]->lb_weight;
+                sum_lb_weights += elm_bunch[i]->lb_weight();
                 assert(elm_bunch[i]->new_old== BSFC_NEW);
                 elm_bunch[i]->new_old = BSFC_OLD;
             }
-        orig_elem->lb_weight = sum_lb_weights;
+        orig_elem->set_lb_weight(sum_lb_weights);
         orig_elem->new_old = j;
         // put in lb_key representing this "bunch" of elements 
         if(j < 2)

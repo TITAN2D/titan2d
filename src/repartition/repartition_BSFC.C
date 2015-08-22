@@ -108,15 +108,15 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
             if(!EmTemp->get_refined_flag())
             {
                 if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
-                    EmTemp->put_lb_weight(NON_EMPTY_CELL);
+                    EmTemp->set_lb_weight(NON_EMPTY_CELL);
                 else if(EmTemp->get_adapted_flag() == BUFFER)
-                    EmTemp->put_lb_weight(EMPTY_BUFFER_CELL);
+                    EmTemp->set_lb_weight(EMPTY_BUFFER_CELL);
                 else
-                    EmTemp->put_lb_weight(EMPTY_CELL);
+                    EmTemp->set_lb_weight(EMPTY_CELL);
                 
                 EmTemp->set_myprocess(-1);
                 
-                total_weight += EmTemp->get_lb_weight();
+                total_weight += EmTemp->lb_weight();
                 EmTemp->put_new_old(BSFC_NEW);
                 elm_counter++;
             }
@@ -165,7 +165,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
             EmTemp = (Element*) (entryp->value);
             if(!EmTemp->get_refined_flag() && EmTemp->get_new_old() > 0)
             {
-                sfc_vert_ptr[j].lb_weight = EmTemp->get_lb_weight();
+                sfc_vert_ptr[j].lb_weight = EmTemp->lb_weight();
                 SET_OLDKEY(sfc_vert_ptr[j].sfc_key,EmTemp->lb_key());
                 
                 j++;
@@ -739,14 +739,14 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                 //weight the active elements for repartitioning
                 if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
                     //this has pile
-                    EmTemp->put_lb_weight(NON_EMPTY_CELL);
+                    EmTemp->set_lb_weight(NON_EMPTY_CELL);
                 else if(EmTemp->get_adapted_flag() == BUFFER)
                     //this might have pile before the next adaptation
-                    EmTemp->put_lb_weight(EMPTY_BUFFER_CELL);
+                    EmTemp->set_lb_weight(EMPTY_BUFFER_CELL);
                 else
                     //this will not have pile before the next adaptation
                     //but might have pile before the next repartitioning
-                    EmTemp->put_lb_weight(EMPTY_CELL);
+                    EmTemp->set_lb_weight(EMPTY_CELL);
                 
                 EmTemp->put_new_old(BSFC_NEW); //legacy from "original" 
                 //repartition(), I don't know the consequences of not 
@@ -860,9 +860,9 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
     
     //DoubleArray now becomes the cumulative sum of the load balancing
     //weights (lb_weight);
-    LoadBalArray[0] = ElemArray[0]->get_lb_weight();
+    LoadBalArray[0] = ElemArray[0]->lb_weight();
     for(ielem = 1; ielem < num_elem; ielem++)
-        LoadBalArray[ielem] = LoadBalArray[ielem - 1] + ElemArray[ielem]->get_lb_weight();
+        LoadBalArray[ielem] = LoadBalArray[ielem - 1] + ElemArray[ielem]->lb_weight();
     
     //store my last key, do this after finding the cumulative lb_weight
     //sum instead of before it, because I know ElemArray[num_elem-1] 

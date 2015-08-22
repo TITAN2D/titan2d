@@ -55,7 +55,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     }
     set_lb_key(sfc_key_zero);
     
-    lb_weight = 1.0;
+    set_lb_weight(1.0);
     new_old = OLD;
     generation(0); //--first generation 
     set_material(mat);
@@ -96,7 +96,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     for(i = 0; i < 4; i++)
         help += order(i) * (no_of_eqns);
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
-    ndof = help;
+    ndofABCD = help;
     
     refined = 0;
     
@@ -226,7 +226,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
         set_son(i, sfc_key_zero);
     }
     set_lb_key(sfc_key_zero);
-    lb_weight = 1.0;
+    set_lb_weight(1.0);
     set_myprocess(myid);
     generation(gen); //--first generation
     set_opposite_brother_flag(1);
@@ -274,7 +274,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     for(i = 0; i < 4; i++)
         help += order(i) * (no_of_eqns);
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
-    ndof = help;
+    ndofABCD = help;
     
     refined = 0;
     
@@ -369,7 +369,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     }
     
     set_lb_key(sfc_key_zero);
-    lb_weight = 1.0;
+    set_lb_weight(1.0);
     new_old = NEW;
     set_opposite_brother_flag(0);
     stoppedflags = 2;
@@ -421,10 +421,10 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
         if(order(4) < sons[i]->order(4))
             set_order(4, sons[i]->order(4));
     
-    ndof = 0;
+    ndofABCD = 0;
     for(i = 0; i < 4; i++)
-        ndof += order(i) * (no_of_eqns);
-    ndof += pow((float) (order(4) - 1), 2) * (no_of_eqns);
+        ndofABCD += order(i) * (no_of_eqns);
+    ndofABCD += pow((float) (order(4) - 1), 2) * (no_of_eqns);
     
     refined = 1; // not an active element yet!!!
             
@@ -739,7 +739,7 @@ void Element::update_ndof()
         help += order(i) * (no_of_eqns);
     
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns);
-    ndof = help;
+    ndofABCD = help;
 }
 
 void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* Nelb, int* icon)
@@ -749,7 +749,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
 {
     int i;
     int ifg = 2;
-    int Nc = ndof;
+    int Nc = ndofABCD;
     double bc_value[4]; //--for poisson equ
     Node* NodePtr;
     Element* ElemPtr;
@@ -4209,11 +4209,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"material=%d\n",material());
 #endif
     
-    temp4.i = ndof;
+    temp4.i = ndofABCD;
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 12);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"ndof=%d\n",ndof);
+    fprintf(fpdb,"ndof=%d\n",ndofABCD);
 #endif
     
     temp4.i = refined;
@@ -4230,12 +4230,12 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"adapted=%d\n",adapted);
 #endif
     
-    temp8.d = lb_weight;
+    temp8.d = lb_weight();
     writespace[Itemp++] = temp8.u[0];
     writespace[Itemp++] = temp8.u[1];
     assert(Itemp == 16);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"lb_weight=%g\n",lb_weight);
+    fprintf(fpdb,"lb_weight=%g\n",lb_weight());
 #endif
     sfc_key_write_to_space(lb_key(),writespace,Itemp);
     assert(Itemp == 18);
@@ -4481,7 +4481,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 11);
     
     temp4.u = readspace[Itemp++];
-    ndof = temp4.i;
+    ndofABCD = temp4.i;
     assert(Itemp == 12);
     
     temp4.u = readspace[Itemp++];
@@ -4494,7 +4494,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     
     temp8.u[0] = readspace[Itemp++];
     temp8.u[1] = readspace[Itemp++];
-    lb_weight = temp8.d;
+    set_lb_weight(temp8.d);
     assert(Itemp == 16);
     
     set_lb_key(sfc_key_read_from_space(readspace,Itemp));
