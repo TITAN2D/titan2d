@@ -64,12 +64,12 @@ double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int n
                     if(*(Curr_El->get_state_vars() + 0) > GEOFLOW_TINY)
                     {
                         sub_weight[1] += 1;
-                        sub_weight[0] += *(Curr_El->get_el_error());
+                        sub_weight[0] += Curr_El->el_error(0);
                     }
                     else if(Curr_El->get_adapted_flag() == BUFFER)
                     {
                         sub_weight[1] += 0.1;
-                        sub_weight[0] += *(Curr_El->get_el_error()) * 0.1;
+                        sub_weight[0] += Curr_El->el_error(0) * 0.1;
                     }
                 }
                 

@@ -60,7 +60,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     generation(0); //--first generation 
     set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
-        el_errorABCD[i] = 0.0;
+        set_el_error(i, 0.0);
     
     set_key(nodekeys[8]); //--using bubble key to represent the element
     
@@ -232,7 +232,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     set_opposite_brother_flag(1);
     set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
-        el_errorABCD[i] = 0.0;
+        set_el_error(i, 0.0);
     
     set_key(nodekeys[8]); //--using buble key to represent the element
     
@@ -374,7 +374,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     set_opposite_brother_flag(0);
     stoppedflags = 2;
     for(i = 0; i < EQUATIONS; i++)
-        el_errorABCD[i] = 0.0;
+        set_el_error(i, 0.0);
     
     for(ison = 0; ison < 4; ison++)
     {
@@ -3489,11 +3489,11 @@ void Element::calc_flux_balance(HashTable* NodeTable)
         flux[j] = dabs(nd_xp->refinementflux[j] - nd_xn->refinementflux[j])
                 + dabs(nd_yp->refinementflux[j] - nd_yn->refinementflux[j]);
     
-    el_errorABCD[0] = 0;
+    set_el_error(0, 0.0);
     for(j = 0; j < 3; j++)
-        el_error(0, el_error(0)+flux[j]);
+        set_el_error(0, el_error(0)+flux[j]);
     
-    el_errorABCD[0] = 2. * el_errorABCD[0] * el_errorABCD[0] / (dx[0] + dx[1]) + WEIGHT_ADJUSTER; //W_A is so that elements with pile height = 0 have some weight.
+    set_el_error(0, 2. * el_error(0) * el_error(0) / (dx[0] + dx[1]) + WEIGHT_ADJUSTER); //W_A is so that elements with pile height = 0 have some weight.
             
     return;
 }

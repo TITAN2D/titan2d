@@ -150,7 +150,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                                                                                  > 0)
                    || (EmTemp->if_pile_boundary(HT_Elem_Ptr, REFINE_THRESHOLD2) > 0)
                    || (EmTemp->if_pile_boundary(HT_Elem_Ptr, REFINE_THRESHOLD) > 0)
-                   || (EmTemp->if_source_boundary(HT_Elem_Ptr) > 0) || (*(EmTemp->get_el_error()) > geo_target)))
+                   || (EmTemp->if_source_boundary(HT_Elem_Ptr) > 0) || (EmTemp->el_error(0) > geo_target)))
             {
                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                 debug_ref_flag++;

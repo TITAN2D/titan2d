@@ -47,8 +47,8 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     }
     for(i = 0; i < EQUATIONS; i++)
     {
-        elem->el_error[i] = sendel->el_errorABCD[i];
-        elem->el_solution[i] = sendel->el_solution[i];
+        elem->el_error[i] = sendel->el_error(i);
+        elem->el_solution[i] = sendel->el_solution(i);
     }
     
     //and the node info:

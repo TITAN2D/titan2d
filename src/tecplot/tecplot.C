@@ -874,7 +874,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                 }
                 
                 double *state_vars = EmTemp->get_state_vars();
-                double err = sqrt(*(EmTemp->get_el_error()));
+                double err = sqrt(EmTemp->el_error(0));
                 for(int j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
@@ -1119,7 +1119,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                 }
                 
                 double *state_vars = EmTemp->get_state_vars();
-                double err = sqrt(*(EmTemp->get_el_error()));
+                double err = sqrt(EmTemp->el_error(0));
                 for(int j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));

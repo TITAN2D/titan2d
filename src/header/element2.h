@@ -215,13 +215,13 @@ public:
     //! stores the ?square? of the "solution" and solution error, used durring refinement
     void putel_sq(double solsq, double ellsq);
 
-    //! return the element's solution vector
-    double* get_el_solution(){return el_solution;}
+    //! return the element's solution
+    double el_solution(int i) const {return el_solution_[i];}
+    void set_el_solution(int i, double m_el_solution){el_solution_[i]=m_el_solution;}
 
-    //! returns the element's error vector
-    double* get_el_error(){return el_errorABCD;}
-    double el_error(int i) const {return el_errorABCD[i];}
-    void el_error(int i, double m_el_error){el_errorABCD[i]=m_el_error;}
+    //! returns the element's error
+    double el_error(int i) const {return el_error_[i];}
+    void set_el_error(int i, double m_el_error){el_error_[i]=m_el_error;}
     
     
 
@@ -610,10 +610,10 @@ protected:
     int no_of_eqns_;
 
     //! this holds the "error" in the element's solution, which is useful in determining refinement, this may actually be afeapi legacy
-    double el_errorABCD[EQUATIONS];
+    double el_error_[EQUATIONS];
 
     //! this holds the element solution, I believe this is legacy afeapi
-    double el_solution[EQUATIONS];
+    double el_solution_[EQUATIONS];
 
     //! refined is a flag that usually has the value 0, but will be 1 if the element has been refined this iteration (used to enforce the 1 irregularity rule), or have the value "GHOST" if it is a ghost cell, refined and ghost cells are not updated, see constant.h for the value of GHOST
     int refined;
@@ -968,8 +968,8 @@ inline void Element::set_brothers(const SFC_Key* s)
 
 inline void Element::putel_sq(double solsq, double errsq)
 {
-    el_solution[0] = solsq;
-    el_error(0, errsq);
+    set_el_solution(0, solsq);
+    set_el_error(0, errsq);
 }
 
 inline int Element::get_refined_flag()
