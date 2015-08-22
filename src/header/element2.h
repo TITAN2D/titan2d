@@ -144,7 +144,8 @@ public:
     void set_key(const SFC_Key& new_key){key_=new_key;}
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
-    int get_material();
+    int material() const {return material_;}
+    void set_material(int m){material_=m;}
 
     //! legacy afeapi function prototype, this function does not exist in the finite difference/volume version of Titan
     void get_stiffness(HashTable*, HashTable*, double*, double*, Element*);
@@ -550,7 +551,7 @@ protected:
     int opposite_brother_flag_;
 
     //! the material flag indicates which material should be used to set this element's bed friction, this is for when a GIS material map, specifying different materials in different spatial regions of the map, the GIS material map is a non standard grass map format that Laercio Namikawa developed, it's stored in the "cats" folder under a grass mapset directory
-    int material;/*! ! ! THE MAT. FLAG ! ! !*/
+    int material_;/*! ! ! THE MAT. FLAG ! ! !*/
     
     //! this is the load-balancing weight
     double lb_weight;
@@ -720,15 +721,6 @@ inline void Element::put_ithelem(int i)
     ithelem = i;
 }
 ;
-
-
-
-inline int Element::get_material()
-{
-    return material;
-}
-;
-
 
 inline double Element::get_lb_weight()
 {

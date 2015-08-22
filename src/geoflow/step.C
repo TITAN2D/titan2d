@@ -166,14 +166,14 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         {
             predict2ph_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
                         &tiny, Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
-                        &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
+                        &(matprops_ptr->bedfrict[Curr_El->material()]), &(matprops_ptr->intfrict),
                         Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);
         }
         if(elementType == ElementType::SinglePhase)
         {
             predict_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
                      &tiny, Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
-                     &(matprops_ptr->bedfrict[Curr_El->get_material()]), &(matprops_ptr->intfrict),
+                     &(matprops_ptr->bedfrict[Curr_El->material()]), &(matprops_ptr->intfrict),
                      Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);
         }
 

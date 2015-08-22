@@ -58,7 +58,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     lb_weight = 1.0;
     new_old = OLD;
     generation(0); //--first generation 
-    material = mat;
+    set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
         el_error[i] = 0.0;
     
@@ -230,7 +230,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     set_myprocess(myid);
     generation(gen); //--first generation
     set_opposite_brother_flag(1);
-    material = mat;
+    set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
         el_error[i] = 0.0;
     
@@ -398,7 +398,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     }
     set_myprocess(sons[0]->myprocess());
     generation(sons[0]->generation() - 1);
-    material = sons[0]->get_material();
+    set_material(sons[0]->material());
     no_of_eqns = EQUATIONS;
     
     calc_which_son();
@@ -3434,13 +3434,15 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
     curvature[1] = curvature[1] * (matprops_ptr->LENGTH_SCALE);
     
     if(matprops_ptr->material_count == 1)  //only one material so don't need map  
-        material = 1;  //GIS material id tag/index starts from 1
+        set_material(1);  //GIS material id tag/index starts from 1
     else //more than one material so need to get material from map
     {
-        Get_raster_id(resolution, xcoord, ycoord, &material);
-        if((material < 1) || (material > 1000))
+        int m;
+        Get_raster_id(resolution, xcoord, ycoord, &m);
+        set_material(m);
+        if((material() < 1) || (material() > 1000))
         {
-            fprintf(stderr, "ERROR garbage material %d read from material map\n", material);
+            fprintf(stderr, "ERROR garbage material %d read from material map\n", material());
             exit(1);
         }
     }
@@ -3790,8 +3792,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     
     effect_kactxy[0] = kactxy[0];
     effect_kactxy[1] = kactxy[1];
-    effect_bedfrict = matprops_ptr->bedfrict[material];
-    effect_tanbedfrict = matprops_ptr->tanbedfrict[material];
+    effect_bedfrict = matprops_ptr->bedfrict[material()];
+    effect_tanbedfrict = matprops_ptr->tanbedfrict[material()];
     
 #ifdef STOPCRIT_CHANGE_BED
     if(stoppedflags==2)
@@ -3878,8 +3880,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     {   
         effect_kactxy[0]=kactxy[0];
         effect_kactxy[1]=kactxy[1];
-        effect_bedfrict=matprops_ptr->bedfrict[material];
-        effect_tanbedfrict=matprops_ptr->tanbedfrict[material];
+        effect_bedfrict=matprops_ptr->bedfrict[material()];
+        effect_tanbedfrict=matprops_ptr->tanbedfrict[material()];
     }
 #endif
     
@@ -4200,11 +4202,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"new_old=%d\n",new_old);
 #endif
     
-    temp4.i = material;
+    temp4.i = material();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 11);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"material=%d\n",material);
+    fprintf(fpdb,"material=%d\n",material());
 #endif
     
     temp4.i = ndof;
@@ -4475,7 +4477,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 10);
     
     temp4.u = readspace[Itemp++];
-    material = temp4.i;
+    set_material(temp4.i);
     assert(Itemp == 11);
     
     temp4.u = readspace[Itemp++];

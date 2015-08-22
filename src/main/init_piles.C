@@ -213,7 +213,7 @@ void cxxTitanSinglePhase::init_piles()
                     double slope = sqrt(xslope * xslope + yslope * yslope);
                     
                     forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)
-                            * tan(matprops_ptr->bedfrict[Curr_El->get_material()]);
+                            * tan(matprops_ptr->bedfrict[Curr_El->material()]);
                     
                 }
                 currentPtr = currentPtr->next;

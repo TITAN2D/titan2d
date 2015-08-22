@@ -16,7 +16,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     elem->myprocess = destination_proc;
     elem->generation = sendel->generation();
     elem->opposite_brother_flag = sendel->opposite_brother_flag();
-    elem->material = sendel->material;
+    elem->material = sendel->material();
     
     for(i = 0; i < 8; i++)
     {

@@ -128,7 +128,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
                 Vfluid[i] = 0.;
             }
             volf = 1.;
-            bedfrict = matprops2_ptr->bedfrict[EmTemp->get_material()];
+            bedfrict = matprops2_ptr->bedfrict[EmTemp->material()];
         }
 
         double Vsolid[DIMENSION];

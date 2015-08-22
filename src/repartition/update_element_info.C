@@ -173,7 +173,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->set_myprocess(myid);
     newelement->generation(elem2->generation);
     newelement->set_opposite_brother_flag(elem2->opposite_brother_flag);
-    newelement->material = elem2->material;
+    newelement->set_material(elem2->material);
     
     for(i = 0; i < 8; i++)
     {

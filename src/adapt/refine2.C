@@ -615,7 +615,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     BC* orig_bcptr = EmTemp->bcptr();
     int generation = EmTemp->generation() + 1;
     int neigh_gen[4];
-    int material = EmTemp->get_material();
+    int material = EmTemp->material();
     
     double coord[DIMENSION];
     //---0th new element---
