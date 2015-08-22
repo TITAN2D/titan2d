@@ -543,8 +543,8 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
             printf("ielem=%d\n", ielem);
         ElemP = (*ElemTable)->generateElement(fp, *NodeTable, matprops_ptr, myid);
         (*ElemTable)->add(ElemP->key(), ElemP);
-        if(ElemP->get_gen() > maxgen)
-            maxgen = ElemP->get_gen();
+        if(ElemP->generation() > maxgen)
+            maxgen = ElemP->generation();
         //if((*(ElemP->pass_key()+0)==tempkey[0])&&(*(ElemP->pass_key()+1)==tempkey[1]))
         //printf("YAAAAAAAAAAAADAAAAAAAAAAAAAAAAA\n");
         
@@ -555,7 +555,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     if(dx < dy)
         dx = dy;
     
-    REFINE_LEVEL = ElemP->get_gen()
+    REFINE_LEVEL = ElemP->generation()
             + ceil(log(dx * (matprops_ptr->number_of_cells_across_axis) / (matprops_ptr->smallest_axis)) / log(2.0));
     
     if(maxgen > REFINE_LEVEL)

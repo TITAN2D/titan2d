@@ -98,7 +98,7 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
                 {	//if this is a refined element don't involve!!!
                 
                     // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
-                    if((Curr_El->get_gen() > MIN_GENERATION) && (Curr_El->get_which_son() == 0))
+                    if((Curr_El->generation() > MIN_GENERATION) && (Curr_El->get_which_son() == 0))
                     {
                         //check to see if currentPtr might get deleted and if it might, find next ptr that won't
                         if(currentPtr != NULL)
@@ -297,7 +297,7 @@ int Element::check_unrefinement(HashTable* El_Table, double target)
 
     for(int ineigh = 0; ineigh < 8; ineigh++)
     {
-        if(((neigh_proc(i) != myprocess()) && (neigh_proc(i) >= 0) && (generation <= 0)) || (neigh_gen(i) > generation))
+        if(((neigh_proc(i) != myprocess()) && (neigh_proc(i) >= 0) && (generation() <= 0)) || (neigh_gen(i) > generation()))
             return (0);
         i++;
     }
@@ -383,7 +383,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         ineigh = ison;
         
         //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-        if((EmFather->neigh_gen(ineigh) == EmFather->generation) || (EmFather->neigh_proc(ineigh) == -1))
+        if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
         {
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
@@ -396,7 +396,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         }
         else if(EmFather->neigh_proc(ineigh) == myid)
         {
-            assert(EmFather->neigh_gen(ineigh) == EmFather->generation + 1);
+            assert(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
             NdTemp->info = S_S_CON;
@@ -408,7 +408,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
         ineigh = inode;
         
         //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-        if((EmFather->neigh_gen(ineigh) == EmFather->generation) || (EmFather->neigh_proc(ineigh % 4) == -1))
+        if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
         {
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
@@ -576,8 +576,8 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     assert(ineighme < 4);
                     
                     //Give my neighbor my contact information
-                    EmNeigh->get_neigh_gen(ineighme, EmFather->generation);
-                    EmNeigh->get_neigh_gen(ineighme + 4, EmFather->generation);
+                    EmNeigh->get_neigh_gen(ineighme, EmFather->generation());
+                    EmNeigh->get_neigh_gen(ineighme + 4, EmFather->generation());
                     
                     EmNeigh->set_neigh_proc(ineighme + 4, -2);
                     
@@ -585,8 +585,8 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     {
                         //if my neighbor is a NEWFATHER, I need to update my
                         //information about him too
-                        EmFather->get_neigh_gen(ineigh, EmNeigh->generation);
-                        EmFather->get_neigh_gen(ineigh + 4, EmNeigh->generation);
+                        EmFather->get_neigh_gen(ineigh, EmNeigh->generation());
+                        EmFather->get_neigh_gen(ineigh + 4, EmNeigh->generation());
                         
                         EmFather->set_neigh_proc(ineigh + 4, -2);
                         
@@ -735,7 +735,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                 NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineigh % 4 + 4));
                 assert(NdTemp);
                 
-                if(EmFather->neigh_gen(ineigh) - 1 == EmFather->generation)
+                if(EmFather->neigh_gen(ineigh) - 1 == EmFather->generation())
                     NdTemp->info = S_C_CON;
                 
                 //The element I want my neighbor to update
@@ -839,8 +839,8 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //one of us would have been able to unrefine if we were of
                                 //different generations, that means our NEWFATHERs are the
                                 //same generation as each other too
-                                EmFather->get_neigh_gen(ineighmod4, EmFather->generation);
-                                EmFather->get_neigh_gen(ineighmod4 + 4, EmFather->generation);
+                                EmFather->get_neigh_gen(ineighmod4, EmFather->generation());
+                                EmFather->get_neigh_gen(ineighmod4 + 4, EmFather->generation());
                                 
                                 //all the other neighbor information remains the same but
                                 //must delete 2 nodes I'll do 1 now and the other one was
@@ -891,7 +891,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 //the generation.
                                 NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key(ineighmod4 + 4));
                                 assert(NdTemp);
-                                if(EmTemp->neigh_gen(ineighmod4) == EmTemp->generation)
+                                if(EmTemp->neigh_gen(ineighmod4) == EmTemp->generation())
                                     NdTemp->info = SIDE;
                                 else
                                 {	      //my neighbor was my generation but his father moved in

@@ -111,7 +111,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
       // if the generation, son number, and parent keys are the same then will
       // be the same element unless the initial mesh was too fine and 
       // multiple elements had the same initial key
-        assert(elem2->generation == EmTemp->get_gen());
+        assert(elem2->generation == EmTemp->generation());
         if(elem2->generation > 0)
         {
             assert(elem2->which_son == EmTemp->get_which_son());
@@ -138,7 +138,7 @@ void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int 
     //r_element->put_neigh_gen(side, Neighbor->get_gen());// added by jp 9.30
     
     int which = Neighbor->which_neighbor(r_element->key());
-    int gen = r_element->get_gen();    // added by jp 9.30
+    int gen = r_element->generation();    // added by jp 9.30
             
     Neighbor->set_neigh_proc(which, target_proc);
     Neighbor->get_neigh_gen(which, gen);    // added by jp 9.30
@@ -171,7 +171,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     Node* node;
     int i, j;
     newelement->set_myprocess(myid);
-    newelement->generation = elem2->generation;
+    newelement->generation(elem2->generation);
     newelement->opposite_brother_flag = elem2->opposite_brother_flag;
     newelement->material = elem2->material;
     

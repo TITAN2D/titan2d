@@ -64,7 +64,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                 if(Neigh != NULL && neigh_proc == myid)
                 { //-- if this neighbor is in the same proc as element is
                 
-                    if(element->get_gen() > Neigh->get_gen())
+                    if(element->generation() > Neigh->generation())
                     {
                         //-- if the neighbor is bigger, then it must be refined
                         
@@ -97,7 +97,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                 else
                 { //-- need neighbor's generation infomation
                 
-                    if(element->get_gen() > element->neigh_gen(i))
+                    if(element->generation() > element->neigh_gen(i))
                     { //--stop this round of refinement
                     
                         *ifg = 0;

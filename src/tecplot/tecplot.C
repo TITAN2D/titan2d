@@ -159,7 +159,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     if(get_ur_tri(El_Table, NodeTable, myid, EmArray))
                         num_tec_tri++;
                     
-                    gen = EmTemp->get_gen();
+                    gen = EmTemp->generation();
                     //one triangle is added to an element for each side whose
                     //neighboring element is more refined than current element 
                     //provided the triangle wouldn't fall on a domain boundary
@@ -230,7 +230,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
             entryp = entryp->next;
             if((EmTemp->get_adapted_flag() > TOBEDELETED) && (EmTemp->get_adapted_flag() <= BUFFER))
             {
-                gen = EmTemp->get_gen();
+                gen = EmTemp->generation();
                 
                 switch (get_ll_polygon(El_Table, NodeTable, myid, EmArray))
                 {
@@ -394,7 +394,7 @@ int get_ll_polygon(HashTable * El_Table, HashTable * NodeTable, int myid, Elemen
     
     int xm, xp, ym, yp;           //this element's  left right down up 
     int zmxm, zmxp, zmym, zmyp;   //left/down neighbor's left right down up
-    int gen = EmArray[0]->get_gen();
+    int gen = EmArray[0]->generation();
     
     
     int yada = 0;
@@ -496,7 +496,7 @@ int get_ur_tri(HashTable * El_Table, HashTable * NodeTable, int myid, Element * 
     
     //determine which ways are left (xm) and down (ym)
     get_elem_orient(EmArray[0], &xm, &xp, &ym, &yp);
-    gen = EmArray[0]->get_gen();
+    gen = EmArray[0]->generation();
     int xpfirst = xp;
     if(EmArray[0]->neigh_gen(xp) > gen)
         xp += 4;                    //account for more refined neighbors
@@ -892,7 +892,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
                                 state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
                                 state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
-                                EmTemp->get_gen(), EmTemp->get_which_son(),
+                                EmTemp->generation(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
@@ -904,7 +904,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
                                 state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
                                 state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],
-                                EmTemp->get_gen(), EmTemp->get_which_son(),
+                                EmTemp->generation(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
@@ -961,7 +961,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
-                                state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->get_gen(), EmTemp->get_which_son(),
+                                state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->generation(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
@@ -971,7 +971,7 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                                 (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
-                                state_vars[1] * momentum_scale, state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->get_gen(), EmTemp->get_which_son(),
+                                state_vars[1] * momentum_scale, state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->generation(), EmTemp->get_which_son(),
                                 EmTemp->get_elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
                                 *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
@@ -1133,7 +1133,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                             (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
                             state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
-                            EmTemp->get_gen(), EmTemp->get_which_son());
+                            EmTemp->generation(), EmTemp->get_which_son());
 #else
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
                             (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
@@ -1141,7 +1141,7 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                             (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
                             state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],
-                            EmTemp->get_gen(), EmTemp->get_which_son());
+                            EmTemp->generation(), EmTemp->get_which_son());
 #endif
                     
                 }

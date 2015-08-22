@@ -44,7 +44,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
     while (recv)
     {
         EmTemp = recv->targetP;
-        if(recv->sender_gen == EmTemp->get_gen())
+        if(recv->sender_gen == EmTemp->generation())
         {
             assert(recv->side < 4);
             if(EmTemp->get_refined_flag()) //-- if the receptor was refined
@@ -324,7 +324,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
         
         else //-- sender's generation is diffrent from receptor's
         {
-            if(recv->sender_gen > EmTemp->get_gen()) //--sender is smaller than receptor
+            if(recv->sender_gen > EmTemp->generation()) //--sender is smaller than receptor
             {
                 assert(!recv->sender_refined); //-- debug window
                 if(EmTemp->get_refined_flag()) //-- happened only in h-refinement
@@ -366,7 +366,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                 }
                 else //-- p enrichment
                 {
-                    assert(recv->sender_gen == EmTemp->get_gen() + 1); //-- debug window
+                    assert(recv->sender_gen == EmTemp->generation() + 1); //-- debug window
                             
                     int start = recv->side % 4;
                     
@@ -382,7 +382,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                 
             }
             
-            if(recv->sender_gen < EmTemp->get_gen()) //--sender is bigger than receptor
+            if(recv->sender_gen < EmTemp->generation()) //--sender is bigger than receptor
             {
                 if(recv->sender_refined)
                 {
@@ -419,7 +419,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                 }
                 else
                 {
-                    assert(recv->sender_gen == EmTemp->get_gen() - 1); //-- debug window
+                    assert(recv->sender_gen == EmTemp->generation() - 1); //-- debug window
                             
                     int start = recv->side;
                     int end = start + 1;

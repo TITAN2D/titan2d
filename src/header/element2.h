@@ -171,8 +171,10 @@ public:
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
     int get_no_of_dof();
 
+    //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
+    int generation() const{return generation_;}
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
-    void put_gen(int);
+    void generation(int g){generation_ = g;}
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
     const SFC_Key& brother(const int i) const {return brothers_[i];}
@@ -223,9 +225,6 @@ public:
     //! this function sets the pointer to an element's boundary conditions to NULL
     void void_bcptr(){bcptr_ = nullptr;}
     void delete_bcptr(){delete bcptr_;void_bcptr();}
-
-    //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
-    int get_gen();
 
     //! compare the FindNeigh key against the keys of this element's 8 neighbors to determine which if any neighbor FindNeigh is
     int which_neighbor(const SFC_Key &FindNeigh);
@@ -544,7 +543,7 @@ protected:
     int myprocess_;
 
     //! generation is how many times this element has been refined, currently -8<=generation<=3, a negative generation number means it has been unrefined beyond the orignal coarse mesh, a positive generation number means it has been refined (is smaller than the original element size)
-    int generation;
+    int generation_;
 
     //! opposite_brother_flag indicate if we have the correct key for the non-neighbor brother (0:= don't have info, 1:= have info)
     int opposite_brother_flag;
@@ -971,13 +970,6 @@ inline int Element::get_no_of_dof()
     return ndof;
 }
 
-inline void Element::put_gen(int g)
-{
-    generation = g;
-}
-
-
-
 inline void Element::set_sons(const SFC_Key* s)
 {
     for(int i = 0; i < 4; i++)
@@ -1007,11 +999,6 @@ inline double* Element::get_el_solution()
 inline double* Element::get_el_error()
 {
     return el_error;
-}
-
-inline int Element::get_gen()
-{
-    return generation;
 }
 
 inline int Element::get_refined_flag()

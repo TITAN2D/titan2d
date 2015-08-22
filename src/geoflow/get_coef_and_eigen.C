@@ -68,7 +68,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     mindx = (
                             (*(EmTemp->get_dx() + 0) < *(EmTemp->get_dx() + 1)) ?
                                     *(EmTemp->get_dx() + 0) : *(EmTemp->get_dx() + 1))
-                            * pow(0.5, REFINE_LEVEL - EmTemp->get_gen());
+                            * pow(0.5, REFINE_LEVEL - EmTemp->generation());
                     break;
                 }
             }

@@ -143,7 +143,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
             EmTemp = (Element*) (entryp->value);
             assert(EmTemp);
             //-- this requirement is used to exclude the new elements
-            if(((EmTemp->get_adapted_flag() > 0) && (EmTemp->get_adapted_flag() < NEWSON)) && (EmTemp->get_gen()
+            if(((EmTemp->get_adapted_flag() > 0) && (EmTemp->get_adapted_flag() < NEWSON)) && (EmTemp->generation()
                     < REFINE_LEVEL)
                && ((EmTemp->if_pile_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) || (EmTemp->if_pile_boundary(
                        HT_Elem_Ptr, REFINE_THRESHOLD1)
@@ -606,7 +606,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                            && (miny <= xycenter[icenter][1]) && (xycenter[icenter][1] <= maxy))
                         {
                             
-                            if((EmTemp->get_gen() < REFINE_LEVEL) && (EmTemp->get_adapted_flag() > 0)
+                            if((EmTemp->generation() < REFINE_LEVEL) && (EmTemp->get_adapted_flag() > 0)
                                && (EmTemp->get_adapted_flag() < NEWSON))
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                             Element *EmSon = EmTemp;
@@ -619,8 +619,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             else
                                 TempList.add(EmTemp);
                             
-                            if(mincentergen > (EmSon->get_gen()))
-                                mincentergen = EmSon->get_gen();
+                            if(mincentergen > (EmSon->generation()))
+                                mincentergen = EmSon->generation();
                             break;
                         }
                 }
@@ -690,7 +690,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                            == 1)
                         {
                             
-                            if(EmTemp->get_gen() < REFINE_LEVEL)
+                            if(EmTemp->generation() < REFINE_LEVEL)
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
@@ -859,7 +859,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 EmTemp = (Element*) (entryp->value);
                 assert(EmTemp);
                 //-- this requirement is used to exclude the new elements
-                if(((EmTemp->get_adapted_flag() > 0) && (EmTemp->get_adapted_flag() < NEWSON)) && (EmTemp->get_gen()
+                if(((EmTemp->get_adapted_flag() > 0) && (EmTemp->get_adapted_flag() < NEWSON)) && (EmTemp->generation()
                         < REFINE_LEVEL))
                 {
                     if(((EmTemp->if_pile_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) ||
@@ -941,8 +941,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                     (EmTemp->if_source_boundary(HT_Elem_Ptr) > 0)))
                     {
                         EmTemp->put_adapted_flag(BUFFER);
-                        if(minboundarygen > EmTemp->get_gen())
-                            minboundarygen = EmTemp->get_gen();
+                        if(minboundarygen > EmTemp->generation())
+                            minboundarygen = EmTemp->generation();
                     }
                 
                 entryp = entryp->next;
@@ -980,7 +980,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                            == 1)
                         {
                             
-                            if(EmTemp->get_gen() < REFINE_LEVEL)
+                            if(EmTemp->generation() < REFINE_LEVEL)
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                             if(EmTemp->get_adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
@@ -1410,7 +1410,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                     currentPtr = currentPtr->next;
                     assert(EmTemp);
                     
-                    generation = EmTemp->get_gen();
+                    generation = EmTemp->generation();
                     
                     if((EmTemp->get_adapted_flag() == NOTRECADAPTED) && (generation < refinelevel))
                     {

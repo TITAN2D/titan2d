@@ -282,7 +282,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
     if(dx[0] < dx[1])
         DX = dx[1];
     
-    REFINE_LEVEL = Quad9P->get_gen()
+    REFINE_LEVEL = Quad9P->generation()
             + ceil(log(DX * (matprops_ptr->number_of_cells_across_axis) / (matprops_ptr->smallest_axis)) / log(2.0));
     
     //(mdj)2007-04-12 if(REFINE_LEVEL<3) REFINE_LEVEL=3;
@@ -330,7 +330,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         }
     
 #ifdef MAX_DEPTH_MAP
-    outline_ptr->init(Quad9P->get_dx(), REFINE_LEVEL - Quad9P->get_gen(), xminmax, yminmax);
+    outline_ptr->init(Quad9P->get_dx(), REFINE_LEVEL - Quad9P->generation(), xminmax, yminmax);
 #endif
     
     delete[] value;

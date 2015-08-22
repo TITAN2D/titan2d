@@ -127,7 +127,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || EmTemp->neigh_gen(0) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(0) <= EmTemp->generation())
     {
         RefinedNeigh = 0;
         info = S_S_CON;
@@ -222,7 +222,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || EmTemp->neigh_gen(1) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(1) <= EmTemp->generation())
     {
         RefinedNeigh = 0;
         info = S_S_CON;
@@ -321,7 +321,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || EmTemp->neigh_gen(2) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(2) <= EmTemp->generation())
     {
         info = S_S_CON;
         
@@ -420,7 +420,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     else
         boundary = 0;
     
-    if(boundary == 1 || EmTemp->neigh_gen(3) <= EmTemp->get_gen())
+    if(boundary == 1 || EmTemp->neigh_gen(3) <= EmTemp->generation())
     {
         info = S_S_CON;
         
@@ -613,7 +613,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     int neigh_proc[8];
     BC* bcptr = NULL;
     BC* orig_bcptr = EmTemp->bcptr();
-    int generation = EmTemp->get_gen() + 1;
+    int generation = EmTemp->generation() + 1;
     int neigh_gen[4];
     int material = EmTemp->get_material();
     
