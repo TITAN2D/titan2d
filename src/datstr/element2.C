@@ -82,7 +82,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
         }
     }
     
-    bcptr = b;
+    bcptr(b);
     
     for(i = 0; i < 5; i++)
         set_order(i, POWER);   //--used in initial uniform mesh
@@ -260,7 +260,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
         get_neigh_gen(i + 4, gen_neigh[i]);
     }
     
-    bcptr = b;
+    bcptr(b);
     
     for(i = 0; i < 5; i++)
     {
@@ -402,7 +402,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     no_of_eqns = EQUATIONS;
     
     calc_which_son();
-    bcptr = sons[0]->get_bcptr();
+    bcptr(sons[0]->bcptr());
     //order information -- keep the highest order
     set_order(0, sons[0]->order(0));
     if(order(0) < sons[1]->order(0))
@@ -768,23 +768,23 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
         if(neigh_proc(i) == -1)
         {
             
-            if(bcptr == NULL)
+            if(bcptr() == nullptr)
                 Nelb[i] = 2; //the element has no bc at all
             else
             {
-                if(bcptr->type[i] == 0)
+                if(bcptr()->type[i] == 0)
                     Nelb[i] = 2; //no bc at that side
                             
-                else if(bcptr->type[i] == 2)
+                else if(bcptr()->type[i] == 2)
                     Nelb[i] = 1; //stress applied
                             
-                else if(bcptr->type[i] == 1 && bcptr->value[i][0][0] == UN_CONSTRAINED)
+                else if(bcptr()->type[i] == 1 && bcptr()->value[i][0][0] == UN_CONSTRAINED)
                     Nelb[i] = 4; //y constrined
                             
-                else if(bcptr->type[i] == 1 && bcptr->value[i][0][1] == UN_CONSTRAINED)
+                else if(bcptr()->type[i] == 1 && bcptr()->value[i][0][1] == UN_CONSTRAINED)
                     Nelb[i] = 3; //x constrined
                             
-                else if(bcptr->type[i] == 1)
+                else if(bcptr()->type[i] == 1)
                     Nelb[i] = 5; //x, y constrained
             }
         }
@@ -834,8 +834,8 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
 
 Element::~Element()
 {
-    if(bcptr)
-        delete bcptr;
+    if(bcptr())
+        delete_bcptr();
     /*  if(key[0] == (unsigned) 2501998986) {
      int mmmyid;
      MPI_Comm_rank(MPI_COMM_WORLD, &mmmyid);
@@ -4367,7 +4367,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     //assert(Itemp == 101);
     
     //boundary conditions start here
-    if(bcptr == NULL)
+    if(bcptr() == nullptr)
     {
         writespace[Itemp++] = 0;
         //assert(Itemp==118);
@@ -4384,10 +4384,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
         for(itemp = 0; itemp < 4; itemp++)
         {
-            temp4.i = bcptr->type[itemp];
+            temp4.i = bcptr()->type[itemp];
             writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
-            fprintf(fpdb,"%d ",bcptr->type[itemp]);
+            fprintf(fpdb,"%d ",bcptr()->type[itemp]);
 #endif
         }
         //assert(Itemp==122);
@@ -4397,18 +4397,18 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
         for(itemp = 0; itemp < 4; itemp++)
         {
-            temp4.f = bcptr->value[itemp][0][0];
+            temp4.f = bcptr()->value[itemp][0][0];
             writespace[Itemp++] = temp4.u;
-            temp4.f = bcptr->value[itemp][0][1];
+            temp4.f = bcptr()->value[itemp][0][1];
             writespace[Itemp++] = temp4.u;
-            temp4.f = bcptr->value[itemp][1][0];
+            temp4.f = bcptr()->value[itemp][1][0];
             writespace[Itemp++] = temp4.u;
-            temp4.f = bcptr->value[itemp][1][1];
+            temp4.f = bcptr()->value[itemp][1][1];
             writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
             fprintf(fpdb,"bcptr->value={ %f %f %f %f }\n",
-                    bcptr->value[itemp][0][0],bcptr->value[itemp][0][1],
-                    bcptr->value[itemp][1][0],bcptr->value[itemp][1][1]);
+                    bcptr()->value[itemp][0][0],bcptr()->value[itemp][0][1],
+                    bcptr()->value[itemp][1][0],bcptr()->value[itemp][1][1]);
 #endif      
         }
         //assert(Itemp==138);
@@ -4582,34 +4582,34 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
         fread(readspace, sizeof(unsigned), num_extra, fp);
         Itemp = 0;
         
-        bcptr = new BC;
+        bcptr(new BC);
         
         //boundary conditions start here
         for(itemp = 0; itemp < 4; itemp++)
         {
             temp4.u = readspace[Itemp++];
-            bcptr->type[itemp] = temp4.i;
+            bcptr()->type[itemp] = temp4.i;
         }
         assert(Itemp == 4);
         
         for(itemp = 0; itemp < 4; itemp++)
         {
             temp4.u = readspace[Itemp++];
-            bcptr->value[itemp][0][0] = temp4.f;
+            bcptr()->value[itemp][0][0] = temp4.f;
             
             temp4.u = readspace[Itemp++];
-            bcptr->value[itemp][0][1] = temp4.f;
+            bcptr()->value[itemp][0][1] = temp4.f;
             
             temp4.u = readspace[Itemp++];
-            bcptr->value[itemp][1][0] = temp4.f;
+            bcptr()->value[itemp][1][0] = temp4.f;
             
             temp4.u = readspace[Itemp++];
-            bcptr->value[itemp][1][1] = temp4.f;
+            bcptr()->value[itemp][1][1] = temp4.f;
         }
         assert(Itemp == 20);
     }
     else
-        bcptr = NULL;
+        void_bcptr();
     
     find_positive_x_side(NodeTable);
     calculate_dx(NodeTable);

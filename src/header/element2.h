@@ -218,7 +218,11 @@ public:
     void set_neighbor(const int i, const SFC_Key &new_key){neighbors_[i] = new_key;}
 
     //! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
-    BC* get_bcptr();
+    BC* bcptr(){return bcptr_;}
+    void bcptr(BC* new_bcptr){bcptr_=new_bcptr;}
+    //! this function sets the pointer to an element's boundary conditions to NULL
+    void void_bcptr(){bcptr_ = nullptr;}
+    void delete_bcptr(){delete bcptr_;void_bcptr();}
 
     //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
     int get_gen();
@@ -270,8 +274,7 @@ public:
     //! this function is afeapi legacy it is not called anywhere in the finite difference/volume version of titan
     void get_nelb_icon(HashTable*, HashTable*, int*, int*);
 
-    //! this function sets the pointer to an element's boundary conditions to NULL
-    void void_bcptr();
+
 
     //! this function returns the Load Balancing weight of an element which is used in repartitioning
     double get_lb_weight();
@@ -583,7 +586,7 @@ protected:
     int neigh_gen_[8];
 
     //! pointer to the boundary condition class, if this element is not a boundary element the pointer holds the NULL value
-    BC* bcptr;
+    BC* bcptr_;
 
     //! the number of degrees of freedom, since Titan is a finite difference/volume code, ndof is afeapi legacy, but the DG (Discontinuous Galerkin) version of Titan actually uses this
     int ndof;
@@ -723,11 +726,6 @@ inline int Element::get_material()
 }
 ;
 
-inline void Element::void_bcptr()
-{
-    bcptr = NULL;
-}
-;
 
 inline double Element::get_lb_weight()
 {
@@ -1018,11 +1016,6 @@ inline double* Element::get_el_solution()
 inline double* Element::get_el_error()
 {
     return el_error;
-}
-
-inline BC* Element::get_bcptr()
-{
-    return bcptr;
 }
 
 inline int Element::get_gen()

@@ -271,11 +271,11 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
                 for(int k = 0; k < 2; k++)
                     newbc->value[i][j][k] = elem2->bc_value[i][j][k];
         }
-        newelement->bcptr = newbc;
+        newelement->bcptr(newbc);
     }
     
     else
-        newelement->bcptr = 0;
+        newelement->void_bcptr();
     
     *e_error = newelement->el_error[0];
     

@@ -612,7 +612,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     SFC_Key neigh[8];
     int neigh_proc[8];
     BC* bcptr = NULL;
-    BC* orig_bcptr = EmTemp->get_bcptr();
+    BC* orig_bcptr = EmTemp->bcptr();
     int generation = EmTemp->get_gen() + 1;
     int neigh_gen[4];
     int material = EmTemp->get_material();
