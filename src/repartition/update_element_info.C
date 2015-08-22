@@ -184,7 +184,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->set_order(i, elem2->order[i]);
     
     newelement->set_ndof(elem2->ndof);
-    newelement->no_of_eqns = elem2->no_of_eqns;
+    newelement->set_no_of_eqns(elem2->no_of_eqns);
     newelement->refined = elem2->refined;
     newelement->adapted = elem2->adapted;
     newelement->which_son = elem2->which_son;
@@ -208,7 +208,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     }
     for(i = 0; i < EQUATIONS; i++)
     {
-        newelement->el_error[i] = elem2->el_error[i];
+        newelement->el_errorABCD[i] = elem2->el_error[i];
         newelement->el_solution[i] = elem2->el_solution[i];
     }
     
@@ -277,7 +277,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     else
         newelement->void_bcptr();
     
-    *e_error = newelement->el_error[0];
+    *e_error = newelement->el_errorABCD[0];
     
     //geoflow stuff
     newelement->positive_x_side = elem2->positive_x_side;

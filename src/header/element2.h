@@ -173,6 +173,11 @@ public:
     int ndof() const {return ndof_;}
     void set_ndof(const int new_ndof){ndof_=new_ndof;}
     
+    int no_of_eqns() const {return no_of_eqns_;}
+    void set_no_of_eqns(const int new_no_of_eqns){no_of_eqns_=new_no_of_eqns;}
+    
+    
+    
     //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
     int generation() const{return generation_;}
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
@@ -211,10 +216,15 @@ public:
     void putel_sq(double solsq, double ellsq);
 
     //! return the element's solution vector
-    double* get_el_solution();
+    double* get_el_solution(){return el_solution;}
 
     //! returns the element's error vector
-    double* get_el_error();
+    double* get_el_error(){return el_errorABCD;}
+    double el_error(int i) const {return el_errorABCD[i];}
+    void el_error(int i, double m_el_error){el_errorABCD[i]=m_el_error;}
+    
+    
+
 
     //! returns the key for this element's 8 neighbors
     const SFC_Key& neighbor(const int i) const {return neighbors_[i];}
@@ -597,10 +607,10 @@ protected:
     int ndof_;
 
     //! this is legacy afeapi, it is not used, but do not remove it, it could cause problems if you do
-    int no_of_eqns;
+    int no_of_eqns_;
 
     //! this holds the "error" in the element's solution, which is useful in determining refinement, this may actually be afeapi legacy
-    double el_error[EQUATIONS];
+    double el_errorABCD[EQUATIONS];
 
     //! this holds the element solution, I believe this is legacy afeapi
     double el_solution[EQUATIONS];
@@ -959,17 +969,7 @@ inline void Element::set_brothers(const SFC_Key* s)
 inline void Element::putel_sq(double solsq, double errsq)
 {
     el_solution[0] = solsq;
-    el_error[0] = errsq;
-}
-
-inline double* Element::get_el_solution()
-{
-    return el_solution;
-}
-
-inline double* Element::get_el_error()
-{
-    return el_error;
+    el_error(0, errsq);
 }
 
 inline int Element::get_refined_flag()

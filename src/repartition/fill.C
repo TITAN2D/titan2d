@@ -27,7 +27,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->order[i] = sendel->order(i);
     
     elem->ndof = sendel->ndof();
-    elem->no_of_eqns = sendel->no_of_eqns;
+    elem->no_of_eqns = sendel->no_of_eqns();
     elem->refined = sendel->refined;
     elem->adapted = sendel->adapted;
     elem->which_son = sendel->which_son;
@@ -47,7 +47,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     }
     for(i = 0; i < EQUATIONS; i++)
     {
-        elem->el_error[i] = sendel->el_error[i];
+        elem->el_error[i] = sendel->el_errorABCD[i];
         elem->el_solution[i] = sendel->el_solution[i];
     }
     
