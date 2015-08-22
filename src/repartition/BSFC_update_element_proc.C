@@ -45,9 +45,9 @@ void BSFC_update_element_proc(int myid, int numprocs, HashTable* HT_Elem_Ptr, Ha
                     k = i;
                 if(EmTemp->get_new_old() == 1)
                 {  //only this element
-                    if(EmTemp->get_myprocess() != sfc_vert_ptr[j].destination_proc)
+                    if(EmTemp->myprocess() != sfc_vert_ptr[j].destination_proc)
                     { // this element will get moved to a new processor
-                        EmTemp->put_myprocess(sfc_vert_ptr[j].destination_proc);
+                        EmTemp->set_myprocess(sfc_vert_ptr[j].destination_proc);
                     }
                     j++;
                 }

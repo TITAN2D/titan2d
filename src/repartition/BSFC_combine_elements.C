@@ -244,7 +244,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         for(i = 0; i < 4; i++)
             if(elm_bunch[i] != NULL)
             {
-                elm_bunch[i]->myprocess = destination_proc;
+                elm_bunch[i]->set_myprocess(destination_proc);
                 ;
             }
     }

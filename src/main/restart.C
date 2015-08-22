@@ -1126,7 +1126,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
         {
             EmTemp = (Element*) entryp->value;
             assert(EmTemp);
-            if(EmTemp->get_myprocess() == myid)
+            if(EmTemp->myprocess() == myid)
             {
                 if(EmTemp->get_adapted_flag() > 0)
                 {
@@ -1254,7 +1254,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
             EmTemp = (Element*) entryp->value;
             assert(EmTemp);
             
-            if(EmTemp->get_myprocess() == myid)
+            if(EmTemp->myprocess() == myid)
             {
                 if(EmTemp->get_adapted_flag() > 0)
                 {

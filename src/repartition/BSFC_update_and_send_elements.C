@@ -59,7 +59,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             EmTemp = (Element*) (entryp->value);
             if(!EmTemp->get_refined_flag())
             {
-                if(myid != EmTemp->get_myprocess())
+                if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
                   // neigh info
                     for(j = 0; j < 8; j++)
@@ -67,7 +67,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                             send_info[EmTemp->neigh_proc(j) * 2] += 1;
                     
                     // element info
-                    send_info[EmTemp->get_myprocess() * 2 + 1] += 1;
+                    send_info[EmTemp->myprocess() * 2 + 1] += 1;
                     
                 }
             }
@@ -139,7 +139,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             EmTemp = (Element*) (entryp->value);
             if(!EmTemp->get_refined_flag())
             {
-                if(myid != EmTemp->get_myprocess())
+                if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
                     for(j = 0; j < 8; j++)
                         if(EmTemp->neigh_proc(j) != myid && EmTemp->neigh_proc(j) > -1)
@@ -152,7 +152,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                                     EmTemp->key());
 
                             send_neigh_array[counter_send_proc[EmTemp->neigh_proc(j)] * (2 * KEYLENGTH + 1) + 4] =
-                                    (unsigned) EmTemp->get_myprocess();
+                                    (unsigned) EmTemp->myprocess();
                             
                             counter_send_proc[EmTemp->neigh_proc(j)] += 1;
                         }
@@ -179,7 +179,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
         {
             EmTemp = (Element*) (entryp->value);
             if(!EmTemp->get_refined_flag())
-                if(myid != EmTemp->get_myprocess())
+                if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
                   // neigh info
                     for(j = 0; j < 8; j++)
@@ -188,8 +188,8 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                         {
                             Element* EmNeigh = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(j));
                             k = EmNeigh->which_neighbor(EmTemp->key());
-                            EmNeigh->set_neigh_proc(k, EmTemp->get_myprocess());
-                            EmTemp->set_neigh_proc(j, EmNeigh->get_myprocess());
+                            EmNeigh->set_neigh_proc(k, EmTemp->myprocess());
+                            EmTemp->set_neigh_proc(j, EmNeigh->myprocess());
                         }
                     }
                 }
@@ -243,9 +243,9 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             entryp = entryp->next;
             if(!EmTemp->get_refined_flag())
             {
-                if(myid != EmTemp->get_myprocess())
+                if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
-                    int myprocess = EmTemp->get_myprocess();
+                    int myprocess = EmTemp->myprocess();
                     assert(myprocess >= 0 && myprocess < numprocs);
                     Pack_element(EmTemp, (send_elm_array + counter_send_proc[myprocess]), HT_Node_Ptr, myprocess);
                     counter_send_proc[myprocess] += 1;

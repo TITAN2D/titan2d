@@ -115,7 +115,7 @@ protected:
         
         stoppedflags = 2; //material in all elements start from rest
         //do_erosion=-1;
-        myprocess=-1;
+        set_myprocess(-1);
     }
     //! constructor that creates an original element when funky is read in
     Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
@@ -290,12 +290,12 @@ public:
     //! this function copies the elmenent key to the load balancing key
     void copy_key_to_lb_key(){set_lb_key(key());}
 
-    //! this function sets the process(or) id of an element, it says which processor owns the element.
-    void put_myprocess(int in_proc);
-
+    
     //! this function returns the process(or) id of an element, it says which processor owns the element
-    int get_myprocess();
-
+    int myprocess() const{return myprocess_;}
+    //! this function sets the process(or) id of an element, it says which processor owns the element.
+    void set_myprocess(const int in_proc){myprocess_ = in_proc;}
+    
     //! this function returns the opposite_brother_flag, I (Keith) am not entirely sure what this flag is for, but I know that it is used in repartioning, see BSFC_combine_elements, I think it says if an element has an opposite brother, that is, can it be combined with it's brothers to form their father
     int get_opposite_brother_flag();
 
@@ -541,7 +541,7 @@ protected:
     //! Element type
     ElementType elementType_;
     //! myprocess is id of the process(or) that owns this element
-    int myprocess;
+    int myprocess_;
 
     //! generation is how many times this element has been refined, currently -8<=generation<=3, a negative generation number means it has been unrefined beyond the orignal coarse mesh, a positive generation number means it has been refined (is smaller than the original element size)
     int generation;
@@ -742,18 +742,6 @@ inline void Element::put_lb_weight(double dd_in)
 }
 ;
 
-
-inline void Element::put_myprocess(int in_proc)
-{
-    myprocess = in_proc;
-}
-;
-
-inline int Element::get_myprocess()
-{
-    return myprocess;
-}
-;
 
 inline int Element::get_opposite_brother_flag()
 {

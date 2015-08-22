@@ -260,7 +260,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                             
                             construct_el(new_elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
                             if((new_elm->get_adapted_flag() < 0) && (new_elm->get_adapted_flag() >= -BUFFER))
-                                new_elm->put_myprocess(iproc);
+                                new_elm->set_myprocess(iproc);
                             El_Table->add(new_elm->key(), new_elm);
                             add_counter++;
                         } //if(elm == NULL)
@@ -271,7 +271,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                             //new element data to the old element.
                             construct_el(elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
                             if((elm->get_adapted_flag() < 0) && (elm->get_adapted_flag() >= -BUFFER))
-                                elm->put_myprocess(iproc);
+                                elm->set_myprocess(iproc);
                             update_counter++;
                         }	      //else
                     }	      //for(ielem=0;ielem<num_send_recv[iproc];ielem++)

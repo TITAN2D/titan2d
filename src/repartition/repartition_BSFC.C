@@ -114,7 +114,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
                 else
                     EmTemp->put_lb_weight(EMPTY_CELL);
                 
-                EmTemp->put_myprocess(-1);
+                EmTemp->set_myprocess(-1);
                 
                 total_weight += EmTemp->get_lb_weight();
                 EmTemp->put_new_old(BSFC_NEW);
@@ -2769,7 +2769,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             assert(EmTemp);
             assert(EmTemp->get_adapted_flag()>=NOTRECADAPTED);
             num_elem++;
-            EmTemp->put_myprocess(myid);
+            EmTemp->set_myprocess(myid);
             
             for(ineigh = 0; ineigh < 8; ineigh++)
                 if(EmTemp->neigh_proc(ineigh) >= 0)

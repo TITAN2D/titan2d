@@ -307,7 +307,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
                 currentPtr = currentPtr->next;
                 assert(EmTemp);
                 
-                EmTemp->put_myprocess(myid);
+                EmTemp->set_myprocess(myid);
                 
                 NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->key());
                 assert(NdTemp);

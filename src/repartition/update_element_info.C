@@ -170,7 +170,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
 {
     Node* node;
     int i, j;
-    newelement->myprocess = myid;
+    newelement->set_myprocess(myid);
     newelement->generation = elem2->generation;
     newelement->opposite_brother_flag = elem2->opposite_brother_flag;
     newelement->material = elem2->material;

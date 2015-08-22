@@ -87,7 +87,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf_sfc_key(fp,EmDebugFather.get_key(iFather));
                 fprintf(fp,
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
-                        EmDebugFather.get(iFather)->myprocess, EmDebugFather.get(iFather)->generation,
+                        EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation,
                         EmDebugFather.get(iFather)->adapted, EmDebugFather.get(iFather)->which_son,
                         EmDebugFather.get(iFather)->iwetnode, EmDebugFather.get(iFather)->Awet,
                         EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
@@ -114,7 +114,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 uniqueneigh--;
 
         fprintf(fp, "EmDebug={");fprintf_sfc_key(fp, EmDebug->key());fprintf(fp, "} ");
-        fprintf(fp, "proc=%d ", EmDebug->myprocess);
+        fprintf(fp, "proc=%d ", EmDebug->myprocess());
         fprintf(fp, "gen=%d ", EmDebug->generation);
         fprintf(fp, "adapted=%d ", EmDebug->adapted);
         fprintf(fp, "which_son=%d ", EmDebug->which_son);
@@ -139,7 +139,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf(fp," %d:   {", ineigh);
                 fprintf_sfc_key(fp, EmDebugNeigh.get_key(ineigh));
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
-                        EmDebugNeigh.get(ineigh)->myprocess, EmDebugNeigh.get(ineigh)->generation,
+                        EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation,
                         EmDebugNeigh.get(ineigh)->adapted, EmDebugNeigh.get(ineigh)->which_son,
                         EmDebugNeigh.get(ineigh)->iwetnode, EmDebugNeigh.get(ineigh)->Awet,
                         EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
@@ -236,7 +236,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf_sfc_key(fp, EmDebugFather.get_key(iFather));
                 fprintf(fp,
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
-                        EmDebugFather.get(iFather)->myprocess, EmDebugFather.get(iFather)->generation,
+                        EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation,
                         EmDebugFather.get(iFather)->adapted, EmDebugFather.get(iFather)->which_son,
                         EmDebugFather.get(iFather)->iwetnode, EmDebugFather.get(iFather)->Awet,
                         EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
@@ -264,7 +264,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         fprintf(fp, "EmDebug={ ");
         fprintf_sfc_key(fp, EmDebug->key());
         fprintf(fp, "} ");
-        fprintf(fp, "proc=%d ", EmDebug->myprocess);
+        fprintf(fp, "proc=%d ", EmDebug->myprocess());
         fprintf(fp, "gen=%d ", EmDebug->generation);
         fprintf(fp, "adapted=%d ", EmDebug->adapted);
         fprintf(fp, "which_son=%d ", EmDebug->which_son);
@@ -289,7 +289,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf(fp," %d:   {", ineigh);
                 fprintf_sfc_key(fp, EmDebugNeigh.get_key(ineigh));
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
-                        EmDebugNeigh.get(ineigh)->myprocess, EmDebugNeigh.get(ineigh)->generation,
+                        EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation,
                         EmDebugNeigh.get(ineigh)->adapted, EmDebugNeigh.get(ineigh)->which_son,
                         EmDebugNeigh.get(ineigh)->iwetnode, EmDebugNeigh.get(ineigh)->Awet,
                         EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
@@ -490,9 +490,9 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             assert(!((EmTemp->get_refined_flag()==GHOST)^ ((EmTemp->get_adapted_flag()>=-BUFFER)&& (EmTemp->get_adapted_flag()<=-NOTRECADAPTED) ) ));
             
             //^ is "exclusive or", not "exclusive or" is "if and only if"
-            assert(!((EmTemp->myprocess!=myid)^ ((EmTemp->get_adapted_flag()>=-BUFFER)&& (EmTemp->get_adapted_flag()<=-NOTRECADAPTED) ) ));
+            assert(!((EmTemp->myprocess()!=myid)^ ((EmTemp->get_adapted_flag()>=-BUFFER)&& (EmTemp->get_adapted_flag()<=-NOTRECADAPTED) ) ));
             
-            if(EmTemp->myprocess != myid)
+            if(EmTemp->myprocess() != myid)
                 assert(numprocs > 1);
             
             //^ is "exclusive or", not "exclusive or" is "if and only if"
@@ -589,7 +589,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                 ^ (EmTemp->neighbor(ineigh)==EmTemp->neighbor(ineighp4))));
                         
                         if(EmTemp->neigh_proc(ineighp4) != -2)
-                            assert(EmTemp->neigh_proc(ineighp4) == EmNeigh[1]->myprocess);
+                            assert(EmTemp->neigh_proc(ineighp4) == EmNeigh[1]->myprocess());
                         
                         //loop over the 2 neighbors _on_this_side_
                         for(i = 0; i < 2; i++)
@@ -1616,8 +1616,8 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         EmSon[isonA]->set_neigh_proc(ineighp4, -2);
                         EmSon[isonB]->set_neigh_proc(ineighp4, -2);
                         
-                        EmNeighNew[0]->set_neigh_proc(ineighme, EmFather->myprocess);
-                        EmNeighNew[0]->set_neigh_proc(ineighmep4, EmFather->myprocess);
+                        EmNeighNew[0]->set_neigh_proc(ineighme, EmFather->myprocess());
+                        EmNeighNew[0]->set_neigh_proc(ineighmep4, EmFather->myprocess());
                         
                         //update the nodes on this side
                         //The new difference in generation tells me the OLDFATHER's
@@ -1678,12 +1678,12 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[0]->generation);
                         EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation);
                         
-                        EmSon[isonA]->set_neigh_proc(ineigh, EmNeighNew[0]->myprocess);
+                        EmSon[isonA]->set_neigh_proc(ineigh, EmNeighNew[0]->myprocess());
                         
-                        EmSon[isonB]->set_neigh_proc(ineigh, EmNeighNew[1]->myprocess);
+                        EmSon[isonB]->set_neigh_proc(ineigh, EmNeighNew[1]->myprocess());
                         
-                        EmNeighNew[0]->set_neigh_proc(ineighme, EmFather->myprocess);
-                        EmNeighNew[1]->set_neigh_proc(ineighme, EmFather->myprocess);
+                        EmNeighNew[0]->set_neigh_proc(ineighme, EmFather->myprocess());
+                        EmNeighNew[1]->set_neigh_proc(ineighme, EmFather->myprocess());
                         
                         //update the nodes on this side
                         //don't update my corner nodes because they could be S_C_CON's

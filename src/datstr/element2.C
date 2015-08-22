@@ -101,7 +101,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     refined = 0;
     
     
-    myprocess = myid;
+    set_myprocess(myid);
     elm_loc[0] = elm_loc_in[0];
     elm_loc[1] = elm_loc_in[1];
     calc_which_son();
@@ -227,7 +227,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     }
     set_lb_key(sfc_key_zero);
     lb_weight = 1.0;
-    myprocess = myid;
+    set_myprocess(myid);
     generation = gen; //--first generation
     opposite_brother_flag = 1;
     material = mat;
@@ -396,7 +396,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     {
         elm_loc[ikey] = (sons[0]->get_elm_loc()[ikey]) / 2;
     }
-    myprocess = sons[0]->get_myprocess();
+    set_myprocess(sons[0]->myprocess());
     generation = sons[0]->get_gen() - 1;
     material = sons[0]->get_material();
     no_of_eqns = EQUATIONS;
@@ -663,7 +663,7 @@ const SFC_Key& Element::father() const
             return node_key(1);
             break;
     }
-    cout<<"my key is "<<key()<<" in getfather on proc "<<myprocess<<endl;
+    cout<<"my key is "<<key()<<" in getfather on proc "<<myprocess()<<endl;
     assert(0); // 0 <= which_son <= 3 !!!
 }
 
@@ -3904,7 +3904,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3923,7 +3923,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3960,7 +3960,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3980,7 +3980,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3999,7 +3999,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation<<" refined="<<refined<<" adapted="<<adapted<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -4436,7 +4436,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     
     for(int i = 0; i < NUM_STATE_VARS; i++)
         Influx[i] = 0.0;
-    myprocess = myid;
+    set_myprocess(myid);
     no_of_eqns = EQUATIONS;
     //refined=0;
     

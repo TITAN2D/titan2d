@@ -242,7 +242,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
         else if(EmTemp->adapted != NOTRECADAPTED) //this should be sufficient
             return 0;
         bros[i + 1] = EmTemp;
-        if(bros[i + 1]->get_myprocess() != myid)
+        if(bros[i + 1]->myprocess() != myid)
             return 0; //should not be necessary because of "adapted" check
             
         unrefine_flag = EmTemp->check_unrefinement(El_Table, target);
@@ -297,7 +297,7 @@ int Element::check_unrefinement(HashTable* El_Table, double target)
 
     for(int ineigh = 0; ineigh < 8; ineigh++)
     {
-        if(((neigh_proc(i) != myprocess) && (neigh_proc(i) >= 0) && (generation <= 0)) || (neigh_gen(i) > generation))
+        if(((neigh_proc(i) != myprocess()) && (neigh_proc(i) >= 0) && (generation <= 0)) || (neigh_gen(i) > generation))
             return (0);
         i++;
     }
@@ -637,7 +637,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
     {
         EmFather = OtherProcUpdate->get(iopu);
         assert(EmFather);
-        assert(EmFather->myprocess == myid);
+        assert(EmFather->myprocess() == myid);
         for(ineigh = 0; ineigh < 8; ineigh++)
         {
             neigh_proc = EmFather->neigh_proc(ineigh);
