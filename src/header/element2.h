@@ -268,15 +268,15 @@ public:
     //! returns the which_son flag, which tells the portion of the father element that this element is physically located in
     int which_son() const {return which_sonABCD;}
     //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
-    void put_which_son(const int i){which_sonABCD = i;}
+    void set_which_son(const int i){which_sonABCD = i;}
 
     //! this function calculates the which_son flag for the original (or restored in case of a restart) element.  It also calculates which son of the grandfather element the father is durring unrefinement.
     void calc_which_son();
     
     //! this function returns the vlaue of the new_old flag which is used during mesh adaptation and repartitioning
-    int get_new_old() const {return new_oldABCD;}
+    int new_old() const {return new_old_;}
     //! this function sets the new or old flag, it is initialized in htflush.C and reset during repartitioning (repartition_BSFC.C and BSFC_update_and_send_elements.C)
-    void put_new_old(const int i){new_oldABCD = i;}
+    void set_new_old(const int i){new_old_ = i;}
 
     
 
@@ -345,7 +345,9 @@ public:
     void find_positive_x_side(HashTable*);
 
     //! this function returns which side of the element is facing the positive x direction
-    int get_positive_x_side();
+    int positive_x_side() const {return positive_x_side_;}
+    void set_positive_x_side(const int new_positive_x_side){positive_x_side_=new_positive_x_side;}
+    
 
     //! this function computes the x and y derivatives of the state variables
     void get_slopes(HashTable*, HashTable*, double);
@@ -389,10 +391,9 @@ public:
     void calc_shortspeed(double inv_dt);
 
     //! this function returns the already computed shortspeed
-    double get_shortspeed();
-
+    double shortspeed(){return shortspeed_;}    
     //! this function assigns the value passed in to shortspeed
-    void put_shortspeed(double shortspeedin);
+    void set_shortspeed(double shortspeedin){shortspeed_ = shortspeedin;}
 
     //! this function computes the velocity, either V=hV/h or shortspeed in the direction of hV/h, if the pile is short, that is h is less than the defined (nondimensional) value of GEOFLOW_SHORT, see geoflow.h, it chooses the speed to be min(|hV/h|,shortspeed) if h is greater than GEOFLOW_SHORT it chooses hV/h regardless of which one is smaller.
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
@@ -407,7 +408,8 @@ public:
     int determine_refinement(double);
 
     //! this function returns the precomputed elevation
-    double get_elevation();
+    double get_elevation(){return elevation;};
+    void set_elevation(double new_elevation){elevation=new_elevation;};
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
     double* get_d_gravity();
@@ -459,8 +461,7 @@ public:
     //! this function is part of the experimental _LOCAL_ (not Bin Yu's) stopping criteria which has not yet been validated, I (Keith) have faith in the criteria, but enforcing the stopped after it has been decided that it needs to stop still needs some work. the only place this function is called is in get_coef_and_eigen.C immediately after k_active/passive and in init_piles.C when computing the initial volume that "should already be" deposited.
     void calc_stop_crit(MatProps*);
 
-    //! this function is used to assign a value to stopped flags, for when you don't want to compute the criteria to decide whether it's stopped or not, useful during developement
-    void put_stoppedflags(int stoppedflagsin);
+    
 
     //! interface to change value of earth-pressure coefficients
     void put_kactxy(double kap[DIMENSION])
@@ -470,7 +471,9 @@ public:
     }
 
     //! this function returns the value of "stoppedflags"
-    int get_stoppedflags();
+    int get_stoppedflags(){return stoppedflags;}
+    //! this function is used to assign a value to stopped flags, for when you don't want to compute the criteria to decide whether it's stopped or not, useful during developement
+    void put_stoppedflags(int stoppedflagsin){stoppedflags = stoppedflagsin;}
 
     //! this function zeros the extrusion (out of the ground) fluxes in this element
     void zero_influx();
@@ -629,7 +632,7 @@ protected:
     int which_sonABCD;
 
     //! the new_old flag is used in mesh adaptation and repartitioning
-    int new_oldABCD;
+    int new_old_;
 
     //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key brothers_[4];
@@ -652,13 +655,13 @@ protected:
     double d_state_vars[MAX_NUM_STATE_VARS * DIMENSION];
 
     //! the short speed is the speed computed as: shortspeed=|v|=|dhv/dh|=|v*dh/dh+h*dv/dh|=|v+h*dv/dh| which goes to |v| in the limit of h->0, this is a more accurate way to compute speed when the pile in this cell is short, hence the name "shortspeed" but it is not accurate when the pile is tall, that is when h*dv/dh is large, this is the value from the previous iteration (so there is lagging when using the shortspeed, but this should still be much more accurate than hV/h when h->0. Keith implemented this in late summer 2006, 
-    double shortspeed;
+    double shortspeed_;
 
     //! length of the element in the global x and y directions: dx and dy 
     double dx[DIMENSION];
 
     //! for structured grid, tells which side is the positive x direction
-    int positive_x_side;
+    int positive_x_side_;
 
     //! maximum x and y direction wavespeeds for this element, wavespeeds are eigenvalues of the flux jacobians
     double eigenvxymax[DIMENSION];
@@ -745,12 +748,12 @@ inline void Element::put_height_mom(double pile_height, double volf, double xmom
     prev_state_vars[3] = state_vars[3] = ymom;
     if(pile_height > GEOFLOW_TINY)
     {
-        shortspeed = sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf);
+        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf));
         Awet = 1.0;
     }
     else
     {
-        shortspeed = 0.0;
+        set_shortspeed(0.0);
         Awet = 0.0;
     }
     return;
@@ -762,12 +765,12 @@ inline void Element::put_height_mom(double pile_height, double xmom, double ymom
     prev_state_vars[2] = state_vars[2] = ymom;
     if(pile_height > GEOFLOW_TINY)
     {
-        shortspeed = sqrt(xmom * xmom + ymom * ymom) / pile_height;
+        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
         Awet = 1.0;
     }
     else
     {
-        shortspeed = 0.0;
+        set_shortspeed(0.0);
         Awet = 0.0;
     }
     
@@ -805,12 +808,6 @@ inline double* Element::get_dx()
 }
 ;
 
-inline int Element::get_positive_x_side()
-{
-    return positive_x_side;
-}
-;
-
 inline double* Element::get_prev_state_vars()
 {
     return prev_state_vars;
@@ -829,18 +826,6 @@ inline double* Element::get_eigenvxymax()
 }
 ;
 
-inline double Element::get_shortspeed()
-{
-    return shortspeed;
-}
-;
-
-inline void Element::put_shortspeed(double shortspeedin)
-{
-    shortspeed = shortspeedin;
-    return;
-}
-;
 
 inline double* Element::get_kactxy()
 {
@@ -851,12 +836,6 @@ inline double* Element::get_kactxy()
 inline double* Element::get_gravity()
 {
     return gravity;
-}
-;
-
-inline double Element::get_elevation()
-{
-    return elevation;
 }
 ;
 
@@ -888,18 +867,6 @@ inline void Element::put_elm_loc(int* int_in)
 inline double* Element::get_coord()
 {
     return coord;
-}
-;
-
-inline void Element::put_stoppedflags(int stoppedflagsin)
-{
-    stoppedflags = stoppedflagsin;
-}
-;
-
-inline int Element::get_stoppedflags()
-{
-    return stoppedflags;
 }
 ;
 

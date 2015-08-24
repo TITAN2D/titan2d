@@ -331,7 +331,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
 void get_elem_orient(Element * EmTemp, int *xm, int *xp, int *ym, int *yp)
 {
     //this does the same thing as Andy's switch statement and is shorter
-    *xp = EmTemp->get_positive_x_side();
+    *xp = EmTemp->positive_x_side();
     *xm = (2 + *xp) % 4;
     *yp = (1 + *xp) % 4;
     *ym = (3 + *xp) % 4;

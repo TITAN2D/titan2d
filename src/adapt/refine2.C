@@ -689,13 +689,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     double* state_vars = Quad9P->get_state_vars();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
-    Quad9P->put_which_son(0);  //--by jp, 0 means son 0
+    Quad9P->set_which_son(0);  //--by jp, 0 means son 0
             
     Quad9P->putel_sq(sol, err);  //added by jp oct11
     Element* old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 16);
         delete old_elm;
@@ -769,13 +769,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     state_vars = Quad9P->get_state_vars();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
-    Quad9P->put_which_son(1); //--by jp
+    Quad9P->set_which_son(1); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
     old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 17);
         delete old_elm;
@@ -849,13 +849,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     state_vars = Quad9P->get_state_vars();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
-    Quad9P->put_which_son(2); //--by jp
+    Quad9P->set_which_son(2); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
     old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 18);
         delete old_elm;
@@ -931,13 +931,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     state_vars = Quad9P->get_state_vars();
     //printf("state_vars= %g   %g   %g\n\n",state_vars[0],state_vars[1],state_vars[2]);
     
-    Quad9P->put_which_son(3); //--by jp
+    Quad9P->set_which_son(3); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
     old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 19);
         delete old_elm;

@@ -88,7 +88,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf(fp,
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation(),
-                        EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_sonABCD,
+                        EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_son(),
                         EmDebugFather.get(iFather)->iwetnode, EmDebugFather.get(iFather)->Awet,
                         EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
                         EmDebugFather.get(iFather)->drypoint[1]);
@@ -117,7 +117,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
         fprintf(fp, "proc=%d ", EmDebug->myprocess());
         fprintf(fp, "gen=%d ", EmDebug->generation());
         fprintf(fp, "adapted=%d ", EmDebug->adapted_flag());
-        fprintf(fp, "which_son=%d ", EmDebug->which_sonABCD);
+        fprintf(fp, "which_son=%d ", EmDebug->which_son());
         fprintf(fp, "iwetnode=%d ", EmDebug->iwetnode);
         fprintf(fp, "Awet=%9.6f ", EmDebug->Awet);
         fprintf(fp, "Swet=%9.6f ", EmDebug->Swet);
@@ -140,7 +140,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf_sfc_key(fp, EmDebugNeigh.get_key(ineigh));
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation(),
-                        EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_sonABCD,
+                        EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_son(),
                         EmDebugNeigh.get(ineigh)->iwetnode, EmDebugNeigh.get(ineigh)->Awet,
                         EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
                         EmDebugNeigh.get(ineigh)->drypoint[1]);
@@ -237,7 +237,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf(fp,
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation(),
-                        EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_sonABCD,
+                        EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_son(),
                         EmDebugFather.get(iFather)->iwetnode, EmDebugFather.get(iFather)->Awet,
                         EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
                         EmDebugFather.get(iFather)->drypoint[1]);
@@ -267,7 +267,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         fprintf(fp, "proc=%d ", EmDebug->myprocess());
         fprintf(fp, "gen=%d ", EmDebug->generation());
         fprintf(fp, "adapted=%d ", EmDebug->adapted_flag());
-        fprintf(fp, "which_son=%d ", EmDebug->which_sonABCD);
+        fprintf(fp, "which_son=%d ", EmDebug->which_son());
         fprintf(fp, "iwetnode=%d ", EmDebug->iwetnode);
         fprintf(fp, "Awet=%9.6f ", EmDebug->Awet);
         fprintf(fp, "Swet=%9.6f ", EmDebug->Swet);
@@ -290,7 +290,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf_sfc_key(fp, EmDebugNeigh.get_key(ineigh));
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation(),
-                        EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_sonABCD,
+                        EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_son(),
                         EmDebugNeigh.get(ineigh)->iwetnode, EmDebugNeigh.get(ineigh)->Awet,
                         EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
                         EmDebugNeigh.get(ineigh)->drypoint[1]);

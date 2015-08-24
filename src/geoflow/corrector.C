@@ -40,7 +40,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     double dtdy = dt / dx[1];
     
     double tiny = GEOFLOW_TINY;
-    int xp = EmTemp->get_positive_x_side();
+    int xp = EmTemp->positive_x_side();
     int yp = (xp + 1) % 4, xm = (xp + 2) % 4, ym = (xp + 3) % 4;
     
     int ivar, j, k;

@@ -56,7 +56,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     set_lb_key(sfc_key_zero);
     
     set_lb_weight(1.0);
-    new_oldABCD = OLD;
+    set_new_old(OLD);
     generation(0); //--first generation 
     set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
@@ -106,10 +106,10 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     elm_loc[1] = elm_loc_in[1];
     calc_which_son();
     
-    set_brother(which_sonABCD, key());
-    set_brother((which_sonABCD + 2) % 4, opposite_brother);
+    set_brother(which_son(), key());
+    set_brother((which_son() + 2) % 4, opposite_brother);
 
-    switch (which_sonABCD)
+    switch (which_son())
     {
         case 0:
             set_brother(1, neighbor(1));
@@ -130,7 +130,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     }
     set_opposite_brother_flag(1);
     
-    new_oldABCD = OLD;
+    set_new_old(OLD);
     if(elementType() == ElementType::SinglePhase)
     {
         state_vars[0] = pile_height;
@@ -149,7 +149,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
             state_vars[2] = state_vars[4] = 0.0001;
         state_vars[3] = state_vars[5] = 0;
     }
-    shortspeed = 0.0;
+    set_shortspeed(0.0);
     
     iwetnode = 8;
     drypoint[0] = drypoint[1] = 0.0;
@@ -279,7 +279,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     set_refined_flag(0);
     
     
-    new_oldABCD = NEW;
+    set_new_old(NEW);
     //geoflow stuff
     dx[0] = .5 * fthTemp->dx[0];  //assume constant refinement
     dx[1] = .5 * fthTemp->dx[1];
@@ -308,7 +308,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
         // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
         state_vars[i] = fthTemp->state_vars[i] * myfractionoffather;
         prev_state_vars[i] = fthTemp->prev_state_vars[i] * myfractionoffather;
-        shortspeed = fthTemp->shortspeed;
+        set_shortspeed(fthTemp->shortspeed());
     }
     
     if(state_vars[0] < 0.)
@@ -370,7 +370,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     set_lb_key(sfc_key_zero);
     set_lb_weight(1.0);
-    new_oldABCD = NEW;
+    set_new_old(NEW);
     set_opposite_brother_flag(0);
     stoppedflags = 2;
     for(i = 0; i < EQUATIONS; i++)
@@ -451,7 +451,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
      element's neighboring brothers is on this process in 
      order to get information on the brother that is not a neighbor */
     Element* EmTemp;
-    switch (which_sonABCD)
+    switch (which_son())
     {
         case 0:
             set_brother(0, key());
@@ -637,18 +637,18 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     Swet = 1.0;
     
     //calculate the shortspeed
-    shortspeed = 0.0;
+    set_shortspeed(0.0);
     for(j = 0; j < 4; j++)
-        shortspeed += *(sons[j]->get_state_vars()) * sons[j]->get_shortspeed();
+        set_shortspeed(shortspeed() + *(sons[j]->get_state_vars()) * sons[j]->shortspeed());
     if(state_vars[0] > 0.0)
-        shortspeed /= (4.0 * state_vars[0]);
+       set_shortspeed(shortspeed()/(4.0 * state_vars[0]));
     
     return;
 }
 
 const SFC_Key& Element::father() const
 {
-    switch (which_sonABCD)
+    switch (which_son())
     {
         case 0:
             return node_key(2);
@@ -870,7 +870,7 @@ void Element::find_positive_x_side(HashTable* nodetable)
         }
     }
     
-    positive_x_side = side;
+    set_positive_x_side(side);
     
     return;
 }
@@ -893,8 +893,8 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     }
     
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
-    xp = positive_x_side;
-    switch (positive_x_side)
+    xp = positive_x_side();
+    switch (positive_x_side())
     {
         case 0:
             xm = 2;
@@ -1001,8 +1001,8 @@ void Element::calculate_dx(HashTable* NodeTable)
 {
     int i, j;
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
-    xp = positive_x_side;
-    switch (positive_x_side)
+    xp = positive_x_side();
+    switch (positive_x_side())
     {
         case 0:
             xm = 2;
@@ -2537,7 +2537,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
     
     for(side = 0; side < 2; side++)
     {
-        zp = (positive_x_side + side) % 4;
+        zp = (positive_x_side() + side) % 4;
         zm = (zp + 2) % 4;
         
         np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
@@ -2884,8 +2884,8 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     
     double tiny = GEOFLOW_TINY;
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
-    xp = positive_x_side;
-    switch (positive_x_side)
+    xp = positive_x_side();
+    switch (positive_x_side())
     {
         case 0:
             xm = 2;
@@ -3018,7 +3018,7 @@ void Element::calc_shortspeed(double inv_dt)
     /* ||v||_(i+1)=||v||_i-((d(f^2)/d||v||)/(d^2(f^2)/d||v||^2))_i  */
     /****************************************************************/
 
-    shortspeed = 0.0;
+    set_shortspeed(0.0);
     
     if(SHORTSPEED)
     {
@@ -3113,7 +3113,7 @@ void Element::calc_shortspeed(double inv_dt)
                 d2f2 = 2.0 * (f * d2f + df * df);
                 dVmag = (df2) ? (-df2 / fabs(d2f2)) : 0.0; //fabs(d2f2) will cause f2 to always decrease and since f2 can't be less than zero we always want it to decrease, also need to prevent division of zero by zero = nan
 
-                if(!(shortspeed >= 0.0))
+                if(!(shortspeed() >= 0.0))
                 {
                     printf("inewt=%d Vmag0=%g Vmag=%g doubleswap_h_2=%g doubleswap_hvx_2=%g doubleswap_hvy_2=%g f=%g df=%g d2f=%g df2=%g d2f2=%g\n",
                            inewt, Vmag0, Vmag, doubleswap_h_2, doubleswap_hvx_2, doubleswap_hvy_2, f, df, d2f, df2, d2f2);
@@ -3143,23 +3143,23 @@ void Element::calc_shortspeed(double inv_dt)
             
             assert(inewt >= 0.0);
             
-            shortspeed = Vmag;
+            set_shortspeed(Vmag);
         }
     }
     
-    if(!(shortspeed >= 0.0))
-        printf("shortspeed=%g\n", shortspeed);
+    if(!(shortspeed() >= 0.0))
+        printf("shortspeed=%g\n", shortspeed());
     
-    assert(shortspeed >= 0.0);
+    assert(shortspeed() >= 0.0);
     
     return;
 }
 double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
 {
-    if(!(shortspeed >= 0.0))
-        printf("shortspeed=%g\n", shortspeed);
+    if(!(shortspeed() >= 0.0))
+        printf("shortspeed=%g\n", shortspeed());
 
-    assert(shortspeed >= 0.0);
+    assert(shortspeed() >= 0.0);
     
     double temp_state_vars[MAX_NUM_STATE_VARS];
 
@@ -3191,11 +3191,11 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
             }
 
             if((temp_state_vars[1] < GEOFLOW_SHORT) && (doubleswap
-                    > shortspeed * shortspeed * temp_state_vars[1] * temp_state_vars[1]))
+                    > shortspeed() * shortspeed() * temp_state_vars[1] * temp_state_vars[1]))
             {
                 doubleswap = sqrt(doubleswap);
-                Vel[0] = shortspeed * temp_state_vars[2] / doubleswap;
-                Vel[1] = shortspeed * temp_state_vars[3] / doubleswap;
+                Vel[0] = shortspeed() * temp_state_vars[2] / doubleswap;
+                Vel[1] = shortspeed() * temp_state_vars[3] / doubleswap;
                 Vel[2] = 0.;
                 Vel[3] = 0.;
             }
@@ -3238,11 +3238,11 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
             }
 
             if((temp_state_vars[0] < GEOFLOW_SHORT) && (doubleswap
-                    > shortspeed * shortspeed * temp_state_vars[0] * temp_state_vars[0]))
+                    > shortspeed() * shortspeed() * temp_state_vars[0] * temp_state_vars[0]))
             {
                 doubleswap = sqrt(doubleswap);
-                Vel[0] = shortspeed * temp_state_vars[1] / doubleswap;
-                Vel[1] = shortspeed * temp_state_vars[2] / doubleswap;
+                Vel[0] = shortspeed() * temp_state_vars[1] / doubleswap;
+                Vel[1] = shortspeed() * temp_state_vars[2] / doubleswap;
             }
             else
             {
@@ -3310,8 +3310,8 @@ int Element::determine_refinement(double target)
 void Element::calc_d_gravity(HashTable* El_Table)
 {
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
-    xp = positive_x_side;
-    switch (positive_x_side)
+    xp = positive_x_side();
+    switch (positive_x_side())
     {
         case 0:
             xm = 2;
@@ -3456,8 +3456,8 @@ void Element::calc_flux_balance(HashTable* NodeTable)
     double flux[3] =
     { 0, 0, 0 };
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
-    xp = positive_x_side;
-    switch (positive_x_side)
+    xp = positive_x_side();
+    switch (positive_x_side())
     {
         case 0:
             xm = 2;
@@ -3516,16 +3516,16 @@ void Element::calc_which_son()
     if(elm_loc[0] % 2 == 0)
     {
         if(elm_loc[1] % 2 == 0)
-            which_sonABCD = 0;
+            set_which_son(0);
         else
-            which_sonABCD = 3;
+            set_which_son(3);
     }
     else
     {
         if(elm_loc[1] % 2 == 0)
-            which_sonABCD = 1;
+            set_which_son(1);
         else
-            which_sonABCD = 2;
+            set_which_son(2);
     }
     
 }
@@ -3538,11 +3538,11 @@ void Element::find_opposite_brother(HashTable* El_Table)
     if(opposite_brother_flag() == 1)
         return;
     
-    set_brother((which_sonABCD + 2) % 4, sfc_key_zero);
+    set_brother((which_son() + 2) % 4, sfc_key_zero);
 
     SFC_Key nullkey = 0;
 
-    if(!((brother((which_sonABCD + 1) % 4)==sfc_key_null) && (brother((which_sonABCD + 3) % 4)==sfc_key_null)))
+    if(!((brother((which_son() + 1) % 4)==sfc_key_null) && (brother((which_son() + 3) % 4)==sfc_key_null)))
     {
         //use space filling curve to compute the key of opposite
         //brother from it's bubble node coordinates
@@ -3550,18 +3550,18 @@ void Element::find_opposite_brother(HashTable* El_Table)
         unsigned oldkey[KEYLENGTH];
         unsigned nkey = KEYLENGTH;
         
-        if((which_sonABCD == 0) || (which_sonABCD == 3))
+        if((which_son() == 0) || (which_son() == 3))
             bro_norm_coord[0] = El_Table->get_invdxrange() * (coord[0] + dx[0] - *(El_Table->get_Xrange() + 0));
         else
             bro_norm_coord[0] = El_Table->get_invdxrange() * (coord[0] - dx[0] - *(El_Table->get_Xrange() + 0));
         
-        if((which_sonABCD == 0) || (which_sonABCD == 1))
+        if((which_son() == 0) || (which_son() == 1))
             bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] + dx[1] - *(El_Table->get_Yrange() + 0));
         else
             bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] - dx[1] - *(El_Table->get_Yrange() + 0));
         
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
-        set_brother((which_sonABCD + 2) % 4,sfc_key_from_oldkey(oldkey));
+        set_brother((which_son() + 2) % 4,sfc_key_from_oldkey(oldkey));
         
         set_opposite_brother_flag(1);
     }
@@ -4195,11 +4195,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"opposite_brother_flag=%d\n",opposite_brother_flag());
 #endif
     
-    temp4.i = new_oldABCD;
+    temp4.i = new_old();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 10);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"new_old=%d\n",new_oldABCD);
+    fprintf(fpdb,"new_old=%d\n",new_old());
 #endif
     
     temp4.i = material();
@@ -4332,14 +4332,14 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     //assert(Itemp == 90);
     
     //don't need prev_state_vars or d_state_vars do need shortspeed
-    temp8.d = shortspeed;
+    temp8.d = shortspeed();
     writespace[Itemp++] = temp8.u[0];
     writespace[Itemp++] = temp8.u[1];
     //assert(Itemp == 92);
     
 #ifdef DEBUG_SAVE_ELEM
     fprintf(fpdb,"}\nstate_vars={ %g %g %g }\nshortspeed=%g\n",
-            state_vars[0],state_vars[1],state_vars[2],shortspeed);
+            state_vars[0],state_vars[1],state_vars[2],shortspeed());
 #endif 
     
     //bob  
@@ -4473,7 +4473,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 9);
     
     temp4.u = readspace[Itemp++];
-    new_oldABCD = temp4.i;
+    set_new_old(temp4.i);
     assert(Itemp == 10);
     
     temp4.u = readspace[Itemp++];
@@ -4544,7 +4544,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     //don't need prev_state_vars or d_state_vars do need shortspeed
     temp8.u[0] = readspace[Itemp++];
     temp8.u[1] = readspace[Itemp++];
-    shortspeed = temp8.d;
+    set_shortspeed(temp8.d);
     assert(Itemp == 92);
     
     for(int i = 0; i < NUM_STATE_VARS; i++)

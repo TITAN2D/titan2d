@@ -117,7 +117,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
                 EmTemp->set_myprocess(-1);
                 
                 total_weight += EmTemp->lb_weight();
-                EmTemp->put_new_old(BSFC_NEW);
+                EmTemp->set_new_old(BSFC_NEW);
                 elm_counter++;
             }
             entryp = entryp->next;
@@ -132,7 +132,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->refined_flag() && EmTemp->get_new_old() == BSFC_NEW)
+            if(!EmTemp->refined_flag() && EmTemp->new_old() == BSFC_NEW)
             {
                 //check for constrained nodes on the vertex nodes
                 j = 4;
@@ -163,7 +163,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->refined_flag() && EmTemp->get_new_old() > 0)
+            if(!EmTemp->refined_flag() && EmTemp->new_old() > 0)
             {
                 sfc_vert_ptr[j].lb_weight = EmTemp->lb_weight();
                 SET_OLDKEY(sfc_vert_ptr[j].sfc_key,EmTemp->lb_key());
@@ -748,7 +748,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                     //but might have pile before the next repartitioning
                     EmTemp->set_lb_weight(EMPTY_CELL);
                 
-                EmTemp->put_new_old(BSFC_NEW); //legacy from "original" 
+                EmTemp->set_new_old(BSFC_NEW); //legacy from "original" 
                 //repartition(), I don't know the consequences of not 
                 //having it so included it just to be safe
                 

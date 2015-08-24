@@ -186,9 +186,9 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->set_ndof(elem2->ndof);
     newelement->set_no_of_eqns(elem2->no_of_eqns);
     newelement->set_refined_flag(elem2->refined);
-    newelement->adapted(elem2->adapted);
-    newelement->which_sonABCD = elem2->which_son;
-    newelement->new_oldABCD = elem2->new_old;
+    newelement->set_adapted_flag(elem2->adapted);
+    newelement->set_which_son(elem2->which_son);
+    newelement->set_new_old(elem2->new_old);
     for(i = 0; i < 4; i++)
     {
         newelement->set_brother(i, sfc_key_from_oldkey(elem2->brothers[i]));
@@ -280,7 +280,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     *e_error = newelement->el_error(0);
     
     //geoflow stuff
-    newelement->positive_x_side = elem2->positive_x_side;
+    newelement->set_positive_x_side(elem2->positive_x_side);
     newelement->elevation = elem2->elevation;
     for(i = 0; i < DIMENSION; i++)
     {
@@ -301,7 +301,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->gravity[i] = elem2->gravity[i];
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         newelement->d_state_vars[i] = elem2->d_state_vars[i];
-    newelement->shortspeed = elem2->shortspeed;
+    newelement->set_shortspeed(elem2->shortspeed);
     newelement->set_lb_weight(elem2->lb_weight);
     newelement->elm_loc[0] = elem2->elm_loc[0];
     newelement->elm_loc[1] = elem2->elm_loc[1];

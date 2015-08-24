@@ -30,8 +30,8 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     elem->no_of_eqns = sendel->no_of_eqns();
     elem->refined = sendel->refined_flag();
     elem->adapted = sendel->adapted_flag();
-    elem->which_son = sendel->which_sonABCD;
-    elem->new_old = sendel->new_oldABCD;
+    elem->which_son = sendel->which_son();
+    elem->new_old = sendel->new_old();
     
     SET_OLDKEY(elem->key, sendel->key());
     
@@ -88,7 +88,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->bc = 0;
     
     //geoflow stuff
-    elem->positive_x_side = sendel->positive_x_side;
+    elem->positive_x_side = sendel->positive_x_side();
     elem->elevation = sendel->elevation;
     for(i = 0; i < DIMENSION; i++)
     {
@@ -108,7 +108,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->gravity[i] = sendel->gravity[i];
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         elem->d_state_vars[i] = sendel->d_state_vars[i];
-    elem->shortspeed = sendel->shortspeed;
+    elem->shortspeed = sendel->shortspeed();
     elem->lb_weight = sendel->lb_weight();
     elem->elm_loc[0] = sendel->elm_loc[0];
     elem->elm_loc[1] = sendel->elm_loc[1];

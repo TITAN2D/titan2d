@@ -39,10 +39,10 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
     for(i = 0; i < 4; i++)
         elm_bunch[i] = NULL;
     
-    elm_bunch[EmTemp->which_sonABCD] = EmTemp;
+    elm_bunch[EmTemp->which_son()] = EmTemp;
     
-    if(side == EmTemp->which_sonABCD)
-        switch (EmTemp->which_sonABCD)
+    if(side == EmTemp->which_son())
+        switch (EmTemp->which_son())
         {
             case 0:
                 elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
@@ -58,7 +58,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 break;
         }
     else
-        switch (EmTemp->which_sonABCD)
+        switch (EmTemp->which_son())
         {
             case 0:
                 elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
@@ -75,15 +75,15 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         }
     // check the next side
     int next_side = side + 1;
-    if(EmTemp->which_sonABCD == 0 && next_side == 1)
+    if(EmTemp->which_son() == 0 && next_side == 1)
         next_side = 3;
     if(next_side < 4)
     {
         nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(next_side + 4));
         if(nd->getinfo() == S_S_CON)
         {
-            if(next_side == EmTemp->which_sonABCD)
-                switch (EmTemp->which_sonABCD)
+            if(next_side == EmTemp->which_son())
+                switch (EmTemp->which_son())
                 {
                     case 0:
                         elm_bunch[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
@@ -99,7 +99,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                         break;
                 }
             else
-                switch (EmTemp->which_sonABCD)
+                switch (EmTemp->which_son())
                 {
                     case 0:
                         elm_bunch[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
@@ -145,10 +145,10 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         
         if(side != -1)
         {
-            elm_bunch2[EmTemp->which_sonABCD] = EmTemp;
+            elm_bunch2[EmTemp->which_son()] = EmTemp;
             
-            if(side == EmTemp->which_sonABCD)
-                switch (EmTemp->which_sonABCD)
+            if(side == EmTemp->which_son())
+                switch (EmTemp->which_son())
                 {
                     case 0:
                         elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
@@ -164,7 +164,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                         break;
                 }
             else
-                switch (EmTemp->which_sonABCD)
+                switch (EmTemp->which_son())
                 {
                     case 0:
                         elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
@@ -181,15 +181,15 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 }
             // check the next side
             next_side = side + 1;
-            if(EmTemp->which_sonABCD == 0 && next_side == 1)
+            if(EmTemp->which_son() == 0 && next_side == 1)
                 next_side = 3;
             if(next_side < 4)
             {
                 nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(next_side + 4));
                 if(nd->getinfo() == S_S_CON)
                 {
-                    if(next_side == EmTemp->which_sonABCD)
-                        switch (EmTemp->which_sonABCD)
+                    if(next_side == EmTemp->which_son())
+                        switch (EmTemp->which_son())
                         {
                             case 0:
                                 elm_bunch2[1] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(1));
@@ -205,7 +205,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                                 break;
                         }
                     else
-                        switch (EmTemp->which_sonABCD)
+                        switch (EmTemp->which_son())
                         {
                             case 0:
                                 elm_bunch2[3] = (Element*) HT_Elem_Ptr->lookup(EmTemp->brother(3));
@@ -259,11 +259,11 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
                 //printf("new_old value for %u %u\n", *(elm_bunch[i]->pass_key()), *(elm_bunch[i]->pass_key()+1));
                 j++;
                 sum_lb_weights += elm_bunch[i]->lb_weight();
-                assert(elm_bunch[i]->new_oldABCD== BSFC_NEW);
-                elm_bunch[i]->new_oldABCD = BSFC_OLD;
+                assert(elm_bunch[i]->new_old()== BSFC_NEW);
+                elm_bunch[i]->set_new_old(BSFC_OLD);
             }
         orig_elem->set_lb_weight(sum_lb_weights);
-        orig_elem->new_oldABCD = j;
+        orig_elem->set_new_old(j);
         // put in lb_key representing this "bunch" of elements 
         if(j < 2)
             assert(j > 1);

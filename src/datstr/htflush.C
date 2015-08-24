@@ -45,7 +45,7 @@ void htflush(HashTable* ht_elem_ptr, HashTable* ht_node_ptr, int option)
                 while (entryp)
                 {
                     EmTemp = (Element*) (entryp->value);
-                    EmTemp->put_new_old(OLD);
+                    EmTemp->set_new_old(OLD);
                     entryp = entryp->next;
                 }
             }

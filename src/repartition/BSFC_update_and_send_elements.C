@@ -41,7 +41,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             EmTemp = (Element*) (entryp->value);
             if(EmTemp->refined_flag())
             {
-                EmTemp->put_new_old(-1);
+                EmTemp->set_new_old(-1);
             }
             entryp = entryp->next;
         }
