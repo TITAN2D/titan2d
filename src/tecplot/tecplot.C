@@ -135,7 +135,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
             if((EmTemp->adapted_flag() != TOBEDELETED) && (abs(EmTemp->adapted_flag()) <= BUFFER))
             {
                 num_tec_node++;
-                EmTemp->put_ithelem(num_tec_node);
+                EmTemp->set_ithelem(num_tec_node);
                 
                 if(EmTemp->adapted_flag() > TOBEDELETED)
                 {
@@ -235,10 +235,10 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                 switch (get_ll_polygon(El_Table, NodeTable, myid, EmArray))
                 {
                     case 4:        //we should draw a lower left quad
-                        tec_nodes_in_tec_quad[0] = EmArray[2]->get_ithelem();
-                        tec_nodes_in_tec_quad[1] = EmArray[0]->get_ithelem();
-                        tec_nodes_in_tec_quad[2] = EmArray[1]->get_ithelem();
-                        tec_nodes_in_tec_quad[3] = EmArray[3]->get_ithelem();
+                        tec_nodes_in_tec_quad[0] = EmArray[2]->ithelem();
+                        tec_nodes_in_tec_quad[1] = EmArray[0]->ithelem();
+                        tec_nodes_in_tec_quad[2] = EmArray[1]->ithelem();
+                        tec_nodes_in_tec_quad[3] = EmArray[3]->ithelem();
                         
                         fprintf(fp, "%d %d %d %d\n", tec_nodes_in_tec_quad[0], tec_nodes_in_tec_quad[1],
                                 tec_nodes_in_tec_quad[2], tec_nodes_in_tec_quad[3]);
@@ -246,9 +246,9 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         num_tec_elem2++;      //counter of number of drawing elements
                         break;
                     case 3:        //we should draw a lower left triangle
-                        tec_nodes_in_tec_quad[0] = EmArray[2]->get_ithelem();
-                        tec_nodes_in_tec_quad[1] = EmArray[0]->get_ithelem();
-                        tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[1]->get_ithelem();
+                        tec_nodes_in_tec_quad[0] = EmArray[2]->ithelem();
+                        tec_nodes_in_tec_quad[1] = EmArray[0]->ithelem();
+                        tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[1]->ithelem();
                         
                         fprintf(fp, "%d %d %d %d\n", tec_nodes_in_tec_quad[0], tec_nodes_in_tec_quad[1],
                                 tec_nodes_in_tec_quad[2], tec_nodes_in_tec_quad[3]);
@@ -268,9 +268,9 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
 
                 if(get_ur_tri(El_Table, NodeTable, myid, EmArray))
                 {
-                    tec_nodes_in_tec_quad[0] = EmArray[1]->get_ithelem();
-                    tec_nodes_in_tec_quad[1] = EmArray[2]->get_ithelem();
-                    tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[0]->get_ithelem();
+                    tec_nodes_in_tec_quad[0] = EmArray[1]->ithelem();
+                    tec_nodes_in_tec_quad[1] = EmArray[2]->ithelem();
+                    tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[0]->ithelem();
                     
                     fprintf(fp, "%d %d %d %d\n", tec_nodes_in_tec_quad[0], tec_nodes_in_tec_quad[1],
                             tec_nodes_in_tec_quad[2], tec_nodes_in_tec_quad[3]);
@@ -282,7 +282,7 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                 /* add triangles for elements with more refined neighbors */
                 /* (aka split neighbors) this fills in the holes          */
                 /**********************************************************/
-                tec_nodes_in_tec_quad[0] = EmTemp->get_ithelem();
+                tec_nodes_in_tec_quad[0] = EmTemp->ithelem();
                 for(i_neigh = 0; i_neigh < 4; i_neigh++)
                     if((EmTemp->neigh_gen(i_neigh) > gen) && (EmTemp->neigh_proc(i_neigh) != INIT))
                     {
@@ -297,12 +297,12 @@ void tecplotter(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         //The Primary Neighbor
                         EmArray[1] = (Element *) El_Table->lookup(EmTemp->neighbor(i_neigh));
                         assert(EmArray[1]);
-                        tec_nodes_in_tec_quad[1] = EmArray[1]->get_ithelem();
+                        tec_nodes_in_tec_quad[1] = EmArray[1]->ithelem();
                         
                         //The Secondary Neighbor
                         EmArray[2] = (Element *) El_Table->lookup(EmTemp->neighbor(i_neigh + 4));
                         assert(EmArray[2]);
-                        tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[2]->get_ithelem();
+                        tec_nodes_in_tec_quad[2] = tec_nodes_in_tec_quad[3] = EmArray[2]->ithelem();
                         
                         fprintf(fp, "%d %d %d %d\n", tec_nodes_in_tec_quad[0], tec_nodes_in_tec_quad[1],
                                 tec_nodes_in_tec_quad[2], tec_nodes_in_tec_quad[3]);

@@ -496,10 +496,11 @@ public:
     int if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable, double contour_height);
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
-    int get_ithelem();
+    int ithelem(){return ithelem_}
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
-    void put_ithelem(int i);
+    void set_ithelem(int i){ithelem_ = i;}
+    
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus the effective bed friction angle holds either the value of the actual bed friction angle if it should not be stopped or the value of the internal friction angle if it should not be stopped
     double get_effect_bedfrict(){return effect_bedfrict;}
@@ -697,7 +698,7 @@ protected:
     double Influx[MAX_NUM_STATE_VARS];
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
-    int ithelem;
+    int ithelem_;
 
     //! the node number {0,1,..,7} of this element's "most wet node", this dictates both the orientation of the "dryline" and which side of it is wet.  The "dryline" is the line that divides a partially wetted element into a dry part and a wet part, for the sake of simplicity only 4 orientations are allowed, horizontal, vertical, parallel to either diagonal of the element.  If the iwetnode is an edge node of this element then the dryline is parallel to the edge the element is on, if the iwetnode is a corner node of this element then dryline is parallel to the diagonal of the element that the iwetnode is not on.  Which side of the dryline is wet is the same side in which the iwetnode resides (and is determined each timestep based soley on which of the elements neighbors currently have pile height greater than GEOFLOW_TINY)... as such iwetnode can be thought of as the MOST WET NODE  of the element.  Having iwetnode==8 indicates that the element is uniformly wet if this element's pile height is greater than GEOFLOW_TINY or is uniformly dry if pileheight is less than or equal to GEOFLOW_TINY.
     int iwetnode;
@@ -723,17 +724,6 @@ public:
     ElementTwoPhases():Element(){}
     ~ElementTwoPhases(){}
 };
-inline int Element::get_ithelem()
-{
-    return ithelem;
-}
-;
-
-inline void Element::put_ithelem(int i)
-{
-    ithelem = i;
-}
-;
 
 inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom)
 {
