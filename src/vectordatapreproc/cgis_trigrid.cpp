@@ -71,7 +71,7 @@ CGIS_TriGrid::CGIS_TriGrid(char *GIS_Dbase, char *GIS_Maplocation, char *GIS_Map
         for(int j = 0; j < _num_of_cols; ++j)
         {
             //reading elevations row by row (x increments first before y)
-            if(Get_elevation(_res, _xmin + j * _res, _ymin + i * _res, &_elevations[i * _num_of_cols + j]))
+            if(Get_elevation(_res, _xmin + j * _res, _ymin + i * _res, _elevations[i * _num_of_cols + j]))
             {
                 cout << "\n\nERROR: Unable to retrieve elevations from GIS";
                 exit(1);

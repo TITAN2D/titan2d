@@ -919,7 +919,7 @@ struct OutLine
             for(ix = 0; ix < Nx - 1; ix++)
             {
                 xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->LENGTH_SCALE;
-                ierr = Get_elevation(res, xx, yy, &elevation);
+                ierr = Get_elevation(res, xx, yy, elevation);
                 fprintf(fp, "%g ", elevation);
             }
             fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
@@ -1592,7 +1592,7 @@ inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProp
         double xcen = LENGTH_SCALE * pileprops_ptr->xCen[i];
         double ycen = LENGTH_SCALE * pileprops_ptr->yCen[i];
         double ztemp = 0;
-        ierr = Get_elevation(res, xcen, ycen, &ztemp);
+        ierr = Get_elevation(res, xcen, ycen, ztemp);
         if(ierr != 0)
             ztemp = 0;
 

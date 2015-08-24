@@ -89,7 +89,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     
     //geoflow stuff
     elem->positive_x_side = sendel->positive_x_side();
-    elem->elevation = sendel->elevation;
+    elem->elevation = sendel->elevation();
     for(i = 0; i < DIMENSION; i++)
     {
         elem->dx[i] = sendel->dx[i];

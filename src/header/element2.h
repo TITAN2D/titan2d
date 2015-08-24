@@ -399,6 +399,7 @@ public:
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
     double* get_kactxy();
+    
 
     //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
     double* get_gravity();
@@ -407,8 +408,9 @@ public:
     int determine_refinement(double);
 
     //! this function returns the precomputed elevation
-    double get_elevation(){return elevation;};
-    void set_elevation(double new_elevation){elevation=new_elevation;};
+    double& elevation_ref(){return elevation_;};
+    double elevation() const {return elevation_;};
+    void set_elevation(double new_elevation){elevation_=new_elevation;};
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
     double* get_d_gravity();
@@ -496,7 +498,7 @@ public:
     int if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable, double contour_height);
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
-    int ithelem(){return ithelem_}
+    int ithelem(){return ithelem_;}
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
     void set_ithelem(int i){ithelem_ = i;}
@@ -513,22 +515,20 @@ public:
     double* get_effect_kactxy();
 
     //! this inline member function returns the stored value of Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-    double get_Awet();
+    double get_Awet() const {return Awet;}
 
     //! this inline member function assigns a value to Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-    void put_Awet(double Awet_in);
+    void put_Awet(double Awet_in){Awet = Awet_in;}
 
     //! this inline member function returns the stored value of Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-    double get_Swet();
-
+    double get_Swet() const {return Swet;}
     //! this inline member function assigns a value to Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-    void put_Swet(double Swet_in);
+    void put_Swet(double Swet_in){Swet = Swet_in;}
 
     //! this inline member function returns the value of iwetnode.  iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-    int get_iwetnode();
-
+    int get_iwetnode(){return iwetnode;}
     //! this inline member function sets the value of iwetnode. iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-    void put_iwetnode(int iwetnode_in);
+    void put_iwetnode(int iwetnode_in){iwetnode = iwetnode_in;}
 
     //! this inline member function returns the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007
     double* get_drypoint();
@@ -668,7 +668,7 @@ protected:
     double kactxy[DIMENSION];
 
     //! terrain elevation at this elements center/bubble node 
-    double elevation;
+    double elevation_;
 
     //! terrain slope in the global x and y directions
     double zeta[DIMENSION];
@@ -947,39 +947,8 @@ inline double* Element::get_effect_kactxy()
 }
 ;
 
-inline double Element::get_Awet()
-{
-    return Awet;
-}
-;
-inline void Element::put_Awet(double Awet_in)
-{
-    Awet = Awet_in;
-    return;
-}
-;
-inline double Element::get_Swet()
-{
-    return Swet;
-}
-;
-inline void Element::put_Swet(double Swet_in)
-{
-    Swet = Swet_in;
-    return;
-}
-;
-inline int Element::get_iwetnode()
-{
-    return iwetnode;
-}
-;
-inline void Element::put_iwetnode(int iwetnode_in)
-{
-    iwetnode = iwetnode_in;
-    return;
-}
-;
+
+
 inline double* Element::get_drypoint()
 {
     return drypoint;

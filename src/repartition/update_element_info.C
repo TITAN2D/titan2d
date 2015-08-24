@@ -281,7 +281,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     
     //geoflow stuff
     newelement->set_positive_x_side(elem2->positive_x_side);
-    newelement->elevation = elem2->elevation;
+    newelement->set_elevation(elem2->elevation);
     for(i = 0; i < DIMENSION; i++)
     {
         newelement->coord[i] = elem2->n_coord[8][i];

@@ -304,7 +304,7 @@ int Get_image_ncols(int *cols);
 /***************************************************************/
 /*GETTING VALUES FOR SINGLE POINTS*/
 //! Return elevation at point XY of original grid, Input: resolution - resolution, x - point X coordinate, y - Point Y coordinate, Output: elev - elevation at point XY of original grid, Return: 0 if OK, see table otherwise
-int Get_elevation(double resolution, double x, double y, double *elev);
+int Get_elevation(double resolution, double x, double y, double &elev);
 
 //! Return slope at point XY of original grid, Input: resolution - resolution, x - point X coordinate, y - Point Y coordinate, Output: xslope - slope at point XY of original grid in X direction, yslope - slope at point XY of original grid in Y direction, Return: 0 if OK, see table otherwise 
 int Get_slope(double resolution, double x, double y, double *xslope, double *yslope);

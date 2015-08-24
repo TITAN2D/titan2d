@@ -3400,7 +3400,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
     double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
     double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
     //double eldif = elevation;
-    int i = Get_elevation(resolution, xcoord, ycoord, &elevation);
+    int i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
 #ifdef PRINT_GIS_ERRORS
     if(i != 0)
     {   
@@ -3408,7 +3408,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         exit(1);
     }
 #endif
-    elevation = elevation / matprops_ptr->LENGTH_SCALE;
+    set_elevation(elevation() / matprops_ptr->LENGTH_SCALE);
     //eldif=(elevation-eldif)*matprops_ptr->LENGTH_SCALE;
     //if(fabs(eldif)>1.0) printf("calc_topo_data() after-before=%g\n",eldif);
     i = Get_slope(resolution, xcoord, ycoord, zeta, (zeta + 1));

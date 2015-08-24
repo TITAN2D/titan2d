@@ -23,7 +23,7 @@
 
 #include "../header/titan_simulation.h"
 
-int get_elem_elev(HashTable *HT_Node_Ptr, MatProps *matprops, Element *EmTemp, double *elevation);
+int get_elem_elev(HashTable *HT_Node_Ptr, MatProps *matprops, Element *EmTemp, double &elevation);
 
 void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops)
 {
@@ -45,7 +45,7 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
             if(EmTemp->adapted_flag() > 0)
             {
                 double elevation;
-                get_elem_elev(HT_Node_Ptr, matprops, EmTemp, &elevation);
+                get_elem_elev(HT_Node_Ptr, matprops, EmTemp, elevation);
                 
                 fprintf(fp, "%20.14g %20.14g %20.14g\n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
                         (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE, elevation);

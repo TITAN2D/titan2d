@@ -75,7 +75,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    i = Get_elevation(resolution, xcoord, ycoord, &elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation);
     if(i != 0)
     {
         printf("error in Get_elevation(%d) r=%g (x,y)=(%g,%g) e=%g\n", i, resolution, xcoord, ycoord, elevation);
@@ -128,7 +128,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
     }
     double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
     double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
-    i = Get_elevation(resolution, xcoord, ycoord, &elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation);
     if(i != 0)
     {
         printf("error in Get_elevation\n");
@@ -237,7 +237,7 @@ void Node::set_elevation(MatProps* matprops_ptr)
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    i = Get_elevation(resolution, xcoord, ycoord, &elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation);
     if(i != 0)
     {
         printf("error in Get_elevation\n");
@@ -393,7 +393,7 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    i = Get_elevation(resolution, xcoord, ycoord, &elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation);
     if(i != 0)
     {
         printf("error in Get_elevation\n");
