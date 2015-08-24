@@ -55,7 +55,7 @@ void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matpr
             while (currentPtr)
             {
                 Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->get_adapted_flag() > 0)
+                if(Curr_El->adapted_flag() > 0)
                 {
                     //if this element doesn't belong on this processor don't involve
                     double pheight = *(Curr_El->get_state_vars());

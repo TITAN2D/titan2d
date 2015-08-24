@@ -105,11 +105,11 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
                     EmTemp->set_lb_weight(NON_EMPTY_CELL);
-                else if(EmTemp->get_adapted_flag() == BUFFER)
+                else if(EmTemp->adapted_flag() == BUFFER)
                     EmTemp->set_lb_weight(EMPTY_BUFFER_CELL);
                 else
                     EmTemp->set_lb_weight(EMPTY_CELL);
@@ -132,7 +132,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag() && EmTemp->get_new_old() == BSFC_NEW)
+            if(!EmTemp->refined_flag() && EmTemp->get_new_old() == BSFC_NEW)
             {
                 //check for constrained nodes on the vertex nodes
                 j = 4;
@@ -163,7 +163,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag() && EmTemp->get_new_old() > 0)
+            if(!EmTemp->refined_flag() && EmTemp->get_new_old() > 0)
             {
                 sfc_vert_ptr[j].lb_weight = EmTemp->lb_weight();
                 SET_OLDKEY(sfc_vert_ptr[j].sfc_key,EmTemp->lb_key());
@@ -732,7 +732,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             currentPtr = currentPtr->next;
             assert(EmTemp);
             
-            if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+            if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
                 //this is an active element
                 
@@ -740,7 +740,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                 if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
                     //this has pile
                     EmTemp->set_lb_weight(NON_EMPTY_CELL);
-                else if(EmTemp->get_adapted_flag() == BUFFER)
+                else if(EmTemp->adapted_flag() == BUFFER)
                     //this might have pile before the next adaptation
                     EmTemp->set_lb_weight(EMPTY_BUFFER_CELL);
                 else
@@ -802,7 +802,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             currentPtr = currentPtr->next;
             assert(EmTemp);
             
-            if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+            if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
                 unsigned tmpkey[KEYLENGTH];
                 SET_OLDKEY(tmpkey,EmTemp->key());
@@ -2393,8 +2393,8 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             assert(EmTemp);
             
 #ifdef DEBUG_REPART2C
-            if((timeprops_ptr->iter == DEBUG_ITER) && (EmTemp->get_adapted_flag() <= -NOTRECADAPTED)
-               && (EmTemp->get_adapted_flag() >= -BUFFER))
+            if((timeprops_ptr->iter == DEBUG_ITER) && (EmTemp->adapted_flag() <= -NOTRECADAPTED)
+               && (EmTemp->adapted_flag() >= -BUFFER))
             {
                 unsigned tmpkey[KEYLENGTH];
                 SET_OLDKEY(tmpkey,EmTemp->key());
@@ -2412,7 +2412,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             }
 #endif     
             
-            if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+            if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
                 unsigned tmpkey[KEYLENGTH];
                 SET_OLDKEY(tmpkey,EmTemp->key());
@@ -2767,7 +2767,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
             EmTemp = (Element*) (currentPtr->value);
             currentPtr = currentPtr->next;
             assert(EmTemp);
-            assert(EmTemp->get_adapted_flag()>=NOTRECADAPTED);
+            assert(EmTemp->adapted_flag()>=NOTRECADAPTED);
             num_elem++;
             EmTemp->set_myprocess(myid);
             

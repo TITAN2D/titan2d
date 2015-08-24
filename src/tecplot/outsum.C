@@ -155,7 +155,7 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
             {
                 
                 Element* EmTemp = (Element*) (entryp->value);
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     
                     double* state_vars = EmTemp->get_state_vars();

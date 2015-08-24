@@ -363,7 +363,7 @@ void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps
             while (currentPtr)
             {
                 Element* Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->get_adapted_flag() > 0)
+                if(Curr_El->adapted_flag() > 0)
                 {
                     
                     double* state_vars = Curr_El->get_state_vars();
@@ -493,7 +493,7 @@ double get_max_momentum(ElementType elementType,HashTable* El_Table, MatProps* m
             {
                 
                 Element* EmTemp = (Element*) (entryp->value);
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     
                     double* state_vars = EmTemp->get_state_vars();
@@ -598,7 +598,7 @@ void sim_end_warning(ElementType elementType,HashTable* El_Table, MatProps* matp
             {
                 
                 Element* EmTemp = (Element*) (entryp->value);
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     
                     double* state_vars = EmTemp->get_state_vars();

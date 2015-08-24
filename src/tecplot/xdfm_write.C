@@ -66,7 +66,7 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
         while (entryptr)
         {
             EmTemp = (Element *) entryptr->value;
-            if(!(EmTemp->get_refined_flag()))
+            if(!(EmTemp->refined_flag()))
             {
                 state_vars = EmTemp->get_state_vars();
                 pheight.push_back(state_vars[0] * matprops_ptr->HEIGHT_SCALE);
@@ -271,7 +271,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
         while (entryptr)
         {
             EmTemp = (Element *) entryptr->value;
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 num_elem++;
                 for(j = 0; j < 4; j++)
@@ -305,7 +305,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
         while (entryptr)
         {
             EmTemp = (Element *) entryptr->value;
-            if(!(EmTemp->get_refined_flag()))
+            if(!(EmTemp->refined_flag()))
             {
                 state_vars = EmTemp->get_state_vars();
                 pheight[ielm] = state_vars[0] * matprops_ptr->HEIGHT_SCALE;
@@ -453,24 +453,24 @@ double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTem
 {
     double elev;
     int neighside, mynode;
-    if(j == EmTemp->get_which_son() + 1)
+    if(j == EmTemp->which_son() + 1)
     {
         mynode = j - 1;
         neighside = j;
     }
-    else if(j == EmTemp->get_which_son() - 1)
+    else if(j == EmTemp->which_son() - 1)
     {
         mynode = j + 1;
         neighside = j - 1;
         if(neighside < 0)
             neighside = 3;
     }
-    else if(EmTemp->get_which_son() == 0)
+    else if(EmTemp->which_son() == 0)
     {
         mynode = 0;
         neighside = 2;
     }
-    else if(EmTemp->get_which_son() == 3)
+    else if(EmTemp->which_son() == 3)
     {
         mynode = 3;
         neighside = 0;

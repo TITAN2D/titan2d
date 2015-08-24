@@ -77,8 +77,8 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
             {
                 Curr_El = (Element*) currentPtr->value;
                 currentPtr = currentPtr->next;
-                if(Curr_El->get_adapted_flag() == NEWFATHER)
-                    Curr_El->put_adapted_flag(NOTRECADAPTED);
+                if(Curr_El->adapted_flag() == NEWFATHER)
+                    Curr_El->set_adapted_flag(NOTRECADAPTED);
             }
         }
     
@@ -94,11 +94,11 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
                 Curr_El = (Element*) currentPtr->value;
                 //  need to get currentPtr->next now since currentPtr might get deleted!
                 currentPtr = currentPtr->next;
-                if(Curr_El->get_adapted_flag() == NOTRECADAPTED)
+                if(Curr_El->adapted_flag() == NOTRECADAPTED)
                 {	//if this is a refined element don't involve!!!
                 
                     // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
-                    if((Curr_El->generation() > MIN_GENERATION) && (Curr_El->get_which_son() == 0))
+                    if((Curr_El->generation() > MIN_GENERATION) && (Curr_El->which_son() == 0))
                     {
                         //check to see if currentPtr might get deleted and if it might, find next ptr that won't
                         if(currentPtr != NULL)
@@ -107,7 +107,7 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
                             while (newnext == 0 && currentPtr != NULL)
                             {
                                 Element* nextelm = (Element*) currentPtr->value;
-                                if(nextelm->get_which_son() == 0)
+                                if(nextelm->which_son() == 0)
                                     newnext = 1;
                                 else
                                     currentPtr = currentPtr->next;
@@ -210,7 +210,7 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
         {
             Curr_El = (Element*) currentPtr->value;
             currentPtr = currentPtr->next;
-            if(Curr_El->get_adapted_flag() > TOBEDELETED)
+            if(Curr_El->adapted_flag() > TOBEDELETED)
                 Curr_El->calc_wet_dry_orient(El_Table);
         }
     }
@@ -239,7 +239,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
         Element* EmTemp = (Element*) El_Table->lookup(brother(i));
         if(EmTemp == NULL) //|| EmTemp->refined != 0)
             return 0;
-        else if(EmTemp->adapted != NOTRECADAPTED) //this should be sufficient
+        else if(EmTemp->adapted_flag() != NOTRECADAPTED) //this should be sufficient
             return 0;
         bros[i + 1] = EmTemp;
         if(bros[i + 1]->myprocess() != myid)
@@ -280,7 +280,7 @@ int Element::check_unrefinement(HashTable* El_Table, double target)
     //if((if_pile_boundary(El_Table,target))||
     //   (if_source_boundary(El_Table)))
     //if((state_vars[0] >= target)||(Influx[0]>0.0))
-    if(adapted != NOTRECADAPTED)
+    if(adapted_flag() != NOTRECADAPTED)
         //This rules out NEWFATHERs, NEWSONs, BUFFERs, GHOSTs, TOBEDELETEDs, and OLDFATERs
         //This is a redundant check but is is better to be safe than sorry
         return (0);
@@ -328,7 +328,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
      }
      */
 
-    EmFather->refined = 0;
+    EmFather->set_refined_flag(0);
     
     for(inode = 4; inode < 8; inode++)
     {
@@ -358,8 +358,8 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
             scanf("%d", &yada);
         }
         assert(EmSon);
-        assert(EmSon->adapted==OLDSON);
-        EmSon->adapted = TOBEDELETED;
+        assert(EmSon->adapted_flag()==OLDSON);
+        EmSon->set_adapted_flag(TOBEDELETED);
         
         //delete son's bubble nodes
         NdTemp = (Node *) NodeTable->lookup(EmFather->son(ison));
@@ -550,13 +550,13 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                 EmNeigh = (Element*) El_Table->lookup(EmFather->neighbor(ineigh));
                 assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
                 
-                if(EmNeigh->adapted != NEWFATHER)
+                if(EmNeigh->adapted_flag() != NEWFATHER)
                 {
                     //If I knew my neighbor was a NEWFATHER that means
                     //my neighbor already updated his and my neighbor
                     //information about each other
                     
-                    if(EmNeigh->adapted == OLDSON)
+                    if(EmNeigh->adapted_flag() == OLDSON)
                     {
                         //I am introduced to a NEWFATHER neighbor by his OLDSON
                         EmNeigh = (Element*) El_Table->lookup(EmNeigh->father_by_ref());
@@ -581,7 +581,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
                     
                     EmNeigh->set_neigh_proc(ineighme + 4, -2);
                     
-                    if(EmNeigh->adapted == NEWFATHER)
+                    if(EmNeigh->adapted_flag() == NEWFATHER)
                     {
                         //if my neighbor is a NEWFATHER, I need to update my
                         //information about him too
@@ -817,7 +817,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                             //person... err.. suspicious Element
                             int ineighmod4 = ineigh % 4;
                             
-                            if(EmTemp->adapted == OLDSON)
+                            if(EmTemp->adapted_flag() == OLDSON)
                             {
                                 //I'm moving out too so I'll introduce my NEWFATHER to my
                                 //neighbor's NEWFATHER who my neighbor just introduced to me
@@ -858,7 +858,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 NdTemp->info = SIDE;
                                 
                             }
-                            else if(EmTemp->adapted >= NOTRECADAPTED)
+                            else if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                             {
                                 nodeorder = 0;
                                 

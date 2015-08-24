@@ -82,7 +82,7 @@ int update_topo(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nu
                 Element *EmTemp = (Element*) entryp->value;
                 assert(EmTemp);
                 
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     //update the topography in same order as in element2.C
                     //double eldif=EmTemp->get_elevation();

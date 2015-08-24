@@ -28,10 +28,10 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     
     elem->ndof = sendel->ndof();
     elem->no_of_eqns = sendel->no_of_eqns();
-    elem->refined = sendel->refined;
-    elem->adapted = sendel->adapted;
-    elem->which_son = sendel->which_son;
-    elem->new_old = sendel->new_old;
+    elem->refined = sendel->refined_flag();
+    elem->adapted = sendel->adapted_flag();
+    elem->which_son = sendel->which_sonABCD;
+    elem->new_old = sendel->new_oldABCD;
     
     SET_OLDKEY(elem->key, sendel->key());
     

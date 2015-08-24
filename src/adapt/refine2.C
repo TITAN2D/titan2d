@@ -183,7 +183,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[4] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[4]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -206,7 +206,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[5] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[5]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -283,7 +283,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[8] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[8]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -306,7 +306,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[13] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[13]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -382,7 +382,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[14] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[14]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -405,7 +405,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[15] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[15]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -480,7 +480,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[6] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[6]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -503,7 +503,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         assert(which != -1);
         NewNodeKey[11] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[11]);
-        if(neigh_elm->get_refined_flag() == 0 || neigh_elm->get_refined_flag() == GHOST)
+        if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
             n1->putinfo(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
@@ -695,7 +695,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Element* old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 16);
         delete old_elm;
@@ -775,7 +775,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 17);
         delete old_elm;
@@ -855,7 +855,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 18);
         delete old_elm;
@@ -937,7 +937,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
     if(old_elm != NULL)
     {
-        old_elm->put_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->adapted(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
         HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 19);
         delete old_elm;

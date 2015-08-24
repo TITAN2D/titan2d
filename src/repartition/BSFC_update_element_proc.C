@@ -39,7 +39,7 @@ void BSFC_update_element_proc(int myid, int numprocs, HashTable* HT_Elem_Ptr, Ha
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 if(EmTemp->key() == (unsigned) 74470341)
                     k = i;

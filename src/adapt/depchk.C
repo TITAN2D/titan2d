@@ -68,7 +68,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                     {
                         //-- if the neighbor is bigger, then it must be refined
                         
-                        if((Neigh->get_adapted_flag() == NOTRECADAPTED) || (Neigh->get_adapted_flag() == NEWFATHER))
+                        if((Neigh->adapted_flag() == NOTRECADAPTED) || (Neigh->adapted_flag() == NEWFATHER))
                         {
                             int flag = 1;
                             for(int m = 0; m < TempList.get_num_elem(); m++)
@@ -85,7 +85,7 @@ void depchk(Element* EmTemp, HashTable* El_Table, HashTable* NodeTable, int* ifg
                                 TempList.add(Neigh);
                             }
                         }
-                        else if(Neigh->get_adapted_flag() != OLDFATHER)
+                        else if(Neigh->adapted_flag() != OLDFATHER)
                         {
                             *ifg = 0;
                             TempList.trashlist();

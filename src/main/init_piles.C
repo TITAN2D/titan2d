@@ -42,7 +42,7 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
             Element *EmTemp = (Element*) entryp->value;
             assert(EmTemp);
             
-            if(EmTemp->get_adapted_flag() > 0)
+            if(EmTemp->adapted_flag() > 0)
             {
                 double elevation;
                 get_elem_elev(HT_Node_Ptr, matprops, EmTemp, &elevation);
@@ -113,7 +113,7 @@ void cxxTitanSinglePhase::init_piles()
                 Element *EmTemp = (Element*) entryp->value;
                 assert(EmTemp);
                 
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
 
                     //put in the pile height right here...
@@ -195,7 +195,7 @@ void cxxTitanSinglePhase::init_piles()
             {
                 
                 Element* Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->get_adapted_flag() > 0)
+                if(Curr_El->adapted_flag() > 0)
                 { //if this is a refined element don't involve!!!
                     double *dxy = Curr_El->get_dx();
                     double dvol = dxy[0] * dxy[1] * *(Curr_El->get_state_vars());

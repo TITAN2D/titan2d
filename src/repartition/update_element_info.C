@@ -61,7 +61,7 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     Element *r_element = (Element *) r_element_in;
     
-    if(!r_element->get_refined_flag()) //if parent don't care about neighbor info
+    if(!r_element->refined_flag()) //if parent don't care about neighbor info
     {
         for(i = 0; i < 8; i++)
         {
@@ -92,7 +92,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
     
     HT_Elem_Ptr->add(newelement->key(), newelement);
     
-    if(!newelement->get_refined_flag()) //if parent .... don't care about neighbor info
+    if(!newelement->refined_flag()) //if parent .... don't care about neighbor info
         check_neighbor_info(newelement, HT_Elem_Ptr, myid);
     
 }
@@ -114,7 +114,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
         assert(elem2->generation == EmTemp->generation());
         if(elem2->generation > 0)
         {
-            assert(elem2->which_son == EmTemp->get_which_son());
+            assert(elem2->which_son == EmTemp->which_son());
         }
         // the same element...
         HT_Elem_Ptr->remove(*(elem2->key));//, 1, stdout, myid, 27);
@@ -185,10 +185,10 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     
     newelement->set_ndof(elem2->ndof);
     newelement->set_no_of_eqns(elem2->no_of_eqns);
-    newelement->refined = elem2->refined;
-    newelement->adapted = elem2->adapted;
-    newelement->which_son = elem2->which_son;
-    newelement->new_old = elem2->new_old;
+    newelement->set_refined_flag(elem2->refined);
+    newelement->adapted(elem2->adapted);
+    newelement->which_sonABCD = elem2->which_son;
+    newelement->new_oldABCD = elem2->new_old;
     for(i = 0; i < 4; i++)
     {
         newelement->set_brother(i, sfc_key_from_oldkey(elem2->brothers[i]));
@@ -243,7 +243,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
                 int screwd = 0;
                 assert(screwd);
             }
-            if(newelement->refined == 0)  // only update if this is from an active element
+            if(newelement->refined_flag() == 0)  // only update if this is from an active element
                 node->set_parameters(elem2->n_info[i], elem2->n_order[i]);
         }
     }
@@ -256,7 +256,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         
         HT_Node_Ptr->add(sfc_key_from_oldkey(elem2->key), node);
     }
-    else if(newelement->refined != 0) // only update if this is from an active element
+    else if(newelement->refined_flag() != 0) // only update if this is from an active element
         node->set_parameters(elem2->n_info[8], elem2->n_order[8]);
     
     //The boundary conditions

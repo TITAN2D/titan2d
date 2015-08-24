@@ -47,7 +47,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
         if(recv->sender_gen == EmTemp->generation())
         {
             assert(recv->side < 4);
-            if(EmTemp->get_refined_flag()) //-- if the receptor was refined
+            if(EmTemp->refined_flag()) //-- if the receptor was refined
             {
                 /*-- case 1:(refer to my note book to know the definition of each case)
                  sender and receptor were both refined and they are on the same generation-----*/
@@ -327,7 +327,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
             if(recv->sender_gen > EmTemp->generation()) //--sender is smaller than receptor
             {
                 assert(!recv->sender_refined); //-- debug window
-                if(EmTemp->get_refined_flag()) //-- happened only in h-refinement
+                if(EmTemp->refined_flag()) //-- happened only in h-refinement
                 {
                     /*-- search, which son of EmTemp? a is the result --*/
                     int a = recv->side;

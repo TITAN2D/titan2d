@@ -49,7 +49,7 @@ void grass_sites_proc_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             assert(EmTemp);
             
             //if the current element is an active one on this processor
-            if(EmTemp->get_adapted_flag() > 0)
+            if(EmTemp->adapted_flag() > 0)
             {
                 double *state_vars = EmTemp->get_state_vars();
                 

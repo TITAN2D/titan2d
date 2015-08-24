@@ -124,8 +124,8 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
             
             EmTemp = (Element*) (entryp->value);
             assert(EmTemp);
-            if(EmTemp->get_adapted_flag() >= NEWSON)
-                EmTemp->put_adapted_flag(NOTRECADAPTED);
+            if(EmTemp->adapted_flag() >= NEWSON)
+                EmTemp->set_adapted_flag(NOTRECADAPTED);
             
             entryp = entryp->next;
         }
@@ -143,7 +143,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
             EmTemp = (Element*) (entryp->value);
             assert(EmTemp);
             //-- this requirement is used to exclude the new elements
-            if(((EmTemp->get_adapted_flag() > 0) && (EmTemp->get_adapted_flag() < NEWSON)) && (EmTemp->generation()
+            if(((EmTemp->adapted_flag() > 0) && (EmTemp->adapted_flag() < NEWSON)) && (EmTemp->generation()
                     < REFINE_LEVEL)
                && ((EmTemp->if_pile_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) || (EmTemp->if_pile_boundary(
                        HT_Elem_Ptr, REFINE_THRESHOLD1)
@@ -215,7 +215,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                                                                                          > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD2) > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD) > 0))
-                    EmTemp->put_adapted_flag(BUFFER);
+                    EmTemp->set_adapted_flag(BUFFER);
                 entryp = entryp->next;
             }
         }
@@ -281,7 +281,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
             {
                 EmTemp = TempList.get(i);
                 assert(EmTemp);
-                EmTemp->put_adapted_flag(BUFFER);
+                EmTemp->set_adapted_flag(BUFFER);
             }
             TempList.trashlist();
         }
@@ -299,10 +299,10 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
             
-            switch (EmTemp->get_adapted_flag())
+            switch (EmTemp->adapted_flag())
             {
                 case NEWBUFFER:
-                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->get_adapted_flag());
+                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->adapted_flag());
                     assert(0);
                     break;
                 case BUFFER:
@@ -327,12 +327,12 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                     break;
                 case OLDFATHER:
                 case OLDSON:
-                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->get_adapted_flag());
+                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->adapted_flag());
                     assert(0);
                     break;
                 default:
                     //I don't know what kind of Element this is.
-                    cout<<"FUBAR element type in H_adapt()!!! key={"<<EmTemp->key()<<"} adapted="<<EmTemp->get_adapted_flag();
+                    cout<<"FUBAR element type in H_adapt()!!! key={"<<EmTemp->key()<<"} adapted="<<EmTemp->adapted_flag();
                     cout <<"\naborting.\n";
                     assert(0);
                     break;
@@ -408,11 +408,11 @@ void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProp
         
         if(ifg)
             for(ielem = 0; ielem < RefinedList->get_num_elem(); ielem++)
-                if(!((RefinedList->get(ielem))->get_refined_flag()))
+                if(!((RefinedList->get(ielem))->refined_flag()))
                 {
                     refine(RefinedList->get(ielem), HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr);
-                    (RefinedList->get(ielem))->put_adapted_flag(OLDFATHER);
-                    (RefinedList->get(ielem))->put_refined_flag(1);
+                    (RefinedList->get(ielem))->set_adapted_flag(OLDFATHER);
+                    (RefinedList->get(ielem))->set_refined_flag(1);
                 }
     }
     return;
@@ -572,8 +572,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 
                 EmTemp = (Element*) (entryp->value);
                 assert(EmTemp);
-                if(EmTemp->get_adapted_flag() >= NEWSON)
-                    EmTemp->put_adapted_flag(NOTRECADAPTED);
+                if(EmTemp->adapted_flag() >= NEWSON)
+                    EmTemp->set_adapted_flag(NOTRECADAPTED);
                 entryp = entryp->next;
             }
         }
@@ -588,7 +588,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 EmTemp = (Element*) (entryp->value);
                 assert(EmTemp);
                 
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     double minx = (*(EmTemp->get_coord() + 0) - (*(EmTemp->get_dx() + 0)) * 0.5);
                     //*(matprops_ptr->LENGTH_SCALE);
@@ -606,11 +606,11 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                            && (miny <= xycenter[icenter][1]) && (xycenter[icenter][1] <= maxy))
                         {
                             
-                            if((EmTemp->generation() < REFINE_LEVEL) && (EmTemp->get_adapted_flag() > 0)
-                               && (EmTemp->get_adapted_flag() < NEWSON))
+                            if((EmTemp->generation() < REFINE_LEVEL) && (EmTemp->adapted_flag() > 0)
+                               && (EmTemp->adapted_flag() < NEWSON))
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                             Element *EmSon = EmTemp;
-                            if(EmTemp->get_adapted_flag() == OLDFATHER)
+                            if(EmTemp->adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
                                     EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
@@ -645,7 +645,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
         {
             EmTemp = TempList.get(i);
             assert(EmTemp);
-            EmTemp->put_adapted_flag(BUFFER);
+            EmTemp->set_adapted_flag(BUFFER);
         }
         TempList.trashlist();
         
@@ -692,7 +692,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             
                             if(EmTemp->generation() < REFINE_LEVEL)
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
-                            if(EmTemp->get_adapted_flag() == OLDFATHER)
+                            if(EmTemp->adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
                                     Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
@@ -718,7 +718,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 {
                     EmTemp = TempList.get(i);
                     assert(EmTemp);
-                    EmTemp->put_adapted_flag(BUFFER);
+                    EmTemp->set_adapted_flag(BUFFER);
                 }
                 TempList.trashlist();
                 
@@ -782,8 +782,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 
                 EmTemp = (Element*) (entryp->value);
                 assert(EmTemp);
-                if(EmTemp->get_adapted_flag() >= NEWSON)
-                    EmTemp->put_adapted_flag(NOTRECADAPTED);
+                if(EmTemp->adapted_flag() >= NEWSON)
+                    EmTemp->set_adapted_flag(NOTRECADAPTED);
                 
                 entryp = entryp->next;
             }
@@ -859,7 +859,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 EmTemp = (Element*) (entryp->value);
                 assert(EmTemp);
                 //-- this requirement is used to exclude the new elements
-                if(((EmTemp->get_adapted_flag() > 0) && (EmTemp->get_adapted_flag() < NEWSON)) && (EmTemp->generation()
+                if(((EmTemp->adapted_flag() > 0) && (EmTemp->adapted_flag() < NEWSON)) && (EmTemp->generation()
                         < REFINE_LEVEL))
                 {
                     if(((EmTemp->if_pile_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) ||
@@ -933,14 +933,14 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 EmTemp = (Element*) (entryp->value);
                 assert(EmTemp);
                 //-- this requirement is used to exclude the new elements
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                     if(((EmTemp->if_pile_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) ||
                     //(EmTemp->if_pile_boundary(HT_Elem_Ptr,REFINE_THRESHOLD1)>0)||
                     //(EmTemp->if_pile_boundary(HT_Elem_Ptr,REFINE_THRESHOLD2)>0)|| \
 	      (EmTemp->if_pile_boundary(HT_Elem_Ptr,REFINE_THRESHOLD )>0)||
                     (EmTemp->if_source_boundary(HT_Elem_Ptr) > 0)))
                     {
-                        EmTemp->put_adapted_flag(BUFFER);
+                        EmTemp->set_adapted_flag(BUFFER);
                         if(minboundarygen > EmTemp->generation())
                             minboundarygen = EmTemp->generation();
                     }
@@ -982,7 +982,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                             
                             if(EmTemp->generation() < REFINE_LEVEL)
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
-                            if(EmTemp->get_adapted_flag() == OLDFATHER)
+                            if(EmTemp->adapted_flag() == OLDFATHER)
                                 for(int ison = 0; ison < 4; ison++)
                                 {
                                     Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
@@ -1014,7 +1014,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 {
                     EmTemp = TempList.get(i);
                     assert(EmTemp);
-                    EmTemp->put_adapted_flag(BUFFER);
+                    EmTemp->set_adapted_flag(BUFFER);
                 }
                 TempList.trashlist();
                 
@@ -1057,8 +1057,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             
             EmTemp = (Element*) (entryp->value);
             assert(EmTemp);
-            if(EmTemp->get_adapted_flag() >= NEWSON)
-                EmTemp->put_adapted_flag(NOTRECADAPTED);
+            if(EmTemp->adapted_flag() >= NEWSON)
+                EmTemp->set_adapted_flag(NOTRECADAPTED);
             
             entryp = entryp->next;
         }
@@ -1122,7 +1122,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                                                                                          > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD2) > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD) > 0))
-                    EmTemp->put_adapted_flag(BUFFER);
+                    EmTemp->set_adapted_flag(BUFFER);
                 entryp = entryp->next;
             }
         }
@@ -1190,7 +1190,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             {
                 EmTemp = TempList.get(i);
                 assert(EmTemp);
-                EmTemp->put_adapted_flag(BUFFER);
+                EmTemp->set_adapted_flag(BUFFER);
             }
             TempList.trashlist();
             
@@ -1221,8 +1221,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             EmTemp=(Element*)(entryp->value);
             entryp=entryp->next;
 
-            if((-BUFFER<=EmTemp->get_adapted_flag())&&
-                    (EmTemp->get_adapted_flag()<=-NOTRECADAPTED))
+            if((-BUFFER<=EmTemp->adapted_flag())&&
+                    (EmTemp->adapted_flag()<=-NOTRECADAPTED))
             {   
                 EmTemp->void_bcptr();
                 HT_Elem_Ptr->remove(EmTemp->key(), 1,stdout,myid,21);
@@ -1257,10 +1257,10 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
             
-            switch (EmTemp->get_adapted_flag())
+            switch (EmTemp->adapted_flag())
             {
                 case NEWBUFFER:
-                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->get_adapted_flag());
+                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->adapted_flag());
                     assert(0);
                     break;
                 case BUFFER:
@@ -1298,12 +1298,12 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                     break;
                 case OLDFATHER:
                 case OLDSON:
-                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->get_adapted_flag());
+                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->adapted_flag());
                     assert(0);
                     break;
                 default:
                     //I don't know what kind of Element this is.
-                    cout<<"FUBAR element type in H_adapt()!!! key={"<<EmTemp->key()<<"} adapted="<<EmTemp->get_adapted_flag()<<"\naborting.\n";
+                    cout<<"FUBAR element type in H_adapt()!!! key={"<<EmTemp->key()<<"} adapted="<<EmTemp->adapted_flag()<<"\naborting.\n";
                     assert(0);
                     break;
             }
@@ -1390,8 +1390,8 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                     currentPtr = currentPtr->next;
                     assert(EmTemp);
                     
-                    if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
-                        EmTemp->put_adapted_flag(NOTRECADAPTED);
+                    if(EmTemp->adapted_flag() >= NOTRECADAPTED)
+                        EmTemp->set_adapted_flag(NOTRECADAPTED);
                     
                 }
             }
@@ -1412,7 +1412,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                     
                     generation = EmTemp->generation();
                     
-                    if((EmTemp->get_adapted_flag() == NOTRECADAPTED) && (generation < refinelevel))
+                    if((EmTemp->adapted_flag() == NOTRECADAPTED) && (generation < refinelevel))
                     {
                         refinewrapper(El_Table, NodeTable, matprops_ptr, &RefinedList, EmTemp);
                         if(generation < minrefinelevel)
@@ -1443,9 +1443,9 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                         currentPtr = currentPtr->next;
                         assert(EmTemp);
                         
-                        if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+                        if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                         {
-                            EmTemp->put_adapted_flag(NOTRECADAPTED);
+                            EmTemp->set_adapted_flag(NOTRECADAPTED);
                             pileprops_ptr->set_element_height_to_elliptical_pile_height(NodeTable, EmTemp, matprops_ptr);
                         }
                         else
@@ -1470,9 +1470,9 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                         currentPtr = currentPtr->next;
                         assert(EmTemp);
                         
-                        if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+                        if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                         {
-                            EmTemp->put_adapted_flag(NOTRECADAPTED);
+                            EmTemp->set_adapted_flag(NOTRECADAPTED);
                             EmTemp->put_height(0.0);
                         }
                         else
@@ -1501,7 +1501,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
             currentPtr = currentPtr->next;
             assert(EmTemp);
             
-            if((EmTemp->get_adapted_flag() > TOBEDELETED) && (EmTemp->get_adapted_flag() <= BUFFER))
+            if((EmTemp->adapted_flag() > TOBEDELETED) && (EmTemp->adapted_flag() <= BUFFER))
                 EmTemp->calc_wet_dry_orient(El_Table);
         }
     }

@@ -55,7 +55,7 @@ void mark_flux_region(HashTable* ElemTable, HashTable* NodeTable, MatProps *matp
             {
                 EmTemp = (Element*) entryptr->value;
                 assert(EmTemp);
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                     //if this element doesn't belong on this processor don't involve
                     EmTemp->calc_flux(NodeTable, fluxprops, timeprops);
                 
@@ -78,7 +78,7 @@ void mark_flux_region(HashTable* ElemTable, HashTable* NodeTable, MatProps *matp
             {
                 EmTemp = (Element*) entryptr->value;
                 assert(EmTemp);
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                     //if this element doesn't belong on this processor don't involve
                     EmTemp->zero_influx();
                 

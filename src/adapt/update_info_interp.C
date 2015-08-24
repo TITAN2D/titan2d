@@ -139,7 +139,7 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
             neighbor_proc = EmTemp->neigh_proc(which_neighbor);
             
             //dealing with the different cases then
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 assert(my_gen >= neighbor_gen);
                 if(my_gen == neighbor_gen)

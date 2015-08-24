@@ -87,7 +87,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
             
-            if((EmTemp->get_refined_flag() == 0) && (EmTemp->get_adapted_flag() > 0))
+            if((EmTemp->refined_flag() == 0) && (EmTemp->adapted_flag() > 0))
             {
                 //if this is a refined element don't involve!!!
                 
@@ -183,7 +183,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
             
-            if((EmTemp->get_refined_flag() == 0) && (EmTemp->get_adapted_flag() > 0))
+            if((EmTemp->refined_flag() == 0) && (EmTemp->adapted_flag() > 0))
             {
                 //if this element should not be on this processor don't involve!!!
                 
@@ -197,7 +197,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                         Pack_element(EmTemp, (send_array[iproc] + IfSendDone[iproc]), NodeTable, myid);
                         
                         (send_array[iproc] + IfSendDone[iproc])->refined = GHOST;
-                        (send_array[iproc] + IfSendDone[iproc])->adapted = -(EmTemp->get_adapted_flag());
+                        (send_array[iproc] + IfSendDone[iproc])->adapted = -(EmTemp->adapted_flag());
                         
                         IfSendDone[iproc]++;
                     } //if((iproc!=myid) && (iproc>=0))
@@ -259,7 +259,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                             new_elm = El_Table->generateElement();
                             
                             construct_el(new_elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
-                            if((new_elm->get_adapted_flag() < 0) && (new_elm->get_adapted_flag() >= -BUFFER))
+                            if((new_elm->adapted_flag() < 0) && (new_elm->adapted_flag() >= -BUFFER))
                                 new_elm->set_myprocess(iproc);
                             El_Table->add(new_elm->key(), new_elm);
                             add_counter++;
@@ -270,7 +270,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                             //and allocate space for a new one, save time by only copying the
                             //new element data to the old element.
                             construct_el(elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
-                            if((elm->get_adapted_flag() < 0) && (elm->get_adapted_flag() >= -BUFFER))
+                            if((elm->adapted_flag() < 0) && (elm->adapted_flag() >= -BUFFER))
                                 elm->set_myprocess(iproc);
                             update_counter++;
                         }	      //else
@@ -344,7 +344,7 @@ void delete_ghost_elms(HashTable* El_Table, int myid)
             assert(EmTemp);
             entryp = entryp->next;
             
-            if((EmTemp->get_refined_flag() == GHOST)	      //||
+            if((EmTemp->refined_flag() == GHOST)	      //||
             //((EmTemp->get_adapted_flag()<0)&&
             //(EmTemp->get_adapted_flag()>=-BUFFER))
             )

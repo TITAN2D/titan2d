@@ -53,7 +53,7 @@ double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int n
             while (currentPtr)
             {
                 Element* Curr_El = (Element*) (currentPtr->value);
-                if((Curr_El->get_adapted_flag() > 0)  //&&
+                if((Curr_El->adapted_flag() > 0)  //&&
                 //((*(Curr_El->get_state_vars()+0)>GEOFLOW_TINY)||
                 //(Curr_El->get_adapted_flag()==BUFFER))
                 )
@@ -66,7 +66,7 @@ double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int n
                         sub_weight[1] += 1;
                         sub_weight[0] += Curr_El->el_error(0);
                     }
-                    else if(Curr_El->get_adapted_flag() == BUFFER)
+                    else if(Curr_El->adapted_flag() == BUFFER)
                     {
                         sub_weight[1] += 0.1;
                         sub_weight[0] += Curr_El->el_error(0) * 0.1;

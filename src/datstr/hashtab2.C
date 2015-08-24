@@ -330,7 +330,7 @@ void ElementsHashTable::updateLocalElements()
         for(int j = 0; j < NEntriesInBucket; j++)
         {
             Element* Curr_El = (Element*) hashEntryBucket[i][j]->value;
-            if(Curr_El->get_adapted_flag() > 0)
+            if(Curr_El->adapted_flag() > 0)
             { //if this element does not belong on this processor don't involve!!!
                 ukeyLocalElements[count] = ukeyBucket[i][j];
                 localElements[count] = (Element*) hashEntryBucket[i][j]->value;
@@ -351,7 +351,7 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
         for(int j = 0; j < NEntriesInBucket; j++)
         {
             Element* Curr_El = (Element*) hashEntryBucket[i][j]->value;
-            if(Curr_El->get_adapted_flag() > 0)
+            if(Curr_El->adapted_flag() > 0)
             { //if this element does not belong on this processor don't involve!!!
                 if(ukeyLocalElements[count] != ukeyBucket[i][j] || localElements[count] != hashEntryBucket[i][j]->value)
                     mismatch++;
@@ -421,7 +421,7 @@ void ElementsHashTable::updatePointersToNeighbours()
             while (currentPtr)
             {
                 Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->get_adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
+                if(Curr_El->adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
                     Curr_El->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
                 currentPtr = currentPtr->next;
             }
@@ -444,7 +444,7 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
             while (currentPtr)
             {
                 Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->get_adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
+                if(Curr_El->adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
                     count += Curr_El->check_neighbors_nodes_and_elements_pointers(this, NodeTable);
                 currentPtr = currentPtr->next;
             }

@@ -106,8 +106,8 @@ protected:
             state_vars[i] = -1;
             Influx[i] = 0.;
         }
-        adapted = TOBEDELETED;
-        refined = 1;
+        set_adapted_flag(TOBEDELETED);
+        set_refined_flag(1);
         Awet = 0.0;
         Swet = 1.0;
         drypoint[0] = drypoint[1] = 0.0;
@@ -241,40 +241,44 @@ public:
     //! compare the FindNeigh key against the keys of this element's 8 neighbors to determine which if any neighbor FindNeigh is
     int which_neighbor(const SFC_Key &FindNeigh);
 
-    //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag().  refined can be permanently set to GHOST (defined in constant.h) or zero or temporarily set to 1 (with in the refinement and unrefinement routines), Keith believes it's not being unset (set from 1 to 0) when it should be after the refinement is done.  Keith believes the problem is located within H_adapt() or a function called from within it, recurse down.
-    int get_refined_flag();
+    
 
-    //! magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell.  This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
-    int get_adapted_flag();
+    
 
     //! call this function after this element's neighbor(s) have been refined, proc is processor id for neighbor[which_side+4]
     void change_neighbor(const SFC_Key *newneighbs, int which_side, int proc, int reg);
 
+    //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag().  refined can be permanently set to GHOST (defined in constant.h) or zero or temporarily set to 1 (with in the refinement and unrefinement routines), Keith believes it's not being unset (set from 1 to 0) when it should be after the refinement is done.  Keith believes the problem is located within H_adapt() or a function called from within it, recurse down.
+    //get_refined_flag
+    int refined_flag() const {return refined_;}
     //! set this element's refined flag to i, can set it to normal (hasn't just been refined and isn't a ghost cell), "temporarily" set to "refined" (has just been refined so don't refine again), or say that it's a GHOST cell, see constant.h, (which means you don't update it, instead you get new values from the processor that owns it and you don't refine it.) refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). 
-    void put_refined_flag(int i);
-
+    //put_refined_flag
+    void set_refined_flag(const int i){refined_ = i;}
+    
+    //! magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell.  This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
+    int adapted_flag() const {return adapted_;}
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. These values are defined in constant.h.  The NEWSON value has allowed Keith to provide one time only immunity from unrefinement to recently refined elements, after which the "adapted" flag is resent to NOTRECADAPTED.
-    void put_adapted_flag(int new_adapted_status);
+    void set_adapted_flag(const int new_adapted_status){adapted_ = new_adapted_status;}
 
     //! this function returns an the generation of i-th this element's neighbors
     const int neigh_gen(const int i) const{return neigh_gen_[i];}
     //! this function sets the ith neighbor's generation to "gen"
     void get_neigh_gen(const int i, const int gen){neigh_gen_[i] = gen;}
 
-    //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
-    void put_which_son(int);
-
     //! returns the which_son flag, which tells the portion of the father element that this element is physically located in
-    int get_which_son();
+    int which_son() const {return which_sonABCD;}
+    //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
+    void put_which_son(const int i){which_sonABCD = i;}
 
     //! this function calculates the which_son flag for the original (or restored in case of a restart) element.  It also calculates which son of the grandfather element the father is durring unrefinement.
     void calc_which_son();
-
-    //! this function sets the new or old flag, it is initialized in htflush.C and reset during repartitioning (repartition_BSFC.C and BSFC_update_and_send_elements.C)
-    void put_new_old(int i);
-
+    
     //! this function returns the vlaue of the new_old flag which is used during mesh adaptation and repartitioning
-    int get_new_old();
+    int get_new_old() const {return new_oldABCD;}
+    //! this function sets the new or old flag, it is initialized in htflush.C and reset during repartitioning (repartition_BSFC.C and BSFC_update_and_send_elements.C)
+    void put_new_old(const int i){new_oldABCD = i;}
+
+    
 
     //! this function is legacy afeapi code, the function is defined in element2.C but it is never called anywhere in the finite difference/volume version of titan because it's finite element (including Discontinuous Galerkin) specific code
     void update_ndof();
@@ -616,16 +620,16 @@ protected:
     double el_solution_[EQUATIONS];
 
     //! refined is a flag that usually has the value 0, but will be 1 if the element has been refined this iteration (used to enforce the 1 irregularity rule), or have the value "GHOST" if it is a ghost cell, refined and ghost cells are not updated, see constant.h for the value of GHOST
-    int refined;
+    int refined_;
 
 //! The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
-    int adapted;
+    int adapted_;
 
     //! which_son holds the value of which son this element is, which of the 4 squares that makes up the father elements square.
-    int which_son;
+    int which_sonABCD;
 
     //! the new_old flag is used in mesh adaptation and repartitioning
-    int new_old;
+    int new_oldABCD;
 
     //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key brothers_[4];
@@ -956,8 +960,8 @@ inline void Element::set_sons(const SFC_Key* s)
     for(int i = 0; i < 4; i++)
         set_son(i, s[i]);
     
-    refined = 1;
-    adapted = OLDFATHER;
+    set_refined_flag(1);
+    set_adapted_flag(OLDFATHER);
 }
 
 inline void Element::set_brothers(const SFC_Key* s)
@@ -970,48 +974,6 @@ inline void Element::putel_sq(double solsq, double errsq)
 {
     set_el_solution(0, solsq);
     set_el_error(0, errsq);
-}
-
-inline int Element::get_refined_flag()
-{
-    return refined;
-}
-
-inline void Element::put_refined_flag(int i)
-{
-    refined = i;
-}
-
-inline int Element::get_adapted_flag()
-{
-    return adapted;
-}
-
-inline void Element::put_adapted_flag(int new_adapted_status)
-{
-    adapted = new_adapted_status;
-}
-
-
-
-inline void Element::put_which_son(int i)
-{
-    which_son = i;
-}
-
-inline int Element::get_which_son()
-{
-    return which_son;
-}
-
-inline int Element::get_new_old()
-{
-    return new_old;
-}
-
-inline void Element::put_new_old(int i)
-{
-    new_old = i;
 }
 
 inline void Element::zero_influx()

@@ -63,7 +63,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                 EmTemp = (Element*) (entryp->value);
                 entryp = entryp->next;
                 
-                if((EmTemp->get_adapted_flag() > 0) || (EmTemp->get_adapted_flag() < 0))
+                if((EmTemp->adapted_flag() > 0) || (EmTemp->adapted_flag() < 0))
                 {
                     mindx = (
                             (*(EmTemp->get_dx() + 0) < *(EmTemp->get_dx() + 1)) ?
@@ -102,7 +102,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
             
-            if((EmTemp->get_adapted_flag() > 0) || ((EmTemp->get_adapted_flag() < 0) && (ghost_flag == 1)))
+            if((EmTemp->adapted_flag() > 0) || ((EmTemp->adapted_flag() < 0) && (ghost_flag == 1)))
             {
                 //if this element does not belong on this processor don't involve!!!
                 

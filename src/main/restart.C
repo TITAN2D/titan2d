@@ -587,7 +587,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
             EmTemp = (Element*) entryp->value;
             assert(EmTemp);
             
-            if(EmTemp->get_adapted_flag() > 0)
+            if(EmTemp->adapted_flag() > 0)
                 EmTemp->calc_d_gravity(*ElemTable);
             
             entryp = entryp->next;
@@ -1128,7 +1128,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
             assert(EmTemp);
             if(EmTemp->myprocess() == myid)
             {
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     temp4.i++;
                 }
@@ -1256,7 +1256,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
             
             if(EmTemp->myprocess() == myid)
             {
-                if(EmTemp->get_adapted_flag() > 0)
+                if(EmTemp->adapted_flag() > 0)
                 {
                     EmTemp->save_elem(fp, fptxt);
 #ifdef DEBUGSAVESPLIT

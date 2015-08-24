@@ -39,7 +39,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(EmTemp->get_refined_flag())
+            if(EmTemp->refined_flag())
             {
                 EmTemp->put_new_old(-1);
             }
@@ -57,7 +57,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
@@ -137,7 +137,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
@@ -178,7 +178,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
         while (entryp)
         {
             EmTemp = (Element*) (entryp->value);
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
                 if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
                   // neigh info
@@ -241,7 +241,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
         {
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
-            if(!EmTemp->get_refined_flag())
+            if(!EmTemp->refined_flag())
             {
                 if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
@@ -319,7 +319,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
         {
             EmTemp = (Element*) (entryp->value);
             entryp = entryp->next;
-            if(EmTemp->get_refined_flag() != 0)
+            if(EmTemp->refined_flag() != 0)
             {  // not an active element
                 EmTemp->void_bcptr();  // don't remove bc's
                 HT_Elem_Ptr->remove(EmTemp->key());

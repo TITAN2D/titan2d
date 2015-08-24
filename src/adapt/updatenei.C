@@ -88,7 +88,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf(fp,
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation(),
-                        EmDebugFather.get(iFather)->adapted, EmDebugFather.get(iFather)->which_son,
+                        EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_sonABCD,
                         EmDebugFather.get(iFather)->iwetnode, EmDebugFather.get(iFather)->Awet,
                         EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
                         EmDebugFather.get(iFather)->drypoint[1]);
@@ -116,8 +116,8 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
         fprintf(fp, "EmDebug={");fprintf_sfc_key(fp, EmDebug->key());fprintf(fp, "} ");
         fprintf(fp, "proc=%d ", EmDebug->myprocess());
         fprintf(fp, "gen=%d ", EmDebug->generation());
-        fprintf(fp, "adapted=%d ", EmDebug->adapted);
-        fprintf(fp, "which_son=%d ", EmDebug->which_son);
+        fprintf(fp, "adapted=%d ", EmDebug->adapted_flag());
+        fprintf(fp, "which_son=%d ", EmDebug->which_sonABCD);
         fprintf(fp, "iwetnode=%d ", EmDebug->iwetnode);
         fprintf(fp, "Awet=%9.6f ", EmDebug->Awet);
         fprintf(fp, "Swet=%9.6f ", EmDebug->Swet);
@@ -140,7 +140,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf_sfc_key(fp, EmDebugNeigh.get_key(ineigh));
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation(),
-                        EmDebugNeigh.get(ineigh)->adapted, EmDebugNeigh.get(ineigh)->which_son,
+                        EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_sonABCD,
                         EmDebugNeigh.get(ineigh)->iwetnode, EmDebugNeigh.get(ineigh)->Awet,
                         EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
                         EmDebugNeigh.get(ineigh)->drypoint[1]);
@@ -237,7 +237,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf(fp,
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation(),
-                        EmDebugFather.get(iFather)->adapted, EmDebugFather.get(iFather)->which_son,
+                        EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_sonABCD,
                         EmDebugFather.get(iFather)->iwetnode, EmDebugFather.get(iFather)->Awet,
                         EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
                         EmDebugFather.get(iFather)->drypoint[1]);
@@ -266,8 +266,8 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         fprintf(fp, "} ");
         fprintf(fp, "proc=%d ", EmDebug->myprocess());
         fprintf(fp, "gen=%d ", EmDebug->generation());
-        fprintf(fp, "adapted=%d ", EmDebug->adapted);
-        fprintf(fp, "which_son=%d ", EmDebug->which_son);
+        fprintf(fp, "adapted=%d ", EmDebug->adapted_flag());
+        fprintf(fp, "which_son=%d ", EmDebug->which_sonABCD);
         fprintf(fp, "iwetnode=%d ", EmDebug->iwetnode);
         fprintf(fp, "Awet=%9.6f ", EmDebug->Awet);
         fprintf(fp, "Swet=%9.6f ", EmDebug->Swet);
@@ -290,7 +290,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf_sfc_key(fp, EmDebugNeigh.get_key(ineigh));
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation(),
-                        EmDebugNeigh.get(ineigh)->adapted, EmDebugNeigh.get(ineigh)->which_son,
+                        EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_sonABCD,
                         EmDebugNeigh.get(ineigh)->iwetnode, EmDebugNeigh.get(ineigh)->Awet,
                         EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
                         EmDebugNeigh.get(ineigh)->drypoint[1]);
@@ -300,7 +300,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         for(inode = 0; inode < 8; inode++)
         {
             NdTemp = (Node*) NodeTable->lookup(EmDebug->node_key(inode));
-            if(EmDebug->adapted > NOTRECADAPTED)
+            if(EmDebug->adapted_flag() > NOTRECADAPTED)
                 assert(NdTemp);
             if(NdTemp)
             {
@@ -473,10 +473,10 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             assert(EmTemp->generation()>=MIN_GENERATION);
             assert(EmTemp->generation() <= REFINE_LEVEL);
             
-            assert((EmTemp->get_refined_flag() >= 0) || (EmTemp->get_refined_flag() == GHOST));
+            assert((EmTemp->refined_flag() >= 0) || (EmTemp->refined_flag() == GHOST));
             
-            if(!((EmTemp->get_adapted_flag() >= OLDSON) && (EmTemp->get_adapted_flag() <= BUFFER)
-                 && (EmTemp->get_adapted_flag() != -NEWBUFFER)))
+            if(!((EmTemp->adapted_flag() >= OLDSON) && (EmTemp->adapted_flag() <= BUFFER)
+                 && (EmTemp->adapted_flag() != -NEWBUFFER)))
             {
                 ElemBackgroundCheck(El_Table, NodeTable, EmTemp->key(), fp);
                 fclose(fp);
@@ -484,24 +484,24 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             }
             
             //^ is "exclusive or", not "exclusive or" is "if and only if"
-            assert(!((EmTemp->get_refined_flag()>=1)^ ((EmTemp->get_adapted_flag()==TOBEDELETED)|| (EmTemp->get_adapted_flag()==OLDFATHER)|| (EmTemp->get_adapted_flag()==OLDSON) ) ));
+            assert(!((EmTemp->refined_flag()>=1)^ ((EmTemp->adapted_flag()==TOBEDELETED)|| (EmTemp->adapted_flag()==OLDFATHER)|| (EmTemp->adapted_flag()==OLDSON) ) ));
             
             //^ is "exclusive or", not "exclusive or" is "if and only if"
-            assert(!((EmTemp->get_refined_flag()==GHOST)^ ((EmTemp->get_adapted_flag()>=-BUFFER)&& (EmTemp->get_adapted_flag()<=-NOTRECADAPTED) ) ));
+            assert(!((EmTemp->refined_flag()==GHOST)^ ((EmTemp->adapted_flag()>=-BUFFER)&& (EmTemp->adapted_flag()<=-NOTRECADAPTED) ) ));
             
             //^ is "exclusive or", not "exclusive or" is "if and only if"
-            assert(!((EmTemp->myprocess()!=myid)^ ((EmTemp->get_adapted_flag()>=-BUFFER)&& (EmTemp->get_adapted_flag()<=-NOTRECADAPTED) ) ));
+            assert(!((EmTemp->myprocess()!=myid)^ ((EmTemp->adapted_flag()>=-BUFFER)&& (EmTemp->adapted_flag()<=-NOTRECADAPTED) ) ));
             
             if(EmTemp->myprocess() != myid)
                 assert(numprocs > 1);
             
             //^ is "exclusive or", not "exclusive or" is "if and only if"
-            assert((EmTemp->get_refined_flag()==0)^ !((EmTemp->get_adapted_flag()>=NOTRECADAPTED)&& (EmTemp->get_adapted_flag()<=BUFFER) ));
+            assert((EmTemp->refined_flag()==0)^ !((EmTemp->adapted_flag()>=NOTRECADAPTED)&& (EmTemp->adapted_flag()<=BUFFER) ));
             
-            if(EmTemp->adapted >= NOTRECADAPTED)
+            if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
-                if(EmTemp->adapted >= NOTRECADAPTED)
+                if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                 {
                     assert(NdTemp);
                     //if(NdTemp)
@@ -514,7 +514,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             for(int inode = 0; inode < 8; inode++)
             {
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
-                if(EmTemp->adapted >= NOTRECADAPTED)
+                if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                 {
                     assert(NdTemp);
                     NdTemp->num_assoc_elem++;
@@ -533,7 +533,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 }
             }
             
-            if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+            if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
                 
                 double tol = (xmax - xmin + ymax - ymin) / 2048.0;
@@ -593,7 +593,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                         
                         //loop over the 2 neighbors _on_this_side_
                         for(i = 0; i < 2; i++)
-                            if(EmNeigh[i]->adapted >= NOTRECADAPTED)
+                            if(EmNeigh[i]->adapted_flag() >= NOTRECADAPTED)
                             {
                                 
                                 //which of my neighbor's neighbors am I
@@ -634,7 +634,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                 //check to make sure my neighbor shares the correct nodes
                                 //with me and those nodes are of the correct types (infos)
                                 //also checks if the 1 irregularity rule has been broken
-                                if(EmTemp->get_adapted_flag() >= NOTRECADAPTED)
+                                if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                                 {
                                     //ghost cells will be missing nodes so don't check them
                                     
@@ -1050,7 +1050,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
             
             EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
             assert(EmFather); //Help I've been abducted call the FBI!!!
-            assert(EmFather->adapted==OLDFATHER); //sanity check
+            assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
             EmSon[0] = EmSon[1] = EmSon[2] = EmSon[3] = NULL;
             
             for(ineigh = 0; ineigh < 8; ineigh++)
@@ -1294,7 +1294,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
             
             EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
             assert(EmFather); //Help I've been abducted call the FBI!!!
-            assert(EmFather->adapted==OLDFATHER); //sanity check
+            assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
             
             for(iside = 0; iside < 4; iside++)
             {
@@ -1376,7 +1376,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
         
         EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
         assert(EmFather); //Help I've been abducted call the FBI!!!
-        assert(EmFather->adapted==OLDFATHER); //sanity check
+        assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
         
         NdTemp = (Node*) NodeTable->lookup(EmFather->key());
         assert(NdTemp);
@@ -1494,14 +1494,14 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                     case -1:
                         //this is a case A
                         inewcase = 0;
-                        assert(EmNeighOld[0]->adapted==OLDFATHER);
+                        assert(EmNeighOld[0]->adapted_flag()==OLDFATHER);
                         ineighme = ineighmep4 = -1; //for sanity check
                         break;
                     case 0:
                         assert(ineighme < 4);
                         ineighmep4 = ineighme + 4;
                         
-                        if(EmNeighOld[0]->adapted == OLDFATHER)
+                        if(EmNeighOld[0]->adapted_flag() == OLDFATHER)
                         {
                             //this is a case C
                             inewcase = 2;
@@ -1516,7 +1516,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         else
                         {
                             //this is a case B
-                            if(EmNeighOld[0]->adapted > TOBEDELETED)
+                            if(EmNeighOld[0]->adapted_flag() > TOBEDELETED)
                             {
                                 inewcase = 1;
                                 EmNeighNew[0] = EmNeighOld[0];
@@ -1531,12 +1531,12 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         assert(ineighme < 4);
                         ineighmep4 = ineighme + 4;
                         
-                        if((EmNeighOld[0]->adapted == OLDFATHER) || (EmNeighOld[1]->adapted == OLDFATHER))
+                        if((EmNeighOld[0]->adapted_flag() == OLDFATHER) || (EmNeighOld[1]->adapted_flag() == OLDFATHER))
                         {
                             //this is a case E
                             inewcase = 3;
                             
-                            if(EmNeighOld[0]->adapted == OLDFATHER)
+                            if(EmNeighOld[0]->adapted_flag() == OLDFATHER)
                             {
                                 EmNeighNew[0] = (Element*) El_Table->lookup(EmNeighOld[0]->son((ineighme + 1) % 4));
                                 assert(EmNeighNew[0]);
@@ -1547,7 +1547,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             else
                                 EmNeighNew[1] = EmNeighNew[0] = EmNeighOld[0];
                             
-                            if(EmNeighOld[1]->adapted == OLDFATHER)
+                            if(EmNeighOld[1]->adapted_flag() == OLDFATHER)
                             {
                                 EmNeighNew[2] = (Element*) El_Table->lookup(EmNeighOld[1]->son((ineighme + 1) % 4));
                                 assert(EmNeighNew[2]);
@@ -1956,7 +1956,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             
                             //EmFather=(Element*) El_Table->lookup(EmTemp->father);
                             
-                            if(EmTemp->adapted == OLDFATHER)
+                            if(EmTemp->adapted_flag() == OLDFATHER)
                             {
                                 //I know my neighbor was my generation, and we both refined
                                 //so the corners I share with this old neighbor are CORNERs
@@ -2084,7 +2084,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 
                                 if(EmTemp->generation() > EmTemp->neigh_gen(ineigh))
                                 {
-                                    NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(EmTemp->get_which_son()));
+                                    NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(EmTemp->which_son()));
                                     assert(NdTemp);
                                     NdTemp->info = CORNER;
                                 }
@@ -2307,9 +2307,9 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
         
         EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
         assert(EmFather); //Help I've been abducted call the FBI!!!
-        assert(EmFather->adapted==OLDFATHER); //sanity check
-        assert(EmFather->refined == 1);
-        EmFather->adapted = TOBEDELETED; //I've lived a good life, it's my time to die
+        assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
+        assert(EmFather->refined_flag() == 1);
+        EmFather->set_adapted_flag(TOBEDELETED); //I've lived a good life, it's my time to die
         EmFather->void_bcptr();
         El_Table->remove(EmFather->key());//, 1, stdout, myid, 15);
         delete EmFather;
@@ -2420,11 +2420,11 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
         MyGeneration = EmTemp->generation();
         SFC_Key Mykey = EmTemp->key();
         
-        assert((EmTemp->get_adapted_flag()==OLDFATHER)|| (EmTemp->get_adapted_flag()==TOBEDELETED));
+        assert((EmTemp->adapted_flag()==OLDFATHER)|| (EmTemp->adapted_flag()==TOBEDELETED));
         
-        if(EmTemp->get_adapted_flag() == OLDFATHER)
+        if(EmTemp->adapted_flag() == OLDFATHER)
         {
-            EmTemp->put_adapted_flag(TOBEDELETED); //mark old father for deletion
+            EmTemp->set_adapted_flag(TOBEDELETED); //mark old father for deletion
                     
             //update the neighbors of the new sons
             for(int j = 0; j < 8; j++)
@@ -2436,7 +2436,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                     Neighbor = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(j));
                     assert(Neighbor);
                     NeighGeneration = Neighbor->generation();
-                    NeighRefined = Neighbor->get_refined_flag();
+                    NeighRefined = Neighbor->refined_flag();
                     
                     /*-------------------------------------------------
                      case 1: neighbor has the same gen. and was not refined in this step

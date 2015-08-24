@@ -40,7 +40,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     int ikey;
     int i, j;
     counted = 0; //for debugging only
-    adapted = NOTRECADAPTED;
+    set_adapted_flag(NOTRECADAPTED);
 
     for(i = 0; i < NUM_STATE_VARS; i++)
         prev_state_vars[i] = 0.;
@@ -56,7 +56,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     set_lb_key(sfc_key_zero);
     
     set_lb_weight(1.0);
-    new_old = OLD;
+    new_oldABCD = OLD;
     generation(0); //--first generation 
     set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
@@ -98,7 +98,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns());
     set_ndof(help);
     
-    refined = 0;
+    set_refined_flag(0);
     
     
     set_myprocess(myid);
@@ -106,10 +106,10 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     elm_loc[1] = elm_loc_in[1];
     calc_which_son();
     
-    set_brother(which_son, key());
-    set_brother((which_son + 2) % 4, opposite_brother);
+    set_brother(which_sonABCD, key());
+    set_brother((which_sonABCD + 2) % 4, opposite_brother);
 
-    switch (which_son)
+    switch (which_sonABCD)
     {
         case 0:
             set_brother(1, neighbor(1));
@@ -130,7 +130,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     }
     set_opposite_brother_flag(1);
     
-    new_old = OLD;
+    new_oldABCD = OLD;
     if(elementType() == ElementType::SinglePhase)
     {
         state_vars[0] = pile_height;
@@ -210,7 +210,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     int ikey;
     counted = 0; //for debugging only
             
-    adapted = NEWSON;
+    set_adapted_flag(NEWSON);
     
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
@@ -276,10 +276,10 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     help += pow((float) (order(4) - 1), 2) * (no_of_eqns());
     set_ndof(help);
     
-    refined = 0;
+    set_refined_flag(0);
     
     
-    new_old = NEW;
+    new_oldABCD = NEW;
     //geoflow stuff
     dx[0] = .5 * fthTemp->dx[0];  //assume constant refinement
     dx[1] = .5 * fthTemp->dx[1];
@@ -340,7 +340,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
 
     counted = 0; //for debugging only
             
-    adapted = NEWFATHER;
+    set_adapted_flag(NEWFATHER);
     
     for(int i = 0; i < NUM_STATE_VARS; i++)
     {
@@ -363,14 +363,14 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     for(ison = 0; ison < 4; ison++)
     {
-        sons[ison]->put_adapted_flag(OLDSON);
+        sons[ison]->set_adapted_flag(OLDSON);
         set_son(ison, sons[ison]->key());
         sons[ison]->set_father(key());
     }
     
     set_lb_key(sfc_key_zero);
     set_lb_weight(1.0);
-    new_old = NEW;
+    new_oldABCD = NEW;
     set_opposite_brother_flag(0);
     stoppedflags = 2;
     for(i = 0; i < EQUATIONS; i++)
@@ -426,7 +426,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
         set_ndof(ndof() + order(i) * (no_of_eqns()));
     set_ndof(ndof() + pow((float) (order(4) - 1), 2) * (no_of_eqns()));
     
-    refined = 1; // not an active element yet!!!
+    set_refined_flag(1); // not an active element yet!!!
             
     // neighbor information
     for(ison = 0; ison < 4; ison++)
@@ -451,7 +451,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
      element's neighboring brothers is on this process in 
      order to get information on the brother that is not a neighbor */
     Element* EmTemp;
-    switch (which_son)
+    switch (which_sonABCD)
     {
         case 0:
             set_brother(0, key());
@@ -648,7 +648,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
 
 const SFC_Key& Element::father() const
 {
-    switch (which_son)
+    switch (which_sonABCD)
     {
         case 0:
             return node_key(2);
@@ -1234,7 +1234,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
     
     if(iwetnode == 8)
     {
-        cout<<"calc_elem_edge_wet_fraction(): key={"<<key()<<"} adapted="<<adapted<<"\n";
+        cout<<"calc_elem_edge_wet_fraction(): key={"<<key()<<"} adapted="<<adapted_flag()<<"\n";
         printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode, Awet, Swet, drypoint[0], drypoint[1]);
         assert(iwetnode != 8);
     }
@@ -3516,16 +3516,16 @@ void Element::calc_which_son()
     if(elm_loc[0] % 2 == 0)
     {
         if(elm_loc[1] % 2 == 0)
-            which_son = 0;
+            which_sonABCD = 0;
         else
-            which_son = 3;
+            which_sonABCD = 3;
     }
     else
     {
         if(elm_loc[1] % 2 == 0)
-            which_son = 1;
+            which_sonABCD = 1;
         else
-            which_son = 2;
+            which_sonABCD = 2;
     }
     
 }
@@ -3538,11 +3538,11 @@ void Element::find_opposite_brother(HashTable* El_Table)
     if(opposite_brother_flag() == 1)
         return;
     
-    set_brother((which_son + 2) % 4, sfc_key_zero);
+    set_brother((which_sonABCD + 2) % 4, sfc_key_zero);
 
     SFC_Key nullkey = 0;
 
-    if(!((brother((which_son + 1) % 4)==sfc_key_null) && (brother((which_son + 3) % 4)==sfc_key_null)))
+    if(!((brother((which_sonABCD + 1) % 4)==sfc_key_null) && (brother((which_sonABCD + 3) % 4)==sfc_key_null)))
     {
         //use space filling curve to compute the key of opposite
         //brother from it's bubble node coordinates
@@ -3550,18 +3550,18 @@ void Element::find_opposite_brother(HashTable* El_Table)
         unsigned oldkey[KEYLENGTH];
         unsigned nkey = KEYLENGTH;
         
-        if((which_son == 0) || (which_son == 3))
+        if((which_sonABCD == 0) || (which_sonABCD == 3))
             bro_norm_coord[0] = El_Table->get_invdxrange() * (coord[0] + dx[0] - *(El_Table->get_Xrange() + 0));
         else
             bro_norm_coord[0] = El_Table->get_invdxrange() * (coord[0] - dx[0] - *(El_Table->get_Xrange() + 0));
         
-        if((which_son == 0) || (which_son == 1))
+        if((which_sonABCD == 0) || (which_sonABCD == 1))
             bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] + dx[1] - *(El_Table->get_Yrange() + 0));
         else
             bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] - dx[1] - *(El_Table->get_Yrange() + 0));
         
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
-        set_brother((which_son + 2) % 4,sfc_key_from_oldkey(oldkey));
+        set_brother((which_sonABCD + 2) % 4,sfc_key_from_oldkey(oldkey));
         
         set_opposite_brother_flag(1);
     }
@@ -3906,7 +3906,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3925,7 +3925,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3962,7 +3962,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -3982,7 +3982,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -4001,7 +4001,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                 if(ElemNeigh == NULL)
                 {
                     cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
-                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined<<" adapted="<<adapted<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
                     cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
                     cout.flush();
                 }
@@ -4022,8 +4022,8 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
     Element* ElemNeigh;
     int iffirstbuffer = 0;
     
-    if(adapted <= 0)
-        return (adapted - 1);
+    if(adapted_flag() <= 0)
+        return (adapted_flag() - 1);
     
     assert(state_vars[0] >= 0.0);
     assert(Influx[0] >= 0.0);
@@ -4087,7 +4087,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
     
     if(iffirstbuffer)
     {
-        if((adapted >= NEWSON) || (generation() == REFINE_LEVEL))
+        if((adapted_flag() >= NEWSON) || (generation() == REFINE_LEVEL))
             return (2); //is a member of the buffer but doesn't need to be refined
         else
             return (1); //needs to be refined and some of its sons will be members
@@ -4103,11 +4103,11 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
     Element* ElemNeigh;
     int ifnextbuffer;
     ifnextbuffer = 0;
-    if(adapted <= 0)
+    if(adapted_flag() <= 0)
         //GHOST element or element that should be deleted soon
-        return (adapted - 1);
+        return (adapted_flag() - 1);
     
-    if((adapted != BUFFER) && //this element is not in the buffer
+    if((adapted_flag() != BUFFER) && //this element is not in the buffer
     ((Influx[0] == 0.0)/*&&(state_vars[0]<contour_height)*/) //&& //this element is OUTSIDE the buffer layer "circle"
     //(state_vars[0]>=GEOFLOW_TINY)
     )
@@ -4123,7 +4123,7 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
                 }
                 //assert(ElemNeigh->get_adapted_flag()!=0);
                 
-                if((abs(ElemNeigh->get_adapted_flag()) == BUFFER) && (state_vars[0]
+                if((abs(ElemNeigh->adapted_flag()) == BUFFER) && (state_vars[0]
                         <= *(ElemNeigh->get_state_vars() + 0)))
                 //if(abs(ElemNeigh->get_adapted_flag())==BUFFER)
                 { //this element is next to a member of the old buffer layer
@@ -4135,7 +4135,7 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
     
     if(ifnextbuffer == 1)
     {
-        if((adapted >= NEWSON) || (generation() == REFINE_LEVEL))
+        if((adapted_flag() >= NEWSON) || (generation() == REFINE_LEVEL))
             return (2); //is a member of the buffer but doesn't need to be refined
         else
             return (1); //needs to be refined and some of its sons will be members
@@ -4195,11 +4195,11 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"opposite_brother_flag=%d\n",opposite_brother_flag());
 #endif
     
-    temp4.i = new_old;
+    temp4.i = new_oldABCD;
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 10);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"new_old=%d\n",new_old);
+    fprintf(fpdb,"new_old=%d\n",new_oldABCD);
 #endif
     
     temp4.i = material();
@@ -4216,18 +4216,18 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     fprintf(fpdb,"ndof=%d\n",ndof());
 #endif
     
-    temp4.i = refined;
+    temp4.i = refined_flag();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 13);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"refined=%d\n",refined);
+    fprintf(fpdb,"refined=%d\n",refined_flag());
 #endif
     
-    temp4.i = adapted;
+    temp4.i = adapted_flag();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 14);
 #ifdef DEBUG_SAVE_ELEM
-    fprintf(fpdb,"adapted=%d\n",adapted);
+    fprintf(fpdb,"adapted=%d\n",adapted_flag());
 #endif
     
     temp8.d = lb_weight();
@@ -4473,7 +4473,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 9);
     
     temp4.u = readspace[Itemp++];
-    new_old = temp4.i;
+    new_oldABCD = temp4.i;
     assert(Itemp == 10);
     
     temp4.u = readspace[Itemp++];
@@ -4485,11 +4485,11 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     assert(Itemp == 12);
     
     temp4.u = readspace[Itemp++];
-    refined = temp4.i;
+    set_refined_flag(temp4.i);
     assert(Itemp == 13);
     
     temp4.u = readspace[Itemp++];
-    adapted = temp4.i;
+    set_adapted_flag(temp4.i);
     assert(Itemp == 14);
     
     temp8.u[0] = readspace[Itemp++];

@@ -90,7 +90,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
             {
                 
                 Element* Curr_El = (Element*) (currentPtr->value);
-                if((Curr_El->get_adapted_flag() > 0) && (myid == Curr_El->myprocess()))
+                if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
                     if(*(Curr_El->get_state_vars()) > GEOFLOW_TINY)
                         num_nonzero_elem++;
                 
@@ -328,7 +328,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                 
                 Element* Curr_El = (Element*) (currentPtr->value);
                 assert(Curr_El!=NULL);
-                if((Curr_El->get_adapted_flag() > 0) && (myid == Curr_El->myprocess()))
+                if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
                 {
                     
                     double* state_vars = Curr_El->get_state_vars();
@@ -666,60 +666,60 @@ void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops
                 Element* Curr_El = (Element*) (currentPtr->value);
                 currentPtr = currentPtr->next;
 
-                if((Curr_El->get_refined_flag() == 0) && !((Curr_El->get_adapted_flag() == NOTRECADAPTED)
-                        || (Curr_El->get_adapted_flag() == NEWFATHER) || (Curr_El->get_adapted_flag() == NEWSON)
-                        || (Curr_El->get_adapted_flag() == BUFFER)))
+                if((Curr_El->refined_flag() == 0) && !((Curr_El->adapted_flag() == NOTRECADAPTED)
+                        || (Curr_El->adapted_flag() == NEWFATHER) || (Curr_El->adapted_flag() == NEWSON)
+                        || (Curr_El->adapted_flag() == BUFFER)))
                 {
                     cout<<"FUBAR 1 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
                     cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
 
                     assert(0);
                 }
 
-                if((Curr_El->get_refined_flag() != 0) && ((Curr_El->get_adapted_flag() == NOTRECADAPTED)
-                        || (Curr_El->get_adapted_flag() == NEWFATHER) || (Curr_El->get_adapted_flag() == NEWSON)
-                        || (Curr_El->get_adapted_flag() == BUFFER)))
+                if((Curr_El->refined_flag() != 0) && ((Curr_El->adapted_flag() == NOTRECADAPTED)
+                        || (Curr_El->adapted_flag() == NEWFATHER) || (Curr_El->adapted_flag() == NEWSON)
+                        || (Curr_El->adapted_flag() == BUFFER)))
                 {
                     cout<<"FUBAR 2 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
                     cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
                     assert(0);
                 }
 
-                if((Curr_El->get_refined_flag() == GHOST) && !((Curr_El->get_adapted_flag() <= -NOTRECADAPTED)
-                        && (Curr_El->get_adapted_flag() >= -BUFFER)))
+                if((Curr_El->refined_flag() == GHOST) && !((Curr_El->adapted_flag() <= -NOTRECADAPTED)
+                        && (Curr_El->adapted_flag() >= -BUFFER)))
                 {
                     cout<<"FUBAR 3 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
                     cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
                     assert(0);
                 }
 
-                if((Curr_El->get_refined_flag() != GHOST) && ((Curr_El->get_adapted_flag() <= -NOTRECADAPTED)
-                        && (Curr_El->get_adapted_flag() >= -BUFFER)))
+                if((Curr_El->refined_flag() != GHOST) && ((Curr_El->adapted_flag() <= -NOTRECADAPTED)
+                        && (Curr_El->adapted_flag() >= -BUFFER)))
                 {
                     cout<<"FUBAR 4 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
                     cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
                     assert(0);
                 }
 
-                if((Curr_El->get_refined_flag() > 0) && !((Curr_El->get_adapted_flag() == TOBEDELETED)
-                        || (Curr_El->get_adapted_flag() == OLDFATHER) || (Curr_El->get_adapted_flag() == OLDSON)))
+                if((Curr_El->refined_flag() > 0) && !((Curr_El->adapted_flag() == TOBEDELETED)
+                        || (Curr_El->adapted_flag() == OLDFATHER) || (Curr_El->adapted_flag() == OLDSON)))
                 {
                     cout<<"FUBAR 5 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
                     cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
                     assert(0);
                 }
 
-                if(!(Curr_El->get_refined_flag() > 0) && ((Curr_El->get_adapted_flag() == TOBEDELETED)
-                        || (Curr_El->get_adapted_flag() == OLDFATHER) || (Curr_El->get_adapted_flag() == OLDSON)))
+                if(!(Curr_El->refined_flag() > 0) && ((Curr_El->adapted_flag() == TOBEDELETED)
+                        || (Curr_El->adapted_flag() == OLDFATHER) || (Curr_El->adapted_flag() == OLDSON)))
                 {
                     cout<<"FUBAR 6 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
                     cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->get_refined_flag()<<" adapted="<<Curr_El->get_adapted_flag()<<"\n";
+                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
                     assert(0);
                 }
             }
