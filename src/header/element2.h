@@ -98,8 +98,7 @@ protected:
             elementType(ElementType::TwoPhases);
         else
             elementType(ElementType::UnknownElementType);
-
-        counted = 0;
+        
         set_father(sfc_key_zero); //initialize the father key to zero
         for(int i = 0; i < NUM_STATE_VARS; i++)
         {
@@ -496,12 +495,6 @@ public:
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the boundary of the buffer that is one element wider than the current buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be in the next buffer boundary
     int if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable, double contour_height);
 
-    //! for debugging only
-    int get_counted();
-
-    //! for debugging only
-    void put_counted(int countedvalue);
-
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
     int get_ithelem();
 
@@ -509,7 +502,11 @@ public:
     void put_ithelem(int i);
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus the effective bed friction angle holds either the value of the actual bed friction angle if it should not be stopped or the value of the internal friction angle if it should not be stopped
-    double get_effect_bedfrict();
+    double get_effect_bedfrict(){return effect_bedfrict;}
+    void set_effect_bedfrict(double new_effect_bedfrict){effect_bedfrict=new_effect_bedfrict;}
+    
+    double get_effect_tanbedfrict(){return effect_tanbedfrict;}
+    void set_effect_tanbedfrict(double new_effect_tanbedfrict){effect_tanbedfrict=new_effect_tanbedfrict;}
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
     double* get_effect_kactxy();
@@ -956,23 +953,6 @@ inline double* Element::get_influx()
 }
 ;
 
-inline int Element::get_counted()
-{
-    return counted;
-}
-;
-
-inline void Element::put_counted(int countedvalue)
-{
-    counted = countedvalue;
-}
-;
-
-inline double Element::get_effect_bedfrict()
-{
-    return effect_bedfrict;
-}
-;
 inline double* Element::get_effect_kactxy()
 {
     return effect_kactxy;

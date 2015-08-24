@@ -39,7 +39,6 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
 
     int ikey;
     int i, j;
-    counted = 0; //for debugging only
     set_adapted_flag(NOTRECADAPTED);
 
     for(i = 0; i < NUM_STATE_VARS; i++)
@@ -208,7 +207,6 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
 
     int i;
     int ikey;
-    counted = 0; //for debugging only
             
     set_adapted_flag(NEWSON);
     
@@ -338,7 +336,6 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     else
         elementType(ElementType::UnknownElementType);
 
-    counted = 0; //for debugging only
             
     set_adapted_flag(NEWFATHER);
     
@@ -4427,8 +4424,6 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 
 Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
-    counted = 0; //for debugging only
-
     set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
