@@ -696,8 +696,6 @@ protected:
     //! extrusion flux rate for this timestep for this element, used when having material flow out of the ground, a volume per unit area influx rate source term
     double Influx[MAX_NUM_STATE_VARS];
 
-    int counted;
-
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
     int ithelem;
 
