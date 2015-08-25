@@ -150,7 +150,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     }
     set_shortspeed(0.0);
     
-    iwetnode = 8;
+    set_iwetnode(8);
     drypoint[0] = drypoint[1] = 0.0;
     Awet = Swet = (pile_height > GEOFLOW_TINY) ? 1.0 : 0.0;
     
@@ -283,7 +283,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     dx[0] = .5 * fthTemp->dx[0];  //assume constant refinement
     dx[1] = .5 * fthTemp->dx[1];
     
-    iwetnode = iwetnodefather;
+    set_iwetnode(iwetnodefather);
     drypoint[0] = drypoint_in[0];
     drypoint[1] = drypoint_in[1];
     
@@ -631,7 +631,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     
     //uninitialized flag values... will fix shortly 
     drypoint[0] = drypoint[1] = 0.0;
-    iwetnode = 8;
+    set_iwetnode(8);
     Swet = 1.0;
     
     //calculate the shortspeed
@@ -1114,7 +1114,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
     if((ifsidewet[0] == ifsidewet[2]) && (ifsidewet[1] == ifsidewet[3]))
     {
         //if opposite sides of the element are the same (both wet or dry)
-        iwetnode = 8;
+        set_iwetnode(8);
         drypoint[0] = drypoint[1] = 0.0;
         if(state_vars[0] > GEOFLOW_TINY)
             Awet = Swet = 1.0;
@@ -1135,13 +1135,13 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
             
         if(ifsidewet[3] && ifsidewet[0])
         {
-            iwetnode = 0;
+            set_iwetnode(0);
             if(Awet <= 0.5)
                 drypoint[0] = drypoint[1] = -drypoint[0];
         }
         else if(ifsidewet[0] && ifsidewet[1])
         {
-            iwetnode = 1;
+            set_iwetnode(1);
             if(Awet <= 0.5)
                 drypoint[1] = -drypoint[1];
             else
@@ -1149,13 +1149,13 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         }
         else if(ifsidewet[1] && ifsidewet[2])
         {
-            iwetnode = 2;
+            set_iwetnode(2);
             if(Awet > 0.5)
                 drypoint[0] = drypoint[1] = -drypoint[0];
         }
         else if(ifsidewet[2] && ifsidewet[3])
         {
-            iwetnode = 3;
+            set_iwetnode(3);
             if(Awet > 0.5)
                 drypoint[1] = -drypoint[1];
             else
@@ -1184,8 +1184,8 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         assert((-1 < ineigh) && (ineigh < 4));
         Swet = Awet;
         
-        iwetnode = ineigh + 4;
-        switch (iwetnode)
+        set_iwetnode(ineigh + 4);
+        switch (iwetnode())
         {
             case 4:
                 drypoint[0] = 0.0;
@@ -1208,7 +1208,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         }
     }
     
-    if(iwetnode == 8)
+    if(iwetnode() == 8)
         Awet = (state_vars[0] > GEOFLOW_TINY) ? 1.0 : 0.0;
     
     return;
@@ -1230,11 +1230,11 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
     if(Awet == 1.0)
         return 1.0;
     
-    if(iwetnode == 8)
+    if(iwetnode() == 8)
     {
         cout<<"calc_elem_edge_wet_fraction(): key={"<<key()<<"} adapted="<<adapted_flag()<<"\n";
-        printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode, Awet, Swet, drypoint[0], drypoint[1]);
-        assert(iwetnode != 8);
+        printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode(), Awet, Swet, drypoint[0], drypoint[1]);
+        assert(iwetnode() != 8);
     }
     
     if(!((0.0 < Awet) && (Awet < 1.0)))
@@ -1248,7 +1248,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
     if((neigh_gen(ineighm4 + 4) == -2) || ifusewholeside)
     {
         //there is only one neighbor on this side
-        switch (iwetnode)
+        switch (iwetnode())
         {
             case 0:
                 switch (ineighm4)
@@ -1383,7 +1383,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
         //there is are 2 more refined neighbors on this side
         //therefore need to "double" the wetness (possibly 
         //minus 0.5) for each
-        switch (iwetnode)
+        switch (iwetnode())
         {
             case 0:
                 switch (ineigh)
@@ -1640,7 +1640,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         return 0.0;
     
     //handle completely wet or completely dry cells as a special case
-    if((iwetnode == 8) || !(state_vars[0] > GEOFLOW_TINY))
+    if((iwetnode() == 8) || !(state_vars[0] > GEOFLOW_TINY))
         return Awet;  //one or zero;
         
     double wetnessfactor = calc_elem_edge_wet_fraction(ineigh % 4, 1);
@@ -1688,7 +1688,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
     }
     
     double doubleswap = 1.0 / sqrt(2.0);
-    switch (iwetnode)
+    switch (iwetnode())
     {
         case 0:
             speed = VxVy[0] * doubleswap + VxVy[1] * doubleswap;
@@ -1772,7 +1772,7 @@ double Element::convect_dryline(double VxVy[2], double dt)
         return Awet;
     }
     
-    if(iwetnode == 8)
+    if(iwetnode() == 8)
     {
         Awet = 1.0;
         return Awet;
@@ -1781,7 +1781,7 @@ double Element::convect_dryline(double VxVy[2], double dt)
     drypoint[0] += VxVy[0] * dt / dx[0];
     drypoint[1] += VxVy[1] * dt / dx[1];
     
-    switch (iwetnode)
+    switch (iwetnode())
     {
         case 0: //diagonal: \
     drypoint[0]=0.5*(drypoint[0]+drypoint[1]);
@@ -3791,14 +3791,14 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     effect_kactxy[0] = kactxy[0];
     effect_kactxy[1] = kactxy[1];
     set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
-    effect_tanbedfrict = matprops_ptr->tanbedfrict[material()];
+    set_effect_tanbedfrict(matprops_ptr->tanbedfrict[material()]);
     
 #ifdef STOPCRIT_CHANGE_BED
     if(stoppedflags()==2)
     {   
         effect_kactxy[0]=effect_kactxy[1]=matprops_ptr->epsilon;
         set_effect_bedfrict(matprops_ptr->intfrict);
-        effect_tanbedfrict=matprops_ptr->tanintfrict;
+        set_effect_tanbedfrict(matprops_ptr->tanintfrict);
     }
 #endif
     
@@ -3828,7 +3828,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
                     + (dirx * effect_kactxy[0] * d_state_vars[0] + diry * effect_kactxy[1]
                                                                    * d_state_vars[NUM_STATE_VARS]);
             
-            stopcrit = (slopetemp + effect_tanbedfrict) / Vtemp * NUM_FREEFALLS_2_STOP
+            stopcrit = (slopetemp + effect_tanbedfrict()) / Vtemp * NUM_FREEFALLS_2_STOP
                        * sqrt(2.0 * 9.8 / matprops_ptr->GRAVITY_SCALE * state_vars[0] / (1 + bedslope * bedslope));
         }
         else
@@ -3841,7 +3841,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
                         + (zeta[0] / bedslope * effect_kactxy[0] * d_state_vars[0] + zeta[1] / bedslope
                                 * effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]);
                 
-                stopcrit = sign(slopetemp + effect_tanbedfrict) * HUGE_VAL;
+                stopcrit = sign(slopetemp + effect_tanbedfrict()) * HUGE_VAL;
             }
             else
                 stopcrit = HUGE_VAL;
@@ -3872,14 +3872,14 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     {   
         effect_kactxy[0]=effect_kactxy[1]=matprops_ptr->epsilon;
         set_effect_bedfrict(matprops_ptr->intfrict);
-        effect_tanbedfrict=matprops_ptr->tanintfrict;
+        set_effect_tanbedfrict(matprops_ptr->tanintfrict);
     }
     else
     {   
         effect_kactxy[0]=kactxy[0];
         effect_kactxy[1]=kactxy[1];
         set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
-        effect_tanbedfrict=matprops_ptr->tanbedfrict[material()];
+        set_effect_tanbedfrict(matprops_ptr->tanbedfrict[material()]);
     }
 #endif
     
@@ -4342,7 +4342,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     
     //bob  
     
-    temp8.i[0] = iwetnode;
+    temp8.i[0] = iwetnode();
     writespace[Itemp++] = temp8.u[0];
     //assert(Itemp == 93);
     
@@ -4551,7 +4551,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     }
     
     temp8.u[0] = readspace[Itemp++];
-    iwetnode = temp8.i[0];
+    set_iwetnode(temp8.i[0]);
     assert(Itemp == 93);
     
     temp8.u[0] = readspace[Itemp++];

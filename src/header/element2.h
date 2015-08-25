@@ -108,7 +108,7 @@ protected:
         Awet = 0.0;
         Swet = 1.0;
         drypoint[0] = drypoint[1] = 0.0;
-        iwetnode = 8;
+        set_iwetnode(8);
 
         set_stoppedflags(2); //material in all elements start from rest
         //do_erosion=-1;
@@ -699,8 +699,8 @@ public:
     double effect_bedfrict() {return effect_bedfrict_;}
     void set_effect_bedfrict(double new_effect_bedfrict) {effect_bedfrict_ = new_effect_bedfrict;}
 
-    double get_effect_tanbedfrict() {return effect_tanbedfrict;}
-    void set_effect_tanbedfrict(double new_effect_tanbedfrict) {effect_tanbedfrict = new_effect_tanbedfrict;}
+    double effect_tanbedfrict() {return effect_tanbedfrict_;}
+    void set_effect_tanbedfrict(double new_effect_tanbedfrict) {effect_tanbedfrict_ = new_effect_tanbedfrict;}
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
     double* get_effect_kactxy();
@@ -729,15 +729,9 @@ public:
     }
 
     //! this inline member function returns the value of iwetnode.  iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-
-    int get_iwetnode() {
-        return iwetnode;
-    }
+    int iwetnode() const {return iwetnode_;}
     //! this inline member function sets the value of iwetnode. iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-
-    void put_iwetnode(int iwetnode_in) {
-        iwetnode = iwetnode_in;
-    }
+    void set_iwetnode(int iwetnode_in) {iwetnode_ = iwetnode_in;}
 
     //! this inline member function returns the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007
     double* get_drypoint();
@@ -906,7 +900,7 @@ protected:
     double effect_bedfrict_;
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus effect_tanbedfrict holds the value of the effective bed friction angle
-    double effect_tanbedfrict;
+    double effect_tanbedfrict_;
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
     double effect_kactxy[2];
@@ -918,7 +912,7 @@ protected:
     int ithelem_;
 
     //! the node number {0,1,..,7} of this element's "most wet node", this dictates both the orientation of the "dryline" and which side of it is wet.  The "dryline" is the line that divides a partially wetted element into a dry part and a wet part, for the sake of simplicity only 4 orientations are allowed, horizontal, vertical, parallel to either diagonal of the element.  If the iwetnode is an edge node of this element then the dryline is parallel to the edge the element is on, if the iwetnode is a corner node of this element then dryline is parallel to the diagonal of the element that the iwetnode is not on.  Which side of the dryline is wet is the same side in which the iwetnode resides (and is determined each timestep based soley on which of the elements neighbors currently have pile height greater than GEOFLOW_TINY)... as such iwetnode can be thought of as the MOST WET NODE  of the element.  Having iwetnode==8 indicates that the element is uniformly wet if this element's pile height is greater than GEOFLOW_TINY or is uniformly dry if pileheight is less than or equal to GEOFLOW_TINY.
-    int iwetnode;
+    int iwetnode_;
 
     //! Awet is the ratio of this element's wet area to total area (always between 0 and 1 inclusive) when taken together with iwetnode, this uniquely determines the exact placement of the "dryline" within the current element.  Awet is initially set by source placement to be either 0 (no material) or 1 (material) and is updated by the corrector part of the predictor-corrector method, the new value is determined by where the dry line has been convected to over this timestep. Keith wrote this May 2007.
     double Awet;

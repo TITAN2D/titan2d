@@ -306,7 +306,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->elm_loc[0] = elem2->elm_loc[0];
     newelement->elm_loc[1] = elem2->elm_loc[1];
     
-    newelement->iwetnode = elem2->iwetnode;
+    newelement->set_iwetnode(elem2->iwetnode);
     newelement->Awet = elem2->Awet;
     newelement->Swet = elem2->Swet;
     newelement->drypoint[0] = elem2->drypoint[0];
