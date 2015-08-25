@@ -353,8 +353,8 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                          fflush(stdout);
                          }*/
                     }
-                    nodescoord[8][0] = *(Curr_El->get_coord());
-                    nodescoord[8][1] = *(Curr_El->get_coord() + 1);
+                    nodescoord[8][0] = Curr_El->coord(0);
+                    nodescoord[8][1] = Curr_El->coord(0);
                     
                     discharge->update(nodescoord, state_vars, d_time);
                     
@@ -367,24 +367,22 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                         if(state_vars[0] > max_height)
                             max_height = state_vars[0];
                         
-                        double* xy = Curr_El->get_coord();
-                        
                         if(state_vars[0] >= statprops->hxyminmax)
                         {
-                            if(xy[0] < xyminmax[0]) //xmin
-                                xyminmax[0] = xy[0];
-                            if(-xy[0] < xyminmax[1]) //negative xmax
-                                xyminmax[1] = -xy[0];
-                            if(xy[1] < xyminmax[2]) //ymin
-                                xyminmax[2] = xy[1];
-                            if(-xy[1] < xyminmax[3]) //negative ymax
-                                xyminmax[3] = -xy[1];
+                            if(Curr_El->coord(0) < xyminmax[0]) //xmin
+                                xyminmax[0] = Curr_El->coord(0);
+                            if(-Curr_El->coord(0) < xyminmax[1]) //negative xmax
+                                xyminmax[1] = -Curr_El->coord(0);
+                            if(Curr_El->coord(1) < xyminmax[2]) //ymin
+                                xyminmax[2] = Curr_El->coord(1);
+                            if(-Curr_El->coord(1) < xyminmax[3]) //negative ymax
+                                xyminmax[3] = -Curr_El->coord(1);
                         }
                         
                         //to test if pileheight of depth testpointheight
                         //has reached the testpoint
-                        testpointdist2 = (xy[0] - testpointx) * (xy[0] - testpointx)
-                                + (xy[1] - testpointy) * (xy[1] - testpointy);
+                        testpointdist2 = (Curr_El->coord(0) - testpointx) * (Curr_El->coord(0) - testpointx)
+                                + (Curr_El->coord(1) - testpointy) * (Curr_El->coord(1) - testpointy);
                         double junktest = 0;
                         if(testpointdist2 > 0)
                             junktest = testpointdist2;
@@ -400,13 +398,13 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                         area += dA;
                         dVol = state_vars[0] * dA;
                         testvolume += dVol;
-                        xC += xy[0] * dVol;
-                        yC += xy[1] * dVol;
+                        xC += Curr_El->coord(0) * dVol;
+                        yC += Curr_El->coord(1) * dVol;
                         
-                        xVar += xy[0] * xy[0] * dVol;
-                        yVar += xy[1] * xy[1] * dVol;
-                        piler2 += (xy[0] * xy[0] + xy[1] * xy[1]) * dVol;
-                        rC += sqrt((xy[0] - xCen) * (xy[0] - xCen) + (xy[1] - yCen) * (xy[1] - yCen)) * dVol;
+                        xVar += Curr_El->coord(0) * Curr_El->coord(0) * dVol;
+                        yVar += Curr_El->coord(1) * Curr_El->coord(1) * dVol;
+                        piler2 += (Curr_El->coord(0) * Curr_El->coord(0) + Curr_El->coord(1) * Curr_El->coord(1)) * dVol;
+                        rC += sqrt((Curr_El->coord(0) - xCen) * (Curr_El->coord(0) - xCen) + (Curr_El->coord(1) - yCen) * (Curr_El->coord(1) - yCen)) * dVol;
                         
 
                         if(elementType == ElementType::TwoPhases)
@@ -485,8 +483,8 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                         //a negative number means the flow is headed uphill
                         double resolution = 0, xslope = 0, yslope = 0;
                         Get_max_resolution(&resolution);
-                        Get_slope(resolution, *((Curr_El->get_coord())) * matprops->LENGTH_SCALE,
-                                  *((Curr_El->get_coord()) + 1) * matprops->LENGTH_SCALE, &xslope, &yslope);
+                        Get_slope(resolution, Curr_El->coord(0) * matprops->LENGTH_SCALE,
+                                  Curr_El->coord(1) * matprops->LENGTH_SCALE, &xslope, &yslope);
                         if(temp > GEOFLOW_TINY)
                         {
                             if(elementType == ElementType::TwoPhases)

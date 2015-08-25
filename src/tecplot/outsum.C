@@ -163,16 +163,15 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
                     velocity2 = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
                     
                     //get v and h at center of mass
-                    double* xy = EmTemp->get_coord();
-                    masscenterdist2 = (xy[0] - xy_cen[0]) * (xy[0] - xy_cen[0])
-                            + (xy[1] - xy_cen[1]) * (xy[1] - xy_cen[1]);
+                    masscenterdist2 = (EmTemp->coord(0) - xy_cen[0]) * (EmTemp->coord(0) - xy_cen[0])
+                            + (EmTemp->coord(1) - xy_cen[1]) * (EmTemp->coord(1) - xy_cen[1]);
                     if(masscenterdist2 < masscentermindist2)
                     {
                         masscentermindist2 = masscenterdist2;
                         vh_cen[0] = velocity2;
                         vh_cen[1] = state_vars[0];
-                        xycen[0] = xy[0];
-                        xycen[1] = xy[1];
+                        xycen[0] = EmTemp->coord(0);
+                        xycen[1] = EmTemp->coord(1);
                     }
                     
                     //eliminate fast moving very thin pile from consideration
@@ -185,8 +184,8 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
                              the maximum value */
                             vmax = velocity2;
                             
-                            xyh_vmax[0] = *(EmTemp->get_coord());
-                            xyh_vmax[1] = *(EmTemp->get_coord() + 1);
+                            xyh_vmax[0] = EmTemp->coord(0);
+                            xyh_vmax[1] = EmTemp->coord(1);
                             xyh_vmax[2] = state_vars[0];
                         }
                     }
@@ -196,8 +195,8 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
                         
                         hmax = state_vars[0];
                         
-                        xyv_hmax[0] = *(EmTemp->get_coord());
-                        xyv_hmax[1] = *(EmTemp->get_coord() + 1);
+                        xyv_hmax[0] = EmTemp->coord(0);
+                        xyv_hmax[1] = EmTemp->coord(1);
                         xyv_hmax[2] = velocity2;
                         
                     }

@@ -235,10 +235,10 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
             //because of storing all the node but not updating the 
             //info and order if the node was not previously in the subdomain
             //check if the sfc is screwed
-            if(*(node->get_coord()) != elem2->n_coord[i][0] || *(node->get_coord() + 1) != elem2->n_coord[i][1])
+            if(node->get_coord(0) != elem2->n_coord[i][0] || node->get_coord(1) != elem2->n_coord[i][1])
             {
                 printf("myid=%d\n  pack  elem(x,y)=(%20g,%20g)\n exist elem(x,y)=(%20g,%20g)\n\n", myid,
-                       elem2->n_coord[i][0], elem2->n_coord[i][1], *(node->get_coord()), *(node->get_coord() + 1));
+                       elem2->n_coord[i][0], elem2->n_coord[i][1], node->get_coord(0), node->get_coord(1));
                 fflush(stdout);
                 int screwd = 0;
                 assert(screwd);
@@ -284,7 +284,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->set_elevation(elem2->elevation);
     for(i = 0; i < DIMENSION; i++)
     {
-        newelement->coord[i] = elem2->n_coord[8][i];
+        newelement->set_coord(i, elem2->n_coord[8][i]);
         newelement->dx[i] = elem2->dx[i];
         newelement->eigenvxymax[i] = elem2->eigenvxymax[i];
         newelement->kactxy[i] = elem2->kactxy[i];
@@ -303,8 +303,8 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->d_state_vars[i] = elem2->d_state_vars[i];
     newelement->set_shortspeed(elem2->shortspeed);
     newelement->set_lb_weight(elem2->lb_weight);
-    newelement->elm_loc[0] = elem2->elm_loc[0];
-    newelement->elm_loc[1] = elem2->elm_loc[1];
+    newelement->set_elm_loc(0, elem2->elm_loc[0]);
+    newelement->set_elm_loc(1, elem2->elm_loc[1]);
     
     newelement->set_iwetnode(elem2->iwetnode);
     newelement->set_Awet(elem2->Awet);

@@ -388,12 +388,12 @@ public:
     //! returns the which_son flag, which tells the portion of the father element that this element is physically located in
 
     int which_son() const {
-        return which_sonABCD;
+        return which_son_;
     }
     //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
 
     void set_which_son(const int i) {
-        which_sonABCD = i;
+        which_son_ = i;
     }
 
     //! this function calculates the which_son flag for the original (or restored in case of a restart) element.  It also calculates which son of the grandfather element the father is durring unrefinement.
@@ -629,13 +629,16 @@ public:
     //void change_neigh_info(unsigned *fth_key, unsigned *ng_key, int neworder, int ng_gen, int fth_proc);
 
     //! this function returns the elm_loc variable, which is used in unrefinement beyond the initial coarse grid
-    int* get_elm_loc();
-
+    int elm_loc(int idim) const {return elm_loc_[idim];}
     //! this function sets the elm_loc variable, which is used in unrefinement beyond the initial coarse grid
-    void put_elm_loc(int* int_in);
+    void set_elm_loc(const int idim, const int int_in){elm_loc_[idim] = int_in;}
+    //void put_elm_loc(int* int_in){for(i=0;i<DIMENSION;i++)elm_loc[i] = int_in[i];}
+    
 
     //! this function returns the precomputed and scaled coordinates of this element (which would be the same as its bubble node's coordinates)
-    double* get_coord();
+    double coord(int idim) const {return coord_[idim];}
+    void set_coord(int idim, double new_crd){coord_[idim]=new_crd;}
+    
 
     //! this function stores the coordinates of this element (which would be the same as its bubble node's coordinates)
     void put_coord(double* coord_in);
@@ -825,7 +828,7 @@ protected:
     int adapted_;
 
     //! which_son holds the value of which son this element is, which of the 4 squares that makes up the father elements square.
-    int which_sonABCD;
+    int which_son_;
 
     //! the new_old flag is used in mesh adaptation and repartitioning
     int new_old_;
@@ -834,10 +837,10 @@ protected:
     SFC_Key brothers_[4];
 
     //! coord holds the coordinates of the elements cell center, these are the same as the coordinates of the element's bubble node's
-    double coord[DIMENSION];
+    double coord_[DIMENSION];
 
     //! elm_loc is used in unrefining beyond the original coarse mesh
-    int elm_loc[DIMENSION];
+    int elm_loc_[DIMENSION];
 
 
     /* variables for hyperbolic geoflow problem */
@@ -1018,22 +1021,6 @@ inline double* Element::get_d_gravity() {
 
 inline double* Element::get_curvature() {
     return curvature;
-}
-;
-
-inline int* Element::get_elm_loc() {
-    return elm_loc;
-}
-;
-
-inline void Element::put_elm_loc(int* int_in) {
-    elm_loc[0] = int_in[0];
-    elm_loc[1] = int_in[1];
-}
-;
-
-inline double* Element::get_coord() {
-    return coord;
 }
 ;
 

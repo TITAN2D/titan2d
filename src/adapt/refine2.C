@@ -67,9 +67,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     int elm_loc[2], my_elm_loc[2];
-    int* fth_elm_loc = EmTemp->get_elm_loc();
-    elm_loc[0] = 2 * fth_elm_loc[0];
-    elm_loc[1] = 2 * fth_elm_loc[1];
+    elm_loc[0] = 2 * EmTemp->elm_loc(0);
+    elm_loc[1] = 2 * EmTemp->elm_loc(1);
     
     
     for(i = 0; i < 8; i++) //-- corners and sides
@@ -634,7 +633,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
 
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(n1->get_coord() + i);
+        coord[i] = n1->get_coord(i);
     //neighbors
     neigh[0] = neigh[4] = EmTemp->neighbor(0); //Why is this ok if not ok for 3 down
     neigh[1] = neigh[5] = NewNodeKey[1];
@@ -719,7 +718,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
 
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(n1->get_coord() + i);
+        coord[i] = n1->get_coord(i);
     
     //neighbors
     if(EmTemp->neigh_proc(4) != -2)
@@ -798,7 +797,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
 
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(n1->get_coord() + i);
+        coord[i] = n1->get_coord(i);
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[1];
@@ -878,7 +877,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(n1->get_coord() + i);
+        coord[i] = n1->get_coord(i);
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[0];
@@ -1003,7 +1002,7 @@ void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, No
         
     }
     
-    else if(*(p->get_coord()) != NewNodeCoord[0] || *(p->get_coord() + 1) != NewNodeCoord[1])
+    else if(p->get_coord(0) != NewNodeCoord[0] || p->get_coord(1) != NewNodeCoord[1])
     {
         short same_key = 0;
         assert(same_key);

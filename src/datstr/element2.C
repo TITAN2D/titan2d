@@ -101,8 +101,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     
     set_myprocess(myid);
-    elm_loc[0] = elm_loc_in[0];
-    elm_loc[1] = elm_loc_in[1];
+    set_elm_loc(0, elm_loc_in[0]);
+    set_elm_loc(1, elm_loc_in[1]);
     calc_which_son();
     
     set_brother(which_son(), key());
@@ -236,8 +236,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     set_key(nodekeys[8]); //--using buble key to represent the element
     
-    elm_loc[0] = elm_loc_in[0];
-    elm_loc[1] = elm_loc_in[1];
+    set_elm_loc(0, elm_loc_in[0]);
+    set_elm_loc(1, elm_loc_in[1]);
     
     for(i = 0; i < 8; i++)
         set_node_key(i, nodekeys[i]);
@@ -301,8 +301,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     }
     set_Swet(1.0);
     
-    double dxx = coord_in[0] - fthTemp->coord[0];
-    double dyy = coord_in[1] - fthTemp->coord[1];
+    double dxx = coord_in[0] - fthTemp->coord(0);
+    double dyy = coord_in[1] - fthTemp->coord(1);
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
@@ -319,8 +319,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     calc_topo_data(matprops_ptr);
     calc_gravity_vector(matprops_ptr);
     
-    coord[0] = coord_in[0];
-    coord[1] = coord_in[1];
+    set_coord(0, coord_in[0]);
+    set_coord(1, coord_in[1]);
     
     set_stoppedflags(fthTemp->stoppedflags());
     
@@ -391,9 +391,9 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     set_node_key(6, sons[2]->node_key(3));
     set_node_key(7, sons[3]->node_key(0));
 
-    for(int ikey = 0; ikey < KEYLENGTH; ikey++)
+    for(int idim = 0; idim < DIMENSION; idim++)
     {
-        elm_loc[ikey] = (sons[0]->get_elm_loc()[ikey]) / 2;
+        set_elm_loc(idim,sons[0]->elm_loc(idim) / 2);
     }
     set_myprocess(sons[0]->myprocess());
     generation(sons[0]->generation() - 1);
@@ -855,8 +855,8 @@ void Element::find_positive_x_side(HashTable* nodetable)
     
     nodeptr = (Node*) (nodetable->lookup(key()));
     xmax = nodeptr->coord[0];
-    coord[0] = xmax;
-    coord[1] = nodeptr->coord[1];
+    set_coord(0, xmax);
+    set_coord(1, nodeptr->get_coord(1));
     
     for(i = 4; i < 8; i++)
     {
@@ -936,8 +936,8 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     }
     
     double dp, dm, dc, dxp, dxm;
-    dxp = ep->coord[0] - coord[0];
-    dxm = coord[0] - em->coord[0];
+    dxp = ep->coord(0) - coord(0);
+    dxm = coord(0) - em->coord(0);
     for(j = 0; j < NUM_STATE_VARS; j++)
     {
         dp = (ep->state_vars[j] - state_vars[j]) / dxp;
@@ -976,8 +976,8 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
         assert(neigh_proc(ym + 4) >= 0 && em2);
     }
     
-    dxp = ep->coord[1] - coord[1];
-    dxm = coord[1] - em->coord[1];
+    dxp = ep->coord(1) - coord(1);
+    dxm = coord(1) - em->coord(1);
     for(j = 0; j < NUM_STATE_VARS; j++)
     {
         dp = (ep->state_vars[j] - state_vars[j]) / dxp;
@@ -1051,7 +1051,7 @@ void Element::insert_coord(HashTable* NodeTable)
     Node* node = (Node*) (NodeTable->lookup(key()));
     int i;
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = node->coord[i];
+        set_coord(i, node->get_coord(i));
     
     return;
 }
@@ -3344,9 +3344,9 @@ void Element::calc_d_gravity(HashTable* El_Table)
     if(ep != NULL && em != NULL)
     {
         double dp, dm, dxp, dxm;
-        dxp = ep->coord[0] - coord[0];
+        dxp = ep->coord(0) - coord(0);
         dp = (ep->gravity[2] - gravity[2]) / dxp;
-        dxm = coord[0] - em->coord[0];
+        dxm = coord(0) - em->coord(0);
         dm = (gravity[2] - em->gravity[2]) / dxm;
         
         d_gravity[0] = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average 
@@ -3354,13 +3354,13 @@ void Element::calc_d_gravity(HashTable* El_Table)
     else if(em != NULL)
     {
         double dm, dxm;
-        dxm = coord[0] - em->coord[0];
+        dxm = coord(0) - em->coord(0);
         d_gravity[0] = (gravity[2] - em->gravity[2]) / dxm;
     }
     else if(ep != NULL)
     {
         double dp, dxp;
-        dxp = ep->coord[0] - coord[0];
+        dxp = ep->coord(0) - coord(0);
         d_gravity[0] = (ep->gravity[2] - gravity[2]) / dxp;
     }
     else
@@ -3373,9 +3373,9 @@ void Element::calc_d_gravity(HashTable* El_Table)
     if(ep != NULL && em != NULL)
     {
         double dp, dm, dxp, dxm;
-        dxp = ep->coord[1] - coord[1];
+        dxp = ep->coord(1) - coord(1);
         dp = (ep->gravity[2] - gravity[2]) / dxp;
-        dxm = coord[1] - em->coord[1];
+        dxm = coord(1) - em->coord(1);
         dm = (gravity[2] - em->gravity[2]) / dxm;
         
         d_gravity[1] = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average 
@@ -3383,13 +3383,13 @@ void Element::calc_d_gravity(HashTable* El_Table)
     else if(em != NULL)
     {
         double dm, dxm;
-        dxm = coord[1] - em->coord[1];
+        dxm = coord(1) - em->coord(1);
         d_gravity[1] = (gravity[2] - em->gravity[2]) / dxm;
     }
     else if(ep != NULL)
     {
         double dp, dxp;
-        dxp = ep->coord[1] - coord[1];
+        dxp = ep->coord(1) - coord(1);
         d_gravity[1] = (ep->gravity[2] - gravity[2]) / dxp;
     }
     else
@@ -3403,8 +3403,8 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
 {
     double resolution = (dx[0]/*/(zeta[0]*zeta[0]+1)*/+ dx[1]/*/(zeta[1]*zeta[1]+1)*/) * (matprops_ptr->LENGTH_SCALE)
             / 2.0;  // element "size"
-    double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
+    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
     //double eldif = elevation;
     int i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
 #ifdef PRINT_GIS_ERRORS
@@ -3507,7 +3507,7 @@ void Element::put_coord(double* coord_in)
 {
     int i;
     for(i = 0; i < KEYLENGTH; i++)
-        coord[i] = coord_in[i];
+        set_coord(i, coord_in[i]);
     return;
 }
 
@@ -3516,16 +3516,16 @@ void Element::put_coord(double* coord_in)
  */
 void Element::calc_which_son()
 {
-    if(elm_loc[0] % 2 == 0)
+    if(elm_loc(0) % 2 == 0)
     {
-        if(elm_loc[1] % 2 == 0)
+        if(elm_loc(1) % 2 == 0)
             set_which_son(0);
         else
             set_which_son(3);
     }
     else
     {
-        if(elm_loc[1] % 2 == 0)
+        if(elm_loc(1) % 2 == 0)
             set_which_son(1);
         else
             set_which_son(2);
@@ -3554,14 +3554,14 @@ void Element::find_opposite_brother(HashTable* El_Table)
         unsigned nkey = KEYLENGTH;
         
         if((which_son() == 0) || (which_son() == 3))
-            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord[0] + dx[0] - *(El_Table->get_Xrange() + 0));
+            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) + dx[0] - *(El_Table->get_Xrange() + 0));
         else
-            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord[0] - dx[0] - *(El_Table->get_Xrange() + 0));
+            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) - dx[0] - *(El_Table->get_Xrange() + 0));
         
         if((which_son() == 0) || (which_son() == 1))
-            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] + dx[1] - *(El_Table->get_Yrange() + 0));
+            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) + dx[1] - *(El_Table->get_Yrange() + 0));
         else
-            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord[1] - dx[1] - *(El_Table->get_Yrange() + 0));
+            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) - dx[1] - *(El_Table->get_Yrange() + 0));
         
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
         set_brother((which_son() + 2) % 4,sfc_key_from_oldkey(oldkey));
@@ -4157,7 +4157,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     int Itemp = 0, itemp, jtemp;
     for(itemp = 0; itemp < 2; itemp++)
     {
-        temp4.i = elm_loc[itemp];
+        temp4.i = elm_loc(itemp);
         writespace[Itemp++] = temp4.u;
     }
     assert(Itemp == 2);
@@ -4165,7 +4165,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #ifdef DEBUG_SAVE_ELEM
     //FILE *fpdb=fopen("save_elem.debug","w");
     FILE *fpdb=fptxt;
-    fprintf(fpdb,"\n\nelm_loc=%d %d\n",elm_loc[0],elm_loc[1]);
+    fprintf(fpdb,"\n\nelm_loc=%d %d\n",elm_loc(0),elm_loc(1));
 #endif
     
     temp4.i = generation();
@@ -4454,7 +4454,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     for(itemp = 0; itemp < 2; itemp++)
     {
         temp4.u = readspace[Itemp++];
-        elm_loc[itemp] = temp4.i;
+        set_elm_loc(itemp, temp4.i);
     }
     assert(Itemp == 2);
     

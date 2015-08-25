@@ -47,8 +47,8 @@ void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matpro
                 double elevation;
                 get_elem_elev(HT_Node_Ptr, matprops, EmTemp, elevation);
                 
-                fprintf(fp, "%20.14g %20.14g %20.14g\n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                        (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE, elevation);
+                fprintf(fp, "%20.14g %20.14g %20.14g\n", (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
+                        (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE, elevation);
             }
             entryp = entryp->next;
         }
@@ -115,47 +115,45 @@ void cxxTitanSinglePhase::init_piles()
                 
                 if(EmTemp->adapted_flag() > 0)
                 {
-
                     //put in the pile height right here...
-                    double* ndcoord = EmTemp->get_coord();
                     double pile_height = 0.0;
                     double radius_sq;
                     switch (pile_type)
                     {
 
                         case PileProps::PLANE:
-                            radius_sq = pow(ndcoord[0] - 76., 2) + pow(ndcoord[1] - 80., 2);
+                            radius_sq = pow(EmTemp->coord(0) - 76., 2) + pow(EmTemp->coord(1) - 80., 2);
                             if(radius_sq < 35.)
                                 pile_height = 10 * (1. - radius_sq / 35.);
                             break;
                         case PileProps::CASITA:
-                            radius_sq = pow(ndcoord[0] - 504600., 2) + pow(ndcoord[1] - 1402320., 2);
+                            radius_sq = pow(EmTemp->coord(0) - 504600., 2) + pow(EmTemp->coord(1) - 1402320., 2);
                             if(radius_sq < 30000.)
                                 pile_height = 15 * (1. - radius_sq / 30000.);
                             break;
                         case PileProps::POPO: //popo topo
-                            radius_sq = pow(ndcoord[0] - 537758. / matprops_ptr->LENGTH_SCALE, 2)
-                                    + pow(ndcoord[1] - 2100910. / matprops_ptr->LENGTH_SCALE, 2);
+                            radius_sq = pow(EmTemp->coord(0) - 537758. / matprops_ptr->LENGTH_SCALE, 2)
+                                    + pow(EmTemp->coord(1) - 2100910. / matprops_ptr->LENGTH_SCALE, 2);
                             if(radius_sq < (10000. / matprops_ptr->LENGTH_SCALE))
                                 pile_height = 1. - radius_sq / (10000. / matprops_ptr->LENGTH_SCALE);
                             break;
                         case PileProps::ID1: // iverson and denlinger experiments I -- as pictured
 
-                            if(ndcoord[0] < 53.345 && ndcoord[0] > 45.265 && ndcoord[1] > -10. && ndcoord[1] < 300.)
+                            if(EmTemp->coord(0) < 53.345 && EmTemp->coord(0) > 45.265 && EmTemp->coord(1) > -10. && EmTemp->coord(1) < 300.)
                             {
-                                if(ndcoord[0] < 51.148)
-                                    pile_height = 3.5912 * (1.0 - (51.148 - ndcoord[0]) / 5.8832);
+                                if(EmTemp->coord(0) < 51.148)
+                                    pile_height = 3.5912 * (1.0 - (51.148 - EmTemp->coord(0)) / 5.8832);
                                 else
-                                    pile_height = 3.59 * (53.345 - ndcoord[0]) / 2.1967;
+                                    pile_height = 3.59 * (53.345 - EmTemp->coord(0)) / 2.1967;
                                 if(pile_height < 0)
                                     pile_height = 0;
                             }
                             break;
                         case PileProps::ID2: //iverson and denlinger experiments II -- 90 angle with plane
-                            if(ndcoord[0] < 53.345 / matprops_ptr->LENGTH_SCALE && ndcoord[0]
+                            if(EmTemp->coord(0) < 53.345 / matprops_ptr->LENGTH_SCALE && EmTemp->coord(0)
                                     > 46.45 / matprops_ptr->LENGTH_SCALE)
                                 pile_height = 4.207255
-                                        * (1.0 - (53.345 / matprops_ptr->LENGTH_SCALE - ndcoord[0]) / 6.895
+                                        * (1.0 - (53.345 / matprops_ptr->LENGTH_SCALE - EmTemp->coord(0)) / 6.895
                                                 * matprops_ptr->LENGTH_SCALE);
                             break;
                         default:
@@ -208,8 +206,8 @@ void cxxTitanSinglePhase::init_piles()
                     
                     double resolution = 0, xslope = 0, yslope = 0;
                     Get_max_resolution(&resolution);
-                    Get_slope(resolution, *((Curr_El->get_coord())) * matprops_ptr->LENGTH_SCALE,
-                              *((Curr_El->get_coord()) + 1) * matprops_ptr->LENGTH_SCALE, &xslope, &yslope);
+                    Get_slope(resolution, Curr_El->coord(0) * matprops_ptr->LENGTH_SCALE,
+                              Curr_El->coord(1) * matprops_ptr->LENGTH_SCALE, &xslope, &yslope);
                     double slope = sqrt(xslope * xslope + yslope * yslope);
                     
                     forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)

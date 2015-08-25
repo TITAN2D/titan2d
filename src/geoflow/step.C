@@ -254,7 +254,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         realvolume += dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
         eroded += elemeroded;
         deposited += elemdeposited;
-        double *coord = Curr_El->get_coord();
         //update the record of maximum pileheight in the area covered by this element
         double hheight = *(Curr_El->get_state_vars());
         //if (hheight > 0 && hheight < 0)
@@ -271,8 +270,8 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
             momenta = Curr_El->get_state_vars() + 1;
         }
 
-        outline_ptr->update(coord[0] - 0.5 * dxy[0], coord[0] + 0.5 * dxy[0], coord[1] - 0.5 * dxy[1],
-                            coord[1] + 0.5 * dxy[1], hheight, momenta);
+        outline_ptr->update(Curr_El->coord(0) - 0.5 * dxy[0], Curr_El->coord(0) + 0.5 * dxy[0], Curr_El->coord(1) - 0.5 * dxy[1],
+                            Curr_El->coord(1) + 0.5 * dxy[1], hheight, momenta);
         if(elementType == ElementType::TwoPhases)
         {
             delete [] momenta;
@@ -623,8 +622,8 @@ void sim_end_warning(ElementType elementType,HashTable* El_Table, MatProps* matp
                              the maximum value */
                             v_max = velocity2;
                             
-                            xy_v_max[0] = *(EmTemp->get_coord());
-                            xy_v_max[1] = *(EmTemp->get_coord() + 1);
+                            xy_v_max[0] = EmTemp->coord(0);
+                            xy_v_max[1] = EmTemp->coord(1);
                         }
                     }
                 }

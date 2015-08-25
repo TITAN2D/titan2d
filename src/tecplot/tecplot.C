@@ -364,8 +364,8 @@ int get_elem_elev(HashTable * NodeTable, MatProps * matprops, Element * EmTemp, 
             exit(1);
         }
         
-        xcoord = *(EmTemp->get_coord()) * (matprops->LENGTH_SCALE);
-        ycoord = *(EmTemp->get_coord() + 1) * (matprops->LENGTH_SCALE);
+        xcoord = EmTemp->coord(0) * (matprops->LENGTH_SCALE);
+        ycoord = EmTemp->coord(1) * (matprops->LENGTH_SCALE);
         j = Get_elevation(resolution, xcoord, ycoord, elevation);
         if(j != 0)
         {
@@ -567,8 +567,8 @@ int print_bubble_node(ElementType elementType,FILE * fp, HashTable * NodeTable, 
         else
             volf = 0;
         EmTemp->eval_velocity(0.0, 0.0, Vel);
-        fprintf(fp, "%e %e %e %e %e %e %e %e %e %e %e %e\n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+        fprintf(fp, "%e %e %e %e %e %e %e %e %e %e %e %e\n", (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
+                (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE,
                 elevation + (*(EmTemp->get_state_vars())) * (matprops)->HEIGHT_SCALE,
                 *(EmTemp->get_state_vars()) * (matprops)->HEIGHT_SCALE, volf,
                 *(EmTemp->get_state_vars() + 2) * momentum_scale, *(EmTemp->get_state_vars() + 3) * momentum_scale,
@@ -580,8 +580,8 @@ int print_bubble_node(ElementType elementType,FILE * fp, HashTable * NodeTable, 
     {
         double VxVy[2];
         EmTemp->eval_velocity(0.0, 0.0, VxVy);
-        fprintf(fp, "%e %e %e %e %e %e %e %e\n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+        fprintf(fp, "%e %e %e %e %e %e %e %e\n", (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
+                (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE,
                 (elevation + (*(EmTemp->get_state_vars())) * (matprops)->HEIGHT_SCALE),
                 *(EmTemp->get_state_vars()) * (matprops)->HEIGHT_SCALE, *(EmTemp->get_state_vars() + 1) * momentum_scale,
                 *(EmTemp->get_state_vars() + 2) * momentum_scale, elevation,
@@ -704,8 +704,8 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                     double zero = 0;
                     fprintf_sfc_key(fp, EmTemp->key());
                     fprintf(fp, "%f %f %f %f %f %f %f %f %d %f \n",
-                            (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                            (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                            (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
+                            (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE,
                             (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
                             *(EmTemp->get_zeta() + 1), zero, zero, zero, myid, zero);
                 }
@@ -716,8 +716,8 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         double Vel[4];
                         EmTemp->eval_velocity(0.0, 0.0, Vel);
                         fprintf_sfc_key(fp, EmTemp->key());
-                        fprintf(fp, " %f %f %f %f %f %f %f %f %d %f \n", (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                                (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                        fprintf(fp, " %f %f %f %f %f %f %f %f %d %f \n", (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
+                                (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE,
                                 (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), state_vars[0] * (matprops)->HEIGHT_SCALE,
                                 velocity_scale * Vel[0], //*state_vars[1]/state_vars[0],
@@ -730,8 +730,8 @@ void viz_output(ElementType elementType,HashTable * El_Table, HashTable * NodeTa
                         EmTemp->eval_velocity(0.0, 0.0, VxVy);
                         fprintf_sfc_key(fp, EmTemp->key());
                         fprintf(fp, "%f %f %f %f %f %f %f %f %d %f \n",
-                                (*(EmTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                                (*(EmTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
+                                (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE,
                                 (NdTemp->get_elevation()) * (matprops)->LENGTH_SCALE, *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), state_vars[0] * (matprops)->HEIGHT_SCALE,
                                 velocity_scale * VxVy[0],     //*state_vars[1]/state_vars[0],
@@ -887,28 +887,28 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                         SET_OLDKEY(tmpkey,EmTemp->key());
 #ifdef TWO_PHASES 
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
-                                (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                                (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(0)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(1)) * (matprops)->LENGTH_SCALE,
                                 NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
                                 state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
                                 state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
                                 EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
-                                *(EmTemp->get_elm_loc() + 1));
+                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->elm_loc(1));
 #else
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
-                                (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                                (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(0)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(1)) * (matprops)->LENGTH_SCALE,
                                 NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), myid,
                                 state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
                                 state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],
                                 EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
-                                *(EmTemp->get_elm_loc() + 1));
+                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->elm_loc(1));
 #endif
                     }
                     else
@@ -958,24 +958,24 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                         SET_OLDKEY(tmpkey,EmTemp->key());
 #ifdef TWO_PHASES 
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
-                                (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                                (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(0)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(1)) * (matprops)->LENGTH_SCALE,
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
                                 state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
-                                *(EmTemp->get_elm_loc() + 1));
+                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->elm_loc(1));
 #else
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
-                                (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                                (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(0)) * (matprops)->LENGTH_SCALE,
+                                (NodeTemp->get_coord(1)) * (matprops)->LENGTH_SCALE,
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
                                 state_vars[1] * momentum_scale, state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), *(EmTemp->get_zeta()),
                                 *(EmTemp->get_zeta() + 1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), *(EmTemp->get_elm_loc()),
-                                *(EmTemp->get_elm_loc() + 1));
+                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->elm_loc(1));
 #endif
                     }
                     
@@ -1128,16 +1128,16 @@ void vizplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprops
                     //int* dof = NodeTemp->getdof();
 #ifdef TWO_PHASES 
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
-                            (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                            (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                            (NodeTemp->get_coord(0)) * (matprops)->LENGTH_SCALE,
+                            (NodeTemp->get_coord(1)) * (matprops)->LENGTH_SCALE,
                             (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[2] * momentum_scale,
                             state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
                             EmTemp->generation(), EmTemp->which_son());
 #else
                     fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d\n",
-                            (*(NodeTemp->get_coord())) * (matprops)->LENGTH_SCALE,
-                            (*(NodeTemp->get_coord() + 1)) * (matprops)->LENGTH_SCALE,
+                            (NodeTemp->get_coord(0)) * (matprops)->LENGTH_SCALE,
+                            (NodeTemp->get_coord(1)) * (matprops)->LENGTH_SCALE,
                             (NodeTemp->get_elevation()) * (matprops)->LENGTH_SCALE, myid,
                             state_vars[0] * (matprops)->HEIGHT_SCALE, state_vars[1] * momentum_scale,
                             state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],

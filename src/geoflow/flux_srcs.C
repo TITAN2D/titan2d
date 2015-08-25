@@ -149,8 +149,8 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
         { 0.0, 0.0, 0.0 };
         Node* ndtemp = (Node*) NodeTable->lookup(node[inode]);
         assert(ndtemp);
-        xcoord = *(ndtemp->get_coord());
-        ycoord = *(ndtemp->get_coord() + 1);
+        xcoord = ndtemp->get_coord(0);
+        ycoord = ndtemp->get_coord(1);
         
         for(int isrc = 0; isrc < no_of_sources; isrc++)
         {

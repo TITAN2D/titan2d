@@ -191,16 +191,16 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                      for pile height %e curvature=%e (x,y)=(%e,%e)\n",
                                     evalue, myid, *(EmTemp->get_state_vars() + 2), *(EmTemp->get_state_vars() + 3),
                                     *(EmTemp->get_state_vars() + 4), *(EmTemp->get_state_vars() + 5),
-                                    *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
-                                    *(EmTemp->get_coord() + 1));
+                                    *(EmTemp->get_state_vars()), maxcurve, EmTemp->coord(0),
+                                    EmTemp->coord(1));
                             exit(1);
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
                             printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
                                    evalue, myid, *(EmTemp->get_state_vars() + 1), *(EmTemp->get_state_vars() + 2),
-                                   *(EmTemp->get_state_vars()), maxcurve, *(EmTemp->get_coord()),
-                                   *(EmTemp->get_coord() + 1));
+                                   *(EmTemp->get_state_vars()), maxcurve, EmTemp->coord(0),
+                                   EmTemp->coord(1));
                             exit(1);
                         }
                     }
