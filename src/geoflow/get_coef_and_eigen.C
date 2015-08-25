@@ -134,7 +134,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     }
 
                     EmTemp->calc_stop_crit(matprops_ptr);
-                    intswap = EmTemp->get_stoppedflags();
+                    intswap = EmTemp->stoppedflags();
 
                     if((intswap < 0) || (intswap > 2))
                         printf("get_coef_and_eigen stopped flag=%d\n", intswap);
@@ -215,7 +215,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        EmTemp->put_stoppedflags(2);
+                        EmTemp->set_stoppedflags(2);
                     }
                 }
                 

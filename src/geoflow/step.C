@@ -158,9 +158,9 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
             VxVy[0] = VxVy[1] = 0.0;
         
 #ifdef STOPCRIT_CHANGE_SOURCE
-        IF_STOPPED=Curr_El->get_stoppedflags();
+        IF_STOPPED=Curr_El->stoppedflags();
 #else
-        IF_STOPPED = !(!(Curr_El->get_stoppedflags()));
+        IF_STOPPED = !(!(Curr_El->stoppedflags()));
 #endif
         if(elementType == ElementType::TwoPhases)
         {

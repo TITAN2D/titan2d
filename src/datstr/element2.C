@@ -181,14 +181,15 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
 
     //printf("creating an original element\n");
     
-    stoppedflags = 2;
+    set_stoppedflags(2);
 
     if(elementType() == ElementType::TwoPhases)
     {
         // initialize kactxy
         kactxy[0] = kactxy[1] = 0.;
         effect_kactxy[0] = effect_kactxy[0] = 0.;
-        effect_bedfrict = effect_tanbedfrict = 0.;
+        set_effect_bedfrict(0.0);
+        set_effect_tanbedfrict(0.0);
     }
 }
 
@@ -320,7 +321,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     coord[0] = coord_in[0];
     coord[1] = coord_in[1];
     
-    stoppedflags = fthTemp->stoppedflags;
+    set_stoppedflags(fthTemp->stoppedflags());
     
     return;
 }
@@ -369,14 +370,14 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     set_lb_weight(1.0);
     set_new_old(NEW);
     set_opposite_brother_flag(0);
-    stoppedflags = 2;
+    set_stoppedflags(2);
     for(i = 0; i < EQUATIONS; i++)
         set_el_error(i, 0.0);
     
     for(ison = 0; ison < 4; ison++)
     {
-        if(sons[ison]->stoppedflags < stoppedflags)
-            stoppedflags = sons[ison]->stoppedflags;
+        if(sons[ison]->stoppedflags() < stoppedflags())
+            set_stoppedflags(sons[ison]->stoppedflags());
     }
     
     set_father(sfc_key_zero);
@@ -1888,7 +1889,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
                     hfv[i][j] = 0.0;
         }
     #ifdef STOPCRIT_CHANGE_FLUX
-        else if(stoppedflags==2)
+        else if(stoppedflags()==2)
         {   
             //state variables
             hfv[0][0]=state_vars[0]+d_state_vars[0]*dz;
@@ -2029,7 +2030,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
         }
     #ifdef STOPCRIT_CHANGE_FLUX
-        else if(stoppedflags==2)
+        else if(stoppedflags()==2)
         {
             //printf("xdirflux case 2 ");
             //state variables
@@ -2159,7 +2160,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
                     hfv[i][j] = 0.0; //state variables
         }
     #ifdef STOPCRIT_CHANGE_FLUX
-        else if(stoppedflags==2)
+        else if(stoppedflags()==2)
         {
             //state variables
             hfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
@@ -2297,7 +2298,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 
         }
     #ifdef STOPCRIT_CHANGE_FLUX
-        else if(stoppedflags==2)
+        else if(stoppedflags()==2)
         {
             //    printf("choice 2 ");
 
@@ -2945,9 +2946,9 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
 #endif
     
 #ifdef STOPCRIT_CHANGE_SOURCE
-    int IF_STOPPED=stoppedflags;
+    int IF_STOPPED=stoppedflags();
 #else
-    int IF_STOPPED = !(!stoppedflags);
+    int IF_STOPPED = !(!stoppedflags());
 #endif
     
     double VxVy[2];
@@ -2963,7 +2964,7 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     
     correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
              (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict),
-             &effect_bedfrict, gravity, effect_kactxy, d_gravity, &(matprops_ptr->frict_tiny), forceint, forcebed,
+             effect_bedfrict_ptr(), gravity, effect_kactxy, d_gravity, &(matprops_ptr->frict_tiny), forceint, forcebed,
              &do_erosion, eroded, VxVy, //eval_velocity(0.0,0.0,VxVy),
              &IF_STOPPED, Influx);
     
@@ -2986,12 +2987,12 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     //convect_dryline(VxVy,0.5*dt);
 #endif 
     
-    if(stoppedflags == 2)
+    if(stoppedflags() == 2)
         *deposited = state_vars[0] * dx[0] * dx[1];
     else
         *deposited = 0.0;
     
-    if(stoppedflags)
+    if(stoppedflags())
         *eroded = 0.0;
     
     calc_shortspeed(1.0 / dt);
@@ -3789,19 +3790,19 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     
     effect_kactxy[0] = kactxy[0];
     effect_kactxy[1] = kactxy[1];
-    effect_bedfrict = matprops_ptr->bedfrict[material()];
+    set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
     effect_tanbedfrict = matprops_ptr->tanbedfrict[material()];
     
 #ifdef STOPCRIT_CHANGE_BED
-    if(stoppedflags==2)
+    if(stoppedflags()==2)
     {   
         effect_kactxy[0]=effect_kactxy[1]=matprops_ptr->epsilon;
-        effect_bedfrict=matprops_ptr->intfrict;
+        set_effect_bedfrict(matprops_ptr->intfrict);
         effect_tanbedfrict=matprops_ptr->tanintfrict;
     }
 #endif
     
-    stoppedflags = 0;
+    set_stoppedflags(0);
     if(elementType() == ElementType::TwoPhases)
     {
         return;
@@ -3832,7 +3833,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
         }
         else
         {
-            stoppedflags = 1; //erosion off
+            set_stoppedflags(1); //erosion off
             bedslope = -sqrt(zeta[0] * zeta[0] + zeta[1] * zeta[1]);
             if(bedslope < 0)
             {
@@ -3849,13 +3850,13 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
         //this is the internal friction test, will the pile slump
         if(stopcrit >= 1.0)
         {
-            stoppedflags = 1;
+            set_stoppedflags(1);
             slopetemp = -sqrt(
                     (zeta[0] + effect_kactxy[0] * d_state_vars[0]) * (zeta[0] + effect_kactxy[0] * d_state_vars[0])
                     * (zeta[1] + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS])
                     * (zeta[1] + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]));
             if(slopetemp + tan(matprops_ptr->intfrict) > 0)
-                stoppedflags = 2;
+                set_stoppedflags(2);
         }
     }
     
@@ -3867,17 +3868,17 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
      an angle of repose 
      */
 #ifdef STOPCRIT_CHANGE_BED
-    if(stoppedflags==2)
+    if(stoppedflags()==2)
     {   
         effect_kactxy[0]=effect_kactxy[1]=matprops_ptr->epsilon;
-        effect_bedfrict=matprops_ptr->intfrict;
+        set_effect_bedfrict(matprops_ptr->intfrict);
         effect_tanbedfrict=matprops_ptr->tanintfrict;
     }
     else
     {   
         effect_kactxy[0]=kactxy[0];
         effect_kactxy[1]=kactxy[1];
-        effect_bedfrict=matprops_ptr->bedfrict[material()];
+        set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
         effect_tanbedfrict=matprops_ptr->tanbedfrict[material()];
     }
 #endif

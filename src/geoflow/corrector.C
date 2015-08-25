@@ -82,9 +82,9 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
 #endif
     
 #ifdef STOPCRIT_CHANGE_SOURCE
-    int IF_STOPPED=EmTemp->get_stoppedflags();
+    int IF_STOPPED=EmTemp->stoppedflags();
 #else
-    int IF_STOPPED = !(!EmTemp->get_stoppedflags());
+    int IF_STOPPED = !(!EmTemp->stoppedflags());
 #endif
     
     double *state_vars = EmTemp->get_state_vars();
@@ -101,7 +101,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     {
         int i;
         double kactxy[DIMENSION];
-        double bedfrict = EmTemp->get_effect_bedfrict();
+        double bedfrict = EmTemp->effect_bedfrict();
         double solid_den = matprops2_ptr->den_solid;
         double fluid_den = matprops2_ptr->den_fluid;
         double terminal_vel = matprops2_ptr->v_terminal;
@@ -177,7 +177,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     }
     if(elementType == ElementType::SinglePhase)
     {
-        double effect_bedfrict = EmTemp->get_effect_bedfrict();
+        double effect_bedfrict = EmTemp->effect_bedfrict();
         double *effect_kactxy = EmTemp->get_effect_kactxy();
 
         double VxVy[2];
@@ -204,12 +204,12 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     *eroded *= dx[0] * dx[1];
 
     
-    if(EmTemp->get_stoppedflags() == 2)
+    if(EmTemp->stoppedflags() == 2)
         *deposited = state_vars[0] * dx[0] * dx[1];
     else
         *deposited = 0.0;
     
-    if(EmTemp->get_stoppedflags())
+    if(EmTemp->stoppedflags())
         *eroded = 0.0;
     
     EmTemp->calc_shortspeed(1.0 / dt);

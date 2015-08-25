@@ -36,9 +36,8 @@ class FluxProps;
 class Node;
 
 //! The Element class is a data structure designed to hold all the information need for an h (cell edge length) p (polynomial order) adaptive finite element.  Titan doesn't use p adaptation because it is a finite difference/volume code, hence many of the members are legacy from afeapi (adaptive finite element application programmers interface) which serves as the core of titan.  There is a seperate Discontinuous Galerkin Method (finite elements + finite volumes) version of titan and the polynomial information is not legacy there.  However in this version of Titan elements function simply as finite volume cells.
-class Element
-{
-    
+
+class Element {
     friend class HashTable;
     friend class ElementsHashTable;
 
@@ -53,13 +52,13 @@ class Element
     friend void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
 
     friend void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int numprocs, int myid,
-                                    void* RefinedList, TimeProps* timeprops_ptr);
+            void* RefinedList, TimeProps* timeprops_ptr);
 
     friend void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, void* NewFatherList);
     //friend void unrefine_neigh_update(HashTable* El_Table, int myid, 
     //int NumNewFathers, Element** NewFatherList);
     //friend void unrefine_neigh_update(HashTable* El_Table, int myid);
-    
+
     /*
      friend void  unrefine_interp_neigh_update(HashTable* El_Table,  
      HashTable* NodeTable, int nump, 
@@ -67,41 +66,40 @@ class Element
      Element **OtherProcUpdate);
      */
     friend void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, int myid,
-                                             void* OtherProcUpdate);
+            void* OtherProcUpdate);
 
     friend void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, HashTable *HT_Node_Ptr,
-                                      int destination_proc);
+            int destination_proc);
 
     //friend void Pack_element(Element* sendel, ElemPack** elemptr, HashTable* HT_Node_Ptr, int destination_proc);
     friend void Pack_element(void *sendel, ElemPack* elem, HashTable* HT_Node_Ptr, int destination_proc);
 
     friend void destroy_element(void *r_element, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int target_pro,
-                                ELinkPtr* EL_head);
+            ELinkPtr* EL_head);
 
     friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid,
-                               double* e_error);
+            double* e_error);
 
     friend void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
 
 public:
 protected:
+
     /**
      * None of the constructor should be called directly, use ElementsHashTable::generateElement to do it
      *  default constructor, does nothing except set stoppedflags=2, this should never be used
      *
      */
-    Element()
-    {
-        if(NUM_STATE_VARS == 3)
+    Element() {
+        if (NUM_STATE_VARS == 3)
             elementType(ElementType::SinglePhase);
-        else if(NUM_STATE_VARS == 6)
+        else if (NUM_STATE_VARS == 6)
             elementType(ElementType::TwoPhases);
         else
             elementType(ElementType::UnknownElementType);
-        
+
         set_father(sfc_key_zero); //initialize the father key to zero
-        for(int i = 0; i < NUM_STATE_VARS; i++)
-        {
+        for (int i = 0; i < NUM_STATE_VARS; i++) {
             state_vars[i] = -1;
             Influx[i] = 0.;
         }
@@ -111,8 +109,8 @@ protected:
         Swet = 1.0;
         drypoint[0] = drypoint[1] = 0.0;
         iwetnode = 8;
-        
-        stoppedflags = 2; //material in all elements start from rest
+
+        set_stoppedflags(2); //material in all elements start from rest
         //do_erosion=-1;
         set_myprocess(-1);
     }
@@ -137,31 +135,58 @@ public:
 
     //! this member function saves a single element to a file with a single fwrite call, this allows the element to be recreated/restored upon restart of a simulation
     void save_elem(FILE* fp, FILE* fptxt); //for restart
-                   
+
     //! returns address of element (same as bubble node, node 8 out of 0->8) hashtable key
-    const SFC_Key& key() const {return key_;}
-    void set_key(const SFC_Key& new_key){key_=new_key;}
+
+    const SFC_Key& key() const {
+        return key_;
+    }
+
+    void set_key(const SFC_Key& new_key) {
+        key_ = new_key;
+    }
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
-    int material() const {return material_;}
-    void set_material(int m){material_=m;}
+
+    int material() const {
+        return material_;
+    }
+
+    void set_material(int m) {
+        material_ = m;
+    }
 
     //! legacy afeapi function prototype, this function does not exist in the finite difference/volume version of Titan
     void get_stiffness(HashTable*, HashTable*, double*, double*, Element*);
 
     //! returns the address of the first of 8 (nodes 0-7) node keys in an array, the node keys are used to access the nodes through the node hashtable
-    const SFC_Key& node_key(const int i) const {return node_key_[i];}
-    void set_node_key(const int i,const SFC_Key& new_key){node_key_[i]=new_key;}
+
+    const SFC_Key& node_key(const int i) const {
+        return node_key_[i];
+    }
+
+    void set_node_key(const int i, const SFC_Key& new_key) {
+        node_key_[i] = new_key;
+    }
 
     //! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
-    Node** getNodesPtrs(){return &(node_keyPtr[0]);}
+
+    Node** getNodesPtrs() {
+        return &(node_keyPtr[0]);
+    }
 
     //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
-    Node* getNodePtr(int i){return node_keyPtr[i];}
-    
+
+    Node* getNodePtr(int i) {
+        return node_keyPtr[i];
+    }
+
     //! returns the pointers to the i-th of 8 (elements 0-7) elements , careful pointers can be outdated
-    Element* getNeighborPtr(int i){return neighborPtr[i];}
-    
+
+    Element* getNeighborPtr(int i) {
+        return neighborPtr[i];
+    }
+
     //!update neighbors pointers from hash table
     void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
@@ -169,45 +194,92 @@ public:
     int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
 
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
-    int ndof() const {return ndof_;}
-    void set_ndof(const int new_ndof){ndof_=new_ndof;}
-    
-    int no_of_eqns() const {return no_of_eqns_;}
-    void set_no_of_eqns(const int new_no_of_eqns){no_of_eqns_=new_no_of_eqns;}
-    
-    
-    
+
+    int ndof() const {
+        return ndof_;
+    }
+
+    void set_ndof(const int new_ndof) {
+        ndof_ = new_ndof;
+    }
+
+    int no_of_eqns() const {
+        return no_of_eqns_;
+    }
+
+    void set_no_of_eqns(const int new_no_of_eqns) {
+        no_of_eqns_ = new_no_of_eqns;
+    }
+
+
+
     //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
-    int generation() const{return generation_;}
+
+    int generation() const {
+        return generation_;
+    }
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
-    void generation(const int g){generation_ = g;}
+
+    void generation(const int g) {
+        generation_ = g;
+    }
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
-    const SFC_Key& brother(const int i) const {return brothers_[i];}
-    void set_brother(const int i,const SFC_Key& new_key){brothers_[i]=new_key;}
+
+    const SFC_Key& brother(const int i) const {
+        return brothers_[i];
+    }
+
+    void set_brother(const int i, const SFC_Key& new_key) {
+        brothers_[i] = new_key;
+    }
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
     void set_brothers(const SFC_Key*);
 
     //! returns the processors for the i-th neighbours of this element
-    const int& neigh_proc(const int i) const {return neigh_proc_[i];}
+
+    const int& neigh_proc(const int i) const {
+        return neigh_proc_[i];
+    }
     //! this function stores the processor id "proc" of neighbor "i" in the 8 element array of neighbor processors, use this function instead of putassoc.
-    void set_neigh_proc(const int i, const int& proc){neigh_proc_[i] = proc;}
+
+    void set_neigh_proc(const int i, const int& proc) {
+        neigh_proc_[i] = proc;
+    }
 
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    const int order(const int i) const{return order_[i];}    
+
+    const int order(const int i) const {
+        return order_[i];
+    }
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-    void set_order(const int i, const int ord){order_[i] = ord;}
-    
+
+    void set_order(const int i, const int ord) {
+        order_[i] = ord;
+    }
+
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
     const SFC_Key& Element::father() const;
     //!only used in unrefinement
-    const SFC_Key& Element::father_by_ref() const{return father_;}
+
+    const SFC_Key& Element::father_by_ref() const {
+        return father_;
+    }
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
-    void set_father(const SFC_Key &fatherin){father_ = fatherin;}
+
+    void set_father(const SFC_Key &fatherin) {
+        father_ = fatherin;
+    }
 
     //! return the element keys of this element's 4 sons, used during refinement
-    const SFC_Key& son(const int i) const {return son_[i];}
-    void set_son(const int i,const SFC_Key& new_key){son_[i]=new_key;}
+
+    const SFC_Key& son(const int i) const {
+        return son_[i];
+    }
+
+    void set_son(const int i, const SFC_Key& new_key) {
+        son_[i] = new_key;
+    }
     //! store the keys for the four son "elements" in the father element, used temporarily during refinement
     void set_sons(const SFC_Key*);
 
@@ -215,69 +287,130 @@ public:
     void putel_sq(double solsq, double ellsq);
 
     //! return the element's solution
-    double el_solution(int i) const {return el_solution_[i];}
-    void set_el_solution(int i, double m_el_solution){el_solution_[i]=m_el_solution;}
+
+    double el_solution(int i) const {
+        return el_solution_[i];
+    }
+
+    void set_el_solution(int i, double m_el_solution) {
+        el_solution_[i] = m_el_solution;
+    }
 
     //! returns the element's error
-    double el_error(int i) const {return el_error_[i];}
-    void set_el_error(int i, double m_el_error){el_error_[i]=m_el_error;}
-    
-    
+
+    double el_error(int i) const {
+        return el_error_[i];
+    }
+
+    void set_el_error(int i, double m_el_error) {
+        el_error_[i] = m_el_error;
+    }
+
+
 
 
     //! returns the key for this element's 8 neighbors
-    const SFC_Key& neighbor(const int i) const {return neighbors_[i];}
+
+    const SFC_Key& neighbor(const int i) const {
+        return neighbors_[i];
+    }
     //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
-    void set_neighbor(const int i, const SFC_Key &new_key){neighbors_[i] = new_key;}
+
+    void set_neighbor(const int i, const SFC_Key &new_key) {
+        neighbors_[i] = new_key;
+    }
 
     //! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
-    BC* bcptr(){return bcptr_;}
-    void bcptr(BC* new_bcptr){bcptr_=new_bcptr;}
+
+    BC* bcptr() {
+        return bcptr_;
+    }
+
+    void bcptr(BC* new_bcptr) {
+        bcptr_ = new_bcptr;
+    }
     //! this function sets the pointer to an element's boundary conditions to NULL
-    void void_bcptr(){bcptr_ = nullptr;}
-    void delete_bcptr(){delete bcptr_;void_bcptr();}
+
+    void void_bcptr() {
+        bcptr_ = nullptr;
+    }
+
+    void delete_bcptr() {
+        delete bcptr_;
+        void_bcptr();
+    }
 
     //! compare the FindNeigh key against the keys of this element's 8 neighbors to determine which if any neighbor FindNeigh is
     int which_neighbor(const SFC_Key &FindNeigh);
 
-    
 
-    
+
+
 
     //! call this function after this element's neighbor(s) have been refined, proc is processor id for neighbor[which_side+4]
     void change_neighbor(const SFC_Key *newneighbs, int which_side, int proc, int reg);
 
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag().  refined can be permanently set to GHOST (defined in constant.h) or zero or temporarily set to 1 (with in the refinement and unrefinement routines), Keith believes it's not being unset (set from 1 to 0) when it should be after the refinement is done.  Keith believes the problem is located within H_adapt() or a function called from within it, recurse down.
     //get_refined_flag
-    int refined_flag() const {return refined_;}
+
+    int refined_flag() const {
+        return refined_;
+    }
     //! set this element's refined flag to i, can set it to normal (hasn't just been refined and isn't a ghost cell), "temporarily" set to "refined" (has just been refined so don't refine again), or say that it's a GHOST cell, see constant.h, (which means you don't update it, instead you get new values from the processor that owns it and you don't refine it.) refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). 
     //put_refined_flag
-    void set_refined_flag(const int i){refined_ = i;}
-    
+
+    void set_refined_flag(const int i) {
+        refined_ = i;
+    }
+
     //! magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell.  This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
-    int adapted_flag() const {return adapted_;}
+
+    int adapted_flag() const {
+        return adapted_;
+    }
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. These values are defined in constant.h.  The NEWSON value has allowed Keith to provide one time only immunity from unrefinement to recently refined elements, after which the "adapted" flag is resent to NOTRECADAPTED.
-    void set_adapted_flag(const int new_adapted_status){adapted_ = new_adapted_status;}
+
+    void set_adapted_flag(const int new_adapted_status) {
+        adapted_ = new_adapted_status;
+    }
 
     //! this function returns an the generation of i-th this element's neighbors
-    const int neigh_gen(const int i) const{return neigh_gen_[i];}
+
+    const int neigh_gen(const int i) const {
+        return neigh_gen_[i];
+    }
     //! this function sets the ith neighbor's generation to "gen"
-    void get_neigh_gen(const int i, const int gen){neigh_gen_[i] = gen;}
+
+    void get_neigh_gen(const int i, const int gen) {
+        neigh_gen_[i] = gen;
+    }
 
     //! returns the which_son flag, which tells the portion of the father element that this element is physically located in
-    int which_son() const {return which_sonABCD;}
+
+    int which_son() const {
+        return which_sonABCD;
+    }
     //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
-    void set_which_son(const int i){which_sonABCD = i;}
+
+    void set_which_son(const int i) {
+        which_sonABCD = i;
+    }
 
     //! this function calculates the which_son flag for the original (or restored in case of a restart) element.  It also calculates which son of the grandfather element the father is durring unrefinement.
     void calc_which_son();
-    
-    //! this function returns the vlaue of the new_old flag which is used during mesh adaptation and repartitioning
-    int new_old() const {return new_old_;}
-    //! this function sets the new or old flag, it is initialized in htflush.C and reset during repartitioning (repartition_BSFC.C and BSFC_update_and_send_elements.C)
-    void set_new_old(const int i){new_old_ = i;}
 
-    
+    //! this function returns the vlaue of the new_old flag which is used during mesh adaptation and repartitioning
+
+    int new_old() const {
+        return new_old_;
+    }
+    //! this function sets the new or old flag, it is initialized in htflush.C and reset during repartitioning (repartition_BSFC.C and BSFC_update_and_send_elements.C)
+
+    void set_new_old(const int i) {
+        new_old_ = i;
+    }
+
+
 
     //! this function is legacy afeapi code, the function is defined in element2.C but it is never called anywhere in the finite difference/volume version of titan because it's finite element (including Discontinuous Galerkin) specific code
     void update_ndof();
@@ -291,28 +424,55 @@ public:
 
 
     //! this function returns the Load Balancing weight of an element which is used in repartitioning
-    double lb_weight() const {return lb_weight_;}
+
+    double lb_weight() const {
+        return lb_weight_;
+    }
     //! this function stores an element's load balancing weight, which is used during repartitioning
-    void set_lb_weight(double dd_in){lb_weight_ = dd_in;}
+
+    void set_lb_weight(double dd_in) {
+        lb_weight_ = dd_in;
+    }
 
 
     //! this function returns the load balancing key, which is used during repartitioning
-    const SFC_Key& lb_key() const {return lb_key_;}
+
+    const SFC_Key& lb_key() const {
+        return lb_key_;
+    }
     //! this function sets the load balancing key, which is used during repartitioning
-    void set_lb_key(const SFC_Key& new_key){lb_key_=new_key;}
+
+    void set_lb_key(const SFC_Key& new_key) {
+        lb_key_ = new_key;
+    }
 
     //! this function copies the elmenent key to the load balancing key
-    void copy_key_to_lb_key(){set_lb_key(key());}
 
-    
+    void copy_key_to_lb_key() {
+        set_lb_key(key());
+    }
+
+
     //! this function returns the process(or) id of an element, it says which processor owns the element
-    int myprocess() const{return myprocess_;}
+
+    int myprocess() const {
+        return myprocess_;
+    }
     //! this function sets the process(or) id of an element, it says which processor owns the element.
-    void set_myprocess(const int in_proc){myprocess_ = in_proc;}
-    
+
+    void set_myprocess(const int in_proc) {
+        myprocess_ = in_proc;
+    }
+
     //! this function returns the opposite_brother_flag, I (Keith) am not entirely sure what this flag is for, but I know that it is used in repartioning, see BSFC_combine_elements, I think it says if an element has an opposite brother, that is, can it be combined with it's brothers to form their father
-    int opposite_brother_flag() const {return opposite_brother_flag_;}
-    void set_opposite_brother_flag(int new_opposite_brother_flag){opposite_brother_flag_=new_opposite_brother_flag;}
+
+    int opposite_brother_flag() const {
+        return opposite_brother_flag_;
+    }
+
+    void set_opposite_brother_flag(int new_opposite_brother_flag) {
+        opposite_brother_flag_ = new_opposite_brother_flag;
+    }
 
     //! this function computes searches for an element's brother, i.e. the brother (son of the same father) that is located diagonally from it, to get the brother information requires that atleast one of this element's neighboring brothers is on this process in order to get information onthe brother that is not a neighbor
     void find_opposite_brother(HashTable*);
@@ -344,9 +504,15 @@ public:
     void find_positive_x_side(HashTable*);
 
     //! this function returns which side of the element is facing the positive x direction
-    int positive_x_side() const {return positive_x_side_;}
-    void set_positive_x_side(const int new_positive_x_side){positive_x_side_=new_positive_x_side;}
-    
+
+    int positive_x_side() const {
+        return positive_x_side_;
+    }
+
+    void set_positive_x_side(const int new_positive_x_side) {
+        positive_x_side_ = new_positive_x_side;
+    }
+
 
     //! this function computes the x and y derivatives of the state variables
     void get_slopes(HashTable*, HashTable*, double);
@@ -365,41 +531,47 @@ public:
 
     //! this function, based on the dir flag, chooses between calling xdirflux and ydirflux, which respectively, calculate either the x or y direction analytical cell center fluxes (or the fluxes at the the boundary if 2nd order flux option is checked on the gui). Keith wrote this.
     void zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
-                  double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element* EmNeigh, double dt);
+            double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element* EmNeigh, double dt);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) x direction fluxes. Keith wrote this
     void xdirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
-                  double hrfv[3][MAX_NUM_STATE_VARS]);
+            double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) y direction fluxes. Keith wrote this
     void ydirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
-                  double hrfv[3][MAX_NUM_STATE_VARS]);
+            double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function (indirectly) calculates the fluxes that will be used to perform the finite volume corrector step and stores them in element edge nodes, indirectly because it calls other functions to calculate the analytical fluxes and then calls another function to compute the riemann fluxes from the analytical fluxes. Talk to me (Keith) before you modify this, as I am fairly certain that it is now completely bug free and parts of it can be slightly confusing.
     void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
-                          int* order_flag, double *outflow);
+            int* order_flag, double *outflow);
 
     //! this function calculates the maximum x and y direction wavespeeds which are the eigenvalues of the flux jacobian
     double* get_eigenvxymax();
 
     //! this function performs the corrector update, in the predictor (finite difference) corrector (finite volume) timestepping that titan uses.  Actually this function passes values to a short fortran subroutine named "correct_" that performs the calculations.  The "correct_" fortran subroutine should be torn out and the guts rewritten in C++ here.  That may make it into this release if there is time, otherwise expect it in the next release
     void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops_ptr,
-                 TimeProps *timeprops_ptr, double *forceint, double *forcebed, double *eroded, double *deposited);
+            TimeProps *timeprops_ptr, double *forceint, double *forcebed, double *eroded, double *deposited);
 
     //! this function calculates the shortspeed,also known as the L'Hospital (pronounced Loo-pee-tal, you can look up L'Hospital's rule in almost any calculus book if you so desire). here is a brief explanation of shortspeed: shortspeed=|v|=|dhv/dh|=|v*dh/dh+h*dv/dh|=|v+h*dv/dh| which goes to |v| in the limit of h->0, this is a more accurate way to compute speed when the pile in this cell is short, hence the name "shortspeed" but it is not accurate when the pile is tall, that is when h*dv/dh is large, Keith implemented this in late summer 2006
     void calc_shortspeed(double inv_dt);
 
     //! this function returns the already computed shortspeed
-    double shortspeed(){return shortspeed_;}    
+
+    double shortspeed() {
+        return shortspeed_;
+    }
     //! this function assigns the value passed in to shortspeed
-    void set_shortspeed(double shortspeedin){shortspeed_ = shortspeedin;}
+
+    void set_shortspeed(double shortspeedin) {
+        shortspeed_ = shortspeedin;
+    }
 
     //! this function computes the velocity, either V=hV/h or shortspeed in the direction of hV/h, if the pile is short, that is h is less than the defined (nondimensional) value of GEOFLOW_SHORT, see geoflow.h, it chooses the speed to be min(|hV/h|,shortspeed) if h is greater than GEOFLOW_SHORT it chooses hV/h regardless of which one is smaller.
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
     double* get_kactxy();
-    
+
 
     //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
     double* get_gravity();
@@ -408,9 +580,18 @@ public:
     int determine_refinement(double);
 
     //! this function returns the precomputed elevation
-    double& elevation_ref(){return elevation_;};
-    double elevation() const {return elevation_;};
-    void set_elevation(double new_elevation){elevation_=new_elevation;};
+
+    double& elevation_ref() {
+        return elevation_;
+    };
+
+    double elevation() const {
+        return elevation_;
+    };
+
+    void set_elevation(double new_elevation) {
+        elevation_ = new_elevation;
+    };
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
     double* get_d_gravity();
@@ -432,7 +613,7 @@ public:
 
     //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
     int find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
-                      void* NewFatherList, void* OtherProcUpdate);
+            void* NewFatherList, void* OtherProcUpdate);
     /*
      //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
      int find_brothers(HashTable* El_Table, HashTable* NodeTable, 
@@ -462,19 +643,25 @@ public:
     //! this function is part of the experimental _LOCAL_ (not Bin Yu's) stopping criteria which has not yet been validated, I (Keith) have faith in the criteria, but enforcing the stopped after it has been decided that it needs to stop still needs some work. the only place this function is called is in get_coef_and_eigen.C immediately after k_active/passive and in init_piles.C when computing the initial volume that "should already be" deposited.
     void calc_stop_crit(MatProps*);
 
-    
+
 
     //! interface to change value of earth-pressure coefficients
-    void put_kactxy(double kap[DIMENSION])
-    {
-        for(int i=0;i<DIMENSION;i++)
+
+    void put_kactxy(double kap[DIMENSION]) {
+        for (int i = 0; i < DIMENSION; i++)
             kactxy[i] = kap[i];
     }
 
     //! this function returns the value of "stoppedflags"
-    int get_stoppedflags(){return stoppedflags;}
+
+    int stoppedflags() {
+        return stoppedflags_;
+    }
     //! this function is used to assign a value to stopped flags, for when you don't want to compute the criteria to decide whether it's stopped or not, useful during developement
-    void put_stoppedflags(int stoppedflagsin){stoppedflags = stoppedflagsin;}
+
+    void set_stoppedflags(int stoppedflagsin) {
+        stoppedflags_ = stoppedflagsin;
+    }
 
     //! this function zeros the extrusion (out of the ground) fluxes in this element
     void zero_influx();
@@ -498,37 +685,59 @@ public:
     int if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable, double contour_height);
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
-    int ithelem(){return ithelem_;}
+
+    int ithelem() {return ithelem_;}
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
-    void set_ithelem(int i){ithelem_ = i;}
-    
+
+    void set_ithelem(int i) {ithelem_ = i;}
+
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus the effective bed friction angle holds either the value of the actual bed friction angle if it should not be stopped or the value of the internal friction angle if it should not be stopped
-    double get_effect_bedfrict(){return effect_bedfrict;}
-    void set_effect_bedfrict(double new_effect_bedfrict){effect_bedfrict=new_effect_bedfrict;}
-    
-    double get_effect_tanbedfrict(){return effect_tanbedfrict;}
-    void set_effect_tanbedfrict(double new_effect_tanbedfrict){effect_tanbedfrict=new_effect_tanbedfrict;}
+    double& effect_bedfrict_ref() {return effect_bedfrict_;}
+    double* effect_bedfrict_ptr() {return &effect_bedfrict_;}
+    double effect_bedfrict() {return effect_bedfrict_;}
+    void set_effect_bedfrict(double new_effect_bedfrict) {effect_bedfrict_ = new_effect_bedfrict;}
+
+    double get_effect_tanbedfrict() {return effect_tanbedfrict;}
+    void set_effect_tanbedfrict(double new_effect_tanbedfrict) {effect_tanbedfrict = new_effect_tanbedfrict;}
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
     double* get_effect_kactxy();
 
     //! this inline member function returns the stored value of Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-    double get_Awet() const {return Awet;}
+
+    double get_Awet() const {
+        return Awet;
+    }
 
     //! this inline member function assigns a value to Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-    void put_Awet(double Awet_in){Awet = Awet_in;}
+
+    void put_Awet(double Awet_in) {
+        Awet = Awet_in;
+    }
 
     //! this inline member function returns the stored value of Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-    double get_Swet() const {return Swet;}
+
+    double get_Swet() const {
+        return Swet;
+    }
     //! this inline member function assigns a value to Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-    void put_Swet(double Swet_in){Swet = Swet_in;}
+
+    void put_Swet(double Swet_in) {
+        Swet = Swet_in;
+    }
 
     //! this inline member function returns the value of iwetnode.  iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-    int get_iwetnode(){return iwetnode;}
+
+    int get_iwetnode() {
+        return iwetnode;
+    }
     //! this inline member function sets the value of iwetnode. iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-    void put_iwetnode(int iwetnode_in){iwetnode = iwetnode_in;}
+
+    void put_iwetnode(int iwetnode_in) {
+        iwetnode = iwetnode_in;
+    }
 
     //! this inline member function returns the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007
     double* get_drypoint();
@@ -549,10 +758,18 @@ public:
     double convect_dryline(double VxVy[2], double dt);
 
     //! sgn of double
-    double sgn(double a){return (a < 0.0 ? -1.0 : 1.0);}
-    
-    const ElementType& elementType(){return elementType_;}
-    void elementType(const ElementType& new_element_type){elementType_=new_element_type;}
+
+    double sgn(double a) {
+        return (a < 0.0 ? -1.0 : 1.0);
+    }
+
+    const ElementType& elementType() {
+        return elementType_;
+    }
+
+    void elementType(const ElementType& new_element_type) {
+        elementType_ = new_element_type;
+    }
 
 protected:
     //! Element type
@@ -567,8 +784,8 @@ protected:
     int opposite_brother_flag_;
 
     //! the material flag indicates which material should be used to set this element's bed friction, this is for when a GIS material map, specifying different materials in different spatial regions of the map, the GIS material map is a non standard grass map format that Laercio Namikawa developed, it's stored in the "cats" folder under a grass mapset directory
-    int material_;/*! ! ! THE MAT. FLAG ! ! !*/
-    
+    int material_; /*! ! ! THE MAT. FLAG ! ! !*/
+
     //! this is the load-balancing weight
     double lb_weight_;
 
@@ -623,7 +840,7 @@ protected:
     //! refined is a flag that usually has the value 0, but will be 1 if the element has been refined this iteration (used to enforce the 1 irregularity rule), or have the value "GHOST" if it is a ghost cell, refined and ghost cells are not updated, see constant.h for the value of GHOST
     int refined_;
 
-//! The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
+    //! The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
     int adapted_;
 
     //! which_son holds the value of which son this element is, which of the 4 squares that makes up the father elements square.
@@ -640,7 +857,7 @@ protected:
 
     //! elm_loc is used in unrefining beyond the original coarse mesh
     int elm_loc[DIMENSION];
-    
+
 
     /* variables for hyperbolic geoflow problem */
 
@@ -683,10 +900,10 @@ protected:
     double d_gravity[DIMENSION];
 
     //! part of the new stopping criteria under development, has a 0 if flow is not stopped, has the value 1 if it should not be sliding but should be slumping, has the value 2 if it should neither be sliding or slumping (it should be completely stopped), I (Keith) am rather confident in the criteria used to set this the problem is determining what to do about it after you know the flow SHOULD be stopped
-    int stoppedflags;
+    int stoppedflags_;
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus the effective bed friction angle holds either the value of the actual bed friction angle if it should not be stopped or the value of the internal friction angle if it should not be stopped
-    double effect_bedfrict;
+    double effect_bedfrict_;
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus effect_tanbedfrict holds the value of the effective bed friction angle
     double effect_tanbedfrict;
@@ -712,145 +929,129 @@ protected:
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
     double Swet;
 };
-class ElementSinglePhase:public Element
-{
+
+class ElementSinglePhase : public Element {
 public:
-    ElementSinglePhase():Element(){}
-    ~ElementSinglePhase(){}
-};
-class ElementTwoPhases:public Element
-{
-public:
-    ElementTwoPhases():Element(){}
-    ~ElementTwoPhases(){}
+
+    ElementSinglePhase() : Element() {
+    }
+
+    ~ElementSinglePhase() {
+    }
 };
 
-inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom)
-{
+class ElementTwoPhases : public Element {
+public:
+
+    ElementTwoPhases() : Element() {
+    }
+
+    ~ElementTwoPhases() {
+    }
+};
+
+inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom) {
     prev_state_vars[0] = state_vars[0] = pile_height;
     prev_state_vars[1] = state_vars[1] = pile_height * volf;
     prev_state_vars[2] = state_vars[2] = xmom;
     prev_state_vars[3] = state_vars[3] = ymom;
-    if(pile_height > GEOFLOW_TINY)
-    {
+    if (pile_height > GEOFLOW_TINY) {
         set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf));
         Awet = 1.0;
-    }
-    else
-    {
+    } else {
         set_shortspeed(0.0);
         Awet = 0.0;
     }
-    return;
-};
-inline void Element::put_height_mom(double pile_height, double xmom, double ymom)
-{
-    prev_state_vars[0] = state_vars[0] = pile_height;
-    prev_state_vars[1] = state_vars[1] = xmom;
-    prev_state_vars[2] = state_vars[2] = ymom;
-    if(pile_height > GEOFLOW_TINY)
-    {
-        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
-        Awet = 1.0;
-    }
-    else
-    {
-        set_shortspeed(0.0);
-        Awet = 0.0;
-    }
-    
     return;
 };
 
-inline void Element::put_height(double pile_height)
-{
-    if(elementType() == ElementType::TwoPhases)
-    {
+inline void Element::put_height_mom(double pile_height, double xmom, double ymom) {
+    prev_state_vars[0] = state_vars[0] = pile_height;
+    prev_state_vars[1] = state_vars[1] = xmom;
+    prev_state_vars[2] = state_vars[2] = ymom;
+    if (pile_height > GEOFLOW_TINY) {
+        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
+        Awet = 1.0;
+    } else {
+        set_shortspeed(0.0);
+        Awet = 0.0;
+    }
+
+    return;
+};
+
+inline void Element::put_height(double pile_height) {
+    if (elementType() == ElementType::TwoPhases) {
         put_height_mom(pile_height, 1., 0., 0.);
     }
-    if(elementType() == ElementType::SinglePhase)
-    {
+    if (elementType() == ElementType::SinglePhase) {
         put_height_mom(pile_height, 0.0, 0.0);
     }
     return;
 };
 
-inline double* Element::get_state_vars()
-{
+inline double* Element::get_state_vars() {
     return state_vars;
 }
 ;
 
-inline double* Element::get_d_state_vars()
-{
+inline double* Element::get_d_state_vars() {
     return d_state_vars;
 }
 ;
 
-inline double* Element::get_dx()
-{
+inline double* Element::get_dx() {
     return dx;
 }
 ;
 
-inline double* Element::get_prev_state_vars()
-{
+inline double* Element::get_prev_state_vars() {
     return prev_state_vars;
 }
 ;
 
-inline void Element::update_prev_state_vars()
-{
-    for(int i = 0; i < NUM_STATE_VARS; i++)
+inline void Element::update_prev_state_vars() {
+    for (int i = 0; i < NUM_STATE_VARS; i++)
         prev_state_vars[i] = state_vars[i];
 }
 
-inline double* Element::get_eigenvxymax()
-{
+inline double* Element::get_eigenvxymax() {
     return eigenvxymax;
 }
 ;
 
-
-inline double* Element::get_kactxy()
-{
+inline double* Element::get_kactxy() {
     return kactxy;
 }
 ;
 
-inline double* Element::get_gravity()
-{
+inline double* Element::get_gravity() {
     return gravity;
 }
 ;
 
-inline double* Element::get_d_gravity()
-{
+inline double* Element::get_d_gravity() {
     return d_gravity;
 }
 ;
 
-inline double* Element::get_curvature()
-{
+inline double* Element::get_curvature() {
     return curvature;
 }
 ;
 
-inline int* Element::get_elm_loc()
-{
+inline int* Element::get_elm_loc() {
     return elm_loc;
 }
 ;
 
-inline void Element::put_elm_loc(int* int_in)
-{
+inline void Element::put_elm_loc(int* int_in) {
     elm_loc[0] = int_in[0];
     elm_loc[1] = int_in[1];
 }
 ;
 
-inline double* Element::get_coord()
-{
+inline double* Element::get_coord() {
     return coord;
 }
 ;
@@ -863,99 +1064,81 @@ inline double* Element::get_coord()
  */
 
 /* agreed, but keeping it outside class body makes class definition cleaner and easier to read
-*/
+ */
 
-inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable)
-{
+inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable) {
     int i;
-    if(El_Table != NULL)
-    {
-        for(i = 0; i < 8; i++)
-        {
+    if (El_Table != NULL) {
+        for (i = 0; i < 8; i++) {
             neighborPtr[i] = (Element*) El_Table->lookup(neighbor(i));
         }
     }
-    if(NodeTable != NULL)
-    {
-        for(i = 0; i < 8; i++)
-        {
+    if (NodeTable != NULL) {
+        for (i = 0; i < 8; i++) {
             node_keyPtr[i] = (Node*) NodeTable->lookup(node_key(i));
         }
     }
     return;
 }
-inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable)
-{
+
+inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable) {
     int i;
     int count = 0;
-    if(El_Table != NULL)
-    {
-        for(i = 0; i < 8; i++)
-        {
-            if(neighborPtr[i] != (Element*) El_Table->lookup(neighbor(i)))
+    if (El_Table != NULL) {
+        for (i = 0; i < 8; i++) {
+            if (neighborPtr[i] != (Element*) El_Table->lookup(neighbor(i)))
                 count++;
         }
     }
-    if(NodeTable != NULL)
-    {
-        for(i = 0; i < 8; i++)
-        {
-            if(node_keyPtr[i] != (Node*) NodeTable->lookup(node_key(i)))
+    if (NodeTable != NULL) {
+        for (i = 0; i < 8; i++) {
+            if (node_keyPtr[i] != (Node*) NodeTable->lookup(node_key(i)))
                 count++;
         }
     }
     return count;
 }
 
-inline void Element::set_sons(const SFC_Key* s)
-{
-    for(int i = 0; i < 4; i++)
+inline void Element::set_sons(const SFC_Key* s) {
+    for (int i = 0; i < 4; i++)
         set_son(i, s[i]);
-    
+
     set_refined_flag(1);
     set_adapted_flag(OLDFATHER);
 }
 
-inline void Element::set_brothers(const SFC_Key* s)
-{
-    for(int i = 0; i < 4; i++)
+inline void Element::set_brothers(const SFC_Key* s) {
+    for (int i = 0; i < 4; i++)
         set_brother(i, s[i]);
 }
 
-inline void Element::putel_sq(double solsq, double errsq)
-{
+inline void Element::putel_sq(double solsq, double errsq) {
     set_el_solution(0, solsq);
     set_el_error(0, errsq);
 }
 
-inline void Element::zero_influx()
-{
-    for(int i = 0; i < NUM_STATE_VARS; i++)
+inline void Element::zero_influx() {
+    for (int i = 0; i < NUM_STATE_VARS; i++)
         Influx[i] = 0.;
 }
 ;
 
-inline double* Element::get_influx()
-{
+inline double* Element::get_influx() {
     return Influx;
 }
 ;
 
-inline double* Element::get_effect_kactxy()
-{
+inline double* Element::get_effect_kactxy() {
     return effect_kactxy;
 }
 ;
 
-
-
-inline double* Element::get_drypoint()
-{
+inline double* Element::get_drypoint() {
     return drypoint;
 }
 ;
-inline void Element::put_drypoint(double *drypoint_in)
-{
+
+inline void Element::put_drypoint(double *drypoint_in) {
     drypoint[0] = drypoint_in[0];
     drypoint[1] = drypoint_in[1];
     return;
@@ -970,22 +1153,22 @@ inline void Element::put_drypoint(double *drypoint_in)
 /*************************************************************************/
 
 //! The ElemPtrList class is basically just a "smart array" of pointers to Elements, by smart I mean it keeps track of its size and number of Elements in the list and expands/reallocates itself whenever you add an element ptr to the list when you've run out of space, it also keeps a record of the index of the first "new" element pointer you've added in the current series, which is useful for the intended purpose... ElemList was designed for use in refinement and unrefinement to replace fixed sized arrays (length=297200) of pointers to Elements.  The reason for this upgrade was it was causing valgrind to issue all kinds of warnings about the "client switching stacks" and "invalid write/read of size blah blah blah" because the stacksize was too large.  My 20061121 rewrite of hadapt.C and unrefine.C to make them "fast" caused this problem because I added a second (large) fixed sized array to both of them so I could reduce the number of hashtable scans by only revisiting the "new" additions to the array of pointers of Elements. --Keith wrote this on 20061124, i.e. the day after Thanksgiving, and I'm very thankful for having the inspiration to figure out the cause of valgrid warning
-class ElemPtrList
-{
+
+class ElemPtrList {
 public:
-    
+
     //! this constructor allocates space for an array of the default initial size (1024 Element pointers), the size_increment equal the initial size
-    ElemPtrList()
-    {
+
+    ElemPtrList() {
         init(1024);
         return;
     }
     ;
 
     //! this constructor allocates space for user specified initial-size, the size_increment equals the initial size.
-    ElemPtrList(int initial_size)
-    {
-        if(initial_size == 0)
+
+    ElemPtrList(int initial_size) {
+        if (initial_size == 0)
             initial_size = 1024;
         init(initial_size);
         return;
@@ -993,13 +1176,13 @@ public:
     ;
 
     //! the destructor frees the list space so the programmer never has to worry about it
-    ~ElemPtrList()
-    {
+
+    ~ElemPtrList() {
         //printf("list_space=%d, num_elem=%d, inewstart=%d\n",list_space,num_elem,inewstart);
         free(list);
         return;
     }
-    
+
     //! add an element pointer to the list, it will increase the size of the list by the size_increment if necessary, the size_increment is the initial size.
     void add(Element* EmTemp);
 
@@ -1024,12 +1207,12 @@ public:
 private:
     //! actually creates the list, is called by the constructors
     //void      init(int initial_size);
-    void init(int initial_size)
-    {
+
+    void init(int initial_size) {
         list_space = size_increment = initial_size;
         num_elem = inewstart = 0;
-        list = (Element **) malloc(list_space * sizeof(Element*));
-        for(int i = 0; i < list_space; i++)
+        list = (Element **) malloc(list_space * sizeof (Element*));
+        for (int i = 0; i < list_space; i++)
             list[i] = NULL;
     }
     ;
@@ -1050,52 +1233,48 @@ private:
     Element** list;
 };
 
-inline Element* ElemPtrList::get(int i)
-{
+inline Element* ElemPtrList::get(int i) {
     return (((i >= 0) && (i < num_elem)) ? list[i] : NULL);
 }
 ;
-inline const SFC_Key& ElemPtrList::get_key(int i) const
-{
+
+inline const SFC_Key& ElemPtrList::get_key(int i) const {
     //assert((i < 0) || (i > num_elem-1));
-    if((i < 0) || (i > num_elem-1))return sfc_key_null;
+    if ((i < 0) || (i > num_elem - 1))return sfc_key_null;
     else return list[i]->key();
 }
 ;
-inline int ElemPtrList::get_inewstart()
-{
+
+inline int ElemPtrList::get_inewstart() {
     return inewstart;
 }
 ;
-inline void ElemPtrList::set_inewstart(int inewstart_in)
-{
+
+inline void ElemPtrList::set_inewstart(int inewstart_in) {
     inewstart = inewstart_in;
     return;
 }
 ;
-inline int ElemPtrList::get_num_elem()
-{
+
+inline int ElemPtrList::get_num_elem() {
     return num_elem;
 }
 ;
 
-inline void ElemPtrList::trashlist()
-{
-    for(int i = 0; i < num_elem; i++)
+inline void ElemPtrList::trashlist() {
+    for (int i = 0; i < num_elem; i++)
         list[i] = NULL;
     num_elem = inewstart = 0;
     return;
 }
 ;
 
-inline void ElemPtrList::add(Element* EmTemp)
-{
-    if(num_elem == list_space - 1)
-    {
+inline void ElemPtrList::add(Element* EmTemp) {
+    if (num_elem == list_space - 1) {
         list_space += size_increment;
-        list = (Element **) realloc(list, list_space * sizeof(Element *));
+        list = (Element **) realloc(list, list_space * sizeof (Element *));
     }
-    
+
     list[num_elem] = EmTemp;
     num_elem++;
     return;
