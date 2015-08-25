@@ -152,7 +152,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     
     set_iwetnode(8);
     drypoint[0] = drypoint[1] = 0.0;
-    Awet = Swet = (pile_height > GEOFLOW_TINY) ? 1.0 : 0.0;
+    set_Awet((pile_height > GEOFLOW_TINY) ? 1.0 : 0.0);
+    set_Swet(Awet());
     
 
     if(elementType() == ElementType::TwoPhases)
@@ -290,15 +291,15 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     double myfractionoffather;
     if((Awetfather == 0.0) || (Awetfather == 1.0))
     {
-        Awet = Awetfather;
+        set_Awet(Awetfather);
         myfractionoffather = 1.0;
     }
     else
     {
-        Awet = convect_dryline(dx, 0.0); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
-        myfractionoffather = Awet / Awetfather;
+        set_Awet(convect_dryline(dx, 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
+        myfractionoffather = Awet() / Awetfather;
     }
-    Swet = 1.0;
+    set_Swet(1.0);
     
     double dxx = coord_in[0] - fthTemp->coord[0];
     double dyy = coord_in[1] - fthTemp->coord[1];
@@ -624,15 +625,15 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
             prev_state_vars[i] += *(sons[j]->get_prev_state_vars() + i) * 0.25;
         }
     }
-    Awet = 0.0;
+    set_Awet(0.0);
     for(int ison = 0; ison < 4; ison++)
-        Awet += sons[ison]->get_Awet();
-    Awet *= 0.25;
+        set_Awet(Awet() + sons[ison]->Awet());
+    set_Awet(Awet() * 0.25);
     
     //uninitialized flag values... will fix shortly 
     drypoint[0] = drypoint[1] = 0.0;
     set_iwetnode(8);
-    Swet = 1.0;
+    set_Swet(1.0);
     
     //calculate the shortspeed
     set_shortspeed(0.0);
@@ -1117,10 +1118,14 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         set_iwetnode(8);
         drypoint[0] = drypoint[1] = 0.0;
         if(state_vars[0] > GEOFLOW_TINY)
-            Awet = Swet = 1.0;
+        {
+            set_Awet(1.0);
+            set_Swet(1.0);
+        }
         else
         {
-            Awet = Swet = 0.0;
+            set_Awet(0.0);
+            set_Swet(0.0);
         }
         //?1.0:0.0;    
     }
@@ -1128,21 +1133,21 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
     {
         //having exactly 2 adjacent wet edges means it has a diagonal orientation
         
-        Swet = sqrt(2.0 * ((Awet > 0.5) ? 1.0 - Awet : Awet)); //edge length of small triangle
-        drypoint[0] = drypoint[1] = 0.5 * (1.0 - Swet);
-        if(Awet > 0.5)
-            Swet = 1.0 - Swet; //the small triangle is dry not wet
+        set_Swet(sqrt(2.0 * ((Awet() > 0.5) ? 1.0 - Awet() : Awet()))); //edge length of small triangle
+        drypoint[0] = drypoint[1] = 0.5 * (1.0 - Swet());
+        if(Awet() > 0.5)
+            set_Swet(1.0 - Swet()); //the small triangle is dry not wet
             
         if(ifsidewet[3] && ifsidewet[0])
         {
             set_iwetnode(0);
-            if(Awet <= 0.5)
+            if(Awet() <= 0.5)
                 drypoint[0] = drypoint[1] = -drypoint[0];
         }
         else if(ifsidewet[0] && ifsidewet[1])
         {
             set_iwetnode(1);
-            if(Awet <= 0.5)
+            if(Awet() <= 0.5)
                 drypoint[1] = -drypoint[1];
             else
                 drypoint[0] = -drypoint[0];
@@ -1150,13 +1155,13 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         else if(ifsidewet[1] && ifsidewet[2])
         {
             set_iwetnode(2);
-            if(Awet > 0.5)
+            if(Awet() > 0.5)
                 drypoint[0] = drypoint[1] = -drypoint[0];
         }
         else if(ifsidewet[2] && ifsidewet[3])
         {
             set_iwetnode(3);
-            if(Awet > 0.5)
+            if(Awet() > 0.5)
                 drypoint[1] = -drypoint[1];
             else
                 drypoint[0] = -drypoint[0];
@@ -1182,25 +1187,25 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
             ineigh = (ineigh + 2) % 4;
         }
         assert((-1 < ineigh) && (ineigh < 4));
-        Swet = Awet;
+        set_Swet(Awet());
         
         set_iwetnode(ineigh + 4);
         switch (iwetnode())
         {
             case 4:
                 drypoint[0] = 0.0;
-                drypoint[1] = -0.5 + Swet;
+                drypoint[1] = -0.5 + Swet();
                 break;
             case 5:
-                drypoint[0] = +0.5 - Swet;
+                drypoint[0] = +0.5 - Swet();
                 drypoint[1] = 0.0;
                 break;
             case 6:
                 drypoint[0] = 0.0;
-                drypoint[1] = +0.5 - Swet;
+                drypoint[1] = +0.5 - Swet();
                 break;
             case 7:
-                drypoint[0] = -0.5 + Swet;
+                drypoint[0] = -0.5 + Swet();
                 drypoint[1] = 0.0;
                 break;
             default:
@@ -1209,7 +1214,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
     }
     
     if(iwetnode() == 8)
-        Awet = (state_vars[0] > GEOFLOW_TINY) ? 1.0 : 0.0;
+        set_Awet((state_vars[0] > GEOFLOW_TINY) ? 1.0 : 0.0);
     
     return;
 }
@@ -1223,25 +1228,25 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
      assert((-1<ineigh)&&(ineigh<8));
      */
 
-    if(Awet == 0.0)
+    if(Awet() == 0.0)
         return 0.0;
     //return -1.0;
     
-    if(Awet == 1.0)
+    if(Awet() == 1.0)
         return 1.0;
     
     if(iwetnode() == 8)
     {
         cout<<"calc_elem_edge_wet_fraction(): key={"<<key()<<"} adapted="<<adapted_flag()<<"\n";
-        printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode(), Awet, Swet, drypoint[0], drypoint[1]);
+        printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode(), Awet(), Swet(), drypoint[0], drypoint[1]);
         assert(iwetnode() != 8);
     }
     
-    if(!((0.0 < Awet) && (Awet < 1.0)))
+    if(!((0.0 < Awet()) && (Awet() < 1.0)))
     {
-        printf("Awet=%g\n", Awet);
+        printf("Awet=%g\n", Awet());
         fflush(stdout);
-        assert((0.0 < Awet) && (Awet < 1.0));
+        assert((0.0 < Awet()) && (Awet() < 1.0));
     }
     int ineighm4 = ineigh % 4;
     
@@ -1255,14 +1260,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 3:
                     case 0:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return Swet;
+                            return Swet();
                     case 2:
                     case 1:
-                        if(Awet > 0.5)
-                            return Swet;
+                        if(Awet() > 0.5)
+                            return Swet();
                         else
                             return 0.0;
                     default:
@@ -1273,14 +1278,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 0:
                     case 1:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return Swet;
+                            return Swet();
                     case 3:
                     case 2:
-                        if(Awet > 0.5)
-                            return Swet;
+                        if(Awet() > 0.5)
+                            return Swet();
                         else
                             return 0.0;
                     default:
@@ -1291,14 +1296,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 1:
                     case 2:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return Swet;
+                            return Swet();
                     case 0:
                     case 3:
-                        if(Awet > 0.5)
-                            return Swet;
+                        if(Awet() > 0.5)
+                            return Swet();
                         else
                             return 0.0;
                     default:
@@ -1309,14 +1314,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 2:
                     case 3:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return Swet;
+                            return Swet();
                     case 1:
                     case 0:
-                        if(Awet > 0.5)
-                            return Swet;
+                        if(Awet() > 0.5)
+                            return Swet();
                         else
                             return 0.0;
                     default:
@@ -1329,7 +1334,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 3:
                     case 1:
-                        return Swet;
+                        return Swet();
                     case 2:
                         return 0.0;
                     default:
@@ -1342,7 +1347,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 0:
                     case 2:
-                        return Swet;
+                        return Swet();
                     case 3:
                         return 0.0;
                     default:
@@ -1355,7 +1360,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 1:
                     case 3:
-                        return Swet;
+                        return Swet();
                     case 0:
                         return 0.0;
                     default:
@@ -1368,7 +1373,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 2:
                     case 0:
-                        return Swet;
+                        return Swet();
                     case 1:
                         return 0.0;
                     default:
@@ -1390,32 +1395,32 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 7:
                     case 0:
-                        if(Awet > 0.125)
+                        if(Awet() > 0.125)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 3:
                     case 4:
-                        if(Awet <= 0.125)
+                        if(Awet() <= 0.125)
                             return 0.0;
-                        else if(Awet > 0.5)
+                        else if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     case 6:
                     case 1:
-                        if(Awet <= 0.5)
+                        if(Awet() <= 0.5)
                             return 0.0;
-                        else if(Awet > 0.875)
+                        else if(Awet() > 0.875)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 2:
                     case 5:
-                        if(Awet <= 0.875)
+                        if(Awet() <= 0.875)
                             return 0.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     default:
                         assert(0);
                 }
@@ -1424,32 +1429,32 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 4:
                     case 1:
-                        if(Awet > 0.125)
+                        if(Awet() > 0.125)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 0:
                     case 5:
-                        if(Awet <= 0.125)
+                        if(Awet() <= 0.125)
                             return 0.0;
-                        else if(Awet > 0.5)
+                        else if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     case 7:
                     case 2:
-                        if(Awet <= 0.5)
+                        if(Awet() <= 0.5)
                             return 0.0;
-                        else if(Awet > 0.875)
+                        else if(Awet() > 0.875)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 3:
                     case 6:
-                        if(Awet <= 0.875)
+                        if(Awet() <= 0.875)
                             return 0.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     default:
                         assert(0);
                 }
@@ -1458,32 +1463,32 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 5:
                     case 2:
-                        if(Awet > 0.125)
+                        if(Awet() > 0.125)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 1:
                     case 6:
-                        if(Awet <= 0.125)
+                        if(Awet() <= 0.125)
                             return 0.0;
-                        else if(Awet > 0.5)
+                        else if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     case 4:
                     case 3:
-                        if(Awet <= 0.5)
+                        if(Awet() <= 0.5)
                             return 0.0;
-                        else if(Awet > 0.875)
+                        else if(Awet() > 0.875)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 0:
                     case 7:
-                        if(Awet <= 0.875)
+                        if(Awet() <= 0.875)
                             return 0.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     default:
                         assert(0);
                 }
@@ -1492,32 +1497,32 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                 {
                     case 5:
                     case 2:
-                        if(Awet > 0.125)
+                        if(Awet() > 0.125)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 1:
                     case 6:
-                        if(Awet <= 0.125)
+                        if(Awet() <= 0.125)
                             return 0.0;
-                        else if(Awet > 0.5)
+                        else if(Awet() > 0.5)
                             return 1.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     case 4:
                     case 3:
-                        if(Awet <= 0.5)
+                        if(Awet() <= 0.5)
                             return 0.0;
-                        else if(Awet > 0.875)
+                        else if(Awet() > 0.875)
                             return 1.0;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 0:
                     case 7:
-                        if(Awet <= 0.875)
+                        if(Awet() <= 0.875)
                             return 0.0;
                         else
-                            return 2.0 * (Swet - 0.5);
+                            return 2.0 * (Swet() - 0.5);
                     default:
                         assert(0);
                 }
@@ -1529,14 +1534,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 7:
                     case 1:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 3:
                     case 5:
-                        if(Awet > 0.5)
-                            return 2.0 * (Swet - 0.5);
+                        if(Awet() > 0.5)
+                            return 2.0 * (Swet() - 0.5);
                         else
                             return 0.0;
                     case 6:
@@ -1553,14 +1558,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 4:
                     case 2:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 0:
                     case 6:
-                        if(Awet > 0.5)
-                            return 2.0 * (Swet - 0.5);
+                        if(Awet() > 0.5)
+                            return 2.0 * (Swet() - 0.5);
                         else
                             return 0.0;
                     case 7:
@@ -1577,14 +1582,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 5:
                     case 3:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 1:
                     case 7:
-                        if(Awet > 0.5)
-                            return 2.0 * (Swet - 0.5);
+                        if(Awet() > 0.5)
+                            return 2.0 * (Swet() - 0.5);
                         else
                             return 0.0;
                     case 4:
@@ -1601,14 +1606,14 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
                         return 1.0;
                     case 6:
                     case 0:
-                        if(Awet > 0.5)
+                        if(Awet() > 0.5)
                             return 1;
                         else
-                            return 2.0 * Swet;
+                            return 2.0 * Swet();
                     case 2:
                     case 4:
-                        if(Awet > 0.5)
-                            return 2.0 * (Swet - 0.5);
+                        if(Awet() > 0.5)
+                            return 2.0 * (Swet() - 0.5);
                         else
                             return 0.0;
                     case 5:
@@ -1641,7 +1646,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
     
     //handle completely wet or completely dry cells as a special case
     if((iwetnode() == 8) || !(state_vars[0] > GEOFLOW_TINY))
-        return Awet;  //one or zero;
+        return Awet();  //one or zero;
         
     double wetnessfactor = calc_elem_edge_wet_fraction(ineigh % 4, 1);
     if(wetnessfactor > 0.0)
@@ -1768,14 +1773,14 @@ double Element::convect_dryline(double VxVy[2], double dt)
     //if dt>0.0 is used to disable Awet==0 during refinement, when split of a father's conservative variables have not yet been set, and need to be set based on the ratio's of Awet between the new sons... this is also why the function returns Awet rather than not returning any number
     if((state_vars[0] <= GEOFLOW_TINY) && (dt > 0.0))
     {
-        Awet = 0.0;
-        return Awet;
+        set_Awet(0.0);
+        return Awet();
     }
     
     if(iwetnode() == 8)
     {
-        Awet = 1.0;
-        return Awet;
+        set_Awet(1.0);
+        return Awet();
     }
     
     drypoint[0] += VxVy[0] * dt / dx[0];
@@ -1786,84 +1791,84 @@ double Element::convect_dryline(double VxVy[2], double dt)
         case 0: //diagonal: \
     drypoint[0]=0.5*(drypoint[0]+drypoint[1]);
             if(drypoint[0] < -0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[0] > 0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else if(drypoint[0] < 0.0)
-                Awet = 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]);
+                set_Awet(2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
             else
-                Awet = 1.0 - 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]);
-            return Awet;
+                set_Awet(1.0 - 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
+            return Awet();
         case 1: //diagonal: /
             drypoint[0] = 0.5 * (drypoint[0] - drypoint[1]);
             if(drypoint[0] > 0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[0] < -0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else if(drypoint[0] > 0.0)
-                Awet = 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]);
+                set_Awet(2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
             else
-                Awet = 1.0 - 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]);
-            return Awet;
+                set_Awet(1.0 - 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
+            return Awet();
         case 2: //diagonal: \
     drypoint[0]=0.5*(drypoint[0]+drypoint[1]);
             if(drypoint[0] > 0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[0] < -0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else if(drypoint[0] > 0.0)
-                Awet = 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]);
+                set_Awet(2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
             else
-                Awet = 1.0 - 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]);
-            return Awet;
+                set_Awet(1.0 - 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
+            return Awet();
         case 3: //diagonal: /
             drypoint[0] = 0.5 * (drypoint[0] - drypoint[1]);
             if(drypoint[0] < -0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[0] > 0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else if(drypoint[0] < 0.0)
-                Awet = 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]);
+                set_Awet(2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
             else
-                Awet = 1.0 - 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]);
-            return Awet;
+                set_Awet(1.0 - 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
+            return Awet();
         case 4: //horizontal: -
             if(drypoint[1] < -0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[1] > 0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else
-                Awet = 0.5 + drypoint[1];
-            return Awet;
+                set_Awet(0.5 + drypoint[1]);
+            return Awet();
         case 5: //vertical: |
             if(drypoint[0] > 0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[0] < -0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else
-                Awet = 0.5 - drypoint[0];
-            return Awet;
+                set_Awet(0.5 - drypoint[0]);
+            return Awet();
         case 6: //horizontal: -
             if(drypoint[1] > 0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[1] < -0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else
-                Awet = 0.5 - drypoint[1];
-            return Awet;
+                set_Awet(0.5 - drypoint[1]);
+            return Awet();
         case 7: //vertical: |
             if(drypoint[0] < -0.5)
-                Awet = 0.0;
+                set_Awet(0.0);
             else if(drypoint[0] > 0.5)
-                Awet = 1.0;
+                set_Awet(1.0);
             else
-                Awet = 0.5 + drypoint[0];
-            return Awet;
+                set_Awet(0.5 + drypoint[0]);
+            return Awet();
         default:
             assert(0);
     }
     
-    return Awet;
+    return Awet();
 }
 
 //x direction flux in current cell
@@ -1896,7 +1901,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hfv[0][1]=state_vars[1]+d_state_vars[1]*dz;
             for (i=2; i<NUM_STATE_VARS; i++)
             hfv[0][i]=0.0;
-            if((Awet>0.0)&&(Awet<1.0))
+            if((Awet()>0.0)&&(Awet()<1.0))
             {
                 hfv[0][0]*=wetnessfactor;
                 hfv[0][1]*=wetnessfactor;
@@ -1928,7 +1933,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             for(i = 0; i < NUM_STATE_VARS; i++)
                 hfv[0][i] = state_vars[i] + d_state_vars[i] * dz;
 
-            if((0.0 < Awet) && (Awet < 1.0))
+            if((0.0 < Awet()) && (Awet() < 1.0))
                 for(i = 0; i < NUM_STATE_VARS; i++)
                     hfv[0][i] *= wetnessfactor;
             Vel[1] = Vel[3] = 0.; // not really, but don't need it here
@@ -1978,7 +1983,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             for (i=0; i<NUM_STATE_VARS; i++)
             hrfv[0][i]=state_vars[i]+d_state_vars[i]*dz;
 
-            if((0.0<Awet)&&(Awet<1.0))
+            if((0.0<Awet())&&(Awet()<1.0))
             for (i=0; i<NUM_STATE_VARS; i++)
             hrfv[0][i]*=wetnessfactor;
     
@@ -2036,7 +2041,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //state variables
             hfv[0][0]=state_vars[0]+d_state_vars[0]*dz;
             hfv[0][1]=hfv[0][2]=0.0;
-            if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
+            if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
 
             speed=0.0;
             a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][0]);
@@ -2060,7 +2065,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hfv[0][1] = state_vars[1] + d_state_vars[1] * dz;
             hfv[0][2] = state_vars[2] + d_state_vars[2] * dz;
 
-            if((0.0 < Awet) && (Awet < 1.0))
+            if((0.0 < Awet()) && (Awet() < 1.0))
             {
                 hfv[0][0] *= wetnessfactor;
                 hfv[0][1] *= wetnessfactor;
@@ -2097,7 +2102,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hrfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
             hrfv[0][2]=state_vars[2]+d_state_vars[NUM_STATE_VARS+2]*dz;
 
-            if((0.0<Awet)&&(Awet<1.0))
+            if((0.0<Awet())&&(Awet()<1.0))
             {
                 hrfv[0][0]*=wetnessfactor;
                 hrfv[0][1]*=wetnessfactor;
@@ -2168,8 +2173,8 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 
             for (i=2; i<NUM_STATE_VARS; i++)
             hfv[0][i]=0.;
-            if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
-            if((0.0<Awet)&&(Awet<1.0)) hfv[0][1]*=wetnessfactor;
+            if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
+            if((0.0<Awet())&&(Awet()<1.0)) hfv[0][1]*=wetnessfactor;
 
             double temp= effect_kactxy[1]*hfv[0][1]*gravity[2];
             a=sqrt(temp + (hfv[0][0]-hfv[0][1])*gravity[2]);
@@ -2194,7 +2199,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             for(i = 0; i < NUM_STATE_VARS; i++)
                 hfv[0][i] = state_vars[i] + d_state_vars[NUM_STATE_VARS + i] * dz;
 
-            if((0.0 < Awet) && (Awet < 1.0))
+            if((0.0 < Awet()) && (Awet() < 1.0))
                 for(i = 0; i < NUM_STATE_VARS; i++)
                     hfv[0][i] *= wetnessfactor;
 
@@ -2244,7 +2249,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             for (i=0; i<NUM_STATE_VARS; i++)
             hrfv[0][i]=state_vars[i]+d_state_vars[NUM_STATE_VARS+i]*dz;
     
-            if((0.0<Awet)&&(Awet<1.0))
+            if((0.0<Awet())&&(Awet()<1.0))
             for (i=0; i<NUM_STATE_VARS; i++)
             hrfv[0][i]*=wetnessfactor;
     
@@ -2305,7 +2310,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //state variables
             hfv[0][0]=state_vars[0]+d_state_vars[NUM_STATE_VARS+0]*dz;
             hfv[0][1]=hfv[0][2]=0.0;
-            if((0.0<Awet)&&(Awet<1.0)) hfv[0][0]*=wetnessfactor;
+            if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
 
             speed=0.0;
             a=sqrt(effect_kactxy[1]*gravity[2]*hfv[0][0]);
@@ -2329,7 +2334,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hfv[0][1] = state_vars[1] + d_state_vars[NUM_STATE_VARS + 1] * dz;
             hfv[0][2] = state_vars[2] + d_state_vars[NUM_STATE_VARS + 2] * dz;
 
-            if((0.0 < Awet) && (Awet < 1.0))
+            if((0.0 < Awet()) && (Awet() < 1.0))
             {
                 hfv[0][0] *= wetnessfactor;
                 hfv[0][1] *= wetnessfactor;
@@ -2367,7 +2372,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hrfv[0][1]=state_vars[1]+d_state_vars[NUM_STATE_VARS+1]*dz;
             hrfv[0][2]=state_vars[2]+d_state_vars[NUM_STATE_VARS+2]*dz;
 
-            if((0.0<Awet)&&(Awet<1.0))
+            if((0.0<Awet())&&(Awet()<1.0))
             {
                 hrfv[0][0]*=wetnessfactor;
                 hrfv[0][1]*=wetnessfactor;
@@ -4346,12 +4351,12 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     writespace[Itemp++] = temp8.u[0];
     //assert(Itemp == 93);
     
-    temp8.d = Awet;
+    temp8.d = Awet();
     writespace[Itemp++] = temp8.u[0];
     writespace[Itemp++] = temp8.u[1];
     //assert(Itemp == 95);
     
-    temp8.d = Swet;
+    temp8.d = Swet();
     writespace[Itemp++] = temp8.u[0];
     writespace[Itemp++] = temp8.u[1];
     //assert(Itemp == 97);
@@ -4556,12 +4561,12 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     
     temp8.u[0] = readspace[Itemp++];
     temp8.u[1] = readspace[Itemp++];
-    Awet = temp8.d;
+    set_Awet(temp8.d);
     assert(Itemp == 95);
     
     temp8.u[0] = readspace[Itemp++];
     temp8.u[1] = readspace[Itemp++];
-    Swet = temp8.d;
+    set_Swet(temp8.d);
     assert(Itemp == 97);
     
     temp8.u[0] = readspace[Itemp++];

@@ -114,8 +114,8 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     elem->elm_loc[1] = sendel->elm_loc[1];
     
     elem->iwetnode = sendel->iwetnode();
-    elem->Awet = sendel->Awet;
-    elem->Swet = sendel->Swet;
+    elem->Awet = sendel->Awet();
+    elem->Swet = sendel->Swet();
     elem->drypoint[0] = sendel->drypoint[0];
     elem->drypoint[1] = sendel->drypoint[1];
 }

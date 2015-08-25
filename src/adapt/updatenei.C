@@ -89,8 +89,8 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation(),
                         EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_son(),
-                        EmDebugFather.get(iFather)->iwetnode(), EmDebugFather.get(iFather)->Awet,
-                        EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
+                        EmDebugFather.get(iFather)->iwetnode(), EmDebugFather.get(iFather)->Awet(),
+                        EmDebugFather.get(iFather)->Swet(), EmDebugFather.get(iFather)->drypoint[0],
                         EmDebugFather.get(iFather)->drypoint[1]);
                 uniqueneigh = 8;
                 for(ineigh = 0; ineigh < 8; ineigh++)
@@ -119,8 +119,8 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
         fprintf(fp, "adapted=%d ", EmDebug->adapted_flag());
         fprintf(fp, "which_son=%d ", EmDebug->which_son());
         fprintf(fp, "iwetnode=%d ", EmDebug->iwetnode());
-        fprintf(fp, "Awet=%9.6f ", EmDebug->Awet);
-        fprintf(fp, "Swet=%9.6f ", EmDebug->Swet);
+        fprintf(fp, "Awet=%9.6f ", EmDebug->Awet());
+        fprintf(fp, "Swet=%9.6f ", EmDebug->Swet());
         fprintf(fp, "drypoint={%9.6f,%9.6f} ", EmDebug->drypoint[0], EmDebug->drypoint[1]);
         fprintf(fp, "has neighbors (%d are unique)\n", uniqueneigh);
         for(ineigh = 0; ineigh < 8; ineigh++)
@@ -141,8 +141,8 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation(),
                         EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_son(),
-                        EmDebugNeigh.get(ineigh)->iwetnode(), EmDebugNeigh.get(ineigh)->Awet,
-                        EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
+                        EmDebugNeigh.get(ineigh)->iwetnode(), EmDebugNeigh.get(ineigh)->Awet(),
+                        EmDebugNeigh.get(ineigh)->Swet(), EmDebugNeigh.get(ineigh)->drypoint[0],
                         EmDebugNeigh.get(ineigh)->drypoint[1]);
             }
         }
@@ -238,8 +238,8 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                         "}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugFather.get(iFather)->myprocess(), EmDebugFather.get(iFather)->generation(),
                         EmDebugFather.get(iFather)->adapted_flag(), EmDebugFather.get(iFather)->which_son(),
-                        EmDebugFather.get(iFather)->iwetnode(), EmDebugFather.get(iFather)->Awet,
-                        EmDebugFather.get(iFather)->Swet, EmDebugFather.get(iFather)->drypoint[0],
+                        EmDebugFather.get(iFather)->iwetnode(), EmDebugFather.get(iFather)->Awet(),
+                        EmDebugFather.get(iFather)->Swet(), EmDebugFather.get(iFather)->drypoint[0],
                         EmDebugFather.get(iFather)->drypoint[1]);
                 uniqueneigh = 8;
                 for(ineigh = 0; ineigh < 8; ineigh++)
@@ -269,8 +269,8 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
         fprintf(fp, "adapted=%d ", EmDebug->adapted_flag());
         fprintf(fp, "which_son=%d ", EmDebug->which_son());
         fprintf(fp, "iwetnode=%d ", EmDebug->iwetnode());
-        fprintf(fp, "Awet=%9.6f ", EmDebug->Awet);
-        fprintf(fp, "Swet=%9.6f ", EmDebug->Swet);
+        fprintf(fp, "Awet=%9.6f ", EmDebug->Awet());
+        fprintf(fp, "Swet=%9.6f ", EmDebug->Swet());
         fprintf(fp, "drypoint={%9.6f,%9.6f} ", EmDebug->drypoint[0], EmDebug->drypoint[1]);
         fprintf(fp, "has neighbors (%d are unique)\n", uniqueneigh);
         for(ineigh = 0; ineigh < 8; ineigh++)
@@ -291,8 +291,8 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
                 fprintf(fp,"}  proc=%d gen=%d adapted=%d which_son=%d iwetnode=%d Awet=%9.6f Swet=%9.6f drypoint={%9.6f,%9.6f}\n",
                         EmDebugNeigh.get(ineigh)->myprocess(), EmDebugNeigh.get(ineigh)->generation(),
                         EmDebugNeigh.get(ineigh)->adapted_flag(), EmDebugNeigh.get(ineigh)->which_son(),
-                        EmDebugNeigh.get(ineigh)->iwetnode(), EmDebugNeigh.get(ineigh)->Awet,
-                        EmDebugNeigh.get(ineigh)->Swet, EmDebugNeigh.get(ineigh)->drypoint[0],
+                        EmDebugNeigh.get(ineigh)->iwetnode(), EmDebugNeigh.get(ineigh)->Awet(),
+                        EmDebugNeigh.get(ineigh)->Swet(), EmDebugNeigh.get(ineigh)->drypoint[0],
                         EmDebugNeigh.get(ineigh)->drypoint[1]);
             }
         }

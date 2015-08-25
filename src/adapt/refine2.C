@@ -679,7 +679,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     double sol = EmTemp->el_solution(0) * .5; //added by jp oct11
     // son 0 can use elm_loc
     int iwetnodefather = EmTemp->iwetnode();
-    double Awetfather = EmTemp->get_Awet();
+    double Awetfather = EmTemp->Awet();
     double dpson[2];
     dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 + 0.5;
     dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 + 0.5;

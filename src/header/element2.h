@@ -105,8 +105,8 @@ protected:
         }
         set_adapted_flag(TOBEDELETED);
         set_refined_flag(1);
-        Awet = 0.0;
-        Swet = 1.0;
+        set_Awet(0.0);
+        set_Swet(1.0);
         drypoint[0] = drypoint[1] = 0.0;
         set_iwetnode(8);
 
@@ -706,27 +706,14 @@ public:
     double* get_effect_kactxy();
 
     //! this inline member function returns the stored value of Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-
-    double get_Awet() const {
-        return Awet;
-    }
-
+    double Awet() const {return Awet_;}
     //! this inline member function assigns a value to Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-
-    void put_Awet(double Awet_in) {
-        Awet = Awet_in;
-    }
+    void set_Awet(double Awet_in) {Awet_ = Awet_in;}
 
     //! this inline member function returns the stored value of Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-
-    double get_Swet() const {
-        return Swet;
-    }
+    double Swet() const {return Swet_;}
     //! this inline member function assigns a value to Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-
-    void put_Swet(double Swet_in) {
-        Swet = Swet_in;
-    }
+    void set_Swet(double Swet_in) {Swet_ = Swet_in;}
 
     //! this inline member function returns the value of iwetnode.  iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
     int iwetnode() const {return iwetnode_;}
@@ -915,13 +902,13 @@ protected:
     int iwetnode_;
 
     //! Awet is the ratio of this element's wet area to total area (always between 0 and 1 inclusive) when taken together with iwetnode, this uniquely determines the exact placement of the "dryline" within the current element.  Awet is initially set by source placement to be either 0 (no material) or 1 (material) and is updated by the corrector part of the predictor-corrector method, the new value is determined by where the dry line has been convected to over this timestep. Keith wrote this May 2007.
-    double Awet;
+    double Awet_;
 
     //! center point of the "dryline", x and y coordinates value ranges between -0.5 and 0.5 with 0 being the center of the element, since the wet/dry interface is taken to be a non-deforming non rotating (within the timestep) "dryline" convecting a single point on the dryline (called the drypoint) is sufficient to determine the new placement of the dryline which allows us to update Awet... Keith wrote this May 2007.
     double drypoint[2];
 
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
-    double Swet;
+    double Swet_;
 };
 
 class ElementSinglePhase : public Element {
@@ -951,10 +938,10 @@ inline void Element::put_height_mom(double pile_height, double volf, double xmom
     prev_state_vars[3] = state_vars[3] = ymom;
     if (pile_height > GEOFLOW_TINY) {
         set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf));
-        Awet = 1.0;
+        set_Awet(1.0);
     } else {
         set_shortspeed(0.0);
-        Awet = 0.0;
+        set_Awet(0.0);
     }
     return;
 };
@@ -965,10 +952,10 @@ inline void Element::put_height_mom(double pile_height, double xmom, double ymom
     prev_state_vars[2] = state_vars[2] = ymom;
     if (pile_height > GEOFLOW_TINY) {
         set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
-        Awet = 1.0;
+        set_Awet(1.0);
     } else {
         set_shortspeed(0.0);
-        Awet = 0.0;
+        set_Awet(0.0);
     }
 
     return;
