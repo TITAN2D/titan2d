@@ -715,7 +715,7 @@ struct OutLine
     }
     
     //! this function initializes the OutLine map/2-dimensional array 
-    void init(double *dxy, int power, double *XRange, double *YRange)
+    void init(const double *dxy, int power, double *XRange, double *YRange)
     {
         int ix, iy;
         
@@ -759,7 +759,7 @@ struct OutLine
     }
     
     //! this function reinitializes the OutLine map/2-dimensional array during restart
-    void init2(double *dxy, double *XRange, double *YRange)
+    void init2(const double *dxy, double *XRange, double *YRange)
     {
         int ix, iy;
         

@@ -21,8 +21,91 @@
 
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
+#include <math.h>
 
+void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
+        const double bedfrictang, const double intfrictang, 
+        double &Kactx, double &Kacty, const double tiny, 
+	const double epsilon)
+{
+    //vel is used to determine if velocity gradients are converging or diverging
+    double vel;
+    
+    //COEFFICIENTS
+    double Uvec0SQ=Uvec[0]*Uvec[0];
+    double cosphiSQ = cos(intfrictang);
+    double tandelSQ = tan(bedfrictang);
+    cosphiSQ*=cosphiSQ;
+    tandelSQ*=tandelSQ;
+    
+    
+    
+    if(Uvec[0] > tiny)
+    {
+         vel=dUdx[1]/Uvec[0] - Uvec[1]*dUdx[0]/Uvec0SQ+
+             dUdy[2]/Uvec[0] - Uvec[2]*dUdy[0]/Uvec0SQ;
+         Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+         Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
 
+         //if there is no yielding...
+         if(fabs(Uvec[1]/Uvec[0]) < tiny && fabs(Uvec[2]/Uvec[0]) < tiny)
+         {
+            Kactx = 1.0;
+            Kacty = 1.0;
+         }
+    }
+    else
+    {
+	vel = 0.0;
+	Kactx = 1.0;
+	Kacty = 1.0;
+    }
+    Kactx = epsilon * Kactx;
+    Kacty = epsilon * Kacty;
+}
+
+void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
+        const double bedfrictang, const double intfrictang, 
+        double &Kactx, double &Kacty, const double tiny, 
+	const double epsilon)
+{
+    //vel is used to determine if velocity gradients are converging or diverging
+    double vel;
+    
+    //COEFFICIENTS
+    double Uvec1SQ=Uvec[1]*Uvec[1];
+    double cosphiSQ = cos(intfrictang);
+    double tandelSQ = tan(bedfrictang);
+    cosphiSQ*=cosphiSQ;
+    tandelSQ*=tandelSQ;
+    
+    if(Uvec[1] > tiny)
+    {
+         vel=dUdx[2]/Uvec[1] - Uvec[2]*dUdx[1]/Uvec1SQ+
+             dUdy[3]/Uvec[1] - Uvec[3]*dUdy[1]/Uvec1SQ;
+         Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+         Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+
+         //if there is no yielding...
+         if(fabs(Uvec[2]/Uvec[1]) < tiny && fabs(Uvec[3]/Uvec[1]) < tiny)
+         {
+            Kactx = 1.0;
+            Kacty = 1.0;
+         }
+    }
+    else
+    {
+	vel = 0.0;
+	Kactx = 1.0;
+	Kacty = 1.0;
+    }
+    Kactx = epsilon * Kactx;
+    Kacty = epsilon * Kacty;
+}
 double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
                           TimeProps* timeprops_ptr, int ghost_flag)
 {
@@ -65,9 +148,8 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                 
                 if((EmTemp->adapted_flag() > 0) || (EmTemp->adapted_flag() < 0))
                 {
-                    mindx = (
-                            (*(EmTemp->get_dx() + 0) < *(EmTemp->get_dx() + 1)) ?
-                                    *(EmTemp->get_dx() + 0) : *(EmTemp->get_dx() + 1))
+                    mindx = (EmTemp->dx(0) < EmTemp->dx(1)) ?
+                                    EmTemp->dx(0) : EmTemp->dx(1)
                             * pow(0.5, REFINE_LEVEL - EmTemp->generation());
                     break;
                 }
@@ -85,7 +167,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
     } //end of section that SHOULD ____NOT___ be openmp'd
     
     double u_vec_alt[3];
-    double* d_uvec, *dx_ptr;
+    double* d_uvec;
     int intswap;
     double *curve, maxcurve;
     int ifanynonzeroheight = 0;
@@ -115,22 +197,27 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         hmax = *(EmTemp->get_state_vars());
                     
                     d_uvec = EmTemp->get_d_state_vars();
-                    dx_ptr = EmTemp->get_dx();
 
                     if(elementType == ElementType::TwoPhases)
                     {
-                        double kactxy[DIMENSION];
-                        gmfggetcoef2ph_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
+                        gmfggetcoef2ph(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                                     matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
+                                     EmTemp->get_kactxy_ref(0), EmTemp->get_kactxy_ref(1), tiny, matprops_ptr->epsilon);
+                        
+                        /*gmfggetcoef2ph_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
                                         &(matprops_ptr->bedfrict[EmTemp->material()]), &(matprops_ptr->intfrict),
-                                        kactxy, (EmTemp->get_kactxy() + 1), &tiny, &(matprops2_ptr->epsilon));
-
-                        EmTemp->put_kactxy(kactxy);
+                                        kactxy, (EmTemp->get_kactxy() + 1), &tiny, &(matprops2_ptr->epsilon));*/
+                        
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        gmfggetcoef_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
+                        gmfggetcoef(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                                     matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
+                                     EmTemp->get_kactxy_ref(0), EmTemp->get_kactxy_ref(1), tiny, matprops_ptr->epsilon);
+                        
+                        /*gmfggetcoef_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
                                      &(matprops_ptr->bedfrict[EmTemp->material()]), &(matprops_ptr->intfrict),
-                                     EmTemp->get_kactxy(), (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));
+                                     EmTemp->get_kactxy(), (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));*/
                     }
 
                     EmTemp->calc_stop_crit(matprops_ptr);
@@ -171,7 +258,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     // ***********************************************************
                     // !!!!!!!!!!!!!!!!!!!!!check dx & dy!!!!!!!!!!!!!!!!!!!!!!!!
                     // ***********************************************************
-                    doubleswap = c_dmin1(dx_ptr[0], dx_ptr[1]);
+                    doubleswap = c_dmin1(EmTemp->dx(0), EmTemp->dx(1));
                     if(doubleswap / evalue < min_dx_dy_evalue)
                     {
                         min_distance = doubleswap;
@@ -205,7 +292,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         }
                     }
                     
-                    min_dx_dy_evalue = c_dmin1(c_dmin1(dx_ptr[0], dx_ptr[1]) / evalue, min_dx_dy_evalue);
+                    min_dx_dy_evalue = c_dmin1( c_dmin1(EmTemp->dx(0), EmTemp->dx(1)) / evalue, min_dx_dy_evalue);
                 }
                 else
                 {

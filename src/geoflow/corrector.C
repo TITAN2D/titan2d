@@ -35,9 +35,9 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
     }
     Element *EmTemp = (Element *) EmTemp_in;
-    double *dx = EmTemp->get_dx();
-    double dtdx = dt / dx[0];
-    double dtdy = dt / dx[1];
+    double dxdy = EmTemp->dx(0)*EmTemp->dx(1);
+    double dtdx = dt / EmTemp->dx(0);
+    double dtdy = dt / EmTemp->dx(1);
     
     double tiny = GEOFLOW_TINY;
     int xp = EmTemp->positive_x_side();
@@ -145,7 +145,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         double V_avg[DIMENSION];
         V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
         V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
-        EmTemp->convect_dryline(V_avg, dt); //this is necessary
+        EmTemp->convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
 
         correct2ph_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
                  (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops2_ptr->intfrict), &bedfrict,
@@ -191,7 +191,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
             VxVy[0] = VxVy[1] = 0.0;
         }
 
-        EmTemp->convect_dryline(VxVy, dt); //this is necessary
+        EmTemp->convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
         correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
                  (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict),
@@ -199,13 +199,13 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
                  &do_erosion, eroded, VxVy, &IF_STOPPED, Influx);
     }
     
-    *forceint *= dx[0] * dx[1];
-    *forcebed *= dx[0] * dx[1];
-    *eroded *= dx[0] * dx[1];
+    *forceint *= dxdy;
+    *forcebed *= dxdy;
+    *eroded *= dxdy;
 
     
     if(EmTemp->stoppedflags() == 2)
-        *deposited = state_vars[0] * dx[0] * dx[1];
+        *deposited = state_vars[0] * dxdy;
     else
         *deposited = 0.0;
     

@@ -249,7 +249,7 @@ public:
 
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
 
-    const int order(const int i) const {
+    int order(const int i) const {
         return order_[i];
     }
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
@@ -259,10 +259,10 @@ public:
     }
 
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
-    const SFC_Key& Element::father() const;
+    const SFC_Key& father() const;
     //!only used in unrefinement
 
-    const SFC_Key& Element::father_by_ref() const {
+    const SFC_Key& father_by_ref() const {
         return father_;
     }
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
@@ -376,7 +376,7 @@ public:
 
     //! this function returns an the generation of i-th this element's neighbors
 
-    const int neigh_gen(const int i) const {
+    int neigh_gen(const int i) const {
         return neigh_gen_[i];
     }
     //! this function sets the ith neighbor's generation to "gen"
@@ -498,7 +498,9 @@ public:
     double* get_zeta();
 
     //! this function returns the length of an element in the x and y directions
-    double* get_dx();
+    double dx(int idim) const {return dx_[idim];}
+    void dx(int idim, double value){dx_[idim]=value;}
+    
 
     //! this function computes which side of the element is facing the positive x direction
     void find_positive_x_side(HashTable*);
@@ -570,7 +572,11 @@ public:
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
-    double* get_kactxy();
+    double* get_kactxy(){return kactxy;}
+    double& get_kactxy_ref(const int idim){return kactxy[idim];}
+    //! interface to change value of earth-pressure coefficients
+    void put_kactxy(double kap[DIMENSION]) {for (int i = 0; i < DIMENSION; i++)kactxy[i] = kap[i];}
+
 
 
     //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
@@ -645,16 +651,7 @@ public:
 
     //! this function is part of the experimental _LOCAL_ (not Bin Yu's) stopping criteria which has not yet been validated, I (Keith) have faith in the criteria, but enforcing the stopped after it has been decided that it needs to stop still needs some work. the only place this function is called is in get_coef_and_eigen.C immediately after k_active/passive and in init_piles.C when computing the initial volume that "should already be" deposited.
     void calc_stop_crit(MatProps*);
-
-
-
-    //! interface to change value of earth-pressure coefficients
-
-    void put_kactxy(double kap[DIMENSION]) {
-        for (int i = 0; i < DIMENSION; i++)
-            kactxy[i] = kap[i];
-    }
-
+    
     //! this function returns the value of "stoppedflags"
 
     int stoppedflags() {
@@ -739,7 +736,7 @@ public:
     double calc_elem_edge_wetness_factor(int ineigh, double dt);
 
     //! The Element member function convect_dryline() calculates the coordinates of the "drypoint" in the element's local coordinate system.  This is used to determine the location of the wet-dry front (or dryline) inside this element, which in turn is used (in conjunction with the location of "iwetnode" - which indicates which side of the dryline is wet) to determine the fraction of its total area that is wet (Awet).  Awet is then returned by the function.  Keith wrote this function may 2007
-    double convect_dryline(double VxVy[2], double dt);
+    double convect_dryline(const double Vx, const double Vy, const double dt);
 
     //! sgn of double
 
@@ -857,7 +854,7 @@ protected:
     double shortspeed_;
 
     //! length of the element in the global x and y directions: dx and dy 
-    double dx[DIMENSION];
+    double dx_[DIMENSION];
 
     //! for structured grid, tells which side is the positive x direction
     int positive_x_side_;
@@ -984,11 +981,6 @@ inline double* Element::get_d_state_vars() {
 }
 ;
 
-inline double* Element::get_dx() {
-    return dx;
-}
-;
-
 inline double* Element::get_prev_state_vars() {
     return prev_state_vars;
 }
@@ -1001,11 +993,6 @@ inline void Element::update_prev_state_vars() {
 
 inline double* Element::get_eigenvxymax() {
     return eigenvxymax;
-}
-;
-
-inline double* Element::get_kactxy() {
-    return kactxy;
 }
 ;
 

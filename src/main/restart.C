@@ -551,7 +551,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     }
     printf("ielem=%d Elem_Num=%d ElemP=%u\n", ielem, Elem_Num, ElemP);
     
-    double dx = *(ElemP->get_dx() + 0), dy = *(ElemP->get_dx() + 1);
+    double dx = ElemP->dx(0), dy = ElemP->dx(1);
     if(dx < dy)
         dx = dy;
     

@@ -195,8 +195,7 @@ void cxxTitanSinglePhase::init_piles()
                 Element* Curr_El = (Element*) (currentPtr->value);
                 if(Curr_El->adapted_flag() > 0)
                 { //if this is a refined element don't involve!!!
-                    double *dxy = Curr_El->get_dx();
-                    double dvol = dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
+                    double dvol = Curr_El->dx(0) * Curr_El->dx(1) * *(Curr_El->get_state_vars());
                     realvolume += dvol;
                     Curr_El->put_kactxy(epsilon);
 

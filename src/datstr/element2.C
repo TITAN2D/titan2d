@@ -281,8 +281,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     
     set_new_old(NEW);
     //geoflow stuff
-    dx[0] = .5 * fthTemp->dx[0];  //assume constant refinement
-    dx[1] = .5 * fthTemp->dx[1];
+    dx(0,.5 * fthTemp->dx(0));  //assume constant refinement
+    dx(1,.5 * fthTemp->dx(1));
     
     set_iwetnode(iwetnodefather);
     drypoint[0] = drypoint_in[0];
@@ -296,7 +296,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     }
     else
     {
-        set_Awet(convect_dryline(dx, 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
+        set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
         myfractionoffather = Awet() / Awetfather;
     }
     set_Swet(1.0);
@@ -1030,16 +1030,16 @@ void Element::calculate_dx(HashTable* NodeTable)
     np = (Node*) NodeTable->lookup(node_key(xp + 4));
     nm = (Node*) NodeTable->lookup(node_key(xm + 4));
     
-    dx[0] = (np->coord[0] - nm->coord[0]) /*(zeta[0]*zeta[0]+1)*/;
-    if(dx[0] == 0)
+    dx(0,(np->coord[0] - nm->coord[0])); /*(zeta[0]*zeta[0]+1)*/
+    if(dx(0) == 0)
         printf("np %p,nm %p,dx, np_coord, nm_coord %e %e\n", np, nm, np->coord[0], nm->coord[0]);
     
     np = (Node*) NodeTable->lookup(node_key(yp + 4));
     nm = (Node*) NodeTable->lookup(node_key(ym + 4));
     
-    dx[1] = (np->coord[1] - nm->coord[1]) /*(zeta[1]*zeta[1]+1)*/;
+    dx(1,(np->coord[1] - nm->coord[1]) /*(zeta[1]*zeta[1]+1)*/);
     
-    if(dx[1] == 0)
+    if(dx(1) == 0)
         printf("dy, np_coord, nm_coord %e %e\n", np->coord[1], nm->coord[1]);
     
     return;
@@ -1665,14 +1665,14 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         if(VxVy[0] != 0.0)
         {
             a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
-            VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx[0];
+            VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
         VxVy[1] = state_vars[3] / state_vars[1];
         if(VxVy[1] != 0.0)
         {
             a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
-            VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
+            VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
     if(elementType() == ElementType::SinglePhase)
@@ -1681,14 +1681,14 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         if(VxVy[0] != 0.0)
         {
             a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[0]);
-            VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx[0];
+            VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
         VxVy[1] = state_vars[2] / state_vars[0];
         if(VxVy[1] != 0.0)
         {
             a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[0]);
-            VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx[1];
+            VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
     
@@ -1767,7 +1767,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
 }
 
 // The Element member function convect_dryline() calculates the coordinates of the "drypoint" in the element's local coordinate system.  This is used to determine the location of the wet-dry front (or dryline) inside this element, which in turn is used (in conjunction with the location of "iwetnode" - which indicates which side of the dryline is wet) to determine the fraction of its total area that is wet (Awet).  Awet is then returned by the function.  Keith wrote this function may 2007
-double Element::convect_dryline(double VxVy[2], double dt)
+double Element::convect_dryline(const double Vx, const double Vy, const double dt)
 {
     
     //if dt>0.0 is used to disable Awet==0 during refinement, when split of a father's conservative variables have not yet been set, and need to be set based on the ratio's of Awet between the new sons... this is also why the function returns Awet rather than not returning any number
@@ -1783,8 +1783,8 @@ double Element::convect_dryline(double VxVy[2], double dt)
         return Awet();
     }
     
-    drypoint[0] += VxVy[0] * dt / dx[0];
-    drypoint[1] += VxVy[1] * dt / dx[1];
+    drypoint[0] += Vx * dt / dx(0);
+    drypoint[1] += Vy * dt / dx(1);
     
     switch (iwetnode())
     {
@@ -2436,7 +2436,7 @@ void Element::zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matp
     //double thissideSwet=(calc_elem_edge_wet_fraction(ineigh%4,1)>0.0)?1.0:0.0;
     
     if(order_flag == 2)
-        dz = (1.0 + dir % 2 - dir) * 0.5 * dx[dir % 2]; //+ or - 1/2 dx or dy
+        dz = (1.0 + dir % 2 - dir) * 0.5 * dx(dir % 2); //+ or - 1/2 dx or dy
              
     if(dir % 2 == 0)
         xdirflux(matprops_ptr, dz, wetnessfactor, hfv, hrfv);
@@ -2548,7 +2548,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
         if(neigh_proc(zp) == -1)
         {
             nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
-            *outflow += (nm->flux[0]) * dx[!side];
+            *outflow += (nm->flux[0]) * dx(!side);
             
             //outflow boundary conditions
             for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -2768,7 +2768,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             {
                 np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
                 nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
-                *outflow -= (np->flux[0]) * dx[!side];
+                *outflow -= (np->flux[0]) * dx(!side);
                 //outflow boundary conditions
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 {
@@ -2882,8 +2882,8 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
                       double *deposited)
 {
     int i, j, k;
-    double dtdx = dt / dx[0];
-    double dtdy = dt / dx[1];
+    double dtdx = dt / dx(0);
+    double dtdy = dt / dx(1);
     
     double tiny = GEOFLOW_TINY;
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
@@ -2973,9 +2973,9 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
              &do_erosion, eroded, VxVy, //eval_velocity(0.0,0.0,VxVy),
              &IF_STOPPED, Influx);
     
-    *forceint *= dx[0] * dx[1];
-    *forcebed *= dx[0] * dx[1];
-    *eroded *= dx[0] * dx[1];
+    *forceint *= dx(0) * dx(1);
+    *forcebed *= dx(0) * dx(1);
+    *eroded *= dx(0) * dx(1);
     
     //convect the dry line
     //eval_velocity(0.0,0.0,VxVy);
@@ -2988,12 +2988,12 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     {
         VxVy[0] = VxVy[1] = 0.0;
     }
-    convect_dryline(VxVy, dt);
+    convect_dryline(VxVy[0], VxVy[1], dt);
     //convect_dryline(VxVy,0.5*dt);
 #endif 
     
     if(stoppedflags() == 2)
-        *deposited = state_vars[0] * dx[0] * dx[1];
+        *deposited = state_vars[0] * dx(0) * dx(1);
     else
         *deposited = 0.0;
     
@@ -3401,7 +3401,7 @@ void Element::calc_d_gravity(HashTable* El_Table)
 
 void Element::calc_topo_data(MatProps* matprops_ptr)
 {
-    double resolution = (dx[0]/*/(zeta[0]*zeta[0]+1)*/+ dx[1]/*/(zeta[1]*zeta[1]+1)*/) * (matprops_ptr->LENGTH_SCALE)
+    double resolution = (dx(0)/*/(zeta[0]*zeta[0]+1)*/+ dx(1)/*/(zeta[1]*zeta[1]+1)*/) * (matprops_ptr->LENGTH_SCALE)
             / 2.0;  // element "size"
     double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
     double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
@@ -3496,7 +3496,7 @@ void Element::calc_flux_balance(HashTable* NodeTable)
     for(j = 0; j < 3; j++)
         set_el_error(0, el_error(0)+flux[j]);
     
-    set_el_error(0, 2. * el_error(0) * el_error(0) / (dx[0] + dx[1]) + WEIGHT_ADJUSTER); //W_A is so that elements with pile height = 0 have some weight.
+    set_el_error(0, 2. * el_error(0) * el_error(0) / (dx(0) + dx(1)) + WEIGHT_ADJUSTER); //W_A is so that elements with pile height = 0 have some weight.
             
     return;
 }
@@ -3554,14 +3554,14 @@ void Element::find_opposite_brother(HashTable* El_Table)
         unsigned nkey = KEYLENGTH;
         
         if((which_son() == 0) || (which_son() == 3))
-            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) + dx[0] - *(El_Table->get_Xrange() + 0));
+            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) + dx(0) - *(El_Table->get_Xrange() + 0));
         else
-            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) - dx[0] - *(El_Table->get_Xrange() + 0));
+            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) - dx(0) - *(El_Table->get_Xrange() + 0));
         
         if((which_son() == 0) || (which_son() == 1))
-            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) + dx[1] - *(El_Table->get_Yrange() + 0));
+            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) + dx(1) - *(El_Table->get_Yrange() + 0));
         else
-            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) - dx[1] - *(El_Table->get_Yrange() + 0));
+            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) - dx(1) - *(El_Table->get_Yrange() + 0));
         
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
         set_brother((which_son() + 2) % 4,sfc_key_from_oldkey(oldkey));

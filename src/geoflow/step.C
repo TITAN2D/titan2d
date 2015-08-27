@@ -236,7 +236,8 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
     for(i = 0; i < Nelms; i++)
     {
         Curr_El = Elms[i];
-        double *dxy = Curr_El->get_dx();
+        double dx = Curr_El->dx(0);
+        double dy = Curr_El->dx(1);
         if(elementType == ElementType::TwoPhases)
         {
             // if calculations are first-order, predict is never called
@@ -251,7 +252,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         
         forceint += fabs(elemforceint);
         forcebed += fabs(elemforcebed);
-        realvolume += dxy[0] * dxy[1] * *(Curr_El->get_state_vars());
+        realvolume += dx * dy * *(Curr_El->get_state_vars());
         eroded += elemeroded;
         deposited += elemdeposited;
         //update the record of maximum pileheight in the area covered by this element
@@ -270,8 +271,8 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
             momenta = Curr_El->get_state_vars() + 1;
         }
 
-        outline_ptr->update(Curr_El->coord(0) - 0.5 * dxy[0], Curr_El->coord(0) + 0.5 * dxy[0], Curr_El->coord(1) - 0.5 * dxy[1],
-                            Curr_El->coord(1) + 0.5 * dxy[1], hheight, momenta);
+        outline_ptr->update(Curr_El->coord(0) - 0.5 * dx, Curr_El->coord(0) + 0.5 * dx, Curr_El->coord(1) - 0.5 * dy,
+                            Curr_El->coord(1) + 0.5 * dy, hheight, momenta);
         if(elementType == ElementType::TwoPhases)
         {
             delete [] momenta;
@@ -366,8 +367,8 @@ void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps
                 {
                     
                     double* state_vars = Curr_El->get_state_vars();
-                    double dx = *(Curr_El->get_dx());
-                    double dy = *(Curr_El->get_dx() + 1);
+                    double dx = Curr_El->dx(0);
+                    double dy = Curr_El->dx(1);
                     
                     if(state_vars[0] > max_height)
                     {

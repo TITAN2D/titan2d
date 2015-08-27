@@ -590,13 +590,13 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 
                 if(EmTemp->adapted_flag() > 0)
                 {
-                    double minx = (EmTemp->coord(0) - (*(EmTemp->get_dx() + 0)) * 0.5);
+                    double minx = EmTemp->coord(0) - EmTemp->dx(0) * 0.5;
                     //*(matprops_ptr->LENGTH_SCALE);
-                    double maxx = (EmTemp->coord(0) + (*(EmTemp->get_dx() + 0)) * 0.5);
+                    double maxx = EmTemp->coord(0) + EmTemp->dx(0) * 0.5;
                     //*(matprops_ptr->LENGTH_SCALE);
-                    double miny = (EmTemp->coord(1) - (*(EmTemp->get_dx() + 1)) * 0.5);
+                    double miny = EmTemp->coord(1) - EmTemp->dx(1) * 0.5;
                     //*(matprops_ptr->LENGTH_SCALE);
-                    double maxy = (EmTemp->coord(1) + (*(EmTemp->get_dx() + 1)) * 0.5);
+                    double maxy = EmTemp->coord(1) + EmTemp->dx(1) * 0.5;
                     //*(matprops_ptr->LENGTH_SCALE);
                     
                     //printf("x=[%g,%g] y=[%g,%g]\n",minx,maxx,miny,maxy);

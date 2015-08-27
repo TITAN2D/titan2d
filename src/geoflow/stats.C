@@ -394,7 +394,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                             testpointreach = ((state_vars[0] >= testpointheight) ? 1 : 0);
                         }
                         
-                        dA = *(Curr_El->get_dx()) * *(Curr_El->get_dx() + 1);
+                        dA = Curr_El->dx(0) * Curr_El->dx(1);
                         area += dA;
                         dVol = state_vars[0] * dA;
                         testvolume += dVol;

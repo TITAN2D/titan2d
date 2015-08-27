@@ -285,7 +285,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < DIMENSION; i++)
     {
         newelement->set_coord(i, elem2->n_coord[8][i]);
-        newelement->dx[i] = elem2->dx[i];
+        newelement->dx(i, elem2->dx[i]);
         newelement->eigenvxymax[i] = elem2->eigenvxymax[i];
         newelement->kactxy[i] = elem2->kactxy[i];
         newelement->zeta[i] = elem2->zeta[i];

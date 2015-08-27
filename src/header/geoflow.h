@@ -95,15 +95,18 @@ inline double c_sgn(double zz)
     
     return sgn;
 }
+//!pretty cool branchless sign
+inline double signum(double zz){return (0.0<zz)-(zz<0.0);}
+inline double sgn_tiny(double zz,double tiny){return (tiny<zz)-(zz<-tiny);}
+
 
 //! c++ dmin1 function
-inline double c_dmin1(double d1, double d2)
+inline double c_dmin1(const double d1, const double d2)
 {
-    
     if(d1 > d2)
-        d1 = d2;
-    
-    return d1;
+        return d2;
+    else
+        return d1;
 }
 
 //! another c++ dmin1 function
