@@ -289,7 +289,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->eigenvxymax(i, elem2->eigenvxymax[i]);
         newelement->kactxy(i, elem2->kactxy[i]);
         newelement->zeta(i, elem2->zeta[i]);
-        newelement->curvature[i] = elem2->curvature[i];
+        newelement->curvature(i, elem2->curvature[i]);
         newelement->d_gravity[i] = elem2->d_gravity[i];
     }
     for(i = 0; i < NUM_STATE_VARS; i++)
@@ -298,7 +298,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->Influx[i] = elem2->Influx[i];
     }
     for(i = 0; i < 3; i++)
-        newelement->gravity[i] = elem2->gravity[i];
+        newelement->gravity_[i] = elem2->gravity[i];
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         newelement->d_state_vars[i] = elem2->d_state_vars[i];
     newelement->set_shortspeed(elem2->shortspeed);

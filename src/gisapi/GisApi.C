@@ -864,7 +864,7 @@ int Get_slope(const double resolution, double x, double y, double &xslope, doubl
     return 0;
 }
 
-int Get_curvature(double resolution, double x, double y, double* xcurv, double* ycurv)
+int Get_curvature(const double resolution, const double x, const double y, double &xcurv, double &ycurv)
 {
     int row, col, i, j;
     int status;
@@ -898,12 +898,12 @@ int Get_curvature(double resolution, double x, double y, double* xcurv, double* 
             col--;
         if(col >= (gis_grid.ghead.ncols - 3) || row >= gis_grid.ghead.nrows - 3)
         {
-            *xcurv = ((gis_grid.xslope[row - 1][col + 1] - gis_grid.xslope[row - 1][col - 1])
+            xcurv = ((gis_grid.xslope[row - 1][col + 1] - gis_grid.xslope[row - 1][col - 1])
                     + 2 * (gis_grid.xslope[row][col + 1] - gis_grid.xslope[row][col - 1])
                     + (gis_grid.xslope[row + 1][col + 1] - gis_grid.xslope[row + 1][col - 1]))
                      / (8 * gis_grid.ghead.resolution);
             
-            *ycurv = ((gis_grid.yslope[row - 1][col - 1] - gis_grid.yslope[row + 1][col - 1])
+            ycurv = ((gis_grid.yslope[row - 1][col - 1] - gis_grid.yslope[row + 1][col - 1])
                     + 2 * (gis_grid.yslope[row - 1][col] - gis_grid.yslope[row + 1][col])
                     + (gis_grid.yslope[row - 1][col + 1] - gis_grid.yslope[row + 1][col + 1]))
                      / (8 * gis_grid.ghead.resolution);
@@ -930,8 +930,8 @@ int Get_curvature(double resolution, double x, double y, double* xcurv, double* 
             y1 = gis_grid.ghead.ymax - gis_grid.ghead.resolution * (double) row - y;
             x1 = x1 / gis_grid.ghead.resolution;
             y1 = y1 / gis_grid.ghead.resolution;
-            *xcurv = interpolate_bilinear_at(gis_grid.ghead.resolution, x1, y1, xxcurv);
-            *ycurv = interpolate_bilinear_at(gis_grid.ghead.resolution, x1, y1, yycurv);
+            xcurv = interpolate_bilinear_at(gis_grid.ghead.resolution, x1, y1, xxcurv);
+            ycurv = interpolate_bilinear_at(gis_grid.ghead.resolution, x1, y1, yycurv);
             
         }
     }

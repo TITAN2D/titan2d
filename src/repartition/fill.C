@@ -96,7 +96,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->eigenvxymax[i] = sendel->eigenvxymax(i);
         elem->kactxy[i] = sendel->kactxy(i);
         elem->zeta[i] = sendel->zeta(i);
-        elem->curvature[i] = sendel->curvature[i];
+        elem->curvature[i] = sendel->curvature(i);
         elem->d_gravity[i] = sendel->d_gravity[i];
     }
     for(i = 0; i < NUM_STATE_VARS; i++)
@@ -105,7 +105,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->Influx[i] = sendel->Influx[i];
     }
     for(i = 0; i < 3; i++)
-        elem->gravity[i] = sendel->gravity[i];
+        elem->gravity[i] = sendel->gravity_[i];
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         elem->d_state_vars[i] = sendel->d_state_vars[i];
     elem->shortspeed = sendel->shortspeed();

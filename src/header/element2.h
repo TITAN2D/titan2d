@@ -580,8 +580,7 @@ public:
 
 
 
-    //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
-    double* get_gravity();
+    
 
     //! this function is titan legacy code it is defined in Element2.C but is not called anywhere
     int determine_refinement(double);
@@ -604,12 +603,17 @@ public:
     double zeta(int idim) const {return zeta_[idim];}
     double& zeta_ref(int idim) {return zeta_[idim];}
     void zeta(int idim, double value) {zeta_[idim]=value;}
+    
+    //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
+    double* get_gravity(){return gravity_;}
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
-    double* get_d_gravity();
+    double* get_d_gravity(){return d_gravity;}
 
     //! this function returns the precomputed local terrain curvature.  Curvature itself is the inverse of radius of curvature.  The exact value of curvature  is the spatial second derivative of the normal coordinate of the surface along directions tangent to the surface at that point (local x and y).  However I believe that Laercio Namikawa implemented it approximately, i.e. as the global x and y second derivatives of terrain elevation. 
-    double* get_curvature();
+    double curvature(int idim) const {return curvature_[idim];}
+    double& curvature_ref(int idim) {return curvature_[idim];}
+    void curvature(int idim, double value) {curvature_[idim]=value;}
 
     //! this function is called in element_weight.C, it is used in computing the load balancing weight
     void calc_flux_balance(HashTable *NodeTable);
@@ -878,10 +882,10 @@ protected:
     double zeta_[DIMENSION];
 
     //! Curvature itself is the inverse of radius of curvature.  The exact value of curvature is the spatial second derivative of the normal coordinate of the surface along directions tangent to the surface at that point (local x and y).  However I believe that Laercio Namikawa implemented it approximately, i.e. as the global x and y second derivatives of terrain elevation. 
-    double curvature[DIMENSION];
+    double curvature_[DIMENSION];
 
     //! the gravity vector in local x,y,z coordinates (z is normal to the terrain surface, the projections of the x and y local directions onto a horizontal plane are aligned with the global x and y directions)
-    double gravity[3];
+    double gravity_[3];
 
     //! the spatial (x and y) derivatives of the local z component of the gravity vector
     double d_gravity[DIMENSION];
@@ -996,21 +1000,6 @@ inline void Element::update_prev_state_vars() {
     for (int i = 0; i < NUM_STATE_VARS; i++)
         prev_state_vars[i] = state_vars[i];
 }
-
-inline double* Element::get_gravity() {
-    return gravity;
-}
-;
-
-inline double* Element::get_d_gravity() {
-    return d_gravity;
-}
-;
-
-inline double* Element::get_curvature() {
-    return curvature;
-}
-;
 
 //above this line Keith made inline 20061128
 /* REALLY? member functions defined in class body are 

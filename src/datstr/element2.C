@@ -1665,14 +1665,14 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         VxVy[0] = state_vars[2] / state_vars[1];
         if(VxVy[0] != 0.0)
         {
-            a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
+            a = sqrt(effect_kactxy[0] * gravity_[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity_[2]);
             VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
         VxVy[1] = state_vars[3] / state_vars[1];
         if(VxVy[1] != 0.0)
         {
-            a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity[2]);
+            a = sqrt(effect_kactxy[1] * gravity_[2] * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity_[2]);
             VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
@@ -1681,14 +1681,14 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         VxVy[0] = state_vars[1] / state_vars[0];
         if(VxVy[0] != 0.0)
         {
-            a = sqrt(effect_kactxy[0] * gravity[2] * state_vars[0]);
+            a = sqrt(effect_kactxy[0] * gravity_[2] * state_vars[0]);
             VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
         VxVy[1] = state_vars[2] / state_vars[0];
         if(VxVy[1] != 0.0)
         {
-            a = sqrt(effect_kactxy[1] * gravity[2] * state_vars[0]);
+            a = sqrt(effect_kactxy[1] * gravity_[2] * state_vars[0]);
             VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
@@ -1912,8 +1912,8 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             Vel[i] = 0.;
 
             // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
-            a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][1]
-                    +(hfv[0][0]-hfv[0][1])*gravity[2]);
+            a=sqrt(effect_kactxy[0]*gravity_[2]*hfv[0][1]
+                    +(hfv[0][0]-hfv[0][1])*gravity_[2]);
 
             //fluxes
             for (i=0; i<NUM_STATE_VARS; i++)
@@ -1942,13 +1942,13 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             Vel[2] = hfv[0][4] / hfv[0][0];
 
             // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
-            double temp = effect_kactxy[0] * hfv[0][1] * gravity[2];
-            a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity[2]);
+            double temp = effect_kactxy[0] * hfv[0][1] * gravity_[2];
+            a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity_[2]);
 
             // get du/dy
             double dudy = (d_state_vars[NUM_STATE_VARS + 2] - d_state_vars[NUM_STATE_VARS + 1] * Vel[0]) / state_vars[1];
             double alphaxy = -c_sgn(dudy) * sin(matprops_ptr->intfrict) * effect_kactxy[0];
-            double temp2 = alphaxy * hfv[0][0] * hfv[0][1] * gravity[2];
+            double temp2 = alphaxy * hfv[0][0] * hfv[0][1] * gravity_[2];
             if(hfv[0][0] > GEOFLOW_TINY)
                 volf = hfv[0][1] / hfv[0][0];
             //fluxes
@@ -1956,7 +1956,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hfv[1][1] = hfv[0][2];
             hfv[1][2] = hfv[0][2] * Vel[0] + 0.5 * (1. - den_frac) * temp * hfv[0][0];
             hfv[1][3] = hfv[0][3] * Vel[0] + 0.5 * (1. - den_frac) * temp2;
-            hfv[1][4] = hfv[0][4] * Vel[2] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity[2];
+            hfv[1][4] = hfv[0][4] * Vel[2] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity_[2];
             hfv[1][5] = hfv[0][5] * Vel[2];
 
             //wave speeds
@@ -1991,14 +1991,14 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             Vel[1]= Vel[3] = 0.; // not really, but don't need them here
             Vel[0]=hfv[0][2]/hfv[0][1];
             Vel[2]=hfv[0][4]/hfv[0][0];
-            double temp = effect_kactxy[0]*hrfv[0][1]*gravity[2];
-            a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity[2]);
+            double temp = effect_kactxy[0]*hrfv[0][1]*gravity_[2];
+            a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity_[2]);
 
             // get du/dy
             double dudy=(d_state_vars[NUM_STATE_VARS+2]-
                     d_state_vars[NUM_STATE_VARS+1]*Vel[0])/state_vars[1];
             double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[0];
-            double temp2=alphaxy*hrfv[0][0]*hrfv[0][1]*gravity[2];
+            double temp2=alphaxy*hrfv[0][0]*hrfv[0][1]*gravity_[2];
             if ( hrfv[0][0] > GEOFLOW_TINY )
             volf = hrfv[0][1]/hrfv[0][0];
             //fluxes
@@ -2006,7 +2006,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hrfv[1][1]=hrfv[0][2];
             hrfv[1][2]=hrfv[0][2]*Vel[0] + 0.5*(1.-den_frac)*temp*hrfv[0][0];
             hrfv[1][3]=hrfv[0][3]*Vel[0] + 0.5*(1.-den_frac)*temp2;
-            hrfv[1][4]=hrfv[0][4]*Vel[2] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity[2];
+            hrfv[1][4]=hrfv[0][4]*Vel[2] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity_[2];
             hrfv[1][5]=hrfv[0][5]*Vel[2];
 
             //wave speeds
@@ -2045,7 +2045,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
 
             speed=0.0;
-            a=sqrt(effect_kactxy[0]*gravity[2]*hfv[0][0]);
+            a=sqrt(effect_kactxy[0]*gravity_[2]*hfv[0][0]);
 
             //fluxes
             hfv[1][0]=speed*hfv[0][0];
@@ -2077,7 +2077,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[0];
             speed = speed2 = hfv[0][1] / hfv[0][0];
 
-            a = sqrt(effect_kactxy[0] * gravity[2] * hfv[0][0]);
+            a = sqrt(effect_kactxy[0] * gravity_[2] * hfv[0][0]);
 
             //fluxes
             hfv[1][0] = speed * hfv[0][0];
@@ -2114,7 +2114,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[0];
             speed=speed2=hfv[0][1]/hfv[0][0];
 
-            a=sqrt(kactxy(1)*gravity[2]*hrfv[0][0]);
+            a=sqrt(kactxy(1)*gravity_[2]*hrfv[0][0]);
 
             //fluxes
             hrfv[1][0]=speed*hrfv[0][0];
@@ -2177,8 +2177,8 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][1]*=wetnessfactor;
 
-            double temp= effect_kactxy[1]*hfv[0][1]*gravity[2];
-            a=sqrt(temp + (hfv[0][0]-hfv[0][1])*gravity[2]);
+            double temp= effect_kactxy[1]*hfv[0][1]*gravity_[2];
+            a=sqrt(temp + (hfv[0][0]-hfv[0][1])*gravity_[2]);
             Vel[0]=Vel[1]=Vel[2]=Vel[3]=0.;
 
             //fluxes
@@ -2205,8 +2205,8 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
                     hfv[0][i] *= wetnessfactor;
 
             // a = speed of sound through the medium
-            double temp = effect_kactxy[1] * hfv[0][1] * gravity[2];
-            a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity[2]);
+            double temp = effect_kactxy[1] * hfv[0][1] * gravity_[2];
+            a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity_[2]);
 
             // velocities
             Vel[0] = Vel[2] = 0.; // don't need them here
@@ -2216,7 +2216,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             // hydostatic terms
             double dvdx = (d_state_vars[3] - d_state_vars[1] * Vel[1]) / state_vars[1];
             double alphayx = -c_sgn(dvdx) * sin(matprops_ptr->intfrict) * effect_kactxy[1];
-            double temp2 = alphayx * hfv[0][0] * hfv[0][1] * gravity[2];
+            double temp2 = alphayx * hfv[0][0] * hfv[0][1] * gravity_[2];
             if(hfv[0][0] > GEOFLOW_TINY)
                 volf = hfv[0][1] / hfv[0][0];
 
@@ -2226,7 +2226,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hfv[1][2] = hfv[0][2] * Vel[1] + 0.5 * (1. - den_frac) * temp2;
             hfv[1][3] = hfv[0][3] * Vel[1] + 0.5 * (1. - den_frac) * temp * hfv[0][0];
             hfv[1][4] = hfv[0][4] * Vel[3];
-            hfv[1][5] = hfv[0][5] * Vel[3] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity[2];
+            hfv[1][5] = hfv[0][5] * Vel[3] + 0.5 * epsilon * hfv[0][0] * hfv[0][0] * gravity_[2];
 
             //wave speeds
             hfv[2][0] = Vel[1] - a;
@@ -2254,8 +2254,8 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             for (i=0; i<NUM_STATE_VARS; i++)
             hrfv[0][i]*=wetnessfactor;
     
-            double temp=effect_kactxy[1]*hrfv[0][1]*gravity[2];
-            a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity[2]);
+            double temp=effect_kactxy[1]*hrfv[0][1]*gravity_[2];
+            a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity_[2]);
     
             // velocities
             Vel[0]=Vel[2]=0.;
@@ -2265,7 +2265,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             // hydostatic terms
             double dvdx=(d_state_vars[3]-d_state_vars[1]*Vel[1])/state_vars[1];
             double alphayx=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[1];
-            double temp2=alphayx*hrfv[0][0]*hrfv[0][1]*gravity[2];
+            double temp2=alphayx*hrfv[0][0]*hrfv[0][1]*gravity_[2];
             if ( hrfv[0][0] > GEOFLOW_TINY )
             volf = hrfv[0][1]/hrfv[0][0];
             //fluxes
@@ -2274,7 +2274,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             hrfv[1][2]=hrfv[0][2]*Vel[1] + 0.5*(1.-den_frac)*temp2;
             hrfv[1][3]=hrfv[0][3]*Vel[1] + 0.5*(1.-den_frac)*temp*hrfv[0][0];
             hrfv[1][4]=hrfv[0][4]*Vel[3];
-            hrfv[1][5]=hrfv[0][5]*Vel[3] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity[2];
+            hrfv[1][5]=hrfv[0][5]*Vel[3] + 0.5*epsilon*hrfv[0][0]*hrfv[0][0]*gravity_[2];
     
             //wave speeds
             hrfv[2][0]=Vel[1]-a;
@@ -2314,7 +2314,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
 
             speed=0.0;
-            a=sqrt(effect_kactxy[1]*gravity[2]*hfv[0][0]);
+            a=sqrt(effect_kactxy[1]*gravity_[2]*hfv[0][0]);
 
             //fluxes
             hfv[1][0]=speed*hfv[0][0];
@@ -2346,7 +2346,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[1];
             speed = speed2 = hfv[0][2] / hfv[0][0];
 
-            a = sqrt(effect_kactxy[1] * gravity[2] * hfv[0][0]);
+            a = sqrt(effect_kactxy[1] * gravity_[2] * hfv[0][0]);
 
             //fluxes
             hfv[1][0] = speed * hfv[0][0];
@@ -2384,7 +2384,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[1];
             speed=speed2=hfv[0][2]/hfv[0][0];
 
-            a=sqrt(kactxy(1)*gravity[2]*hrfv[0][0]);
+            a=sqrt(kactxy(1)*gravity_[2]*hrfv[0][0]);
 
             //fluxes
             hrfv[1][0]=speed*hrfv[0][0];
@@ -3274,22 +3274,22 @@ void Element::calc_gravity_vector(MatProps* matprops_ptr)
     double down_slope_gravity = 9.8 * sin(max_angle);
     if(dabs(down_slope_gravity) > GEOFLOW_TINY)
     {
-        gravity[0] = -down_slope_gravity * zeta(0) / max_slope;
-        gravity[1] = -down_slope_gravity * zeta(1) / max_slope;
+        gravity_[0] = -down_slope_gravity * zeta(0) / max_slope;
+        gravity_[1] = -down_slope_gravity * zeta(1) / max_slope;
         //   gravity[0] = -down_slope_gravity*cos(atan(1.0));
         //   gravity[1] = -down_slope_gravity*sin(atan(1.0));
         
-        gravity[2] = 9.8 * cos(max_angle);
+        gravity_[2] = 9.8 * cos(max_angle);
     }
     else
     {
-        gravity[0] = 0;
-        gravity[1] = 0;
-        gravity[2] = 9.8;
+        gravity_[0] = 0;
+        gravity_[1] = 0;
+        gravity_[2] = 9.8;
     }
     
     for(int i = 0; i < 3; i++)
-        gravity[i] = gravity[i] / matprops_ptr->GRAVITY_SCALE;
+        gravity_[i] = gravity_[i] / matprops_ptr->GRAVITY_SCALE;
     
     return;
 }
@@ -3342,9 +3342,9 @@ void Element::calc_d_gravity(HashTable* El_Table)
     {
         double dp, dm, dxp, dxm;
         dxp = ep->coord(0) - coord(0);
-        dp = (ep->gravity[2] - gravity[2]) / dxp;
+        dp = (ep->gravity_[2] - gravity_[2]) / dxp;
         dxm = coord(0) - em->coord(0);
-        dm = (gravity[2] - em->gravity[2]) / dxm;
+        dm = (gravity_[2] - em->gravity_[2]) / dxm;
         
         d_gravity[0] = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average 
     }
@@ -3352,13 +3352,13 @@ void Element::calc_d_gravity(HashTable* El_Table)
     {
         double dm, dxm;
         dxm = coord(0) - em->coord(0);
-        d_gravity[0] = (gravity[2] - em->gravity[2]) / dxm;
+        d_gravity[0] = (gravity_[2] - em->gravity_[2]) / dxm;
     }
     else if(ep != NULL)
     {
         double dp, dxp;
         dxp = ep->coord(0) - coord(0);
-        d_gravity[0] = (ep->gravity[2] - gravity[2]) / dxp;
+        d_gravity[0] = (ep->gravity_[2] - gravity_[2]) / dxp;
     }
     else
         //no neighbors on either side -- assume that the ground is flat
@@ -3371,9 +3371,9 @@ void Element::calc_d_gravity(HashTable* El_Table)
     {
         double dp, dm, dxp, dxm;
         dxp = ep->coord(1) - coord(1);
-        dp = (ep->gravity[2] - gravity[2]) / dxp;
+        dp = (ep->gravity_[2] - gravity_[2]) / dxp;
         dxm = coord(1) - em->coord(1);
-        dm = (gravity[2] - em->gravity[2]) / dxm;
+        dm = (gravity_[2] - em->gravity_[2]) / dxm;
         
         d_gravity[1] = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average 
     }
@@ -3381,13 +3381,13 @@ void Element::calc_d_gravity(HashTable* El_Table)
     {
         double dm, dxm;
         dxm = coord(1) - em->coord(1);
-        d_gravity[1] = (gravity[2] - em->gravity[2]) / dxm;
+        d_gravity[1] = (gravity_[2] - em->gravity_[2]) / dxm;
     }
     else if(ep != NULL)
     {
         double dp, dxp;
         dxp = ep->coord(1) - coord(1);
-        d_gravity[1] = (ep->gravity[2] - gravity[2]) / dxp;
+        d_gravity[1] = (ep->gravity_[2] - gravity_[2]) / dxp;
     }
     else
         //no neighbors on either side -- assume that the ground is flat
@@ -3422,7 +3422,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         exit(1);
     }
 #endif
-    i = Get_curvature(resolution, xcoord, ycoord, curvature, (curvature + 1));
+    i = Get_curvature(resolution, xcoord, ycoord, curvature_ref(0), curvature_ref(1));
 #ifdef PRINT_GIS_ERRORS
     if(i != 0)
     {   
@@ -3430,8 +3430,8 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         exit(1);
     }
 #endif
-    curvature[0] = curvature[0] * (matprops_ptr->LENGTH_SCALE);
-    curvature[1] = curvature[1] * (matprops_ptr->LENGTH_SCALE);
+    curvature(0, curvature(0) * (matprops_ptr->LENGTH_SCALE));
+    curvature(1, curvature(1) * (matprops_ptr->LENGTH_SCALE));
     
     if(matprops_ptr->material_count == 1)  //only one material so don't need map  
         set_material(1);  //GIS material id tag/index starts from 1

@@ -894,8 +894,8 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1],
                                 EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), EmTemp->zeta(0),
-                                EmTemp->zeta(1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->zeta(1), EmTemp->curvature(0) / (matprops->LENGTH_SCALE),
+                                EmTemp->curvature(1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
                                 EmTemp->elm_loc(1));
 #else
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
@@ -906,8 +906,8 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1],
                                 EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), EmTemp->zeta(0),
-                                EmTemp->zeta(1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->zeta(1), EmTemp->curvature(0) / (matprops->LENGTH_SCALE),
+                                EmTemp->curvature(1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
                                 EmTemp->elm_loc(1));
 #endif
                     }
@@ -963,8 +963,8 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
                                 state_vars[2] * momentum_scale, state_vars[3] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), EmTemp->zeta(0),
-                                EmTemp->zeta(1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->zeta(1), EmTemp->curvature(0) / (matprops->LENGTH_SCALE),
+                                EmTemp->curvature(1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
                                 EmTemp->elm_loc(1));
 #else
                         fprintf(fp, "%e %e %e %d %e %e %e %u %u %d %d %e %e %e %e %e %d %d\n",
@@ -973,8 +973,8 @@ void meshplotter(HashTable * El_Table, HashTable * NodeTable, MatProps * matprop
                                 elev * (matprops->LENGTH_SCALE), myid, state_vars[0] * (matprops)->HEIGHT_SCALE,
                                 state_vars[1] * momentum_scale, state_vars[2] * momentum_scale, tmpkey[0],tmpkey[1], EmTemp->generation(), EmTemp->which_son(),
                                 EmTemp->elevation() * (matprops->LENGTH_SCALE), EmTemp->zeta(0),
-                                EmTemp->zeta(1), *(EmTemp->get_curvature()) / (matprops->LENGTH_SCALE),
-                                *(EmTemp->get_curvature() + 1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
+                                EmTemp->zeta(1), EmTemp->curvature(0) / (matprops->LENGTH_SCALE),
+                                EmTemp->curvature(1) / (matprops->LENGTH_SCALE), EmTemp->elm_loc(0),
                                 EmTemp->elm_loc(1));
 #endif
                     }

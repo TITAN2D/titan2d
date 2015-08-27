@@ -227,7 +227,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
     double u_vec_alt[3];
     double* d_uvec;
     int intswap;
-    double *curve, maxcurve;
+    double maxcurve;
     int ifanynonzeroheight = 0;
     //for TWO PHASES
     double Vsolid[2], Vfluid[2];
@@ -322,8 +322,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     
                     if(evalue > 1000000000.)
                     {
-                        curve = EmTemp->get_curvature();
-                        maxcurve = (dabs(curve[0]) > dabs(curve[1])) ? curve[0] : curve[1];
+                        maxcurve = (dabs(EmTemp->curvature(0)) > dabs(EmTemp->curvature(1)) ? EmTemp->curvature(0) : EmTemp->curvature(1));
                         if(elementType == ElementType::TwoPhases)
                         {
                             fprintf(stderr,
