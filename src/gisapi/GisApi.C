@@ -826,7 +826,7 @@ int Get_elevation(double resolution, double x, double y, double& elev)
     return 0;
 }
 
-int Get_slope(double resolution, double x, double y, double* xslope, double* yslope)
+int Get_slope(const double resolution, double x, double y, double &xslope, double &yslope)
 {
     int status;
     
@@ -851,13 +851,13 @@ int Get_slope(double resolution, double x, double y, double* xslope, double* ysl
                 y = gis_grid.ghead.nrows - 1;
             if((int) x >= gis_grid.ghead.ncols - 1)
                 x = gis_grid.ghead.ncols - 1;
-            *xslope = gis_grid.xslope[(int) y - 1][(int) x - 1];
-            *yslope = gis_grid.yslope[(int) y - 1][(int) x - 1];
+            xslope = gis_grid.xslope[(int) y - 1][(int) x - 1];
+            yslope = gis_grid.yslope[(int) y - 1][(int) x - 1];
         }
         else
         {
-            *xslope = interpolate_bilinear_at(gis_grid.ghead.resolution, x, y, gis_grid.xslope);
-            *yslope = interpolate_bilinear_at(gis_grid.ghead.resolution, x, y, gis_grid.yslope);
+            xslope = interpolate_bilinear_at(gis_grid.ghead.resolution, x, y, gis_grid.xslope);
+            yslope = interpolate_bilinear_at(gis_grid.ghead.resolution, x, y, gis_grid.yslope);
         }
         
     }

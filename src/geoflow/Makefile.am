@@ -5,8 +5,8 @@
 #
 
 noinst_LIBRARIES = libgeoflow.a
-#predict.f eigen.f getcoef.f
-libgeoflow_a_SOURCES = correct.f drag_model.f element_weight.C  sgn.f \
+#predict.f eigen.f getcoef.f correct.f drag_model.f sgn.f 
+libgeoflow_a_SOURCES = element_weight.C \
    edge_states.C get_coef_and_eigen.C rnr.h slopes.C  \
    move_data.C setup_geoflow.C step.C stats.C flux_srcs.C corrector.C
 

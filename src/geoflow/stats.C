@@ -484,7 +484,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                         double resolution = 0, xslope = 0, yslope = 0;
                         Get_max_resolution(&resolution);
                         Get_slope(resolution, Curr_El->coord(0) * matprops->LENGTH_SCALE,
-                                  Curr_El->coord(1) * matprops->LENGTH_SCALE, &xslope, &yslope);
+                                  Curr_El->coord(1) * matprops->LENGTH_SCALE, xslope, yslope);
                         if(temp > GEOFLOW_TINY)
                         {
                             if(elementType == ElementType::TwoPhases)

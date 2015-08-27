@@ -206,7 +206,7 @@ void cxxTitanSinglePhase::init_piles()
                     double resolution = 0, xslope = 0, yslope = 0;
                     Get_max_resolution(&resolution);
                     Get_slope(resolution, Curr_El->coord(0) * matprops_ptr->LENGTH_SCALE,
-                              Curr_El->coord(1) * matprops_ptr->LENGTH_SCALE, &xslope, &yslope);
+                              Curr_El->coord(1) * matprops_ptr->LENGTH_SCALE, xslope, yslope);
                     double slope = sqrt(xslope * xslope + yslope * yslope);
                     
                     forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)

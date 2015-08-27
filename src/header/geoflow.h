@@ -122,7 +122,7 @@ inline double c_dmin1(double d1, double d2, double d3)
 }
 
 //! a c++ dmax1 function
-inline double c_dmax1(double d1, double d2)
+inline double c_dmax1(const double d1, const double d2)
 {
     if(d1 < d2)
         return d2;
@@ -180,7 +180,7 @@ extern "C" void eigen2ph_(double *Uvec, double *eigenvxmax, double *eigenvymax,
         double *VxVy, int *if_stopped, double *fluxcoef);*/
 
 //! the actual corrector timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-extern "C" void correct_(double *Uvec, double *Uprev, double *fluxxp,
+/*extern "C" void correct_(double *Uvec, double *Uprev, double *fluxxp,
         double *fluxyp, double *fluxxm, double *fluxym,
         double *tiny, double *dtdx, double *dtdy, double *dt,
         double *dUdx, double *dUdy, double *xslope,
@@ -188,7 +188,7 @@ extern "C" void correct_(double *Uvec, double *Uprev, double *fluxxp,
         double *bedfrictang, double *g, double *kactxy,
         double *dgdx, double *frict_tiny, double *forceint,
         double *forcebed, int *do_erosion, double *eroded,
-        double *VxVy, int *if_stopped, double *fluxcoef);
+        double *VxVy, int *if_stopped, double *fluxcoef);*/
 
 //! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
 /*extern "C" void predict2ph_(double *Uvec, double *dUdx, double *dUdy,
@@ -199,7 +199,7 @@ extern "C" void correct_(double *Uvec, double *Uprev, double *fluxxp,
         double *VxVy, int *if_stopped, double *fluxcoef);*/
 
 //! the actual corrector timestep update
-extern "C" void correct2ph_(double *Uvec, double *Uprev, double *fluxxp,
+/*extern "C" void correct2ph_(double *Uvec, double *Uprev, double *fluxxp,
         double *fluxyp, double *fluxxm, double *fluxym,
         double *tiny, double *dtdx, double *dtdy, double *dt,
         double *dUdx, double *dUdy, double *xslope,
@@ -209,7 +209,7 @@ extern "C" void correct2ph_(double *Uvec, double *Uprev, double *fluxxp,
         double *forcebed, int *do_erosion, double *eroded,
         double *Vsolid, double *Vfluid, double *den_solid,
         double *den_fluid, double *terminal_vel, double *eps,
-        int *if_stopped, double *fluxcoef);
+        int *if_stopped, double *fluxcoef);*/
 
 #endif
 #ifdef IBMSP

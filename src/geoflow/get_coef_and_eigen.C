@@ -262,10 +262,6 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                                      matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
                                      EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
-                        /*gmfggetcoef2ph_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
-                                        &(matprops_ptr->bedfrict[EmTemp->material()]), &(matprops_ptr->intfrict),
-                                        kactxy, (EmTemp->get_kactxy() + 1), &tiny, &(matprops2_ptr->epsilon));*/
-                        
                     }
                     if(elementType == ElementType::SinglePhase)
                     {

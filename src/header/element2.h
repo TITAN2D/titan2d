@@ -494,13 +494,9 @@ public:
     //! this function returns the vector of x and y derivatives of state variables, all the x derivatives come first as a group followed by the y derivatives as a group
     double* get_d_state_vars();
 
-    //! this function returns the x and y slopes of the terrain elevation
-    double* get_zeta();
-
-    //! this function returns the length of an element in the x and y directions
+        //! this function returns the length of an element in the x and y directions
     double dx(int idim) const {return dx_[idim];}
     void dx(int idim, double value){dx_[idim]=value;}
-    
 
     //! this function computes which side of the element is facing the positive x direction
     void find_positive_x_side(HashTable*);
@@ -553,8 +549,8 @@ public:
     void eigenvxymax(int idim,double value) {eigenvxymax_[idim]=value;}
 
     //! this function performs the corrector update, in the predictor (finite difference) corrector (finite volume) timestepping that titan uses.  Actually this function passes values to a short fortran subroutine named "correct_" that performs the calculations.  The "correct_" fortran subroutine should be torn out and the guts rewritten in C++ here.  That may make it into this release if there is time, otherwise expect it in the next release
-    void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops_ptr,
-            TimeProps *timeprops_ptr, double *forceint, double *forcebed, double *eroded, double *deposited);
+    /*void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops_ptr,
+            TimeProps *timeprops_ptr, double *forceint, double *forcebed, double *eroded, double *deposited);*/
 
     //! this function calculates the shortspeed,also known as the L'Hospital (pronounced Loo-pee-tal, you can look up L'Hospital's rule in almost any calculus book if you so desire). here is a brief explanation of shortspeed: shortspeed=|v|=|dhv/dh|=|v*dh/dh+h*dv/dh|=|v+h*dv/dh| which goes to |v| in the limit of h->0, this is a more accurate way to compute speed when the pile in this cell is short, hence the name "shortspeed" but it is not accurate when the pile is tall, that is when h*dv/dh is large, Keith implemented this in late summer 2006
     void calc_shortspeed(double inv_dt);
@@ -574,7 +570,6 @@ public:
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
-    double* get_kactxy(){return kactxy_;}
     double& kactxy_ref(const int idim){return kactxy_[idim];}
     double kactxy(const int idim) const {return kactxy_[idim];}
     
@@ -604,6 +599,11 @@ public:
     void set_elevation(double new_elevation) {
         elevation_ = new_elevation;
     };
+    
+    //! this function returns the x and y slopes of the terrain elevation
+    double zeta(int idim) const {return zeta_[idim];}
+    double& zeta_ref(int idim) {return zeta_[idim];}
+    void zeta(int idim, double value) {zeta_[idim]=value;}
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
     double* get_d_gravity();
@@ -875,7 +875,7 @@ protected:
     double elevation_;
 
     //! terrain slope in the global x and y directions
-    double zeta[DIMENSION];
+    double zeta_[DIMENSION];
 
     //! Curvature itself is the inverse of radius of curvature.  The exact value of curvature is the spatial second derivative of the normal coordinate of the surface along directions tangent to the surface at that point (local x and y).  However I believe that Laercio Namikawa implemented it approximately, i.e. as the global x and y second derivatives of terrain elevation. 
     double curvature[DIMENSION];

@@ -2877,7 +2877,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
     
     return;
 }
-
+#if 0
 void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr,
                       FluxProps *fluxprops, TimeProps *timeprops, double *forceint, double *forcebed, double *eroded,
                       double *deposited)
@@ -2969,7 +2969,7 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     }
     
     correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
-             (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict),
+             (d_state_vars + NUM_STATE_VARS), &(zeta_ref(0)), &(zeta_ref(1)), curvature, &(matprops_ptr->intfrict),
              effect_bedfrict_ptr(), gravity, effect_kactxy, d_gravity, &(matprops_ptr->frict_tiny), forceint, forcebed,
              &do_erosion, eroded, VxVy, //eval_velocity(0.0,0.0,VxVy),
              &IF_STOPPED, Influx);
@@ -3005,6 +3005,7 @@ void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatP
     
     return;
 }
+#endif
 
 void Element::calc_shortspeed(double inv_dt)
 {
@@ -3265,21 +3266,16 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
     }
     return NULL;
 }
-double* Element::get_zeta()
-{
-    return zeta;
-}
-
 void Element::calc_gravity_vector(MatProps* matprops_ptr)
 {
-    double max_slope = sqrt(zeta[0] * zeta[0] + zeta[1] * zeta[1]);
+    double max_slope = sqrt(zeta(0) * zeta(0) + zeta(1) * zeta(1));
     double max_angle = atan(max_slope);
     
     double down_slope_gravity = 9.8 * sin(max_angle);
     if(dabs(down_slope_gravity) > GEOFLOW_TINY)
     {
-        gravity[0] = -down_slope_gravity * zeta[0] / max_slope;
-        gravity[1] = -down_slope_gravity * zeta[1] / max_slope;
+        gravity[0] = -down_slope_gravity * zeta(0) / max_slope;
+        gravity[1] = -down_slope_gravity * zeta(1) / max_slope;
         //   gravity[0] = -down_slope_gravity*cos(atan(1.0));
         //   gravity[1] = -down_slope_gravity*sin(atan(1.0));
         
@@ -3418,7 +3414,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
     set_elevation(elevation() / matprops_ptr->LENGTH_SCALE);
     //eldif=(elevation-eldif)*matprops_ptr->LENGTH_SCALE;
     //if(fabs(eldif)>1.0) printf("calc_topo_data() after-before=%g\n",eldif);
-    i = Get_slope(resolution, xcoord, ycoord, zeta, (zeta + 1));
+    i = Get_slope(resolution, xcoord, ycoord, zeta_ref(0), zeta_ref(1));
 #ifdef PRINT_GIS_ERRORS
     if(i != 0)
     {   
@@ -3829,7 +3825,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
             dirx = VxVy[0] / Vtemp;
             diry = VxVy[1] / Vtemp;
             
-            bedslope = dirx * zeta[0] + diry * zeta[1];
+            bedslope = dirx * zeta(0) + diry * zeta(1);
             slopetemp = bedslope
                     + (dirx * effect_kactxy[0] * d_state_vars[0] + diry * effect_kactxy[1]
                                                                    * d_state_vars[NUM_STATE_VARS]);
@@ -3840,11 +3836,11 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
         else
         {
             set_stoppedflags(1); //erosion off
-            bedslope = -sqrt(zeta[0] * zeta[0] + zeta[1] * zeta[1]);
+            bedslope = -sqrt(zeta(0) * zeta(0) + zeta(1) * zeta(1));
             if(bedslope < 0)
             {
                 slopetemp = bedslope
-                        + (zeta[0] / bedslope * effect_kactxy[0] * d_state_vars[0] + zeta[1] / bedslope
+                        + (zeta(0) / bedslope * effect_kactxy[0] * d_state_vars[0] + zeta(1) / bedslope
                                 * effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]);
                 
                 stopcrit = sign(slopetemp + effect_tanbedfrict()) * HUGE_VAL;
@@ -3858,9 +3854,9 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
         {
             set_stoppedflags(1);
             slopetemp = -sqrt(
-                    (zeta[0] + effect_kactxy[0] * d_state_vars[0]) * (zeta[0] + effect_kactxy[0] * d_state_vars[0])
-                    * (zeta[1] + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS])
-                    * (zeta[1] + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]));
+                    (zeta(0) + effect_kactxy[0] * d_state_vars[0]) * (zeta(0) + effect_kactxy[0] * d_state_vars[0])
+                    * (zeta(1) + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS])
+                    * (zeta(1) + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]));
             if(slopetemp + tan(matprops_ptr->intfrict) > 0)
                 set_stoppedflags(2);
         }
