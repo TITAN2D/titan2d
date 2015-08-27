@@ -124,11 +124,10 @@ inline double c_dmin1(double d1, double d2, double d3)
 //! a c++ dmax1 function
 inline double c_dmax1(double d1, double d2)
 {
-    
     if(d1 < d2)
-        d1 = d2;
-    
-    return d1;
+        return d2;
+    else
+        return d1;
 }
 
 //! another c++ dmax1 function

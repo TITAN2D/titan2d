@@ -548,7 +548,9 @@ public:
             int* order_flag, double *outflow);
 
     //! this function calculates the maximum x and y direction wavespeeds which are the eigenvalues of the flux jacobian
-    double* get_eigenvxymax();
+    double eigenvxymax(int idim) const {return eigenvxymax_[idim];}
+    double& eigenvxymax_ref(int idim) {return eigenvxymax_[idim];}
+    void eigenvxymax(int idim,double value) {eigenvxymax_[idim]=value;}
 
     //! this function performs the corrector update, in the predictor (finite difference) corrector (finite volume) timestepping that titan uses.  Actually this function passes values to a short fortran subroutine named "correct_" that performs the calculations.  The "correct_" fortran subroutine should be torn out and the guts rewritten in C++ here.  That may make it into this release if there is time, otherwise expect it in the next release
     void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops_ptr,
@@ -860,7 +862,7 @@ protected:
     int positive_x_side_;
 
     //! maximum x and y direction wavespeeds for this element, wavespeeds are eigenvalues of the flux jacobians
-    double eigenvxymax[DIMENSION];
+    double eigenvxymax_[DIMENSION];
 
     //! k active/passive in the x and y directions, k active/passive is part of the coulomb friction model for Granular Flows
     double kactxy[DIMENSION];
@@ -990,11 +992,6 @@ inline void Element::update_prev_state_vars() {
     for (int i = 0; i < NUM_STATE_VARS; i++)
         prev_state_vars[i] = state_vars[i];
 }
-
-inline double* Element::get_eigenvxymax() {
-    return eigenvxymax;
-}
-;
 
 inline double* Element::get_gravity() {
     return gravity;

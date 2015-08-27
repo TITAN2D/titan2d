@@ -93,7 +93,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     for(i = 0; i < DIMENSION; i++)
     {
         elem->dx[i] = sendel->dx(i);
-        elem->eigenvxymax[i] = sendel->eigenvxymax[i];
+        elem->eigenvxymax[i] = sendel->eigenvxymax(i);
         elem->kactxy[i] = sendel->kactxy[i];
         elem->zeta[i] = sendel->zeta[i];
         elem->curvature[i] = sendel->curvature[i];

@@ -23,6 +23,7 @@
 #include "../header/geoflow.h"
 #include <math.h>
 
+//! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
 void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
         const double bedfrictang, const double intfrictang, 
         double &Kactx, double &Kacty, const double tiny, 
@@ -65,7 +66,7 @@ void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
     Kactx = epsilon * Kactx;
     Kacty = epsilon * Kacty;
 }
-
+//! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
 void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
         const double bedfrictang, const double intfrictang, 
         double &Kactx, double &Kacty, const double tiny, 
@@ -106,6 +107,63 @@ void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
     Kactx = epsilon * Kactx;
     Kacty = epsilon * Kacty;
 }
+//! the actual calculation of wave speeds (eigen vectors of the flux jacoboians) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
+void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &evalue, 
+        const double tiny, double *kactxy, const double *gravity, const double *VxVy) 
+{
+    if (Uvec[0] > tiny)
+    {
+        //     iverson and denlinger
+        if (kactxy[0] < 0.0)
+        {
+            //negative kactxy
+            kactxy[0] = -kactxy[0];
+        }
+        eigenvxmax = fabs(VxVy[0]) + sqrt(kactxy[0] * gravity[2] * Uvec[0]);
+        eigenvymax = fabs(VxVy[1]) + sqrt(kactxy[0] * gravity[2] * Uvec[0]);
+
+    }
+    else
+    {
+        eigenvxmax = tiny;
+        eigenvymax = tiny;
+    }
+
+    evalue = c_dmax1(eigenvxmax, eigenvymax);
+}
+void eigen2ph( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &evalue, 
+        const double tiny, double *kactxy, const double *gravity, 
+        const double *v_solid, const double *v_fluid, const int flowtype) 
+
+{
+    double sound_speed;
+    if (Uvec[0] > tiny) {
+        //iverson and denlinger
+        if (kactxy[0] < 0.0) {
+            kactxy[0] = -kactxy[0];
+        }
+
+        if (flowtype == 1)
+            sound_speed = sqrt(Uvec[0] * kactxy[0] * gravity[2]);
+        else if (flowtype == 2)
+            sound_speed = sqrt(Uvec[0] * gravity[2]);
+        else
+            sound_speed = sqrt(Uvec[1] * gravity[2] * kactxy[0]+(Uvec[0] - Uvec[1]) * gravity[2]);
+
+        //x-direction
+        eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
+
+        //y-direction
+        eigenvymax = c_dmax1(fabs(v_solid[1] + sound_speed), fabs(v_fluid[1] + sound_speed));
+    }
+    else {
+        eigenvxmax = tiny;
+        eigenvymax = tiny;
+    }
+    evalue = c_dmax1(eigenvxmax, eigenvymax);
+}
+
+
 double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
                           TimeProps* timeprops_ptr, int ghost_flag)
 {
@@ -238,10 +296,10 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         Vfluid[1] = (*(EmTemp->get_state_vars() + 5)) / (*(EmTemp->get_state_vars()));
 
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen2ph_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()),
-                                  (EmTemp->get_eigenvxymax() + 1), &evalue, &tiny, EmTemp->get_kactxy(),
-                                  EmTemp->get_gravity(), Vsolid, Vfluid, &(matprops_ptr->epsilon),
-                                  &(matprops2_ptr->flow_type));
+                        eigen2ph(EmTemp->get_state_vars(), EmTemp->eigenvxymax_ref(0),
+                                  EmTemp->eigenvxymax_ref(1), evalue, tiny, EmTemp->get_kactxy(),
+                                  EmTemp->get_gravity(), Vsolid, Vfluid,
+                                  matprops2_ptr->flow_type);
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
@@ -249,8 +307,9 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         VxVy[1] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars()));
 
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen_(EmTemp->get_state_vars(), (EmTemp->get_eigenvxymax()), (EmTemp->get_eigenvxymax() + 1),
-                               &evalue, &tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), VxVy);
+                        eigen(EmTemp->get_state_vars(), EmTemp->eigenvxymax_ref(0),
+                                  EmTemp->eigenvxymax_ref(1),
+                               evalue, tiny, EmTemp->get_kactxy(), EmTemp->get_gravity(), VxVy);
                     }
                     
                     //printf("evalue=%g\n",evalue);
