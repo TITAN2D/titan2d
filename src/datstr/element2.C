@@ -187,7 +187,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     if(elementType() == ElementType::TwoPhases)
     {
         // initialize kactxy
-        kactxy[0] = kactxy[1] = 0.;
+        kactxy(0,0.0);
+        kactxy(1,0.0);
         effect_kactxy[0] = effect_kactxy[0] = 0.;
         set_effect_bedfrict(0.0);
         set_effect_tanbedfrict(0.0);
@@ -2113,7 +2114,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[0];
             speed=speed2=hfv[0][1]/hfv[0][0];
 
-            a=sqrt(kactxy[1]*gravity[2]*hrfv[0][0]);
+            a=sqrt(kactxy(1)*gravity[2]*hrfv[0][0]);
 
             //fluxes
             hrfv[1][0]=speed*hrfv[0][0];
@@ -2383,7 +2384,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[1];
             speed=speed2=hfv[0][2]/hfv[0][0];
 
-            a=sqrt(kactxy[1]*gravity[2]*hrfv[0][0]);
+            a=sqrt(kactxy(1)*gravity[2]*hrfv[0][0]);
 
             //fluxes
             hrfv[1][0]=speed*hrfv[0][0];
@@ -3793,8 +3794,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     
     double stopcrit;
     
-    effect_kactxy[0] = kactxy[0];
-    effect_kactxy[1] = kactxy[1];
+    effect_kactxy[0] = kactxy(0);
+    effect_kactxy[1] = kactxy(1);
     set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
     set_effect_tanbedfrict(matprops_ptr->tanbedfrict[material()]);
     
@@ -3881,8 +3882,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     }
     else
     {   
-        effect_kactxy[0]=kactxy[0];
-        effect_kactxy[1]=kactxy[1];
+        effect_kactxy[0]=kactxy(0);
+        effect_kactxy[1]=kactxy(1);
         set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
         set_effect_tanbedfrict(matprops_ptr->tanbedfrict[material()]);
     }

@@ -287,7 +287,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
         newelement->set_coord(i, elem2->n_coord[8][i]);
         newelement->dx(i, elem2->dx[i]);
         newelement->eigenvxymax(i, elem2->eigenvxymax[i]);
-        newelement->kactxy[i] = elem2->kactxy[i];
+        newelement->kactxy(i, elem2->kactxy[i]);
         newelement->zeta[i] = elem2->zeta[i];
         newelement->curvature[i] = elem2->curvature[i];
         newelement->d_gravity[i] = elem2->d_gravity[i];

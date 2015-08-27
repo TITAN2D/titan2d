@@ -197,7 +197,7 @@ void cxxTitanSinglePhase::init_piles()
                 { //if this is a refined element don't involve!!!
                     double dvol = Curr_El->dx(0) * Curr_El->dx(1) * *(Curr_El->get_state_vars());
                     realvolume += dvol;
-                    Curr_El->put_kactxy(epsilon);
+                    Curr_El->set_kactxy(epsilon);
 
                     Curr_El->calc_stop_crit(matprops_ptr);
                     if(Curr_El->stoppedflags() == 2)

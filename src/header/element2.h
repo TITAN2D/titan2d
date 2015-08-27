@@ -574,10 +574,14 @@ public:
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
-    double* get_kactxy(){return kactxy;}
-    double& get_kactxy_ref(const int idim){return kactxy[idim];}
+    double* get_kactxy(){return kactxy_;}
+    double& kactxy_ref(const int idim){return kactxy_[idim];}
+    double kactxy(const int idim) const {return kactxy_[idim];}
+    
+    void kactxy(const int idim, double value) {kactxy_[idim]=value;}
     //! interface to change value of earth-pressure coefficients
-    void put_kactxy(double kap[DIMENSION]) {for (int i = 0; i < DIMENSION; i++)kactxy[i] = kap[i];}
+    void set_kactxy(double kap[DIMENSION]) {for (int i = 0; i < DIMENSION; i++)kactxy_[i] = kap[i];}
+    
 
 
 
@@ -865,7 +869,7 @@ protected:
     double eigenvxymax_[DIMENSION];
 
     //! k active/passive in the x and y directions, k active/passive is part of the coulomb friction model for Granular Flows
-    double kactxy[DIMENSION];
+    double kactxy_[DIMENSION];
 
     //! terrain elevation at this elements center/bubble node 
     double elevation_;
