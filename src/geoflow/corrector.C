@@ -456,8 +456,8 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     double *state_vars = EmTemp->get_state_vars();
     double *prev_state_vars = EmTemp->get_prev_state_vars();
     double *d_state_vars = EmTemp->get_d_state_vars();
-    double *gravity = EmTemp->get_gravity();
-    double *d_gravity = EmTemp->get_d_gravity();
+    double gravity[3]{EmTemp->gravity(0),EmTemp->gravity(1),EmTemp->gravity(2)};
+    double d_gravity[3]{EmTemp->d_gravity(0),EmTemp->d_gravity(1),EmTemp->d_gravity(2)};
 
     double *Influx = EmTemp->get_influx();
     

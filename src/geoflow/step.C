@@ -366,12 +366,15 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
 #else
         IF_STOPPED = !(!(Curr_El->stoppedflags()));
 #endif
+        double gravity[3]{Curr_El->gravity(0),Curr_El->gravity(1),Curr_El->gravity(2)};
+        double d_gravity[3]{Curr_El->d_gravity(0),Curr_El->d_gravity(1),Curr_El->d_gravity(2)};
+        
         if(elementType == ElementType::TwoPhases)
         {
             predict2ph(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
-                     tiny, Curr_El->kactxy(0), dt2, Curr_El->get_gravity(), Curr_El->curvature(0), Curr_El->curvature(1),
+                     tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                      matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
-                     Curr_El->get_d_gravity(), matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
+                     d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
         }
         if(elementType == ElementType::SinglePhase)
         {
@@ -381,9 +384,9 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
                      Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);*/
             
             predict(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
-                     tiny, Curr_El->kactxy(0), dt2, Curr_El->get_gravity(), Curr_El->curvature(0), Curr_El->curvature(1),
+                     tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                      matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
-                     Curr_El->get_d_gravity(), matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
+                     d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
         }
 
         
@@ -603,7 +606,7 @@ void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps
 
                         
                         double dvol = state_vars[0] * dx * dy;
-                        g_ave += *(Curr_El->get_gravity() + 2) * dvol;
+                        g_ave += Curr_El->gravity(2) * dvol;
                         volume2 += dvol;
                         
                         if(temp > v_max)

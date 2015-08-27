@@ -109,7 +109,7 @@ void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
 }
 //! the actual calculation of wave speeds (eigen vectors of the flux jacoboians) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
 void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &evalue, 
-        const double tiny, double &kactx, const double *gravity, const double *VxVy) 
+        const double tiny, double &kactx, const double gravity_z, const double *VxVy) 
 {
     if (Uvec[0] > tiny)
     {
@@ -119,8 +119,8 @@ void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &
             //negative kactxy
             kactx = -kactx;
         }
-        eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity[2] * Uvec[0]);
-        eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity[2] * Uvec[0]);
+        eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * Uvec[0]);
+        eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * Uvec[0]);
 
     }
     else
@@ -132,7 +132,7 @@ void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &
     evalue = c_dmax1(eigenvxmax, eigenvymax);
 }
 void eigen2ph( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &evalue, 
-        const double tiny, double &kactx, const double *gravity, 
+        const double tiny, double &kactx, const double gravity_z, 
         const double *v_solid, const double *v_fluid, const int flowtype) 
 
 {
@@ -144,11 +144,11 @@ void eigen2ph( const double *Uvec, double &eigenvxmax, double &eigenvymax, doubl
         }
 
         if (flowtype == 1)
-            sound_speed = sqrt(Uvec[0] * kactx * gravity[2]);
+            sound_speed = sqrt(Uvec[0] * kactx * gravity_z);
         else if (flowtype == 2)
-            sound_speed = sqrt(Uvec[0] * gravity[2]);
+            sound_speed = sqrt(Uvec[0] * gravity_z);
         else
-            sound_speed = sqrt(Uvec[1] * gravity[2] * kactx+(Uvec[0] - Uvec[1]) * gravity[2]);
+            sound_speed = sqrt(Uvec[1] * gravity_z * kactx+(Uvec[0] - Uvec[1]) * gravity_z);
 
         //x-direction
         eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
@@ -294,7 +294,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
                         eigen2ph(EmTemp->get_state_vars(), EmTemp->eigenvxymax_ref(0),
                                   EmTemp->eigenvxymax_ref(1), evalue, tiny, EmTemp->kactxy_ref(0),
-                                  EmTemp->get_gravity(), Vsolid, Vfluid,
+                                  EmTemp->gravity(2), Vsolid, Vfluid,
                                   matprops2_ptr->flow_type);
                     }
                     if(elementType == ElementType::SinglePhase)
@@ -305,7 +305,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
                         eigen(EmTemp->get_state_vars(), EmTemp->eigenvxymax_ref(0),
                                   EmTemp->eigenvxymax_ref(1),
-                               evalue, tiny, EmTemp->kactxy_ref(0), EmTemp->get_gravity(), VxVy);
+                               evalue, tiny, EmTemp->kactxy_ref(0), EmTemp->gravity(2), VxVy);
                     }
                     
                     //printf("evalue=%g\n",evalue);

@@ -605,10 +605,12 @@ public:
     void zeta(int idim, double value) {zeta_[idim]=value;}
     
     //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
-    double* get_gravity(){return gravity_;}
+    double gravity(int idim) const {return gravity_[idim];}
+    void gravity(int idim, double value) {gravity_[idim]=value;}
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
-    double* get_d_gravity(){return d_gravity;}
+    double d_gravity(int idim) const {return d_gravity_[idim];}
+    void d_gravity(int idim, double value) {d_gravity_[idim]=value;}
 
     //! this function returns the precomputed local terrain curvature.  Curvature itself is the inverse of radius of curvature.  The exact value of curvature  is the spatial second derivative of the normal coordinate of the surface along directions tangent to the surface at that point (local x and y).  However I believe that Laercio Namikawa implemented it approximately, i.e. as the global x and y second derivatives of terrain elevation. 
     double curvature(int idim) const {return curvature_[idim];}
@@ -888,7 +890,7 @@ protected:
     double gravity_[3];
 
     //! the spatial (x and y) derivatives of the local z component of the gravity vector
-    double d_gravity[DIMENSION];
+    double d_gravity_[DIMENSION];
 
     //! part of the new stopping criteria under development, has a 0 if flow is not stopped, has the value 1 if it should not be sliding but should be slumping, has the value 2 if it should neither be sliding or slumping (it should be completely stopped), I (Keith) am rather confident in the criteria used to set this the problem is determining what to do about it after you know the flow SHOULD be stopped
     int stoppedflags_;
