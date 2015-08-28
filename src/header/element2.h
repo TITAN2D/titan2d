@@ -107,7 +107,10 @@ protected:
         set_refined_flag(1);
         set_Awet(0.0);
         set_Swet(1.0);
-        drypoint[0] = drypoint[1] = 0.0;
+        
+        drypoint(0, 0.0);
+        drypoint(1, 0.0);
+        
         set_iwetnode(8);
 
         set_stoppedflags(2); //material in all elements start from rest
@@ -715,8 +718,9 @@ public:
     void set_effect_tanbedfrict(double new_effect_tanbedfrict) {effect_tanbedfrict_ = new_effect_tanbedfrict;}
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
-    double* get_effect_kactxy();
-
+    double effect_kactxy(int idim) const {return effect_kactxy_[idim];}
+    void effect_kactxy(int idim, double value) {effect_kactxy_[idim]=value;}
+    
     //! this inline member function returns the stored value of Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
     double Awet() const {return Awet_;}
     //! this inline member function assigns a value to Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
@@ -733,10 +737,10 @@ public:
     void set_iwetnode(int iwetnode_in) {iwetnode_ = iwetnode_in;}
 
     //! this inline member function returns the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007
-    double* get_drypoint();
-
-    //! this inline member function sets the values of the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007
-    void put_drypoint(double *drypoint_in);
+    double drypoint(int idim) const {return drypoint_[idim];}
+    //! this inline member function sets the values of the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007  
+    void drypoint(int idim, double value) {drypoint_[idim]=value;}
+    
 
     //! the element member function calc_wet_dry_orient() determines the orientation of the dryline and which side of it is wet, the wet fraction (Swet) of a partially wet edge, the location of the drypoint, it does NOT calculate the wet area (Awet)... these quantities are used in the adjustment of fluxes in partially wet elements. calc_wet_dry_orient() is not coded for generic element orientation, i.e. the positive_x_side must be side 1.  Keith wrote this may 2007
     void calc_wet_dry_orient(HashTable *El_Table);
@@ -902,7 +906,7 @@ protected:
     double effect_tanbedfrict_;
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
-    double effect_kactxy[2];
+    double effect_kactxy_[2];
 
     //! extrusion flux rate for this timestep for this element, used when having material flow out of the ground, a volume per unit area influx rate source term
     double Influx[MAX_NUM_STATE_VARS];
@@ -917,7 +921,7 @@ protected:
     double Awet_;
 
     //! center point of the "dryline", x and y coordinates value ranges between -0.5 and 0.5 with 0 being the center of the element, since the wet/dry interface is taken to be a non-deforming non rotating (within the timestep) "dryline" convecting a single point on the dryline (called the drypoint) is sufficient to determine the new placement of the dryline which allows us to update Awet... Keith wrote this May 2007.
-    double drypoint[2];
+    double drypoint_[2];
 
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
     double Swet_;
@@ -1072,23 +1076,6 @@ inline void Element::zero_influx() {
 
 inline double* Element::get_influx() {
     return Influx;
-}
-;
-
-inline double* Element::get_effect_kactxy() {
-    return effect_kactxy;
-}
-;
-
-inline double* Element::get_drypoint() {
-    return drypoint;
-}
-;
-
-inline void Element::put_drypoint(double *drypoint_in) {
-    drypoint[0] = drypoint_in[0];
-    drypoint[1] = drypoint_in[1];
-    return;
 }
 ;
 

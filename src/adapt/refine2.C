@@ -680,8 +680,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     int iwetnodefather = EmTemp->iwetnode();
     double Awetfather = EmTemp->Awet();
     double dpson[2];
-    dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 + 0.5;
-    dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 + 0.5;
+    dpson[0] = EmTemp->drypoint(0) * 2 + 0.5;
+    dpson[1] = EmTemp->drypoint(1) * 2 + 0.5;
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
@@ -760,8 +760,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     }
     my_elm_loc[0] = elm_loc[0] + 1;
     my_elm_loc[1] = elm_loc[1];
-    dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 - 0.5;
-    dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 + 0.5;
+    dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
+    dpson[1] = EmTemp->drypoint(1) * 2 + 0.5;
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
@@ -840,8 +840,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     }
     my_elm_loc[0] = elm_loc[0] + 1;
     my_elm_loc[1] = elm_loc[1] + 1;
-    dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 - 0.5;
-    dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 - 0.5;
+    dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
+    dpson[1] = EmTemp->drypoint(1) * 2 - 0.5;
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
@@ -922,8 +922,8 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     my_elm_loc[0] = elm_loc[0];
     my_elm_loc[1] = elm_loc[1] + 1;
-    dpson[0] = *(EmTemp->get_drypoint() + 0) * 2 + 0.5;
-    dpson[1] = *(EmTemp->get_drypoint() + 1) * 2 - 0.5;
+    dpson[0] = EmTemp->drypoint(0) * 2 + 0.5;
+    dpson[1] = EmTemp->drypoint(1) * 2 - 0.5;
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);

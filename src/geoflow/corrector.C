@@ -475,7 +475,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         if(state_vars[0] > GEOFLOW_TINY)
         {
             for(i = 0; i < DIMENSION; i++)
-                kactxy[i] = *(EmTemp->get_effect_kactxy() + i);
+                kactxy[i] = EmTemp->effect_kactxy(i);
 
             // fluid velocities
             Vfluid[0] = state_vars[4] / state_vars[0];
@@ -547,9 +547,6 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     }
     if(elementType == ElementType::SinglePhase)
     {
-        double effect_bedfrict = EmTemp->effect_bedfrict();
-        double *effect_kactxy = EmTemp->get_effect_kactxy();
-
         double VxVy[2];
         if(state_vars[0] > GEOFLOW_TINY)
         {
@@ -575,7 +572,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         
         correct1ph(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt, d_state_vars,
                  (d_state_vars + NUM_STATE_VARS), EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops_ptr->intfrict,
-                 effect_bedfrict, gravity, effect_kactxy[0], d_gravity, matprops_ptr->frict_tiny, *forceint, *forcebed,
+                 EmTemp->effect_bedfrict(), gravity, EmTemp->effect_kactxy(0), d_gravity, matprops_ptr->frict_tiny, *forceint, *forcebed,
                  do_erosion, *eroded, VxVy, IF_STOPPED, Influx);
 
         /*correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,

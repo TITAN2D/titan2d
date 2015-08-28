@@ -309,8 +309,8 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     newelement->set_iwetnode(elem2->iwetnode);
     newelement->set_Awet(elem2->Awet);
     newelement->set_Swet(elem2->Swet);
-    newelement->drypoint[0] = elem2->drypoint[0];
-    newelement->drypoint[1] = elem2->drypoint[1];
+    newelement->drypoint(0, elem2->drypoint[0]);
+    newelement->drypoint(1, elem2->drypoint[1]);
     
     return;
 }

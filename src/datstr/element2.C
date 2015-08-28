@@ -151,7 +151,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
     set_shortspeed(0.0);
     
     set_iwetnode(8);
-    drypoint[0] = drypoint[1] = 0.0;
+    drypoint(0, 0.0);
+    drypoint(1, 0.0);
     set_Awet((pile_height > GEOFLOW_TINY) ? 1.0 : 0.0);
     set_Swet(Awet());
     
@@ -189,7 +190,8 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
         // initialize kactxy
         kactxy(0,0.0);
         kactxy(1,0.0);
-        effect_kactxy[0] = effect_kactxy[0] = 0.;
+        effect_kactxy(0, 0.0);
+        effect_kactxy(1, 0.0);
         set_effect_bedfrict(0.0);
         set_effect_tanbedfrict(0.0);
     }
@@ -286,8 +288,9 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     dx(1,.5 * fthTemp->dx(1));
     
     set_iwetnode(iwetnodefather);
-    drypoint[0] = drypoint_in[0];
-    drypoint[1] = drypoint_in[1];
+    
+    drypoint(0, drypoint_in[0]);
+    drypoint(1, drypoint_in[1]);
     
     double myfractionoffather;
     if((Awetfather == 0.0) || (Awetfather == 1.0))
@@ -632,7 +635,8 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     set_Awet(Awet() * 0.25);
     
     //uninitialized flag values... will fix shortly 
-    drypoint[0] = drypoint[1] = 0.0;
+    drypoint(0, 0.0);
+    drypoint(1, 0.0);
     set_iwetnode(8);
     set_Swet(1.0);
     
@@ -1117,7 +1121,8 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
     {
         //if opposite sides of the element are the same (both wet or dry)
         set_iwetnode(8);
-        drypoint[0] = drypoint[1] = 0.0;
+        drypoint(0, 0.0);
+        drypoint(1, 0.0);
         if(state_vars[0] > GEOFLOW_TINY)
         {
             set_Awet(1.0);
@@ -1135,37 +1140,44 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         //having exactly 2 adjacent wet edges means it has a diagonal orientation
         
         set_Swet(sqrt(2.0 * ((Awet() > 0.5) ? 1.0 - Awet() : Awet()))); //edge length of small triangle
-        drypoint[0] = drypoint[1] = 0.5 * (1.0 - Swet());
+        drypoint(0, 0.5 * (1.0 - Swet()));
+        drypoint(1,drypoint(0));
         if(Awet() > 0.5)
             set_Swet(1.0 - Swet()); //the small triangle is dry not wet
             
         if(ifsidewet[3] && ifsidewet[0])
         {
             set_iwetnode(0);
-            if(Awet() <= 0.5)
-                drypoint[0] = drypoint[1] = -drypoint[0];
+            if(Awet() <= 0.5){
+                drypoint(0, -drypoint(0));
+                drypoint(1,drypoint(0));
+            }
+            
         }
         else if(ifsidewet[0] && ifsidewet[1])
         {
             set_iwetnode(1);
             if(Awet() <= 0.5)
-                drypoint[1] = -drypoint[1];
+                drypoint(1, -drypoint(1));
             else
-                drypoint[0] = -drypoint[0];
+                drypoint(0, -drypoint(0));
         }
         else if(ifsidewet[1] && ifsidewet[2])
         {
             set_iwetnode(2);
             if(Awet() > 0.5)
-                drypoint[0] = drypoint[1] = -drypoint[0];
+            {
+                drypoint(0, -drypoint(0));
+                drypoint(1,drypoint(0));
+            }
         }
         else if(ifsidewet[2] && ifsidewet[3])
         {
             set_iwetnode(3);
             if(Awet() > 0.5)
-                drypoint[1] = -drypoint[1];
+                drypoint(1, -drypoint(1));
             else
-                drypoint[0] = -drypoint[0];
+                drypoint(0, -drypoint(0));
         }
     }
     else
@@ -1194,20 +1206,20 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         switch (iwetnode())
         {
             case 4:
-                drypoint[0] = 0.0;
-                drypoint[1] = -0.5 + Swet();
+                drypoint(0, 0.0);
+                drypoint(1, -0.5 + Swet());
                 break;
             case 5:
-                drypoint[0] = +0.5 - Swet();
-                drypoint[1] = 0.0;
+                drypoint(0, +0.5 - Swet());      
+                drypoint(1, 0.0);
                 break;
             case 6:
-                drypoint[0] = 0.0;
-                drypoint[1] = +0.5 - Swet();
+                drypoint(0, 0.0);
+                drypoint(1, +0.5 - Swet());
                 break;
             case 7:
-                drypoint[0] = -0.5 + Swet();
-                drypoint[1] = 0.0;
+                drypoint(0, -0.5 + Swet());
+                drypoint(1, 0.0);
                 break;
             default:
                 assert(0);
@@ -1239,7 +1251,7 @@ double Element::calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside)
     if(iwetnode() == 8)
     {
         cout<<"calc_elem_edge_wet_fraction(): key={"<<key()<<"} adapted="<<adapted_flag()<<"\n";
-        printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode(), Awet(), Swet(), drypoint[0], drypoint[1]);
+        printf("  iwetnode=%d, Awet=%g, Swet=%g, drypoint={%g,%g}\n", iwetnode(), Awet(), Swet(), drypoint(0), drypoint(1));
         assert(iwetnode() != 8);
     }
     
@@ -1665,14 +1677,14 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         VxVy[0] = state_vars[2] / state_vars[1];
         if(VxVy[0] != 0.0)
         {
-            a = sqrt(effect_kactxy[0] * gravity(2) * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity(2));
+            a = sqrt(effect_kactxy(0) * gravity(2) * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity(2));
             VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
         VxVy[1] = state_vars[3] / state_vars[1];
         if(VxVy[1] != 0.0)
         {
-            a = sqrt(effect_kactxy[1] * gravity(2) * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity(2));
+            a = sqrt(effect_kactxy(1) * gravity(2) * state_vars[1] + (state_vars[0] - state_vars[1]) * gravity(2));
             VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
@@ -1681,14 +1693,14 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
         VxVy[0] = state_vars[1] / state_vars[0];
         if(VxVy[0] != 0.0)
         {
-            a = sqrt(effect_kactxy[0] * gravity(2) * state_vars[0]);
+            a = sqrt(effect_kactxy(0) * gravity(2) * state_vars[0]);
             VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
         VxVy[1] = state_vars[2] / state_vars[0];
         if(VxVy[1] != 0.0)
         {
-            a = sqrt(effect_kactxy[1] * gravity(2) * state_vars[0]);
+            a = sqrt(effect_kactxy(1) * gravity(2) * state_vars[0]);
             VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
@@ -1700,7 +1712,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = VxVy[0] * doubleswap + VxVy[1] * doubleswap;
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.0 - drypoint[0]) / speed;
+            dtnotwet = (0.0 - drypoint(0)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1708,7 +1720,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = VxVy[0] * -doubleswap + VxVy[1] * doubleswap;
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.0 + drypoint[0]) / speed;
+            dtnotwet = (0.0 + drypoint(0)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1716,7 +1728,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = VxVy[0] * doubleswap + VxVy[1] * -doubleswap;
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.0 + drypoint[0]) / speed;
+            dtnotwet = (0.0 + drypoint(0)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1724,7 +1736,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = VxVy[0] * -doubleswap + VxVy[1] * -doubleswap;
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.0 - drypoint[0]) / speed;
+            dtnotwet = (0.0 - drypoint(0)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1732,7 +1744,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = VxVy[1];
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.5 - drypoint[1]) / speed;
+            dtnotwet = (0.5 - drypoint(1)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1740,7 +1752,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = -VxVy[0];
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.5 + drypoint[0]) / speed;
+            dtnotwet = (0.5 + drypoint(0)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1748,7 +1760,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = -VxVy[1];
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.5 + drypoint[1]) / speed;
+            dtnotwet = (0.5 + drypoint(1)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1756,7 +1768,7 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
             speed = VxVy[0];
             if(speed <= 0.0)
                 return 0.0;
-            dtnotwet = (0.5 - drypoint[0]) / speed;
+            dtnotwet = (0.5 - drypoint(0)) / speed;
             if(dtnotwet >= dt)
                 return 0.0;
             return 1.0 - dtnotwet / dt;
@@ -1784,86 +1796,86 @@ double Element::convect_dryline(const double Vx, const double Vy, const double d
         return Awet();
     }
     
-    drypoint[0] += Vx * dt / dx(0);
-    drypoint[1] += Vy * dt / dx(1);
+    drypoint(0, drypoint(0) + Vx * dt / dx(0));
+    drypoint(1, drypoint(1) + Vy * dt / dx(1));
     
     switch (iwetnode())
     {
         case 0: //diagonal: \
     drypoint[0]=0.5*(drypoint[0]+drypoint[1]);
-            if(drypoint[0] < -0.5)
+            if(drypoint(0) < -0.5)
                 set_Awet(0.0);
-            else if(drypoint[0] > 0.5)
+            else if(drypoint(0) > 0.5)
                 set_Awet(1.0);
-            else if(drypoint[0] < 0.0)
-                set_Awet(2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
+            else if(drypoint(0) < 0.0)
+                set_Awet(2 * (0.5 + drypoint(0)) * (0.5 + drypoint(0)));
             else
-                set_Awet(1.0 - 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
+                set_Awet(1.0 - 2.0 * (0.5 - drypoint(0)) * (0.5 - drypoint(0)));
             return Awet();
         case 1: //diagonal: /
-            drypoint[0] = 0.5 * (drypoint[0] - drypoint[1]);
-            if(drypoint[0] > 0.5)
+            drypoint(0, 0.5 * (drypoint(0) - drypoint(1)));
+            if(drypoint(0) > 0.5)
                 set_Awet(0.0);
-            else if(drypoint[0] < -0.5)
+            else if(drypoint(0) < -0.5)
                 set_Awet(1.0);
-            else if(drypoint[0] > 0.0)
-                set_Awet(2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
+            else if(drypoint(0) > 0.0)
+                set_Awet(2.0 * (0.5 - drypoint(0)) * (0.5 - drypoint(0)));
             else
-                set_Awet(1.0 - 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
+                set_Awet(1.0 - 2 * (0.5 + drypoint(0)) * (0.5 + drypoint(0)));
             return Awet();
         case 2: //diagonal: \
-    drypoint[0]=0.5*(drypoint[0]+drypoint[1]);
-            if(drypoint[0] > 0.5)
+            drypoint(0, 0.5*(drypoint(0)+drypoint(1)));
+            if(drypoint(0) > 0.5)
                 set_Awet(0.0);
-            else if(drypoint[0] < -0.5)
+            else if(drypoint(0) < -0.5)
                 set_Awet(1.0);
-            else if(drypoint[0] > 0.0)
-                set_Awet(2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
+            else if(drypoint(0) > 0.0)
+                set_Awet(2.0 * (0.5 - drypoint(0)) * (0.5 - drypoint(0)));
             else
-                set_Awet(1.0 - 2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
+                set_Awet(1.0 - 2 * (0.5 + drypoint(0)) * (0.5 + drypoint(0)));
             return Awet();
         case 3: //diagonal: /
-            drypoint[0] = 0.5 * (drypoint[0] - drypoint[1]);
-            if(drypoint[0] < -0.5)
+            drypoint(0, 0.5 * (drypoint(0) - drypoint(1)));
+            if(drypoint(0) < -0.5)
                 set_Awet(0.0);
-            else if(drypoint[0] > 0.5)
+            else if(drypoint(0) > 0.5)
                 set_Awet(1.0);
-            else if(drypoint[0] < 0.0)
-                set_Awet(2 * (0.5 + drypoint[0]) * (0.5 + drypoint[0]));
+            else if(drypoint(0) < 0.0)
+                set_Awet(2 * (0.5 + drypoint(0)) * (0.5 + drypoint(0)));
             else
-                set_Awet(1.0 - 2.0 * (0.5 - drypoint[0]) * (0.5 - drypoint[0]));
+                set_Awet(1.0 - 2.0 * (0.5 - drypoint(0)) * (0.5 - drypoint(0)));
             return Awet();
         case 4: //horizontal: -
-            if(drypoint[1] < -0.5)
+            if(drypoint(1) < -0.5)
                 set_Awet(0.0);
-            else if(drypoint[1] > 0.5)
+            else if(drypoint(1) > 0.5)
                 set_Awet(1.0);
             else
-                set_Awet(0.5 + drypoint[1]);
+                set_Awet(0.5 + drypoint(1));
             return Awet();
         case 5: //vertical: |
-            if(drypoint[0] > 0.5)
+            if(drypoint(0) > 0.5)
                 set_Awet(0.0);
-            else if(drypoint[0] < -0.5)
+            else if(drypoint(0) < -0.5)
                 set_Awet(1.0);
             else
-                set_Awet(0.5 - drypoint[0]);
+                set_Awet(0.5 - drypoint(0));
             return Awet();
         case 6: //horizontal: -
-            if(drypoint[1] > 0.5)
+            if(drypoint(1) > 0.5)
                 set_Awet(0.0);
-            else if(drypoint[1] < -0.5)
+            else if(drypoint(1) < -0.5)
                 set_Awet(1.0);
             else
-                set_Awet(0.5 - drypoint[1]);
+                set_Awet(0.5 - drypoint(1));
             return Awet();
         case 7: //vertical: |
-            if(drypoint[0] < -0.5)
+            if(drypoint(0) < -0.5)
                 set_Awet(0.0);
-            else if(drypoint[0] > 0.5)
+            else if(drypoint(0) > 0.5)
                 set_Awet(1.0);
             else
-                set_Awet(0.5 + drypoint[0]);
+                set_Awet(0.5 + drypoint(0));
             return Awet();
         default:
             assert(0);
@@ -1912,7 +1924,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             Vel[i] = 0.;
 
             // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
-            a=sqrt(effect_kactxy[0]*gravity(2)*hfv[0][1]
+            a=sqrt(effect_kactxy(0)*gravity(2)*hfv[0][1]
                     +(hfv[0][0]-hfv[0][1])*gravity(2));
 
             //fluxes
@@ -1942,12 +1954,12 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             Vel[2] = hfv[0][4] / hfv[0][0];
 
             // a^2 = k_ap*h*ph*g(3) + h*(1-phi)*g(3)
-            double temp = effect_kactxy[0] * hfv[0][1] * gravity(2);
+            double temp = effect_kactxy(0) * hfv[0][1] * gravity(2);
             a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity(2));
 
             // get du/dy
             double dudy = (d_state_vars[NUM_STATE_VARS + 2] - d_state_vars[NUM_STATE_VARS + 1] * Vel[0]) / state_vars[1];
-            double alphaxy = -c_sgn(dudy) * sin(matprops_ptr->intfrict) * effect_kactxy[0];
+            double alphaxy = -c_sgn(dudy) * sin(matprops_ptr->intfrict) * effect_kactxy(0);
             double temp2 = alphaxy * hfv[0][0] * hfv[0][1] * gravity(2);
             if(hfv[0][0] > GEOFLOW_TINY)
                 volf = hfv[0][1] / hfv[0][0];
@@ -1991,13 +2003,13 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             Vel[1]= Vel[3] = 0.; // not really, but don't need them here
             Vel[0]=hfv[0][2]/hfv[0][1];
             Vel[2]=hfv[0][4]/hfv[0][0];
-            double temp = effect_kactxy[0]*hrfv[0][1]*gravity(2);
+            double temp = effect_kactxy(0)*hrfv[0][1]*gravity(2);
             a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity(2));
 
             // get du/dy
             double dudy=(d_state_vars[NUM_STATE_VARS+2]-
                     d_state_vars[NUM_STATE_VARS+1]*Vel[0])/state_vars[1];
-            double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[0];
+            double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy(0);
             double temp2=alphaxy*hrfv[0][0]*hrfv[0][1]*gravity(2);
             if ( hrfv[0][0] > GEOFLOW_TINY )
             volf = hrfv[0][1]/hrfv[0][0];
@@ -2045,7 +2057,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
 
             speed=0.0;
-            a=sqrt(effect_kactxy[0]*gravity(2)*hfv[0][0]);
+            a=sqrt(effect_kactxy(0)*gravity(2)*hfv[0][0]);
 
             //fluxes
             hfv[1][0]=speed*hfv[0][0];
@@ -2077,7 +2089,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[0];
             speed = speed2 = hfv[0][1] / hfv[0][0];
 
-            a = sqrt(effect_kactxy[0] * gravity(2) * hfv[0][0]);
+            a = sqrt(effect_kactxy(0) * gravity(2) * hfv[0][0]);
 
             //fluxes
             hfv[1][0] = speed * hfv[0][0];
@@ -2177,7 +2189,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][1]*=wetnessfactor;
 
-            double temp= effect_kactxy[1]*hfv[0][1]*gravity(2);
+            double temp= effect_kactxy(1)*hfv[0][1]*gravity(2);
             a=sqrt(temp + (hfv[0][0]-hfv[0][1])*gravity(2));
             Vel[0]=Vel[1]=Vel[2]=Vel[3]=0.;
 
@@ -2205,7 +2217,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
                     hfv[0][i] *= wetnessfactor;
 
             // a = speed of sound through the medium
-            double temp = effect_kactxy[1] * hfv[0][1] * gravity(2);
+            double temp = effect_kactxy(1) * hfv[0][1] * gravity(2);
             a = sqrt(temp + (hfv[0][0] - hfv[0][1]) * gravity(2));
 
             // velocities
@@ -2215,7 +2227,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 
             // hydostatic terms
             double dvdx = (d_state_vars[3] - d_state_vars[1] * Vel[1]) / state_vars[1];
-            double alphayx = -c_sgn(dvdx) * sin(matprops_ptr->intfrict) * effect_kactxy[1];
+            double alphayx = -c_sgn(dvdx) * sin(matprops_ptr->intfrict) * effect_kactxy(1);
             double temp2 = alphayx * hfv[0][0] * hfv[0][1] * gravity(2);
             if(hfv[0][0] > GEOFLOW_TINY)
                 volf = hfv[0][1] / hfv[0][0];
@@ -2254,7 +2266,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             for (i=0; i<NUM_STATE_VARS; i++)
             hrfv[0][i]*=wetnessfactor;
     
-            double temp=effect_kactxy[1]*hrfv[0][1]*gravity(2);
+            double temp=effect_kactxy(1)*hrfv[0][1]*gravity(2);
             a=sqrt(temp + (hrfv[0][0]-hrfv[0][1])*gravity(2));
     
             // velocities
@@ -2264,7 +2276,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
     
             // hydostatic terms
             double dvdx=(d_state_vars[3]-d_state_vars[1]*Vel[1])/state_vars[1];
-            double alphayx=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy[1];
+            double alphayx=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy(1);
             double temp2=alphayx*hrfv[0][0]*hrfv[0][1]*gravity(2);
             if ( hrfv[0][0] > GEOFLOW_TINY )
             volf = hrfv[0][1]/hrfv[0][0];
@@ -2314,7 +2326,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
 
             speed=0.0;
-            a=sqrt(effect_kactxy[1]*gravity(2)*hfv[0][0]);
+            a=sqrt(effect_kactxy(1)*gravity(2)*hfv[0][0]);
 
             //fluxes
             hfv[1][0]=speed*hfv[0][0];
@@ -2346,7 +2358,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             //speed=VxVy[1];
             speed = speed2 = hfv[0][2] / hfv[0][0];
 
-            a = sqrt(effect_kactxy[1] * gravity(2) * hfv[0][0]);
+            a = sqrt(effect_kactxy(1) * gravity(2) * hfv[0][0]);
 
             //fluxes
             hfv[1][0] = speed * hfv[0][0];
@@ -3790,15 +3802,16 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     
     double stopcrit;
     
-    effect_kactxy[0] = kactxy(0);
-    effect_kactxy[1] = kactxy(1);
+    effect_kactxy(0, kactxy(0));
+    effect_kactxy(1, kactxy(1));
     set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
     set_effect_tanbedfrict(matprops_ptr->tanbedfrict[material()]);
     
 #ifdef STOPCRIT_CHANGE_BED
     if(stoppedflags()==2)
     {   
-        effect_kactxy[0]=effect_kactxy[1]=matprops_ptr->epsilon;
+        effect_kactxy(0,matprops_ptr->epsilon);
+        effect_kactxy(1,matprops_ptr->epsilon);
         set_effect_bedfrict(matprops_ptr->intfrict);
         set_effect_tanbedfrict(matprops_ptr->tanintfrict);
     }
@@ -3827,7 +3840,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
             
             bedslope = dirx * zeta(0) + diry * zeta(1);
             slopetemp = bedslope
-                    + (dirx * effect_kactxy[0] * d_state_vars[0] + diry * effect_kactxy[1]
+                    + (dirx * effect_kactxy(0) * d_state_vars[0] + diry * effect_kactxy(1)
                                                                    * d_state_vars[NUM_STATE_VARS]);
             
             stopcrit = (slopetemp + effect_tanbedfrict()) / Vtemp * NUM_FREEFALLS_2_STOP
@@ -3840,8 +3853,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
             if(bedslope < 0)
             {
                 slopetemp = bedslope
-                        + (zeta(0) / bedslope * effect_kactxy[0] * d_state_vars[0] + zeta(1) / bedslope
-                                * effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]);
+                        + (zeta(0) / bedslope * effect_kactxy(0) * d_state_vars[0] + zeta(1) / bedslope
+                                * effect_kactxy(1) * d_state_vars[NUM_STATE_VARS]);
                 
                 stopcrit = sign(slopetemp + effect_tanbedfrict()) * HUGE_VAL;
             }
@@ -3854,9 +3867,9 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
         {
             set_stoppedflags(1);
             slopetemp = -sqrt(
-                    (zeta(0) + effect_kactxy[0] * d_state_vars[0]) * (zeta(0) + effect_kactxy[0] * d_state_vars[0])
-                    * (zeta(1) + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS])
-                    * (zeta(1) + effect_kactxy[1] * d_state_vars[NUM_STATE_VARS]));
+                    (zeta(0) + effect_kactxy(0) * d_state_vars[0]) * (zeta(0) + effect_kactxy(0) * d_state_vars[0])
+                    * (zeta(1) + effect_kactxy(1) * d_state_vars[NUM_STATE_VARS])
+                    * (zeta(1) + effect_kactxy(1) * d_state_vars[NUM_STATE_VARS]));
             if(slopetemp + tan(matprops_ptr->intfrict) > 0)
                 set_stoppedflags(2);
         }
@@ -3872,14 +3885,15 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
 #ifdef STOPCRIT_CHANGE_BED
     if(stoppedflags()==2)
     {   
-        effect_kactxy[0]=effect_kactxy[1]=matprops_ptr->epsilon;
+        effect_kactxy(0,matprops_ptr->epsilon);
+        effect_kactxy(1,matprops_ptr->epsilon);
         set_effect_bedfrict(matprops_ptr->intfrict);
         set_effect_tanbedfrict(matprops_ptr->tanintfrict);
     }
     else
     {   
-        effect_kactxy[0]=kactxy(0);
-        effect_kactxy[1]=kactxy(1);
+        effect_kactxy(0,kactxy(0));
+        effect_kactxy(1,kactxy(1));
         set_effect_bedfrict(matprops_ptr->bedfrict[material()]);
         set_effect_tanbedfrict(matprops_ptr->tanbedfrict[material()]);
     }
@@ -4358,12 +4372,12 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     writespace[Itemp++] = temp8.u[1];
     //assert(Itemp == 97);
     
-    temp8.d = drypoint[0];
+    temp8.d = drypoint(0);
     writespace[Itemp++] = temp8.u[0];
     writespace[Itemp++] = temp8.u[1];
     //assert(Itemp == 99);
     
-    temp8.d = drypoint[1];
+    temp8.d = drypoint(1);
     writespace[Itemp++] = temp8.u[0];
     writespace[Itemp++] = temp8.u[1];
     //assert(Itemp == 101);
@@ -4568,12 +4582,12 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     
     temp8.u[0] = readspace[Itemp++];
     temp8.u[1] = readspace[Itemp++];
-    drypoint[0] = temp8.d;
+    drypoint(0, temp8.d);
     assert(Itemp == 99);
     
     temp8.u[0] = readspace[Itemp++];
     temp8.u[1] = readspace[Itemp++];
-    drypoint[1] = temp8.d;
+    drypoint(1, temp8.d);
     assert(Itemp == 101);
     
     if(readspace[Itemp] > 0)
