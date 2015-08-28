@@ -266,7 +266,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVx(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                        gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVy(), d_uvec, (d_uvec + NUM_STATE_VARS),
                                      matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
                                      EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
