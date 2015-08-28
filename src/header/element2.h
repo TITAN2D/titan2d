@@ -40,7 +40,7 @@ class Node;
 class Element {
     friend class HashTable;
     friend class ElementsHashTable;
-
+#if 0
     friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
     friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
@@ -81,7 +81,7 @@ class Element {
             double* e_error);
 
     friend void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
-
+#endif
 public:
 protected:
 
@@ -530,9 +530,7 @@ public:
     
     
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
-    double* get_prev_state_vars(){return prev_state_vars_;}
     double prev_state_vars(int idim) const {return prev_state_vars_[idim];}
-    double& prev_state_vars_ref(int idim) {return prev_state_vars_[idim];}
     void prev_state_vars(int idim, double value) {prev_state_vars_[idim]=value;}
     
     //! updates prev_states variables to current states, for first order-calculations

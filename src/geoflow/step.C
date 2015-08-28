@@ -35,7 +35,7 @@
 void predict(Element *Elm,
         const double dh_dx, const double dhVx_dx, const double dhVy_dx, 
         const double dh_dy, const double dhVx_dy, const double dhVy_dy,
-        double *Uprev, const double tiny, const double kactx,
+        const double tiny, const double kactx,
         const double dt2, const double *g, const double curv_x, const double curv_y,
         const double bedfrictang, const double intfrictang,
         const double *dgdx, const double frict_tiny, const int order_flag,
@@ -62,9 +62,9 @@ void predict(Element *Elm,
     //TEST********** order_flag = 1 
     //     write(*,*) "order_flag in predict=", order_flag 
 
-    Uprev[0] = Elm->state_vars(0);
-    Uprev[1] = Elm->state_vars(1);
-    Uprev[2] = Elm->state_vars(2);
+    Elm->prev_state_vars(0, Elm->state_vars(0));
+    Elm->prev_state_vars(1, Elm->state_vars(1));
+    Elm->prev_state_vars(2, Elm->state_vars(2));
 
     if (IF_STOPPED == 2) {
         VxVy[0] = 0.0;
@@ -90,8 +90,8 @@ void predict(Element *Elm,
         Elm->state_vars(0, c_dmax1(Elm->state_vars(0), 0.0));
 
         //dF/dU, dG/dU and S terms if Elm->state_vars(0) > TINY !
-        if (Uprev[0] > tiny) {
-            h_inv = 1.0 / Uprev[0];
+        if (Elm->prev_state_vars(0) > tiny) {
+            h_inv = 1.0 / Elm->prev_state_vars(0);
             tanbed = tan(bedfrictang);
 
             //here speed is speed squared
@@ -390,7 +390,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
             predict(Curr_El, 
                     Curr_El->dh_dx(), Curr_El->dhVx_dx(), Curr_El->dhVy_dx(), 
                     Curr_El->dh_dy(), Curr_El->dhVx_dy(), Curr_El->dhVy_dy(),
-                    Curr_El->get_prev_state_vars(),
                     tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                     matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                     d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);

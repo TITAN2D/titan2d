@@ -52,5 +52,9 @@ using namespace std;
 #include "FileFormat.h"
 #include "flux_srcs.h"
 
+
+//! construct_el is a friend function of the Element class that fills an element with information it receives in a variable of the ElemPack class from an MPI call
+void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
+
 #undef CRAY
 

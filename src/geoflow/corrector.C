@@ -32,7 +32,7 @@
 //dUdy[1] dhVx_dy
 //dUdy[2] dhVy_dy
 //
-void correct1ph(Element *Elm, const double *Uprev, const double *fluxxp,
+void correct1ph(Element *Elm, const double *fluxxp,
         const double *fluxyp, const double *fluxxm, const double *fluxym,
         const double tiny, const double dtdx, const double dtdy, const double dt,
         const double dh_dx, const double dhVy_dx, 
@@ -77,18 +77,18 @@ void correct1ph(Element *Elm, const double *Uprev, const double *fluxxp,
     // threshold=1.278820338*dcos(slope)*
     //     &     c_dmax1((1-dtan(slope)/dtan(intfrictang)),0.0)**2
 
-    Ustore[0] = Uprev[0]
+    Ustore[0] = Elm->prev_state_vars(0)
             - dtdx * (fluxxp[0] - fluxxm[0])
             - dtdy * (fluxyp[0] - fluxym[0])
             + dt * Elm->Influx(0);
     Ustore[0] = c_dmax1(Ustore[0], 0.0);
 
-    Ustore[1] = Uprev[1]
+    Ustore[1] = Elm->prev_state_vars(1)
             - dtdx * (fluxxp[1] - fluxxm[1])
             - dtdy * (fluxyp[1] - fluxym[1])
             + dt * Elm->Influx(1);
 
-    Ustore[2] = Uprev[2]
+    Ustore[2] = Elm->prev_state_vars(2)
             - dtdx * (fluxxp[2] - fluxxm[2])
             - dtdy * (fluxyp[2] - fluxym[2])
             + dt * Elm->Influx(2);
@@ -265,7 +265,7 @@ void calc_drag_force(Element *Elm, const double *vsolid, const double *vfluid,
 //dUdy[0] dh_dy
 //dUdy[1] dh_dy_liq
 //dUdy[2] dh_dy_liq
-void correct2ph(Element *Elm, const double *Uprev, const double *fluxxp,
+void correct2ph(Element *Elm, const double *fluxxp,
         const double *fluxyp, const double *fluxxm, const double *fluxym,
         const double tiny, const double dtdx, const double dtdy, const double dt,
         const double dh_dx, const double dh_dx_liq, const double dhVy_dx_sol, 
@@ -310,7 +310,7 @@ void correct2ph(Element *Elm, const double *Uprev, const double *fluxxp,
       slope=sqrt(xslope*xslope+yslope*yslope);
       den_frac = den_fluid/den_solid;
       for(i=0;i<6;++i)
-        Ustore[i]=Uprev[i]+dt*Elm->Influx(i)-dtdx*(fluxxp[i]-fluxxm[i])-dtdy*(fluxyp[i]-fluxym[i]);
+        Ustore[i]=Elm->prev_state_vars(i)+dt*Elm->Influx(i)-dtdx*(fluxxp[i]-fluxxm[i])-dtdy*(fluxyp[i]-fluxym[i]);
 
       if(Ustore[0] > tiny) {
 // Source terms ...
@@ -471,7 +471,6 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     int IF_STOPPED = !(!EmTemp->stoppedflags());
 #endif
     
-    double *prev_state_vars = EmTemp->get_prev_state_vars();
     double gravity[3]{EmTemp->gravity(0),EmTemp->gravity(1),EmTemp->gravity(2)};
     double d_gravity[3]{EmTemp->d_gravity(0),EmTemp->d_gravity(1),EmTemp->d_gravity(2)};
     
@@ -530,7 +529,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
                  gravity, kactxy, &(matprops2_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, Vsolid, Vfluid,
                  &solid_den, &fluid_den, &terminal_vel, &(matprops2_ptr->epsilon), &IF_STOPPED, Influx);*/
         
-        correct2ph(EmTemp,prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
+        correct2ph(EmTemp, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
                 EmTemp->dh_dx(), EmTemp->dh_dx_liq(), EmTemp->dhVy_dx_sol(), 
                 EmTemp->dh_dy(), EmTemp->dh_dy_liq(), EmTemp->dhVx_dy_sol(),
                 EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops2_ptr->intfrict, bedfrict,
@@ -586,7 +585,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         double &forcebed, const int DO_EROSION, double &eroded,
         const double *VxVy, const int IF_STOPPED, const double *fluxsrc);*/
         
-        correct1ph(EmTemp,prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
+        correct1ph(EmTemp, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
                 EmTemp->dh_dx(), EmTemp->dhVy_dx(), 
                 EmTemp->dh_dy(), EmTemp->dhVx_dy(),
                 EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops_ptr->intfrict,

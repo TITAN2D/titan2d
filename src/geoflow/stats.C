@@ -419,16 +419,16 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                                 //v_ave is NaN
                                 cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
                                 printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                                       *(Curr_El->get_prev_state_vars() + 0), *(Curr_El->get_prev_state_vars() + 1),
-                                       *(Curr_El->get_prev_state_vars() + 2), *(Curr_El->get_prev_state_vars() + 3),
-                                       *(Curr_El->get_prev_state_vars() + 4), *(Curr_El->get_prev_state_vars() + 5));
+                                       Curr_El->prev_state_vars(0), Curr_El->prev_state_vars(1),
+                                       Curr_El->prev_state_vars(2), Curr_El->prev_state_vars(3),
+                                       Curr_El->prev_state_vars(4), Curr_El->prev_state_vars(5));
                                 printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1),
                                        Curr_El->state_vars(2), Curr_El->state_vars(3), Curr_El->state_vars(4), Curr_El->state_vars(5));
                                 printf("prev {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                                       *(Curr_El->get_prev_state_vars() + 2) / (*(Curr_El->get_prev_state_vars() + 1)),
-                                       *(Curr_El->get_prev_state_vars() + 3) / (*(Curr_El->get_prev_state_vars() + 1)),
-                                       *(Curr_El->get_prev_state_vars() + 4) / (*(Curr_El->get_prev_state_vars())),
-                                       *(Curr_El->get_prev_state_vars() + 5) / (*(Curr_El->get_prev_state_vars())));
+                                       Curr_El->prev_state_vars(2) / (Curr_El->prev_state_vars(1)),
+                                       Curr_El->prev_state_vars(3) / (Curr_El->prev_state_vars(1)),
+                                       Curr_El->prev_state_vars(4) / (Curr_El->prev_state_vars(0)),
+                                       Curr_El->prev_state_vars(5) / (Curr_El->prev_state_vars(0)));
                                 printf("this {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
                                        Curr_El->state_vars(2) / Curr_El->state_vars(1), Curr_El->state_vars(3) / Curr_El->state_vars(1),
                                        Curr_El->state_vars(4) / Curr_El->state_vars(0), Curr_El->state_vars(5) / Curr_El->state_vars(0));
@@ -454,12 +454,12 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                                 //v_ave is NaN
 
                                 cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
-                                printf("prevu={%12.6g,%12.6g,%12.6g}\n", *(Curr_El->get_prev_state_vars() + 0),
-                                       *(Curr_El->get_prev_state_vars() + 1), *(Curr_El->get_prev_state_vars() + 2));
+                                printf("prevu={%12.6g,%12.6g,%12.6g}\n", Curr_El->prev_state_vars(0),
+                                       Curr_El->prev_state_vars(1), Curr_El->prev_state_vars(2));
                                 printf("    u={%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1), Curr_El->state_vars(2));
                                 printf("prev {hVx/h,hVy/h}={%12.6g,%12.6g}\n",
-                                       *(Curr_El->get_prev_state_vars() + 1) / *(Curr_El->get_prev_state_vars() + 0),
-                                       *(Curr_El->get_prev_state_vars() + 2) / *(Curr_El->get_prev_state_vars() + 0));
+                                       Curr_El->prev_state_vars(1) / Curr_El->prev_state_vars(0),
+                                       Curr_El->prev_state_vars(2) / Curr_El->prev_state_vars(0));
                                 printf("this {hVx/h,hVy/h}={%12.6g,%12.6g}\n", Curr_El->state_vars(1) / Curr_El->state_vars(0),
                                        Curr_El->state_vars(2) / Curr_El->state_vars(0));
                                 printf("     { Vx  , Vy  }={%12.6g,%12.6g}\n", VxVy[0], VxVy[1]);

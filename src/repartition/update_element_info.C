@@ -34,8 +34,7 @@
 void same_proc(Element *r_element, HashTable* HT_Elem_Ptr, int target_proc, int side);
 void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int side, ELinkPtr* EL_head);
 
-//! construct_el is a friend function of the Element class that fills an element with information it receives in a variable of the ElemPack class from an MPI call
-void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
+
 
 void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid);
 
