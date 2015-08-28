@@ -24,7 +24,9 @@
 #include <math.h>
 
 //! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
-void gmfggetcoef(const double h,const double hVx,const double hVy, const double *dUdx, const double *dUdy,
+void gmfggetcoef(const double h,const double hVx,const double hVy, 
+        const double dh_dx,const double dhVx_dx,
+        const double dh_dy,const double dhVy_dy,
         const double bedfrictang, const double intfrictang, 
         double &Kactx, double &Kacty, const double tiny, 
 	const double epsilon)
@@ -43,8 +45,8 @@ void gmfggetcoef(const double h,const double hVx,const double hVy, const double 
     
     if(h > tiny)
     {
-         vel=dUdx[1]/h - hVx*dUdx[0]/hSQ+
-             dUdy[2]/h - hVy*dUdy[0]/hSQ;
+         vel=dhVx_dx/h - hVx*dh_dx/hSQ+
+             dhVy_dy/h - hVy*dh_dy/hSQ;
          Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
              sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
          Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
@@ -67,7 +69,14 @@ void gmfggetcoef(const double h,const double hVx,const double hVy, const double 
     Kacty = epsilon * Kacty;
 }
 //! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
-void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol, const double *dUdx, const double *dUdy,
+//dUdx[1] dh_dx_liq
+//dUdx[2] dhVx_dx_sol
+//dUdy[1] dh_dy_liq
+//dUdy[3] dhVy_dx_sol
+
+void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol, 
+        const double dh_dx_liq,const double dhVx_dx_sol,
+        const double dh_dy_liq,const double dhVy_dy_sol,
         const double bedfrictang, const double intfrictang, 
         double &Kactx, double &Kacty, const double tiny, 
 	const double epsilon)
@@ -84,8 +93,8 @@ void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol
     
     if(h_liq > tiny)
     {
-         vel=dUdx[2]/h_liq - hVx_sol*dUdx[1]/h_liqSQ+
-             dUdy[3]/h_liq - hVy_sol*dUdy[1]/h_liqSQ;
+         vel=dhVx_dx_sol/h_liq - hVx_sol*dh_dx_liq/h_liqSQ+
+             dhVy_dy_sol/h_liq - hVy_sol*dh_dy_liq/h_liqSQ;
          Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
              sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
          Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
@@ -226,7 +235,6 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
     } //end of section that SHOULD ____NOT___ be openmp'd
     
     double u_vec_alt[3];
-    double* d_uvec;
     int intswap;
     double maxcurve;
     int ifanynonzeroheight = 0;
@@ -255,24 +263,23 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     if(hmax < EmTemp->state_vars(0))
                         hmax = EmTemp->state_vars(0);
                     
-                    d_uvec = EmTemp->get_d_state_vars();
 
                     if(elementType == ElementType::TwoPhases)
                     {
-                        gmfggetcoef2ph(EmTemp->state_vars(1),EmTemp->state_vars(2),EmTemp->state_vars(3), d_uvec, (d_uvec + NUM_STATE_VARS),
-                                     matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
-                                     EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
+                        gmfggetcoef2ph(EmTemp->state_vars(1),EmTemp->state_vars(2),EmTemp->state_vars(3), 
+                                EmTemp->dh_dx_liq(),EmTemp->dhVx_dx_sol(),
+                                EmTemp->dh_dy_liq(),EmTemp->dhVy_dy_sol(),  
+                                matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
+                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVy(), d_uvec, (d_uvec + NUM_STATE_VARS),
-                                     matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
-                                     EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
-                        
-                        /*gmfggetcoef_(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), dx_ptr,
-                                     &(matprops_ptr->bedfrict[EmTemp->material()]), &(matprops_ptr->intfrict),
-                                     EmTemp->get_kactxy(), (EmTemp->get_kactxy() + 1), &tiny, &(matprops_ptr->epsilon));*/
+                        gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVy(), 
+                                EmTemp->dh_dx(), EmTemp->dhVx_dx(),
+                                EmTemp->dh_dy(), EmTemp->dhVy_dy(),
+                                matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
+                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                     }
 
                     EmTemp->calc_stop_crit(matprops_ptr);

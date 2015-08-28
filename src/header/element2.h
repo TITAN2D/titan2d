@@ -494,25 +494,39 @@ public:
     //! this function returns the vector of state variables
     double state_vars(int idim) const {return state_vars_[idim];}
     void state_vars(int idim, double value) {state_vars_[idim]=value;}
-
-    //! this function returns the vector of x and y derivatives of state variables, all the x derivatives come first as a group followed by the y derivatives as a group
-    double* get_d_state_vars(){return d_state_vars_;}
-    double d_state_vars(int idim) const {return d_state_vars_[idim];}
-    double& d_state_vars_ref(int idim) {return d_state_vars_[idim];}
-    void d_state_vars(int idim, double value) {d_state_vars_[idim]=value;}
     
-    double h(){return state_vars(0);}
+    //!statevars by name
+    double h() const {return state_vars(0);}
     //!hVx for single phase or hVx_sol for two phases
-    double hVx(){
+    double hVx() const {
         if(elementType() == ElementType::TwoPhases)return state_vars(2);
         else return state_vars(1);
     }
     //!hVy for single phase or hVy_sol for two phases 
-    double hVy(){
+    double hVy() const {
         if(elementType() == ElementType::TwoPhases)return state_vars(3);
         else return state_vars(2);
     }
-    double h2(){return state_vars(1);}
+    double h2() const {return state_vars(1);}
+
+    //! this function returns the vector of x and y derivatives of state variables, all the x derivatives come first as a group followed by the y derivatives as a group
+    double d_state_vars(int idim) const {return d_state_vars_[idim];}
+    void d_state_vars(int idim, double value) {d_state_vars_[idim]=value;}
+    
+    //d_state_vars by name dh/dx, dhVx/dx, dhVy/dx, dh/dy, dhVx/dy, dhVy/dyd
+    double dh_dx() const {return d_state_vars(0);}
+    double dh_dy() const {return d_state_vars(NUM_STATE_VARS);}
+    double dhVx_dx() const {return d_state_vars(1);}
+    double dhVx_dy() const {return d_state_vars(NUM_STATE_VARS+1);}
+    double dhVy_dx() const {return d_state_vars(2);}
+    double dhVy_dy() const {return d_state_vars(NUM_STATE_VARS+2);}
+    
+    double dh_dx_liq() const {return d_state_vars(1);}
+    double dh_dy_liq() const {return d_state_vars(NUM_STATE_VARS+1);}
+    double dhVx_dx_sol() const {return d_state_vars(2);}
+    double dhVx_dy_sol() const {return d_state_vars(NUM_STATE_VARS+2);}
+    double dhVy_dx_sol() const {return d_state_vars(3);}
+    double dhVy_dy_sol() const {return d_state_vars(NUM_STATE_VARS+3);}
     
     
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
@@ -784,7 +798,7 @@ public:
         return (a < 0.0 ? -1.0 : 1.0);
     }
 
-    const ElementType& elementType() {
+    const ElementType& elementType() const {
         return elementType_;
     }
 
