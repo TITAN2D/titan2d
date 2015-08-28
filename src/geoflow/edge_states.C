@@ -58,12 +58,12 @@ void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matpr
                 if(Curr_El->adapted_flag() > 0)
                 {
                     //if this element doesn't belong on this processor don't involve
-                    double pheight = *(Curr_El->get_state_vars());
+                    double pheight = Curr_El->state_vars(0);
                     Curr_El->calc_edge_states(El_Table, NodeTable, matprops_ptr, myid, timeprops_ptr->dtime, order_flag,
                                               &localoutflow);
 //(mdj)		*outflow+=localoutflow;
                     localoutflow_sum += localoutflow;
-                    double pheight2 = *(Curr_El->get_state_vars());
+                    double pheight2 = Curr_El->state_vars(0);
                     if(pheight != pheight2)
                         printf("prolbem of changing height here,,,.....\n");
 //(mdj) unused		el_counter++;

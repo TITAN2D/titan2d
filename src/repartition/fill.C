@@ -101,13 +101,13 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     }
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
-        elem->state_vars[i] = sendel->state_vars[i];
+        elem->state_vars[i] = sendel->state_vars(i);
         elem->Influx[i] = sendel->Influx(i);
     }
     for(i = 0; i < 3; i++)
         elem->gravity[i] = sendel->gravity(i);
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
-        elem->d_state_vars[i] = sendel->d_state_vars[i];
+        elem->d_state_vars[i] = sendel->d_state_vars(i);
     elem->shortspeed = sendel->shortspeed();
     elem->lb_weight = sendel->lb_weight();
     elem->elm_loc[0] = sendel->elm_loc(0);

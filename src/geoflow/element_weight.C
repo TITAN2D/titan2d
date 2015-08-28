@@ -61,7 +61,7 @@ double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int n
                   //if this element doesn't belong on this processor don't involve!!! 
                     Curr_El->calc_flux_balance(NodeTable);
                     //sub_weight[0] += *(Curr_El->get_el_error())+1.;
-                    if(*(Curr_El->get_state_vars() + 0) > GEOFLOW_TINY)
+                    if(Curr_El->state_vars(0) > GEOFLOW_TINY)
                     {
                         sub_weight[1] += 1;
                         sub_weight[0] += Curr_El->el_error(0);

@@ -100,7 +100,7 @@ protected:
 
         set_father(sfc_key_zero); //initialize the father key to zero
         for (int i = 0; i < NUM_STATE_VARS; i++) {
-            state_vars[i] = -1;
+            state_vars(i, -1.0);
             Influx(i, 0.0);
         }
         set_adapted_flag(TOBEDELETED);
@@ -492,12 +492,27 @@ public:
     void put_height(double pile_height);
 
     //! this function returns the vector of state variables
-    double* get_state_vars();
+    double* get_state_vars(){return state_vars_;}
+    double state_vars(int idim) const {return state_vars_[idim];}
+    double& state_vars_ref(int idim) {return state_vars_[idim];}
+    void state_vars(int idim, double value) {state_vars_[idim]=value;}
 
     //! this function returns the vector of x and y derivatives of state variables, all the x derivatives come first as a group followed by the y derivatives as a group
-    double* get_d_state_vars();
+    double* get_d_state_vars(){return d_state_vars_;}
+    double d_state_vars(int idim) const {return d_state_vars_[idim];}
+    double& d_state_vars_ref(int idim) {return d_state_vars_[idim];}
+    void d_state_vars(int idim, double value) {d_state_vars_[idim]=value;}
+    
+    //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
+    double* get_prev_state_vars(){return prev_state_vars_;}
+    double prev_state_vars(int idim) const {return prev_state_vars_[idim];}
+    double& prev_state_vars_ref(int idim) {return prev_state_vars_[idim];}
+    void prev_state_vars(int idim, double value) {prev_state_vars_[idim]=value;}
+    
+    //! updates prev_states variables to current states, for first order-calculations
+    void update_prev_state_vars(){for (int i = 0; i < NUM_STATE_VARS; i++)prev_state_vars(i, state_vars(i));}
 
-        //! this function returns the length of an element in the x and y directions
+    //! this function returns the length of an element in the x and y directions
     double dx(int idim) const {return dx_[idim];}
     void dx(int idim, double value){dx_[idim]=value;}
 
@@ -518,11 +533,7 @@ public:
     //! this function computes the x and y derivatives of the state variables
     void get_slopes(HashTable*, HashTable*, double);
 
-    //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
-    double* get_prev_state_vars();
 
-    //! updates prev_states variables to current states, for first order-calculations
-    void update_prev_state_vars();
 
     //! this function calculates the lengths of the element in the (global) x and y directions
     void calculate_dx(HashTable* NodeTable);
@@ -860,12 +871,12 @@ protected:
     /* variables for hyperbolic geoflow problem */
 
     //! state_vars is an array that holds the current state variables: h, hVx, and hVy 
-    double state_vars[MAX_NUM_STATE_VARS];
+    double state_vars_[MAX_NUM_STATE_VARS];
     //! these are the values of the state variables from before the predictor step
-    double prev_state_vars[MAX_NUM_STATE_VARS];
+    double prev_state_vars_[MAX_NUM_STATE_VARS];
 
     //! these are the spatial (x and y) derivatives of the state variables: (dh/dx, dhVx/dx, dhVy/dx, dh/dy, dhVx/dy, dhVy/dy)
-    double d_state_vars[MAX_NUM_STATE_VARS * DIMENSION];
+    double d_state_vars_[MAX_NUM_STATE_VARS * DIMENSION];
 
     //! the short speed is the speed computed as: shortspeed=|v|=|dhv/dh|=|v*dh/dh+h*dv/dh|=|v+h*dv/dh| which goes to |v| in the limit of h->0, this is a more accurate way to compute speed when the pile in this cell is short, hence the name "shortspeed" but it is not accurate when the pile is tall, that is when h*dv/dh is large, this is the value from the previous iteration (so there is lagging when using the shortspeed, but this should still be much more accurate than hV/h when h->0. Keith implemented this in late summer 2006, 
     double shortspeed_;
@@ -949,10 +960,14 @@ public:
 };
 
 inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom) {
-    prev_state_vars[0] = state_vars[0] = pile_height;
-    prev_state_vars[1] = state_vars[1] = pile_height * volf;
-    prev_state_vars[2] = state_vars[2] = xmom;
-    prev_state_vars[3] = state_vars[3] = ymom;
+    prev_state_vars(0, pile_height);
+    state_vars(0, pile_height);
+    prev_state_vars(1, pile_height * volf);
+    state_vars(1, pile_height * volf);
+    prev_state_vars(2, xmom);
+    state_vars(2, xmom);
+    prev_state_vars(3, ymom);
+    state_vars(3, ymom);
     if (pile_height > GEOFLOW_TINY) {
         set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf));
         set_Awet(1.0);
@@ -964,9 +979,12 @@ inline void Element::put_height_mom(double pile_height, double volf, double xmom
 };
 
 inline void Element::put_height_mom(double pile_height, double xmom, double ymom) {
-    prev_state_vars[0] = state_vars[0] = pile_height;
-    prev_state_vars[1] = state_vars[1] = xmom;
-    prev_state_vars[2] = state_vars[2] = ymom;
+    prev_state_vars(0, pile_height);
+    state_vars(0, pile_height);
+    prev_state_vars(1, xmom);
+    state_vars(1, xmom);
+    prev_state_vars(2, ymom);
+    state_vars(2, ymom);
     if (pile_height > GEOFLOW_TINY) {
         set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
         set_Awet(1.0);
@@ -987,26 +1005,6 @@ inline void Element::put_height(double pile_height) {
     }
     return;
 };
-
-inline double* Element::get_state_vars() {
-    return state_vars;
-}
-;
-
-inline double* Element::get_d_state_vars() {
-    return d_state_vars;
-}
-;
-
-inline double* Element::get_prev_state_vars() {
-    return prev_state_vars;
-}
-;
-
-inline void Element::update_prev_state_vars() {
-    for (int i = 0; i < NUM_STATE_VARS; i++)
-        prev_state_vars[i] = state_vars[i];
-}
 
 //above this line Keith made inline 20061128
 /* REALLY? member functions defined in class body are 

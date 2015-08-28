@@ -294,13 +294,13 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     }
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
-        newelement->state_vars[i] = elem2->state_vars[i];
+        newelement->state_vars(i, elem2->state_vars[i]);
         newelement->Influx(i, elem2->Influx[i]);
     }
     for(i = 0; i < 3; i++)
         newelement->gravity(i, elem2->gravity[i]);
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
-        newelement->d_state_vars[i] = elem2->d_state_vars[i];
+        newelement->d_state_vars(i, elem2->d_state_vars[i]);
     newelement->set_shortspeed(elem2->shortspeed);
     newelement->set_lb_weight(elem2->lb_weight);
     newelement->set_elm_loc(0, elem2->elm_loc[0]);

@@ -91,7 +91,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                 
                 Element* Curr_El = (Element*) (currentPtr->value);
                 if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
-                    if(*(Curr_El->get_state_vars()) > GEOFLOW_TINY)
+                    if(Curr_El->state_vars(0) > GEOFLOW_TINY)
                         num_nonzero_elem++;
                 
                 currentPtr = currentPtr->next;

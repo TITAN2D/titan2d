@@ -107,7 +107,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int tim
             EmTemp = (Element*) (entryp->value);
             if(!EmTemp->refined_flag())
             {
-                if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
+                if(EmTemp->state_vars(0) > GEOFLOW_TINY)
                     EmTemp->set_lb_weight(NON_EMPTY_CELL);
                 else if(EmTemp->adapted_flag() == BUFFER)
                     EmTemp->set_lb_weight(EMPTY_BUFFER_CELL);
@@ -737,7 +737,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                 //this is an active element
                 
                 //weight the active elements for repartitioning
-                if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
+                if(EmTemp->state_vars(0) > GEOFLOW_TINY)
                     //this has pile
                     EmTemp->set_lb_weight(NON_EMPTY_CELL);
                 else if(EmTemp->adapted_flag() == BUFFER)
