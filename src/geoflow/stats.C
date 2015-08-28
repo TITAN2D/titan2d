@@ -331,7 +331,7 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                 if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
                 {
                     
-                    double* state_vars = Curr_El->get_state_vars();
+                    double* state_vars = Curr_El->get_state_varsABCD();
                     
                     //calculate volume passing through "discharge planes"
                     Node** nodesPtr = Curr_El->getNodesPtrs();

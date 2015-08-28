@@ -492,7 +492,7 @@ public:
     void put_height(double pile_height);
 
     //! this function returns the vector of state variables
-    double* get_state_vars(){return state_vars_;}
+    double* get_state_varsABCD(){return state_vars_;}
     double state_vars(int idim) const {return state_vars_[idim];}
     double& state_vars_ref(int idim) {return state_vars_[idim];}
     void state_vars(int idim, double value) {state_vars_[idim]=value;}

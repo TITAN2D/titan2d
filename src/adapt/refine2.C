@@ -685,7 +685,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
-    double* state_vars = Quad9P->get_state_vars();
+    //double* state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(0);  //--by jp, 0 means son 0
@@ -765,7 +765,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
-    state_vars = Quad9P->get_state_vars();
+    //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(1); //--by jp
@@ -845,7 +845,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
-    state_vars = Quad9P->get_state_vars();
+    //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(2); //--by jp
@@ -927,7 +927,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
-    state_vars = Quad9P->get_state_vars();
+    //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(3); //--by jp

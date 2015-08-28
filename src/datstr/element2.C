@@ -651,7 +651,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     //calculate the shortspeed
     set_shortspeed(0.0);
     for(j = 0; j < 4; j++)
-        set_shortspeed(shortspeed() + *(sons[j]->get_state_vars()) * sons[j]->shortspeed());
+        set_shortspeed(shortspeed() + sons[j]->state_vars(0) * sons[j]->shortspeed());
     if(state_vars(0) > 0.0)
        set_shortspeed(shortspeed()/(4.0 * state_vars(0)));
     
@@ -1109,7 +1109,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
         else
         {
             EmTemp = (Element *) El_Table->lookup(neighbor(ineigh));
-            if(*(EmTemp->get_state_vars() + 0) > GEOFLOW_TINY)
+            if(EmTemp->state_vars(0) > GEOFLOW_TINY)
                 //first neighbor on this side is wet
                 ifsidewet[ineigh] = 1;
             else if(neigh_proc(ineigh + 4) == -2)
@@ -1119,7 +1119,7 @@ void Element::calc_wet_dry_orient(HashTable *El_Table)
             {
                 //since first neighbor on this side is not wet, the edge has the wetness of the second neighbor on this side 
                 EmTemp = (Element *) El_Table->lookup(neighbor(ineigh + 4));
-                ifsidewet[ineigh] = (*(EmTemp->get_state_vars() + 0) > GEOFLOW_TINY) ? 1 : 0;
+                ifsidewet[ineigh] = (EmTemp->state_vars(0) > GEOFLOW_TINY) ? 1 : 0;
             }
         }
         numwetsides += ifsidewet[ineigh];
@@ -3933,7 +3933,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                if(*(ElemNeigh->get_state_vars() + 0) < contour_height)
+                if(ElemNeigh->state_vars(0) < contour_height)
                     return (2); //inside of pileheight contour line
             }
         //else if(neigh_proc[ineigh%4]==-1) return(2); //pileheight on boundary of domain
@@ -3952,8 +3952,8 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                assert(*(ElemNeigh->get_state_vars() + 0) >= 0.0);
-                if(*(ElemNeigh->get_state_vars() + 0) >= contour_height)
+                assert(ElemNeigh->state_vars(0) >= 0.0);
+                if(ElemNeigh->state_vars(0) >= contour_height)
                     return (1); //outside of pileheight contour line
             }
     }
@@ -4084,7 +4084,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
                  assert(*(ElemNeigh->get_influx())>=0.0);
                  assert(*(ElemNeigh->get_state_vars())>=0.0);
                  */
-                if((*(ElemNeigh->get_state_vars() + 0) >= contour_height) || (ElemNeigh->Influx(0) > 0.0))
+                if((ElemNeigh->state_vars(0) >= contour_height) || (ElemNeigh->Influx(0) > 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -4099,7 +4099,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 assert(ElemNeigh);
-                if((*(ElemNeigh->get_state_vars() + 0) < contour_height) && (ElemNeigh->Influx(0) == 0.0))
+                if((ElemNeigh->state_vars(0) < contour_height) && (ElemNeigh->Influx(0) == 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -4146,7 +4146,7 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
                 //assert(ElemNeigh->get_adapted_flag()!=0);
                 
                 if((abs(ElemNeigh->adapted_flag()) == BUFFER) && (state_vars(0)
-                        <= *(ElemNeigh->get_state_vars() + 0)))
+                        <= ElemNeigh->state_vars(0)))
                 //if(abs(ElemNeigh->get_adapted_flag())==BUFFER)
                 { //this element is next to a member of the old buffer layer
                   //if((ElemNeigh->get_adapted_flag())==BUFFER){ //this element is next to a member of the old buffer layer

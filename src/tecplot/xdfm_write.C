@@ -48,7 +48,7 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
     vector<int> C1, C2, C3, C4;
     int num_nodes = 0, num_elm = 0;
     int i, j, k;
-    double *state_vars, *coord, elevation;
+    double *coord, elevation;
     int conn[4];
     
     // scaling factor for the momentums
@@ -68,10 +68,9 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
             EmTemp = (Element *) entryptr->value;
             if(!(EmTemp->refined_flag()))
             {
-                state_vars = EmTemp->get_state_vars();
-                pheight.push_back(state_vars[0] * matprops_ptr->HEIGHT_SCALE);
-                xmom.push_back(state_vars[2] * momentum_scale);
-                ymom.push_back(state_vars[3] * momentum_scale);
+                pheight.push_back(EmTemp->state_vars(0) * matprops_ptr->HEIGHT_SCALE);
+                xmom.push_back(EmTemp->state_vars(2) * momentum_scale);
+                ymom.push_back(EmTemp->state_vars(3) * momentum_scale);
                 num_elm++;
                 for(j = 0; j < 4; j++)
                 {
@@ -214,7 +213,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                MapNames *mapnames, const int mode)
 {
     int i, j, k;
-    double *state_vars, *coord, elevation;
+    double *coord, elevation;
     
     // scaling factor for the momentums
     double momentum_scale = matprops_ptr->HEIGHT_SCALE
@@ -307,10 +306,9 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
             EmTemp = (Element *) entryptr->value;
             if(!(EmTemp->refined_flag()))
             {
-                state_vars = EmTemp->get_state_vars();
-                pheight[ielm] = state_vars[0] * matprops_ptr->HEIGHT_SCALE;
-                xmom[ielm] = state_vars[1] * momentum_scale;
-                ymom[ielm] = state_vars[2] * momentum_scale;
+                pheight[ielm] = EmTemp->state_vars(0) * matprops_ptr->HEIGHT_SCALE;
+                xmom[ielm] = EmTemp->state_vars(1) * momentum_scale;
+                ymom[ielm] = EmTemp->state_vars(2) * momentum_scale;
                 for(j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));

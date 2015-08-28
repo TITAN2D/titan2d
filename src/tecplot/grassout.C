@@ -51,13 +51,11 @@ void grass_sites_proc_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
             //if the current element is an active one on this processor
             if(EmTemp->adapted_flag() > 0)
             {
-                double *state_vars = EmTemp->get_state_vars();
-                
                 Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(8));
                 
-                double pile_height = state_vars[0] * (matprops->HEIGHT_SCALE);
-                double x_mom = state_vars[1] * momentum_scale;
-                double y_mom = state_vars[2] * momentum_scale;
+                double pile_height = EmTemp->state_vars(0) * (matprops->HEIGHT_SCALE);
+                double x_mom = EmTemp->state_vars(1) * momentum_scale;
+                double y_mom = EmTemp->state_vars(2) * momentum_scale;
                 double VxVy[2];
                 EmTemp->eval_velocity(0.0, 0.0, VxVy);
                 //double vx=(pile_height>GEOFLOW_TINY)?x_mom/pile_height:0.0;

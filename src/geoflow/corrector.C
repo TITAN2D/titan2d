@@ -453,7 +453,7 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     int IF_STOPPED = !(!EmTemp->stoppedflags());
 #endif
     
-    double *state_vars = EmTemp->get_state_vars();
+    double *state_vars = EmTemp->get_state_varsABCD();
     double *prev_state_vars = EmTemp->get_prev_state_vars();
     double *d_state_vars = EmTemp->get_d_state_vars();
     double gravity[3]{EmTemp->gravity(0),EmTemp->gravity(1),EmTemp->gravity(2)};

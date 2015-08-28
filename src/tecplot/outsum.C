@@ -157,8 +157,7 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
                 Element* EmTemp = (Element*) (entryp->value);
                 if(EmTemp->adapted_flag() > 0)
                 {
-                    
-                    double* state_vars = EmTemp->get_state_vars();
+                    double height=EmTemp->state_vars(0);
                     EmTemp->eval_velocity(0.0, 0.0, VxVy);
                     velocity2 = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
                     
@@ -169,13 +168,13 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
                     {
                         masscentermindist2 = masscenterdist2;
                         vh_cen[0] = velocity2;
-                        vh_cen[1] = state_vars[0];
+                        vh_cen[1] = height;
                         xycen[0] = EmTemp->coord(0);
                         xycen[1] = EmTemp->coord(1);
                     }
                     
                     //eliminate fast moving very thin pile from consideration
-                    if(state_vars[0] >= vmax_min_height)
+                    if(height >= vmax_min_height)
                     {
                         
                         if(velocity2 > vmax)
@@ -186,14 +185,14 @@ void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* t
                             
                             xyh_vmax[0] = EmTemp->coord(0);
                             xyh_vmax[1] = EmTemp->coord(1);
-                            xyh_vmax[2] = state_vars[0];
+                            xyh_vmax[2] = height;
                         }
                     }
                     
-                    if(state_vars[0] > hmax)
+                    if(height > hmax)
                     {
                         
-                        hmax = state_vars[0];
+                        hmax = height;
                         
                         xyv_hmax[0] = EmTemp->coord(0);
                         xyv_hmax[1] = EmTemp->coord(1);

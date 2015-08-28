@@ -246,26 +246,26 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
             {
                 //if this element does not belong on this processor don't involve!!!
                 
-                if(*(EmTemp->get_state_vars()) > GEOFLOW_TINY)
+                if(EmTemp->state_vars(0) > GEOFLOW_TINY)
                 {
                     ifanynonzeroheight = 1;
                     
                     /* calculate hmax */
-                    if(hmax < *(EmTemp->get_state_vars()))
-                        hmax = *(EmTemp->get_state_vars());
+                    if(hmax < EmTemp->state_vars(0))
+                        hmax = EmTemp->state_vars(0);
                     
                     d_uvec = EmTemp->get_d_state_vars();
 
                     if(elementType == ElementType::TwoPhases)
                     {
-                        gmfggetcoef2ph(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                        gmfggetcoef2ph(EmTemp->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS),
                                      matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
                                      EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        gmfggetcoef(EmTemp->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                        gmfggetcoef(EmTemp->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS),
                                      matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
                                      EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
@@ -285,25 +285,25 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                     //results in over estimating the timestep) is fatal to stability...
                     if(elementType == ElementType::TwoPhases)
                     {
-                        Vsolid[0] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars() + 1));
-                        Vsolid[1] = (*(EmTemp->get_state_vars() + 3)) / (*(EmTemp->get_state_vars() + 1));
+                        Vsolid[0] = (EmTemp->state_vars(2)) / (EmTemp->state_vars(1));
+                        Vsolid[1] = (EmTemp->state_vars(3)) / (EmTemp->state_vars(1));
 
-                        Vfluid[0] = (*(EmTemp->get_state_vars() + 4)) / (*(EmTemp->get_state_vars()));
-                        Vfluid[1] = (*(EmTemp->get_state_vars() + 5)) / (*(EmTemp->get_state_vars()));
+                        Vfluid[0] = (EmTemp->state_vars(4)) / (EmTemp->state_vars(0));
+                        Vfluid[1] = (EmTemp->state_vars(5)) / (EmTemp->state_vars(0));
 
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen2ph(EmTemp->get_state_vars(), EmTemp->eigenvxymax_ref(0),
+                        eigen2ph(EmTemp->get_state_varsABCD(), EmTemp->eigenvxymax_ref(0),
                                   EmTemp->eigenvxymax_ref(1), evalue, tiny, EmTemp->kactxy_ref(0),
                                   EmTemp->gravity(2), Vsolid, Vfluid,
                                   matprops2_ptr->flow_type);
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        VxVy[0] = (*(EmTemp->get_state_vars() + 1)) / (*(EmTemp->get_state_vars()));
-                        VxVy[1] = (*(EmTemp->get_state_vars() + 2)) / (*(EmTemp->get_state_vars()));
+                        VxVy[0] = (EmTemp->state_vars(1)) / (EmTemp->state_vars(0));
+                        VxVy[1] = (EmTemp->state_vars(2)) / (EmTemp->state_vars(0));
 
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen(EmTemp->get_state_vars(), EmTemp->eigenvxymax_ref(0),
+                        eigen(EmTemp->get_state_varsABCD(), EmTemp->eigenvxymax_ref(0),
                                   EmTemp->eigenvxymax_ref(1),
                                evalue, tiny, EmTemp->kactxy_ref(0), EmTemp->gravity(2), VxVy);
                     }
@@ -330,17 +330,17 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                      solid :(%e, %e) \n \
                      fluid :(%e, %e) \n \
                      for pile height %e curvature=%e (x,y)=(%e,%e)\n",
-                                    evalue, myid, *(EmTemp->get_state_vars() + 2), *(EmTemp->get_state_vars() + 3),
-                                    *(EmTemp->get_state_vars() + 4), *(EmTemp->get_state_vars() + 5),
-                                    *(EmTemp->get_state_vars()), maxcurve, EmTemp->coord(0),
+                                    evalue, myid, EmTemp->state_vars(2), EmTemp->state_vars(3),
+                                    EmTemp->state_vars(4), EmTemp->state_vars(5),
+                                    EmTemp->state_vars(0), maxcurve, EmTemp->coord(0),
                                     EmTemp->coord(1));
                             exit(1);
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
                             printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
-                                   evalue, myid, *(EmTemp->get_state_vars() + 1), *(EmTemp->get_state_vars() + 2),
-                                   *(EmTemp->get_state_vars()), maxcurve, EmTemp->coord(0),
+                                   evalue, myid, EmTemp->state_vars(1), EmTemp->state_vars(2),
+                                   EmTemp->state_vars(0), maxcurve, EmTemp->coord(0),
                                    EmTemp->coord(1));
                             exit(1);
                         }

@@ -352,10 +352,10 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
          */
 
         //VxVy[2];
-        if(*(Curr_El->get_state_vars() + 0) > GEOFLOW_TINY)
+        if(Curr_El->state_vars(0) > GEOFLOW_TINY)
         {
-            VxVy[0] = *(Curr_El->get_state_vars() + 1) / *(Curr_El->get_state_vars() + 0);
-            VxVy[1] = *(Curr_El->get_state_vars() + 2) / *(Curr_El->get_state_vars() + 0);
+            VxVy[0] = Curr_El->state_vars(1) / Curr_El->state_vars(0);
+            VxVy[1] = Curr_El->state_vars(2) / Curr_El->state_vars(0);
         }
         else
             VxVy[0] = VxVy[1] = 0.0;
@@ -370,7 +370,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         
         if(elementType == ElementType::TwoPhases)
         {
-            predict2ph(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
+            predict2ph(Curr_El->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
                      tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                      matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                      d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
@@ -382,7 +382,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
                      &(matprops_ptr->bedfrict[Curr_El->material()]), &(matprops_ptr->intfrict),
                      Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);*/
             
-            predict(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
+            predict(Curr_El->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
                      tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                      matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                      d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
@@ -395,7 +395,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         for(j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(k = 0; k < NUM_STATE_VARS; k++)
-                    *(Curr_El->get_state_vars() + k) = 0;
+                    Curr_El->state_vars(k,0.0);
 #endif
         
     }
@@ -463,11 +463,11 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         
         forceint += fabs(elemforceint);
         forcebed += fabs(elemforcebed);
-        realvolume += dx * dy * *(Curr_El->get_state_vars());
+        realvolume += dx * dy * Curr_El->state_vars(0);
         eroded += elemeroded;
         deposited += elemdeposited;
         //update the record of maximum pileheight in the area covered by this element
-        double hheight = *(Curr_El->get_state_vars());
+        double hheight = Curr_El->state_vars(0);
         //if (hheight > 0 && hheight < 0)
         //	;
         
@@ -479,7 +479,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         }
         if(elementType == ElementType::SinglePhase)
         {
-            momenta = Curr_El->get_state_vars() + 1;
+            momenta = Curr_El->get_state_varsABCD() + 1;
         }
 
         outline_ptr->update(Curr_El->coord(0) - 0.5 * dx, Curr_El->coord(0) + 0.5 * dx, Curr_El->coord(1) - 0.5 * dy,
@@ -496,7 +496,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         for(j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(k = 0; k < NUM_STATE_VARS; k++)
-                    *(Curr_El->get_state_vars() + k) = 0;
+                    Curr_El->state_vars(k, 0.0);
 #endif
         
     }
@@ -576,35 +576,33 @@ void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps
                 Element* Curr_El = (Element*) (currentPtr->value);
                 if(Curr_El->adapted_flag() > 0)
                 {
-                    
-                    double* state_vars = Curr_El->get_state_vars();
                     double dx = Curr_El->dx(0);
                     double dy = Curr_El->dx(1);
                     
-                    if(state_vars[0] > max_height)
+                    if(Curr_El->state_vars(0) > max_height)
                     {
-                        max_height = state_vars[0];
+                        max_height = Curr_El->state_vars(0);
                         imax = i;
                     }
                     
                     // rule out non physical fast moving thin layers
-                    if(state_vars[0] > min_height)
+                    if(Curr_El->state_vars(0) > min_height)
                     {
                         if(elementType == ElementType::TwoPhases)
                         {
-                            temp = sqrt(state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]);
+                            temp = sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3));
                             v_ave += temp * dx * dy;
-                            temp /= state_vars[1];
+                            temp /= Curr_El->state_vars(1);
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
-                            temp = sqrt(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]);
+                            temp = sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2));
                             v_ave += temp * dx * dy;
-                            temp /= state_vars[0];
+                            temp /= Curr_El->state_vars(0);
                         }
 
                         
-                        double dvol = state_vars[0] * dx * dy;
+                        double dvol = Curr_El->state_vars(0) * dx * dy;
                         g_ave += Curr_El->gravity(2) * dvol;
                         volume2 += dvol;
                         
@@ -615,7 +613,7 @@ void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps
                     /* dxg = c_dmax1(dx, dxg);
                      dyg = c_dmax1(dy, dyg);*/
 
-                    volume += state_vars[0] * dx * dy;
+                    volume += Curr_El->state_vars(0) * dx * dy;
                 }
                 currentPtr = currentPtr->next;
             }
@@ -707,17 +705,16 @@ double get_max_momentum(ElementType elementType,HashTable* El_Table, MatProps* m
                 if(EmTemp->adapted_flag() > 0)
                 {
                     
-                    double* state_vars = EmTemp->get_state_vars();
                     //eliminate fast moving very thin pile from consideration
-                    if(state_vars[0] >= min_height)
+                    if(EmTemp->state_vars(0) >= min_height)
                     {
                         if(elementType == ElementType::TwoPhases)
                         {
-                            mom2 = (state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]);
+                            mom2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3));
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
-                            mom2 = (state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]);
+                            mom2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2));
                         }
                         /* mom2 is not a mistake... only need to take the root of 
                          the maximum value */
@@ -812,19 +809,18 @@ void sim_end_warning(ElementType elementType,HashTable* El_Table, MatProps* matp
                 if(EmTemp->adapted_flag() > 0)
                 {
                     
-                    double* state_vars = EmTemp->get_state_vars();
                     //eliminate fast moving very thin pile from consideration
-                    if(state_vars[0] >= min_height)
+                    if(EmTemp->state_vars(0) >= min_height)
                     {
                         if(elementType == ElementType::TwoPhases)
                         {
-                            velocity2 = (state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3])
-                                / (state_vars[1] * state_vars[1]);
+                            velocity2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3))
+                                / (EmTemp->state_vars(1) * EmTemp->state_vars(1));
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
-                            velocity2 = (state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2])
-                                / (state_vars[0] * state_vars[0]);
+                            velocity2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2))
+                                / (EmTemp->state_vars(0) * EmTemp->state_vars(0));
                         }
 
                         
