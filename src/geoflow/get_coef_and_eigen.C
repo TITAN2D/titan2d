@@ -24,7 +24,7 @@
 #include <math.h>
 
 //! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
-void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
+void gmfggetcoef(const double h,const double hVx,const double hVy, const double *dUdx, const double *dUdy,
         const double bedfrictang, const double intfrictang, 
         double &Kactx, double &Kacty, const double tiny, 
 	const double epsilon)
@@ -33,7 +33,7 @@ void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
     double vel;
     
     //COEFFICIENTS
-    double Uvec0SQ=Uvec[0]*Uvec[0];
+    double hSQ=h*h;
     double cosphiSQ = cos(intfrictang);
     double tandelSQ = tan(bedfrictang);
     cosphiSQ*=cosphiSQ;
@@ -41,17 +41,17 @@ void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
     
     
     
-    if(Uvec[0] > tiny)
+    if(h > tiny)
     {
-         vel=dUdx[1]/Uvec[0] - Uvec[1]*dUdx[0]/Uvec0SQ+
-             dUdy[2]/Uvec[0] - Uvec[2]*dUdy[0]/Uvec0SQ;
+         vel=dUdx[1]/h - hVx*dUdx[0]/hSQ+
+             dUdy[2]/h - hVy*dUdy[0]/hSQ;
          Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
              sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
          Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
              sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
 
          //if there is no yielding...
-         if(fabs(Uvec[1]/Uvec[0]) < tiny && fabs(Uvec[2]/Uvec[0]) < tiny)
+         if(fabs(hVx/h) < tiny && fabs(hVy/h) < tiny)
          {
             Kactx = 1.0;
             Kacty = 1.0;
@@ -67,7 +67,7 @@ void gmfggetcoef(const double *Uvec, const double *dUdx, const double *dUdy,
     Kacty = epsilon * Kacty;
 }
 //! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
-void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
+void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol, const double *dUdx, const double *dUdy,
         const double bedfrictang, const double intfrictang, 
         double &Kactx, double &Kacty, const double tiny, 
 	const double epsilon)
@@ -76,23 +76,23 @@ void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
     double vel;
     
     //COEFFICIENTS
-    double Uvec1SQ=Uvec[1]*Uvec[1];
+    double h_liqSQ=h_liq*h_liq;
     double cosphiSQ = cos(intfrictang);
     double tandelSQ = tan(bedfrictang);
     cosphiSQ*=cosphiSQ;
     tandelSQ*=tandelSQ;
     
-    if(Uvec[1] > tiny)
+    if(h_liq > tiny)
     {
-         vel=dUdx[2]/Uvec[1] - Uvec[2]*dUdx[1]/Uvec1SQ+
-             dUdy[3]/Uvec[1] - Uvec[3]*dUdy[1]/Uvec1SQ;
+         vel=dUdx[2]/h_liq - hVx_sol*dUdx[1]/h_liqSQ+
+             dUdy[3]/h_liq - hVy_sol*dUdy[1]/h_liqSQ;
          Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
              sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
          Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
              sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
 
          //if there is no yielding...
-         if(fabs(Uvec[2]/Uvec[1]) < tiny && fabs(Uvec[3]/Uvec[1]) < tiny)
+         if(fabs(hVx_sol/h_liq) < tiny && fabs(hVy_sol/h_liq) < tiny)
          {
             Kactx = 1.0;
             Kacty = 1.0;
@@ -108,10 +108,10 @@ void gmfggetcoef2ph(const double *Uvec, const double *dUdx, const double *dUdy,
     Kacty = epsilon * Kacty;
 }
 //! the actual calculation of wave speeds (eigen vectors of the flux jacoboians) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &evalue, 
+void eigen( const double h, double &eigenvxmax, double &eigenvymax, double &evalue, 
         const double tiny, double &kactx, const double gravity_z, const double *VxVy) 
 {
-    if (Uvec[0] > tiny)
+    if (h > tiny)
     {
         //     iverson and denlinger
         if (kactx < 0.0)
@@ -119,8 +119,8 @@ void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &
             //negative kactxy
             kactx = -kactx;
         }
-        eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * Uvec[0]);
-        eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * Uvec[0]);
+        eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
+        eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
 
     }
     else
@@ -131,24 +131,25 @@ void eigen( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &
 
     evalue = c_dmax1(eigenvxmax, eigenvymax);
 }
-void eigen2ph( const double *Uvec, double &eigenvxmax, double &eigenvymax, double &evalue, 
+//@TODO is it really h2
+void eigen2ph( const double h_sol, const double h_liq, double &eigenvxmax, double &eigenvymax, double &evalue, 
         const double tiny, double &kactx, const double gravity_z, 
         const double *v_solid, const double *v_fluid, const int flowtype) 
 
 {
     double sound_speed;
-    if (Uvec[0] > tiny) {
+    if (h_sol > tiny) {
         //iverson and denlinger
         if (kactx < 0.0) {
             kactx = -kactx;
         }
 
         if (flowtype == 1)
-            sound_speed = sqrt(Uvec[0] * kactx * gravity_z);
+            sound_speed = sqrt(h_sol * kactx * gravity_z);
         else if (flowtype == 2)
-            sound_speed = sqrt(Uvec[0] * gravity_z);
+            sound_speed = sqrt(h_sol * gravity_z);
         else
-            sound_speed = sqrt(Uvec[1] * gravity_z * kactx+(Uvec[0] - Uvec[1]) * gravity_z);
+            sound_speed = sqrt(h_liq * gravity_z * kactx+(h_sol - h_liq) * gravity_z);
 
         //x-direction
         eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
@@ -258,14 +259,14 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
 
                     if(elementType == ElementType::TwoPhases)
                     {
-                        gmfggetcoef2ph(EmTemp->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                        gmfggetcoef2ph(EmTemp->state_vars(1),EmTemp->state_vars(2),EmTemp->state_vars(3), d_uvec, (d_uvec + NUM_STATE_VARS),
                                      matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
                                      EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
-                        gmfggetcoef(EmTemp->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS),
+                        gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVx(), d_uvec, (d_uvec + NUM_STATE_VARS),
                                      matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
                                      EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
                         
@@ -292,7 +293,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         Vfluid[1] = (EmTemp->state_vars(5)) / (EmTemp->state_vars(0));
 
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen2ph(EmTemp->get_state_varsABCD(), EmTemp->eigenvxymax_ref(0),
+                        eigen2ph(EmTemp->h(), EmTemp->h2(), EmTemp->eigenvxymax_ref(0),
                                   EmTemp->eigenvxymax_ref(1), evalue, tiny, EmTemp->kactxy_ref(0),
                                   EmTemp->gravity(2), Vsolid, Vfluid,
                                   matprops2_ptr->flow_type);
@@ -303,7 +304,7 @@ double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTabl
                         VxVy[1] = (EmTemp->state_vars(2)) / (EmTemp->state_vars(0));
 
                         //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen(EmTemp->get_state_varsABCD(), EmTemp->eigenvxymax_ref(0),
+                        eigen(EmTemp->h(), EmTemp->eigenvxymax_ref(0),
                                   EmTemp->eigenvxymax_ref(1),
                                evalue, tiny, EmTemp->kactxy_ref(0), EmTemp->gravity(2), VxVy);
                     }

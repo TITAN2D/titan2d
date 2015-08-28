@@ -492,9 +492,7 @@ public:
     void put_height(double pile_height);
 
     //! this function returns the vector of state variables
-    double* get_state_varsABCD(){return state_vars_;}
     double state_vars(int idim) const {return state_vars_[idim];}
-    double& state_vars_ref(int idim) {return state_vars_[idim];}
     void state_vars(int idim, double value) {state_vars_[idim]=value;}
 
     //! this function returns the vector of x and y derivatives of state variables, all the x derivatives come first as a group followed by the y derivatives as a group
@@ -514,6 +512,8 @@ public:
         if(elementType() == ElementType::TwoPhases)return state_vars(3);
         else return state_vars(2);
     }
+    double h2(){return state_vars(1);}
+    
     
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
     double* get_prev_state_vars(){return prev_state_vars_;}

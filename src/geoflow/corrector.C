@@ -25,7 +25,7 @@
 #include "../header/geoflow.h"
 
 
-void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
+void correct1ph(Element *Elm, const double *Uprev, const double *fluxxp,
         const double *fluxyp, const double *fluxxm, const double *fluxym,
         const double tiny, const double dtdx, const double dtdy, const double dt,
         const double *dUdx, const double *dUdy, const double xslope,
@@ -71,18 +71,18 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
     Ustore[0] = Uprev[0]
             - dtdx * (fluxxp[0] - fluxxm[0])
             - dtdy * (fluxyp[0] - fluxym[0])
-            + dt * EmTemp->Influx(0);
+            + dt * Elm->Influx(0);
     Ustore[0] = c_dmax1(Ustore[0], 0.0);
 
     Ustore[1] = Uprev[1]
             - dtdx * (fluxxp[1] - fluxxm[1])
             - dtdy * (fluxyp[1] - fluxym[1])
-            + dt * EmTemp->Influx(1);
+            + dt * Elm->Influx(1);
 
     Ustore[2] = Uprev[2]
             - dtdx * (fluxxp[2] - fluxxm[2])
             - dtdy * (fluxyp[2] - fluxym[2])
-            + dt * EmTemp->Influx(2);
+            + dt * Elm->Influx(2);
 
     // initialize to zero
     forceintx = 0.0;
@@ -93,7 +93,7 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
     unitvy = 0.0;
     eroded = 0.0;
 
-    if (EmTemp->state_vars(0) > tiny) {
+    if (Elm->state_vars(0) > tiny) {
         // S terms
         // here speed is speed squared
         speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
@@ -108,21 +108,21 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
             unitvy = 0.0;
         }
         tanbed = tan(bedfrictang);
-        h_inv = 1.0 / EmTemp->state_vars(0);
+        h_inv = 1.0 / Elm->state_vars(0);
 
         //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         // x direction source terms
         //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         // the gravity force in the x direction
-        forcegrav = g[0] * EmTemp->state_vars(0);
+        forcegrav = g[0] * Elm->state_vars(0);
 
         // the internal friction force
         tmp = h_inv * (dUdy[1] - VxVy[0] * dUdy[0]);
         sgn_dudy = sgn_tiny(tmp, frict_tiny);
-        forceintx = sgn_dudy * EmTemp->state_vars(0) * kactxy * (g[2] * dUdy[0] + dgdx[1] * EmTemp->state_vars(0)) * sin(intfrictang);
+        forceintx = sgn_dudy * Elm->state_vars(0) * kactxy * (g[2] * dUdy[0] + dgdx[1] * Elm->state_vars(0)) * sin(intfrictang);
 
         // the bed friction force for fast moving flow 
-        forcebedx = unitvx * c_dmax1(g[2] * EmTemp->state_vars(0) + VxVy[0] * EmTemp->state_vars(1) * curv_x, 0.0) * tanbed;
+        forcebedx = unitvx * c_dmax1(g[2] * Elm->state_vars(0) + VxVy[0] * Elm->state_vars(1) * curv_x, 0.0) * tanbed;
 
         if (IF_STOPPED == 2 && 1 == 0) {
             // the bed friction force for stopped or nearly stopped flow
@@ -132,7 +132,7 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
             // NET force it is opposing
 
             // maximum friction force the bed friction can support
-            forcebedmax = g[2] * EmTemp->state_vars(0) * tanbed;
+            forcebedmax = g[2] * Elm->state_vars(0) * tanbed;
 
             // the NET force the bed friction force is opposing 
             forcebedequil = forcegrav - forceintx;
@@ -156,15 +156,15 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
         // y direction source terms
         //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         // the gravity force in the y direction
-        forcegrav = g[1] * EmTemp->state_vars(0);
+        forcegrav = g[1] * Elm->state_vars(0);
 
         // the internal friction force
         tmp = h_inv * (dUdx[2] - VxVy[1] * dUdx[0]);
         sgn_dvdx = sgn_tiny(tmp, frict_tiny);
-        forceinty = sgn_dvdx * EmTemp->state_vars(0) * kactxy * (g[2] * dUdx[0] + dgdx[0] * EmTemp->state_vars(0)) * sin(intfrictang);
+        forceinty = sgn_dvdx * Elm->state_vars(0) * kactxy * (g[2] * dUdx[0] + dgdx[0] * Elm->state_vars(0)) * sin(intfrictang);
 
         // the bed friction force for fast moving flow 
-        forcebedy = unitvy * c_dmax1(g[2] * EmTemp->state_vars(0) + VxVy[1] * EmTemp->state_vars(2) * curv_y, 0.0) * tanbed;
+        forcebedy = unitvy * c_dmax1(g[2] * Elm->state_vars(0) + VxVy[1] * Elm->state_vars(2) * curv_y, 0.0) * tanbed;
         if (IF_STOPPED == 2 && 1 == 0) {
             // the bed friction force for stopped or nearly stopped flow
 
@@ -190,7 +190,7 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
         //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         if ((false) && (DO_EROSION != 0) && (IF_STOPPED == 0)) {
             totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
-            if ((totalShear > threshold) && (EmTemp->state_vars(0) > 0.004)) {
+            if ((totalShear > threshold) && (Elm->state_vars(0) > 0.004)) {
 
                 es = erosion_rate * sqrt(fabs(totalShear - threshold));
                 eroded = dt*es;
@@ -200,8 +200,8 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
                 //write (*,*) 'Doing Keith Erosion Model'
             }
         }
-        if ((DO_EROSION != 0) && (EmTemp->state_vars(0) > threshold)) {
-            es = erosion_rate * sqrt(EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2)) / EmTemp->state_vars(0);
+        if ((DO_EROSION != 0) && (Elm->state_vars(0) > threshold)) {
+            es = erosion_rate * sqrt(Elm->state_vars(1) * Elm->state_vars(1) + Elm->state_vars(2) * Elm->state_vars(2)) / Elm->state_vars(0);
             Ustore[0] = Ustore[0] + dt*es;
             Ustore[1] = Ustore[1] + dt * es * Ustore[1];
             Ustore[2] = Ustore[2] + dt * es * Ustore[2];
@@ -214,11 +214,11 @@ void correct1ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
     forcebed = unitvx * forcebedx + unitvy*forcebedy;
 
     // update the state variables
-    EmTemp->state_vars(0, Ustore[0]);
-    EmTemp->state_vars(1, Ustore[1]);
-    EmTemp->state_vars(2, Ustore[2]);
+    Elm->state_vars(0, Ustore[0]);
+    Elm->state_vars(1, Ustore[1]);
+    Elm->state_vars(2, Ustore[2]);
 }
-void calc_drag_force(Element *EmTemp, const double *vsolid, const double *vfluid,
+void calc_drag_force(Element *Elm, const double *vsolid, const double *vfluid,
         const double den_solid, const double den_fluid, const double vterminal,
         double *drag, const double tiny)
 {
@@ -229,14 +229,14 @@ void calc_drag_force(Element *EmTemp, const double *vsolid, const double *vfluid
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //!     model in pitman-le paper
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      volf = EmTemp->state_vars(1)/EmTemp->state_vars(0);
-      temp = EmTemp->state_vars(1)*pow(1.-volf,1.0-exponant)/vterminal;
+      volf = Elm->state_vars(1)/Elm->state_vars(0);
+      temp = Elm->state_vars(1)*pow(1.-volf,1.0-exponant)/vterminal;
       denfrac = den_fluid/den_solid;
 
       for(int i=0;i<4;++i)drag[i]=0.0;
  
       //fluid vel - solid vel
-      if(EmTemp->state_vars(1) > tiny)
+      if(Elm->state_vars(1) > tiny)
       {
         for(int i=0;i<2;++i)
             delv[i] = vfluid[i]-vsolid[i];
@@ -248,7 +248,7 @@ void calc_drag_force(Element *EmTemp, const double *vsolid, const double *vfluid
         drag[3] = (1.0-denfrac)*temp*delv[1]/denfrac;
       }
 }
-void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
+void correct2ph(Element *Elm, const double *Uprev, const double *fluxxp,
         const double *fluxyp, const double *fluxxm, const double *fluxym,
         const double tiny, const double dtdx, const double dtdy, const double dt,
         const double *dUdx, const double *dUdy, const double xslope,
@@ -292,7 +292,7 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
       slope=sqrt(xslope*xslope+yslope*yslope);
       den_frac = den_fluid/den_solid;
       for(i=0;i<6;++i)
-        Ustore[i]=Uprev[i]+dt*EmTemp->Influx(i)-dtdx*(fluxxp[i]-fluxxm[i])-dtdy*(fluxyp[i]-fluxym[i]);
+        Ustore[i]=Uprev[i]+dt*Elm->Influx(i)-dtdx*(fluxxp[i]-fluxxm[i])-dtdy*(fluxyp[i]-fluxym[i]);
 
       if(Ustore[0] > tiny) {
 // Source terms ...
@@ -309,12 +309,12 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
             unitvy=0.0;
          }
          tanbed=tan(bedfrictang);
-         h_inv = 1.0/EmTemp->state_vars(0);
-         hphi_inv = 1.0/EmTemp->state_vars(1);
+         h_inv = 1.0/Elm->state_vars(0);
+         hphi_inv = 1.0/Elm->state_vars(1);
          alphaxx = kactxy;
          alphayy = kactxy;
          den_frac = den_fluid/den_solid;
-         calc_drag_force(EmTemp, v_solid, v_fluid, den_solid, den_fluid, terminal_vel, drag, tiny);
+         calc_drag_force(Elm, v_solid, v_fluid, den_solid, den_fluid, terminal_vel, drag, tiny);
  
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //    solid fraction x-direction source terms
@@ -328,13 +328,13 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
          alphaxz = -unitvx*tanbed*(1.0+(v_solid[0]*v_solid[0])*curv_x/g[2]);
 
 //    evaluate t1 
-         t1 = (1.0-den_frac)*(-alphaxx*xslope-alphaxy*yslope + alphaxz)*EmTemp->state_vars(1)*g[2];
+         t1 = (1.0-den_frac)*(-alphaxx*xslope-alphaxy*yslope + alphaxz)*Elm->state_vars(1)*g[2];
 //    evaluate t2
-         t2 = eps*den_frac*EmTemp->state_vars(1)*g[2]*dUdx[0];
+         t2 = eps*den_frac*Elm->state_vars(1)*g[2]*dUdx[0];
 //    evaluate t3
-         t3 = eps*den_frac*EmTemp->state_vars(1)*g[2]*xslope;
+         t3 = eps*den_frac*Elm->state_vars(1)*g[2]*xslope;
 //    evaluate t4
-         t4 = EmTemp->state_vars(1)*g[0];
+         t4 = Elm->state_vars(1)*g[0];
 //    evaluate drag
          t5 = drag[0];
 //    update Ustore
@@ -352,13 +352,13 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
          alphayz = -unitvy*tanbed*(1.0+(v_solid[1]*v_solid[1])*curv_y/g[2]);
 
 //    evaluate t1
-         t1 = (1.0-den_frac)*(-alphaxy*xslope-alphayy*yslope + alphayz)*EmTemp->state_vars(1)*g[2];
+         t1 = (1.0-den_frac)*(-alphaxy*xslope-alphayy*yslope + alphayz)*Elm->state_vars(1)*g[2];
 //    evaluate t2
-         t2 = eps*den_frac*EmTemp->state_vars(1)*dUdy[0];
+         t2 = eps*den_frac*Elm->state_vars(1)*dUdy[0];
 //    evaluate t3
-         t3 = eps*den_frac*EmTemp->state_vars(1)*g[2]*yslope;
+         t3 = eps*den_frac*Elm->state_vars(1)*g[2]*yslope;
 //    evaluate t4 ( gravity along y-dir )
-         t4 = EmTemp->state_vars(1)*g[1];
+         t4 = Elm->state_vars(1)*g[1];
 //    drag term
          t5 = drag[1];
          Ustore[3] = Ustore[3] + dt*(t1-t2-t3+t4+t5);
@@ -367,7 +367,7 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
 //    fluid fraction x-direction source terms
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //    gravity on fluid
-         t4 = EmTemp->state_vars(0)*g[0];
+         t4 = Elm->state_vars(0)*g[0];
 //    drag force on fluid
          t5 = drag[2];
          Ustore[4] = Ustore[4] + dt*(t4 - t5);
@@ -376,7 +376,7 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
 //    fluid fraction y-direction source terms
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //    gravity on fluid
-         t4 = EmTemp->state_vars(0)*g[1];
+         t4 = Elm->state_vars(0)*g[1];
 //    drag force on fluid
          t5 = drag[3];
          Ustore[5] = Ustore[5] + dt*(t4 - t5);
@@ -388,7 +388,7 @@ void correct2ph(Element *EmTemp, const double *Uprev, const double *fluxxp,
 
 // update the state variables
       for(i=0;i<6;++i)
-         EmTemp->state_vars(i, Ustore[i]);
+         Elm->state_vars(i, Ustore[i]);
 
 }
 void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,

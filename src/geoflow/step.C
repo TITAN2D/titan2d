@@ -25,7 +25,7 @@
 #include "../header/titan2d_utils.h"
 
 //! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-void predict(double *Uvec, const double *dUdx, const double *dUdy,
+void predict(Element *Elm, const double *dUdx, const double *dUdy,
         double *Uprev, const double tiny, const double kactx,
         const double dt2, const double *g, const double curv_x, const double curv_y,
         const double bedfrictang, const double intfrictang,
@@ -36,7 +36,7 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
           dgdx, frict_tiny, order_flag, VxVyB, 
           IF_STOPPED,fluxsrc)*/
 {
-    //NOTE:  d(g[2]*Uvec[0])/dx is approximated by g[2]*dUvec[0]/dx !!!
+    //NOTE:  d(g[2]*Elm->state_vars(0))/dx is approximated by g[2]*dUvec[0]/dx !!!
     double c_sq;
     double h_inv;
     double tanbed;
@@ -57,9 +57,9 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
     //TEST********** order_flag = 1 
     //     write(*,*) "order_flag in predict=", order_flag 
 
-    Uprev[0] = Uvec[0];
-    Uprev[1] = Uvec[1];
-    Uprev[2] = Uvec[2];
+    Uprev[0] = Elm->state_vars(0);
+    Uprev[1] = Elm->state_vars(1);
+    Uprev[2] = Elm->state_vars(2);
 
     if (IF_STOPPED == 2) {
         VxVy[0] = 0.0;
@@ -69,22 +69,22 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
     }
     else {
         VxVy[0] = VxVyB[0];
-        //Uvec[1]/Uvec[0];
+        //Elm->state_vars(1)/Elm->state_vars(0);
         VxVy[1] = VxVyB[1];
-        //Uvec[2]/Uvec[0];
+        //Elm->state_vars(2)/Elm->state_vars(0);
         VxVyS[0] = VxVyB[0];
         VxVyS[1] = VxVyB[1];
     }
 
     if (order_flag == 2) {
 
-        c_sq = kactx * g[2] * Uvec[0];
-        //h_inv := 1/Uvec[0]                         
+        c_sq = kactx * g[2] * Elm->state_vars(0);
+        //h_inv := 1/Elm->state_vars(0)                         
 
-        Uvec[0] = Uvec[0] - dt2 * (dUdx[1] + dUdy[2] + fluxsrc[0]);
-        Uvec[0] = c_dmax1(Uvec[0], 0.0);
+        Elm->state_vars(0, Elm->state_vars(0) - dt2 * (dUdx[1] + dUdy[2] + fluxsrc[0]));
+        Elm->state_vars(0, c_dmax1(Elm->state_vars(0), 0.0));
 
-        //dF/dU, dG/dU and S terms if Uvec[0] > TINY !
+        //dF/dU, dG/dU and S terms if Elm->state_vars(0) > TINY !
         if (Uprev[0] > tiny) {
             h_inv = 1.0 / Uprev[0];
             tanbed = tan(bedfrictang);
@@ -108,26 +108,26 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
             //****** X-dir ******
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // dF/dU and dG/dU terms
-            Uvec[1] = Uvec[1] -
+            Elm->state_vars(1, Elm->state_vars(1) -
                     dt2 * ((c_sq - VxVy[0] * VxVy[0]) * dUdx[0] +
                     2.0 * VxVy[0] * dUdx[1] -
                     VxVy[0] * VxVy[1] * dUdy[0] +
                     VxVy[1] * dUdy[1] +
                     VxVy[0] * dUdy[2] +
-                    fluxsrc[1]);
+                    fluxsrc[1]));
 
             // x direction source terms
 
             // the gravity force in the x direction
-            forcegrav = g[0] * Uvec[0];
+            forcegrav = g[0] * Elm->state_vars(0);
 
             // the internal friction force
             tmp = h_inv * (dUdy[1] - VxVyS[0] * dUdy[0]);
             sgn_dudy = sgn_tiny(tmp, frict_tiny);
-            forceintx = sgn_dudy * Uvec[0] * kactx * (g[2] * dUdy[0] + dgdx[1] * Uvec[0]) * sin(intfrictang);
+            forceintx = sgn_dudy * Elm->state_vars(0) * kactx * (g[2] * dUdy[0] + dgdx[1] * Elm->state_vars(0)) * sin(intfrictang);
 
             // the bed friction force for fast moving flow 
-            forcebedx = unitvx * c_dmax1(g[2] * Uvec[0] + VxVyS[0] * Uvec[1] * curv_x, 0.0) * tanbed;
+            forcebedx = unitvx * c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[0] * Elm->state_vars(1) * curv_x, 0.0) * tanbed;
 
             if (IF_STOPPED == 2 && 1 == 0) {
                 //the bed friction force for stopped or nearly stopped flow
@@ -137,11 +137,11 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
                 //NET force it is opposing
 
                 //maximum friction force the bed friction can support
-                forcebedmax = c_dmax1(g[2] * Uvec[0] + VxVyS[0] * Uvec[1] * curv_x, 0.0) * tanbed;
+                forcebedmax = c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[0] * Elm->state_vars(1) * curv_x, 0.0) * tanbed;
 
                 //     the NET force the bed friction force is opposing 
                 forcebedequil = forcegrav - forceintx;
-                //                   -kactxy*g[2]*Uvec[0]*dUdx[0]
+                //                   -kactxy*g[2]*Elm->state_vars(0)*dUdx[0]
 
 
                 // the "correct" stopped or nearly stopped flow bed friction force 
@@ -155,45 +155,45 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
             }
 
             // all the x source terms
-            Uvec[1] = Uvec[1] + dt2 * (forcegrav - forcebedx - forceintx);
+            Elm->state_vars(1, Elm->state_vars(1) + dt2 * (forcegrav - forcebedx - forceintx));
             //            write(*,*) 'int', forceintx, 'bed', forcebedx
 
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             //****** Y-dir ******
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             //dF/dU and dG/dU terms
-            Uvec[2] = Uvec[2] -
+            Elm->state_vars(2, Elm->state_vars(2) -
                     dt2 * ((c_sq - VxVy[1] * VxVy[1]) * dUdy[0] +
                     2.0 * VxVy[1] * dUdy[2] -
                     VxVy[0] * VxVy[1] * dUdx[0] +
                     VxVy[1] * dUdx[1] +
                     VxVy[0] * dUdx[2] +
-                    fluxsrc[2]);
+                    fluxsrc[2]));
 
             //the gravity force in the y direction
-            forcegrav = g[1] * Uvec[0];
+            forcegrav = g[1] * Elm->state_vars(0);
 
             //the internal friction force
             tmp = h_inv * (dUdx[2] - VxVyS[1] * dUdx[0]);
             sgn_dvdx = sgn_tiny(tmp, frict_tiny);
-            forceinty = sgn_dvdx * Uvec[0] * kactx * (g[2] *
-                    dUdx[0] + dgdx[0] * Uvec[0]) * sin(intfrictang);
+            forceinty = sgn_dvdx * Elm->state_vars(0) * kactx * (g[2] *
+                    dUdx[0] + dgdx[0] * Elm->state_vars(0)) * sin(intfrictang);
 
             //the bed friction force for fast moving flow 
             forcebedy = unitvy *
-                    c_dmax1(g[2] * Uvec[0] + VxVyS[1] * Uvec[2] * curv_y, 0.0)
+                    c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[1] * Elm->state_vars(2) * curv_y, 0.0)
                     * tan(bedfrictang);
 
             if (IF_STOPPED == 2 && 1 == 0) {
                 //the bed friction force for stopped or nearly stopped flow
 
                 forcebedmax =
-                        c_dmax1(g[2] * Uvec[0] + VxVyS[1] * Uvec[2] * curv_y, 0.0)
+                        c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[1] * Elm->state_vars(2) * curv_y, 0.0)
                         * tanbed;
 
                 //the NET force the bed friction force is opposing 
                 forcebedequil = forcegrav
-                        //     $              -kactxy*g[2]*Uvec[0]*dUdy[0]
+                        //     $              -kactxy*g[2]*Elm->state_vars(0)*dUdy[0]
                         - forceinty;
 
                 //the "correct" stopped or nearly stopped flow bed friction force 
@@ -207,13 +207,13 @@ void predict(double *Uvec, const double *dUdx, const double *dUdy,
             }
 
             // all the y source terms
-            Uvec[2] = Uvec[2] + dt2 * (forcegrav - forcebedy - forceinty);
+            Elm->state_vars(2, Elm->state_vars(2) + dt2 * (forcegrav - forcebedy - forceinty));
 
         }
     }
 }
 //! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-void predict2ph(double *Uvec, const double *dUdx, const double *dUdy,
+void predict2ph(Element *Elm, const double *dUdx, const double *dUdy,
         double *Uprev, const double tiny, const double kactx,
         const double dt2, const double *g, const double curv_x, const double curv_y,
         const double bedfrictang, const double intfrictang,
@@ -370,7 +370,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         
         if(elementType == ElementType::TwoPhases)
         {
-            predict2ph(Curr_El->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
+            predict2ph(Curr_El, d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
                      tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                      matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                      d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
@@ -382,7 +382,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
                      &(matprops_ptr->bedfrict[Curr_El->material()]), &(matprops_ptr->intfrict),
                      Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);*/
             
-            predict(Curr_El->get_state_varsABCD(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
+            predict(Curr_El, d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
                      tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
                      matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                      d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
@@ -472,23 +472,22 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         //	;
         
 #ifdef MAX_DEPTH_MAP
-        double *momenta;
+        double momenta[4];
         if(elementType == ElementType::TwoPhases)
         {
-            momenta=new double[6];
+            momenta[0]=Curr_El->state_vars(2);
+            momenta[1]=Curr_El->state_vars(3);
+            momenta[2]=Curr_El->state_vars(4);
+            momenta[3]=Curr_El->state_vars(5);
         }
         if(elementType == ElementType::SinglePhase)
         {
-            momenta = Curr_El->get_state_varsABCD() + 1;
+            momenta[0]=Curr_El->state_vars(1);
+            momenta[1]=Curr_El->state_vars(2);
         }
 
         outline_ptr->update(Curr_El->coord(0) - 0.5 * dx, Curr_El->coord(0) + 0.5 * dx, Curr_El->coord(1) - 0.5 * dy,
                             Curr_El->coord(1) + 0.5 * dy, hheight, momenta);
-        if(elementType == ElementType::TwoPhases)
-        {
-            delete [] momenta;
-            momenta=nullptr;
-        }
 
 #endif
         
