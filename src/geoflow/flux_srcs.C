@@ -133,7 +133,9 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
      for(int isrc=0; isrc<no_of_sources; isrc++)
      printf("influx[%d]=%g\n",isrc,fluxprops->influx[isrc]);
      */
-    Influx[0] = Influx[1] = Influx[2] = 0.0;
+    Influx(0, 0.0);
+    Influx(1, 0.0);
+    Influx(2, 0.0);
     
     //get corner and edge nodes
     for(inode = 0; inode < 8; inode++)
@@ -219,22 +221,22 @@ void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *t
         }
         if(temp_coef2 > 0.0)
         {
-            Influx[0] += temp_coef2;
+            Influx(0, Influx(0) + temp_coef2);
             
             //if(sum_flux_xmom_ymom[0]>0.0) {
-            Influx[1] += sum_flux_xmom_ymom[1] * temp_coef2 / sum_flux_xmom_ymom[0];
-            Influx[2] += sum_flux_xmom_ymom[2] * temp_coef2 / sum_flux_xmom_ymom[0];
+            Influx(1, Influx(1) + sum_flux_xmom_ymom[1] * temp_coef2 / sum_flux_xmom_ymom[0]);
+            Influx(2, Influx(2) + sum_flux_xmom_ymom[2] * temp_coef2 / sum_flux_xmom_ymom[0]);
             //}
         }
         
     }
     
-    if(!(Influx[0] >= 0.0))
+    if(!(Influx(0) >= 0.0))
     {
         printf("error in Influx[0] assignment\n");
-        assert(Influx[0] >= 0.0);
+        assert(Influx(0) >= 0.0);
     }
-    set_Awet((Influx[0] > 0.0) ? 1.0 : 0.0);
+    set_Awet((Influx(0) > 0.0) ? 1.0 : 0.0);
     
     return;
 }

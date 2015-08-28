@@ -179,7 +179,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
         d_state_vars[i] = 0;
     
     for(i = 0; i < NUM_STATE_VARS; i++)
-        Influx[i] = 0.0;
+        Influx(i, 0.0);
 
     //printf("creating an original element\n");
     
@@ -218,7 +218,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         prev_state_vars[i] = 0.;
-        Influx[i] = 0.;
+        Influx(i, 0.);
     }
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         d_state_vars[i] = 0.;
@@ -348,7 +348,7 @@ Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, Mat
     for(int i = 0; i < NUM_STATE_VARS; i++)
     {
         prev_state_vars[i] = 0.;
-        Influx[i] = 0.;
+        Influx(i, 0.);
     }
     for(int i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
         d_state_vars[i] = 0.;
@@ -3959,15 +3959,15 @@ int Element::if_source_boundary(HashTable *ElemTable)
     int ineigh;
     Element* ElemNeigh;
     
-    if(!(Influx[0] >= 0.0))
+    if(!(Influx(0) >= 0.0))
     {
-        printf("if_source_boundary() Influx[0]=%g\n", Influx[0]);
+        printf("if_source_boundary() Influx[0]=%g\n", Influx(0));
         fflush(stdout);
     }
     
-    assert(Influx[0] >= 0.0); //currently mass sinks are not allowed
+    assert(Influx(0) >= 0.0); //currently mass sinks are not allowed
     
-    if(Influx[0] > 0.0)
+    if(Influx(0) > 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0)
@@ -3981,13 +3981,13 @@ int Element::if_source_boundary(HashTable *ElemTable)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                if(*(ElemNeigh->get_influx() + 0) <= 0.0)
+                if(ElemNeigh->Influx(0) <= 0.0)
                     return (2); //inside of line bounding area with a mass source 
             }
         //else if(neigh_proc[ineigh%4]==-1) return(2); //mass source on boundary of domain
     }
     
-    else if(Influx[0] == 0.0)
+    else if(Influx(0) == 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0.0)
@@ -4001,12 +4001,12 @@ int Element::if_source_boundary(HashTable *ElemTable)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                assert(*(ElemNeigh->get_influx() + 0) >= 0.0);
-                if(*(ElemNeigh->get_influx() + 0) != 0.0)
+                assert(ElemNeigh->Influx(0) >= 0.0);
+                if(ElemNeigh->Influx(0) != 0.0)
                     return (1); //outside of line bounding area with a mass source/sink 
             }
     }
-    else if(Influx[0] < 0.0)
+    else if(Influx(0) < 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0.0)
@@ -4020,7 +4020,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                if(*(ElemNeigh->get_influx() + 0) >= 0.0)
+                if(ElemNeigh->Influx(0) >= 0.0)
                     return (-1); //inside of line bounding area with a mass sink 
             }
         //else if(neigh_proc[ineigh%4]==-1) return(-1); //mass sink on boundary of domain
@@ -4040,8 +4040,8 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
         return (adapted_flag() - 1);
     
     assert(state_vars[0] >= 0.0);
-    assert(Influx[0] >= 0.0);
-    if((state_vars[0] < contour_height) && (Influx[0] == 0.0))
+    assert(Influx(0) >= 0.0);
+    if((state_vars[0] < contour_height) && (Influx(0) == 0.0))
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0)
@@ -4076,7 +4076,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
                  assert(*(ElemNeigh->get_influx())>=0.0);
                  assert(*(ElemNeigh->get_state_vars())>=0.0);
                  */
-                if((*(ElemNeigh->get_state_vars() + 0) >= contour_height) || (*(ElemNeigh->get_influx() + 0) > 0.0))
+                if((*(ElemNeigh->get_state_vars() + 0) >= contour_height) || (ElemNeigh->Influx(0) > 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -4091,7 +4091,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 assert(ElemNeigh);
-                if((*(ElemNeigh->get_state_vars() + 0) < contour_height) && (*(ElemNeigh->get_influx() + 0) == 0.0))
+                if((*(ElemNeigh->get_state_vars() + 0) < contour_height) && (ElemNeigh->Influx(0) == 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -4122,7 +4122,7 @@ int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable,
         return (adapted_flag() - 1);
     
     if((adapted_flag() != BUFFER) && //this element is not in the buffer
-    ((Influx[0] == 0.0)/*&&(state_vars[0]<contour_height)*/) //&& //this element is OUTSIDE the buffer layer "circle"
+    ((Influx(0) == 0.0)/*&&(state_vars[0]<contour_height)*/) //&& //this element is OUTSIDE the buffer layer "circle"
     //(state_vars[0]>=GEOFLOW_TINY)
     )
         for(ineigh = 0; ineigh < 8; ineigh++)
@@ -4449,7 +4449,7 @@ Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myi
     set_lb_key(sfc_key_zero);
     
     for(int i = 0; i < NUM_STATE_VARS; i++)
-        Influx[i] = 0.0;
+        Influx(i, 0.0);
     set_myprocess(myid);
     set_no_of_eqns(EQUATIONS);
     //refined=0;

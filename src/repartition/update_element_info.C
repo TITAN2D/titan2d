@@ -295,7 +295,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         newelement->state_vars[i] = elem2->state_vars[i];
-        newelement->Influx[i] = elem2->Influx[i];
+        newelement->Influx(i, elem2->Influx[i]);
     }
     for(i = 0; i < 3; i++)
         newelement->gravity(i, elem2->gravity[i]);

@@ -25,7 +25,7 @@
 #include "../header/geoflow.h"
 
 
-void correct1ph(double *Uvec, const double *Uprev, const double *fluxxp,
+void correct1ph(Element *EmTemp,double *Uvec, const double *Uprev, const double *fluxxp,
         const double *fluxyp, const double *fluxxm, const double *fluxym,
         const double tiny, const double dtdx, const double dtdy, const double dt,
         const double *dUdx, const double *dUdy, const double xslope,
@@ -33,7 +33,7 @@ void correct1ph(double *Uvec, const double *Uprev, const double *fluxxp,
         const double bedfrictang, const double *g, const double kactxy,
         const double *dgdx, const double frict_tiny, double &forceint,
         double &forcebed, const int DO_EROSION, double &eroded,
-        const double *VxVy, const int IF_STOPPED, const double *fluxsrc)
+        const double *VxVy, const int IF_STOPPED)
 {
     double speed;
     double forceintx, forceinty;
@@ -71,18 +71,18 @@ void correct1ph(double *Uvec, const double *Uprev, const double *fluxxp,
     Ustore[0] = Uprev[0]
             - dtdx * (fluxxp[0] - fluxxm[0])
             - dtdy * (fluxyp[0] - fluxym[0])
-            + dt * fluxsrc[0];
+            + dt * EmTemp->Influx(0);
     Ustore[0] = c_dmax1(Ustore[0], 0.0);
 
     Ustore[1] = Uprev[1]
             - dtdx * (fluxxp[1] - fluxxm[1])
             - dtdy * (fluxyp[1] - fluxym[1])
-            + dt * fluxsrc[1];
+            + dt * EmTemp->Influx(1);
 
     Ustore[2] = Uprev[2]
             - dtdx * (fluxxp[2] - fluxxm[2])
             - dtdy * (fluxyp[2] - fluxym[2])
-            + dt * fluxsrc[2];
+            + dt * EmTemp->Influx(2);
 
     // initialize to zero
     forceintx = 0.0;
@@ -248,7 +248,7 @@ void calc_drag_force(const double *Uvec, const double *vsolid, const double *vfl
         drag[3] = (1.0-denfrac)*temp*delv[1]/denfrac;
       }
 }
-void correct2ph(double *Uvec, const double *Uprev, const double *fluxxp,
+void correct2ph(Element *EmTemp,double *Uvec, const double *Uprev, const double *fluxxp,
         const double *fluxyp, const double *fluxxm, const double *fluxym,
         const double tiny, const double dtdx, const double dtdy, const double dt,
         const double *dUdx, const double *dUdy, const double xslope,
@@ -258,7 +258,7 @@ void correct2ph(double *Uvec, const double *Uprev, const double *fluxxp,
         double &forcebed, const int DO_EROSION, double &eroded,
         const double *v_solid, const double *v_fluid,
         const double den_solid, const double den_fluid, const double terminal_vel, 
-        const double eps, const int IF_STOPPED, const double *fluxsrc)
+        const double eps, const int IF_STOPPED)
 {
       double speed;
       double forceintx, forceinty;
@@ -292,7 +292,7 @@ void correct2ph(double *Uvec, const double *Uprev, const double *fluxxp,
       slope=sqrt(xslope*xslope+yslope*yslope);
       den_frac = den_fluid/den_solid;
       for(i=0;i<6;++i)
-        Ustore[i]=Uprev[i]+dt*fluxsrc[i]-dtdx*(fluxxp[i]-fluxxm[i])-dtdy*(fluxyp[i]-fluxym[i]);
+        Ustore[i]=Uprev[i]+dt*EmTemp->Influx(i)-dtdx*(fluxxp[i]-fluxxm[i])-dtdy*(fluxyp[i]-fluxym[i]);
 
       if(Ustore[0] > tiny) {
 // Source terms ...
@@ -458,8 +458,6 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     double *d_state_vars = EmTemp->get_d_state_vars();
     double gravity[3]{EmTemp->gravity(0),EmTemp->gravity(1),EmTemp->gravity(2)};
     double d_gravity[3]{EmTemp->d_gravity(0),EmTemp->d_gravity(1),EmTemp->d_gravity(2)};
-
-    double *Influx = EmTemp->get_influx();
     
     if(elementType == ElementType::TwoPhases)
     {
@@ -516,10 +514,10 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
                  gravity, kactxy, &(matprops2_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, Vsolid, Vfluid,
                  &solid_den, &fluid_den, &terminal_vel, &(matprops2_ptr->epsilon), &IF_STOPPED, Influx);*/
         
-        correct2ph(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt, d_state_vars,
+        correct2ph(EmTemp,state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt, d_state_vars,
                  (d_state_vars + NUM_STATE_VARS), EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops2_ptr->intfrict, bedfrict,
                  gravity, kactxy[0], matprops2_ptr->frict_tiny, *forceint, *forcebed, do_erosion, *eroded, Vsolid, Vfluid,
-                 solid_den, fluid_den, terminal_vel, matprops2_ptr->epsilon, IF_STOPPED, Influx);
+                 solid_den, fluid_den, terminal_vel, matprops2_ptr->epsilon, IF_STOPPED);
         
         
         bool print_vars = false;
@@ -570,10 +568,10 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
         double &forcebed, const int DO_EROSION, double &eroded,
         const double *VxVy, const int IF_STOPPED, const double *fluxsrc);*/
         
-        correct1ph(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt, d_state_vars,
+        correct1ph(EmTemp,state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt, d_state_vars,
                  (d_state_vars + NUM_STATE_VARS), EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops_ptr->intfrict,
                  EmTemp->effect_bedfrict(), gravity, EmTemp->effect_kactxy(0), d_gravity, matprops_ptr->frict_tiny, *forceint, *forcebed,
-                 do_erosion, *eroded, VxVy, IF_STOPPED, Influx);
+                 do_erosion, *eroded, VxVy, IF_STOPPED);
 
         /*correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
                  (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops_ptr->intfrict),

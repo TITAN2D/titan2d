@@ -311,10 +311,9 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
         
         Curr_El = Elms[i];
         
-        influx[3];
-        influx[0] = *(Curr_El->get_influx() + 0);
-        influx[1] = *(Curr_El->get_influx() + 1);
-        influx[2] = *(Curr_El->get_influx() + 2);
+        influx[0] = Curr_El->Influx(0);
+        influx[1] = Curr_El->Influx(1);
+        influx[2] = Curr_El->Influx(2);
         
         //note, now there is no check for fluxes from non-local elements
         if(!(influx[0] >= 0.0))

@@ -101,7 +101,7 @@ protected:
         set_father(sfc_key_zero); //initialize the father key to zero
         for (int i = 0; i < NUM_STATE_VARS; i++) {
             state_vars[i] = -1;
-            Influx[i] = 0.;
+            Influx(i, 0.0);
         }
         set_adapted_flag(TOBEDELETED);
         set_refined_flag(1);
@@ -678,11 +678,12 @@ public:
         stoppedflags_ = stoppedflagsin;
     }
 
-    //! this function zeros the extrusion (out of the ground) fluxes in this element
-    void zero_influx();
-
     //! this function returns the stored value of the extrusion (out of the ground) fluxes in this element
-    double *get_influx();
+    double Influx(int idim) const {return Influx_[idim];}
+    void Influx(int idim, double value) {Influx_[idim]=value;}
+    //! this function zeros the extrusion (out of the ground) fluxes in this element
+    void zero_influx(){for (int i = 0; i < NUM_STATE_VARS; i++)Influx(i, 0.0);}
+    
 
     //! this function calculates the extrusion (out of the ground) fluxes for this elements
     void calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *timeprops);
@@ -909,7 +910,7 @@ protected:
     double effect_kactxy_[2];
 
     //! extrusion flux rate for this timestep for this element, used when having material flow out of the ground, a volume per unit area influx rate source term
-    double Influx[MAX_NUM_STATE_VARS];
+    double Influx_[MAX_NUM_STATE_VARS];
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
     int ithelem_;
@@ -1067,17 +1068,6 @@ inline void Element::putel_sq(double solsq, double errsq) {
     set_el_solution(0, solsq);
     set_el_error(0, errsq);
 }
-
-inline void Element::zero_influx() {
-    for (int i = 0; i < NUM_STATE_VARS; i++)
-        Influx[i] = 0.;
-}
-;
-
-inline double* Element::get_influx() {
-    return Influx;
-}
-;
 
 /*************************************************************************/
 /*************************************************************************/

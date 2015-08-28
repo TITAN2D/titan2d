@@ -102,7 +102,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         elem->state_vars[i] = sendel->state_vars[i];
-        elem->Influx[i] = sendel->Influx[i];
+        elem->Influx[i] = sendel->Influx(i);
     }
     for(i = 0; i < 3; i++)
         elem->gravity[i] = sendel->gravity(i);
