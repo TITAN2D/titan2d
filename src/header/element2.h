@@ -503,6 +503,18 @@ public:
     double& d_state_vars_ref(int idim) {return d_state_vars_[idim];}
     void d_state_vars(int idim, double value) {d_state_vars_[idim]=value;}
     
+    double h(){return state_vars(0);}
+    //!hVx for single phase or hVx_sol for two phases
+    double hVx(){
+        if(elementType() == ElementType::TwoPhases)return state_vars(2);
+        else return state_vars(1);
+    }
+    //!hVy for single phase or hVy_sol for two phases 
+    double hVy(){
+        if(elementType() == ElementType::TwoPhases)return state_vars(3);
+        else return state_vars(2);
+    }
+    
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
     double* get_prev_state_vars(){return prev_state_vars_;}
     double prev_state_vars(int idim) const {return prev_state_vars_[idim];}

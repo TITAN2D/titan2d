@@ -330,9 +330,6 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                 assert(Curr_El!=NULL);
                 if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
                 {
-                    
-                    double* state_vars = Curr_El->get_state_varsABCD();
-                    
                     //calculate volume passing through "discharge planes"
                     Node** nodesPtr = Curr_El->getNodesPtrs();
                     double nodescoord[9][2], *coord;
@@ -356,18 +353,18 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                     nodescoord[8][0] = Curr_El->coord(0);
                     nodescoord[8][1] = Curr_El->coord(0);
                     
-                    discharge->update(nodescoord, state_vars, d_time);
+                    discharge->update(nodescoord, Curr_El->hVx(), Curr_El->hVy(), d_time);
                     
                     // rule out non physical fast moving thin layers
-                    //if(state_vars[0] >= cutoffheight){
+                    //if(Curr_El->state_vars(0) >= cutoffheight){
                     
-                    if(state_vars[0] > min_height)
+                    if(Curr_El->state_vars(0) > min_height)
                     {
                         
-                        if(state_vars[0] > max_height)
-                            max_height = state_vars[0];
+                        if(Curr_El->state_vars(0) > max_height)
+                            max_height = Curr_El->state_vars(0);
                         
-                        if(state_vars[0] >= statprops->hxyminmax)
+                        if(Curr_El->state_vars(0) >= statprops->hxyminmax)
                         {
                             if(Curr_El->coord(0) < xyminmax[0]) //xmin
                                 xyminmax[0] = Curr_El->coord(0);
@@ -391,12 +388,12 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                         if(testpointdist2 < testpointmindist2)
                         {
                             testpointmindist2 = testpointdist2;
-                            testpointreach = ((state_vars[0] >= testpointheight) ? 1 : 0);
+                            testpointreach = ((Curr_El->state_vars(0) >= testpointheight) ? 1 : 0);
                         }
                         
                         dA = Curr_El->dx(0) * Curr_El->dx(1);
                         area += dA;
-                        dVol = state_vars[0] * dA;
+                        dVol = Curr_El->state_vars(0) * dA;
                         testvolume += dVol;
                         xC += Curr_El->coord(0) * dVol;
                         yC += Curr_El->coord(1) * dVol;
@@ -409,15 +406,15 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
 
                         if(elementType == ElementType::TwoPhases)
                         {
-                            v_ave += sqrt(state_vars[2] * state_vars[2] + state_vars[3] * state_vars[3]) * dA;
+                            v_ave += sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3)) * dA;
                             Curr_El->eval_velocity(0.0, 0.0, Vsolid);
 
-                            if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((state_vars[0] <= 0.0) || (0.0 <= state_vars[0])))
-                               || (!((state_vars[1] <= 0.0) || (0.0 <= state_vars[1])))
-                               || (!((state_vars[2] <= 0.0) || (0.0 <= state_vars[2])))
-                               || (!((state_vars[3] <= 0.0) || (0.0 <= state_vars[3])))
-                               || (!((state_vars[4] <= 0.0) || (0.0 <= state_vars[4])))
-                               || (!((state_vars[5] <= 0.0) || (0.0 <= state_vars[5]))))
+                            if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((Curr_El->state_vars(0) <= 0.0) || (0.0 <= Curr_El->state_vars(0))))
+                               || (!((Curr_El->state_vars(1) <= 0.0) || (0.0 <= Curr_El->state_vars(1))))
+                               || (!((Curr_El->state_vars(2) <= 0.0) || (0.0 <= Curr_El->state_vars(2))))
+                               || (!((Curr_El->state_vars(3) <= 0.0) || (0.0 <= Curr_El->state_vars(3))))
+                               || (!((Curr_El->state_vars(4) <= 0.0) || (0.0 <= Curr_El->state_vars(4))))
+                               || (!((Curr_El->state_vars(5) <= 0.0) || (0.0 <= Curr_El->state_vars(5)))))
                             {
                                 //v_ave is NaN
                                 cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
@@ -425,16 +422,16 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                                        *(Curr_El->get_prev_state_vars() + 0), *(Curr_El->get_prev_state_vars() + 1),
                                        *(Curr_El->get_prev_state_vars() + 2), *(Curr_El->get_prev_state_vars() + 3),
                                        *(Curr_El->get_prev_state_vars() + 4), *(Curr_El->get_prev_state_vars() + 5));
-                                printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", state_vars[0], state_vars[1],
-                                       state_vars[2], state_vars[3], state_vars[4], state_vars[5]);
+                                printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1),
+                                       Curr_El->state_vars(2), Curr_El->state_vars(3), Curr_El->state_vars(4), Curr_El->state_vars(5));
                                 printf("prev {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
                                        *(Curr_El->get_prev_state_vars() + 2) / (*(Curr_El->get_prev_state_vars() + 1)),
                                        *(Curr_El->get_prev_state_vars() + 3) / (*(Curr_El->get_prev_state_vars() + 1)),
                                        *(Curr_El->get_prev_state_vars() + 4) / (*(Curr_El->get_prev_state_vars())),
                                        *(Curr_El->get_prev_state_vars() + 5) / (*(Curr_El->get_prev_state_vars())));
                                 printf("this {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                                       state_vars[2] / state_vars[1], state_vars[3] / state_vars[1],
-                                       state_vars[4] / state_vars[0], state_vars[5] / state_vars[0]);
+                                       Curr_El->state_vars(2) / Curr_El->state_vars(1), Curr_El->state_vars(3) / Curr_El->state_vars(1),
+                                       Curr_El->state_vars(4) / Curr_El->state_vars(0), Curr_El->state_vars(5) / Curr_El->state_vars(0));
                                 ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
                                 exit(1);
                             }
@@ -442,29 +439,29 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                             temp = sqrt(Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1]);
                             if(temp > v_max)
                                 v_max = temp;
-                            vx_ave += state_vars[2] * dA;
-                            vy_ave += state_vars[3] * dA;
+                            vx_ave += Curr_El->state_vars(2) * dA;
+                            vy_ave += Curr_El->state_vars(3) * dA;
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
-                            v_ave += sqrt(state_vars[1] * state_vars[1] + state_vars[2] * state_vars[2]) * dA;
+                            v_ave += sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2)) * dA;
                             Curr_El->eval_velocity(0.0, 0.0, VxVy);
 
-                            if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((state_vars[0] <= 0.0) || (0.0 <= state_vars[0])))
-                               || (!((state_vars[1] <= 0.0) || (0.0 <= state_vars[1])))
-                               || (!((state_vars[2] <= 0.0) || (0.0 <= state_vars[2]))))
+                            if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((Curr_El->state_vars(0) <= 0.0) || (0.0 <= Curr_El->state_vars(0))))
+                               || (!((Curr_El->state_vars(1) <= 0.0) || (0.0 <= Curr_El->state_vars(1))))
+                               || (!((Curr_El->state_vars(2) <= 0.0) || (0.0 <= Curr_El->state_vars(2)))))
                             {
                                 //v_ave is NaN
 
                                 cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
                                 printf("prevu={%12.6g,%12.6g,%12.6g}\n", *(Curr_El->get_prev_state_vars() + 0),
                                        *(Curr_El->get_prev_state_vars() + 1), *(Curr_El->get_prev_state_vars() + 2));
-                                printf("    u={%12.6g,%12.6g,%12.6g}\n", state_vars[0], state_vars[1], state_vars[2]);
+                                printf("    u={%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1), Curr_El->state_vars(2));
                                 printf("prev {hVx/h,hVy/h}={%12.6g,%12.6g}\n",
                                        *(Curr_El->get_prev_state_vars() + 1) / *(Curr_El->get_prev_state_vars() + 0),
                                        *(Curr_El->get_prev_state_vars() + 2) / *(Curr_El->get_prev_state_vars() + 0));
-                                printf("this {hVx/h,hVy/h}={%12.6g,%12.6g}\n", state_vars[1] / state_vars[0],
-                                       state_vars[2] / state_vars[0]);
+                                printf("this {hVx/h,hVy/h}={%12.6g,%12.6g}\n", Curr_El->state_vars(1) / Curr_El->state_vars(0),
+                                       Curr_El->state_vars(2) / Curr_El->state_vars(0));
                                 printf("     { Vx  , Vy  }={%12.6g,%12.6g}\n", VxVy[0], VxVy[1]);
                                 ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
                                 assert(0);
@@ -473,8 +470,8 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                             temp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
                             if(temp > v_max)
                                 v_max = temp;
-                            vx_ave += state_vars[1] * dA;
-                            vy_ave += state_vars[2] * dA;
+                            vx_ave += Curr_El->state_vars(1) * dA;
+                            vy_ave += Curr_El->state_vars(2) * dA;
                         }
                         
                         //these are garbage, Bin Yu wanted them when he was trying to come up
@@ -489,11 +486,11 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                         {
                             if(elementType == ElementType::TwoPhases)
                             {
-                                slope_ave += -(state_vars[2] * xslope + state_vars[3] * yslope) * dA / temp;
+                                slope_ave += -(Curr_El->state_vars(2) * xslope + Curr_El->state_vars(3) * yslope) * dA / temp;
                             }
                             if(elementType == ElementType::SinglePhase)
                             {
-                                slope_ave += -(state_vars[1] * xslope + state_vars[2] * yslope) * dA / temp;
+                                slope_ave += -(Curr_El->state_vars(1) * xslope + Curr_El->state_vars(2) * yslope) * dA / temp;
                             }
                             slopevolume += dVol;
                         }

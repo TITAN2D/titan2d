@@ -1113,7 +1113,7 @@ public:
     }
     
     //! this function updates the flux through the discharge planes
-    void update(double nodes[9][2], double *statevars, double dt)
+    void update(const double nodes[9][2], const double hVx, const double hVy, const double dt)
     {
         //FILE* fp=fopen("dischargedebug","a");
         
@@ -1270,7 +1270,7 @@ public:
                     
                     //discharge += dt*(hVx*dy-hVy*dx)
                     planes[iplane][9] += dt
-                            * (statevars[1] * (intersectpoint[1][1] - intersectpoint[0][1]) - statevars[2]
+                            * (hVx * (intersectpoint[1][1] - intersectpoint[0][1]) - hVy
                                     * (intersectpoint[1][0] - intersectpoint[0][0]));
                 } // if(iintersect==2)
                 
