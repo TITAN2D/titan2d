@@ -79,9 +79,9 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
                     ycoord.push_back(NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE);
                     conn[j] = num_nodes;
                     // Side-Corner node will have discontinuity in elevation
-                    if(NodeTemp->getinfo() != S_C_CON)
+                    if(NodeTemp->info() != S_C_CON)
                     {
-                        elevation = NodeTemp->get_elevation() * matprops_ptr->LENGTH_SCALE;
+                        elevation = NodeTemp->elevation() * matprops_ptr->LENGTH_SCALE;
                         zcoord.push_back(elevation);
                     }
                     // hence <get a fake one> interpolate from neighbor
@@ -316,9 +316,9 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                     xyz[3 * inode + 1] = NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE;
                     connections[4 * ielm + j] = inode;
                     // Side-Corner node will have discontinuity in elevation
-                    if(NodeTemp->getinfo() != S_C_CON)
+                    if(NodeTemp->info() != S_C_CON)
                     {
-                        elevation = NodeTemp->get_elevation() * matprops_ptr->LENGTH_SCALE;
+                        elevation = NodeTemp->elevation() * matprops_ptr->LENGTH_SCALE;
                         xyz[3 * inode + 2] = elevation;
                     }
                     // hence <get a fake one> interpolate from neighbor
@@ -477,9 +477,9 @@ double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTem
         neighside = 1;
     }
     Node* NodeTemp2 = (Node*) NodeTable->lookup(EmTemp->node_key(mynode));
-    elev = 0.5 * NodeTemp2->get_elevation();
+    elev = 0.5 * NodeTemp2->elevation();
     Element* EmTemp2 = (Element*) El_Table->lookup((EmTemp->neighbor(neighside)));
     NodeTemp2 = (Node*) NodeTable->lookup(EmTemp2->node_key(j));
-    elev += 0.5 * NodeTemp2->get_elevation();
+    elev += 0.5 * NodeTemp2->elevation();
     return elev;
 }

@@ -149,7 +149,7 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
                     EmTemp->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 10);
                     NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(which_neighbor + 4));
                     assert(NodeTemp);
-                    NodeTemp->putinfo(S_C_CON); //theoretically the order doesn't have to be changed
+                    NodeTemp->info(S_C_CON); //theoretically the order doesn't have to be changed
                 }
                 else
                 {
@@ -158,23 +158,23 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
                     EmTemp->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 11);
                     NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(which_neighbor + 4));
                     assert(NodeTemp);
-                    if(!(NodeTemp->getinfo() == S_S_CON))
+                    if(!(NodeTemp->info() == S_S_CON))
                     {
-                        printf("which_neighbor=%d NodeTemp->info==%d\n", which_neighbor, NodeTemp->getinfo());
+                        printf("which_neighbor=%d NodeTemp->info==%d\n", which_neighbor, NodeTemp->info());
                     }
                     
-                    assert(NodeTemp->getinfo() == S_S_CON);
-                    NodeTemp->putinfo(SIDE);
+                    assert(NodeTemp->info() == S_S_CON);
+                    NodeTemp->info(SIDE);
                     NodeTemp->order(EmTemp->order(which_neighbor));
                     
                     NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(which_neighbor));
-                    if(NodeTemp->getinfo() == S_C_CON)
-                        NodeTemp->putinfo(CORNER);
+                    if(NodeTemp->info() == S_C_CON)
+                        NodeTemp->info(CORNER);
                     else
                     {
                         NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(1 + which_neighbor));
-                        if(NodeTemp->getinfo() == S_C_CON)
-                            NodeTemp->putinfo(CORNER);
+                        if(NodeTemp->info() == S_C_CON)
+                            NodeTemp->info(CORNER);
                         
                     }
                     
@@ -185,8 +185,8 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
             {
                 assert(my_gen == neighbor_gen);
                 NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(which_neighbor + 4));
-                assert(NodeTemp->getinfo() == S_C_CON);
-                NodeTemp->putinfo(CORNER);
+                assert(NodeTemp->info() == S_C_CON);
+                NodeTemp->info(CORNER);
                 
                 for(int l = 0; l < 2; l++)
                 {
@@ -196,7 +196,7 @@ void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_P
                     Son->change_neighbor(change_neighbor, which_neighbor, neighbor_proc, 11);
                     NodeTemp = (Node*) HT_Node_Ptr->lookup(Son->node_key(which_neighbor + 4));
                     assert(NodeTemp);
-                    NodeTemp->putinfo(SIDE);
+                    NodeTemp->info(SIDE);
                     NodeTemp->order(Son->order(which_neighbor));
                 }
             }

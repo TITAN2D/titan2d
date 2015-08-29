@@ -63,7 +63,7 @@ int update_topo(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nu
             {
                 Node* NdTemp = (Node*) entryp->value;
                 assert(NdTemp);
-                NdTemp->set_elevation(matprops);
+                NdTemp->elevation(matprops);
                 entryp = entryp->next;
             }
         }

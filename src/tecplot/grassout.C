@@ -67,7 +67,7 @@ void grass_sites_proc_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 fprintf(fp, "%g|%g|%g|%%%g %%%g %%%g %%%g %%%g\n",
                         (NodeTemp->coord(0)) * (matprops->LENGTH_SCALE), //x
                         (NodeTemp->coord(1)) * (matprops->LENGTH_SCALE), //y
-                        NodeTemp->get_elevation() * (matprops->LENGTH_SCALE), //elevation
+                        NodeTemp->elevation() * (matprops->LENGTH_SCALE), //elevation
                         pile_height, vx, vy, x_mom, y_mom);
             }
             

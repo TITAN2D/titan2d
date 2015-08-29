@@ -59,7 +59,7 @@ void BSFC_update_element_proc(int myid, int numprocs, HashTable* HT_Elem_Ptr, Ha
                     {
                         int ll = 1;
                         Node* ndtemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(k));
-                        if(ndtemp->getinfo() == S_S_CON)
+                        if(ndtemp->info() == S_S_CON)
                         {
                             BSFC_combine_elements(k - 4, EmTemp, HT_Elem_Ptr, HT_Node_Ptr,
                                                   sfc_vert_ptr[j].destination_proc);

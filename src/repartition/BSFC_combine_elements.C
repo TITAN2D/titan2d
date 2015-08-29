@@ -80,7 +80,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
     if(next_side < 4)
     {
         nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(next_side + 4));
-        if(nd->getinfo() == S_S_CON)
+        if(nd->info() == S_S_CON)
         {
             if(next_side == EmTemp->which_son())
                 switch (EmTemp->which_son())
@@ -138,7 +138,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
         while (i < 8 && side == -1)
         {
             nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(i));
-            if(nd->getinfo() == S_S_CON)
+            if(nd->info() == S_S_CON)
                 side = i - 4;
             i++;
         }
@@ -186,7 +186,7 @@ void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, Ha
             if(next_side < 4)
             {
                 nd = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(next_side + 4));
-                if(nd->getinfo() == S_S_CON)
+                if(nd->info() == S_S_CON)
                 {
                     if(next_side == EmTemp->which_son())
                         switch (EmTemp->which_son())

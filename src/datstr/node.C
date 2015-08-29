@@ -52,7 +52,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
     
     connection_id = -1;
     
-    info = INIT;
+    info(INIT);
     
     for(i = 0; i < DIMENSION; i++)
         coord(i,coordi[i]);
@@ -69,13 +69,13 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    i = Get_elevation(resolution, xcoord, ycoord, elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
-        printf("error in Get_elevation(%d) r=%g (x,y)=(%g,%g) e=%g\n", i, resolution, xcoord, ycoord, elevation);
+        printf("error in Get_elevation(%d) r=%g (x,y)=(%g,%g) e=%g\n", i, resolution, xcoord, ycoord, elevation());
         exit(1);
     }
-    elevation = elevation / matprops_ptr->LENGTH_SCALE;
+    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
     /*  if((unsigned) 1548032885 == key[0])
      printf("created the missing node...\n"); */
 
@@ -95,14 +95,14 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
      ../repartition/BSFC_update_and_send_elements.C */
     
     connection_id = -1;
-    info = INIT;
+    info(INIT);
     
     for(i = 0; i < DIMENSION; i++)
         coord(i, coordi[i]);
     
     set_key(keyi);
     
-    info = inf;
+    info(inf);
     order(ord);
     //geoflow stuff
     zero_flux();
@@ -116,13 +116,13 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
     }
     double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
     double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
-    i = Get_elevation(resolution, xcoord, ycoord, elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation\n");
         exit(1);
     }
-    elevation = elevation / matprops_ptr->LENGTH_SCALE;
+    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
     /*  if((unsigned) 1548032885 == key[0])
      printf("created the missing node111111...\n");*/
 
@@ -144,18 +144,18 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
     
     connection_id = -1;
     
-    info = INIT;
+    info(INIT);
     
     for(i = 0; i < DIMENSION; i++)
         coord(i, coordi[i]);
     
     set_key(keyi);
     
-    info = inf;
+    info(inf);
     order(ord);
     //geoflow stuff
     zero_flux();
-    elevation = elev;
+    elevation(elev);
     /*
      if((coord[0]==0)||(coord[1]==0)){
      printf("inode=%d node={%u,%u} coord=(%20g,%20g)\n",yada,key[0],key[1],coord[0],coord[1]);
@@ -167,7 +167,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
 
 void Node::set_parameters(int inf, int ord)
 {
-    info = inf;
+    info(inf);
     order(ord);
     /*  if(key[0] == (unsigned) 3197207111) {
      int mmmyid;
@@ -185,7 +185,7 @@ Node::~Node()
 {
 }
 
-void Node::set_elevation(MatProps* matprops_ptr)
+void Node::elevation(MatProps* matprops_ptr)
 {
     double resolution = 0;
     double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
@@ -196,13 +196,13 @@ void Node::set_elevation(MatProps* matprops_ptr)
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    i = Get_elevation(resolution, xcoord, ycoord, elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation\n");
         exit(1);
     }
-    elevation = elevation / matprops_ptr->LENGTH_SCALE;
+    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
     
 }
 
@@ -239,11 +239,11 @@ void Node::save_node(FILE* fp)
     fprintf(fpdb,"id=%d\n",id());
 #endif
     
-    temp4.i = info;
+    temp4.i = info();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 8);
 #ifdef DEBUG_SAVE_NODE
-    fprintf(fpdb,"info=%d\n",info);
+    fprintf(fpdb,"info=%d\n",info());
 #endif
     
     /* these are Legacy and are not used
@@ -315,7 +315,7 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
     assert(Itemp == 7);
     
     temp4.u = readspace[Itemp++];
-    info = temp4.i;
+    info(temp4.i);
     assert(Itemp == 8);
     
     /* these are legacy and are not used
@@ -347,13 +347,13 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    i = Get_elevation(resolution, xcoord, ycoord, elevation);
+    i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation\n");
         exit(1);
     }
-    elevation = elevation / matprops_ptr->LENGTH_SCALE;
+    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
     
     return;
 }

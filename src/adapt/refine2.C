@@ -146,11 +146,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Fourth old node---
         if(RefinedNeigh || boundary)
-            NodeTemp[4]->putinfo(CORNER);
+            NodeTemp[4]->info(CORNER);
         else if(other_proc)
-            NodeTemp[4]->putinfo(-1);
+            NodeTemp[4]->info(-1);
         else
-            NodeTemp[4]->putinfo(S_C_CON);
+            NodeTemp[4]->info(S_C_CON);
         
         //---Fifth new node---
         which = 5;
@@ -183,15 +183,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[4] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[4]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
         //fourth old node
-        NodeTemp[4]->putinfo(CORNER);
+        NodeTemp[4]->info(CORNER);
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTemp[4]->putinfo(-1);
+            NodeTemp[4]->info(-1);
         // fifth new node
         neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(4));
         i = 0;
@@ -206,11 +206,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[5] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[5]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
         
     }
     
@@ -243,13 +243,13 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Fifth old node---
         if(RefinedNeigh || boundary)
-            NodeTemp[5]->putinfo(CORNER);
+            NodeTemp[5]->info(CORNER);
         else
         {
             if(other_proc)
-                NodeTemp[5]->putinfo(info);
+                NodeTemp[5]->info(info);
             else
-                NodeTemp[5]->putinfo(S_C_CON);
+                NodeTemp[5]->info(S_C_CON);
         }
         
         //---Thirteenth new node---
@@ -283,15 +283,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[8] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[8]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
         // fifth old node
-        NodeTemp[5]->putinfo(CORNER);
+        NodeTemp[5]->info(CORNER);
         if(other_proc) //ERROR: other_proc is set based on side 0 neigbor not being more refined or never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTemp[5]->putinfo(-1);
+            NodeTemp[5]->info(-1);
         // thirteenth new node
         neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(5));
         i = 0;
@@ -306,11 +306,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[13] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[13]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
     }
     
     //+++++++++++++++++++++++++++SIDE2
@@ -344,11 +344,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Sixth old node---
         if(RefinedNeigh || boundary)
-            NodeTemp[6]->putinfo(CORNER);
+            NodeTemp[6]->info(CORNER);
         else if(other_proc)
-            NodeTemp[6]->putinfo(-1);
+            NodeTemp[6]->info(-1);
         else
-            NodeTemp[6]->putinfo(S_C_CON);
+            NodeTemp[6]->info(S_C_CON);
         
         //---Fifteenth new node---
         which = 15;
@@ -382,15 +382,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[14] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[14]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
         // sixth old node
-        NodeTemp[6]->putinfo(CORNER);
+        NodeTemp[6]->info(CORNER);
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTemp[6]->putinfo(-1);
+            NodeTemp[6]->info(-1);
         // fifteenth new node
         neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(2));
         i = 0;
@@ -405,11 +405,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[15] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[15]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
     }
     
     //+++++++++++++++++++++++++++SIDE 3
@@ -443,11 +443,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         
         //---Seventh old node---
         if(RefinedNeigh || boundary)
-            NodeTemp[7]->putinfo(CORNER);
+            NodeTemp[7]->info(CORNER);
         else if(other_proc)
-            NodeTemp[7]->putinfo(-1);
+            NodeTemp[7]->info(-1);
         else
-            NodeTemp[7]->putinfo(S_C_CON);
+            NodeTemp[7]->info(S_C_CON);
         
         //---Eleventh new node---
         which = 11;
@@ -480,15 +480,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[6] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[6]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
         // seventh old node
-        NodeTemp[7]->putinfo(CORNER);
+        NodeTemp[7]->info(CORNER);
         if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTemp[7]->putinfo(-1);
+            NodeTemp[7]->info(-1);
         // eleventh new node
         neigh_elm = (Element*) HT_Elem_Ptr->lookup(EmTemp->neighbor(3));
         i = 0;
@@ -503,11 +503,11 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
         NewNodeKey[11] = neigh_elm->node_key(which + 4);
         n1 = (Node*) HT_Node_Ptr->lookup(NewNodeKey[11]);
         if(neigh_elm->refined_flag() == 0 || neigh_elm->refined_flag() == GHOST)
-            n1->putinfo(SIDE);
+            n1->info(SIDE);
         //else if(neigh_elm->get_refined_flag()==GHOST)
         //n1->putinfo(-1);
         else
-            n1->putinfo(S_C_CON);
+            n1->info(S_C_CON);
     }
     //++++++++++++++++INTERNAL SIDE NODES 7, 8OLD, 12, 9, 10
     
@@ -525,7 +525,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     create_new_node(which, 4, 8, HT_Node_Ptr, NodeTemp, NewNodeKey, info, &RefinedNeigh, boundary, NewOrder[0][1],
                     matprops_ptr);
     
-    NodeTemp[8]->putinfo(CORNER);    //changing the old bubble
+    NodeTemp[8]->info(CORNER);    //changing the old bubble
             
     //---Twelwth new node---
     
@@ -1012,7 +1012,7 @@ void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, No
         *RefNe = 1;
     
     if(*RefNe || boundary)
-        p->putinfo(SIDE);
+        p->info(SIDE);
     
     return;
 }

@@ -310,20 +310,20 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
                 
                 NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->key());
                 assert(NdTemp);
-                NdTemp->putinfo(BUBBLE);
+                NdTemp->info(BUBBLE);
                 
                 for(inode = 0; inode < 4; inode++)
                 {
                     NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
                     assert(NdTemp);
-                    NdTemp->putinfo(CORNER);
+                    NdTemp->info(CORNER);
                 }
                 
                 for(inode = 4; inode < 8; inode++)
                 {
                     NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
                     assert(NdTemp);
-                    NdTemp->putinfo(SIDE);
+                    NdTemp->info(SIDE);
                 }
             }
         }

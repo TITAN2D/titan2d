@@ -88,9 +88,9 @@ public:
     void save_node(FILE* fp); //for restart
 
     //! this function returns the node type, the options are listed in constant.h and include: NODEINIT, CORNER, BUBBLE, SIDE, CONSTRAINED, S_C_CON, S_S_CON, ASSIGNED,and UNASSIGNED.
-    int getinfo(){return info;}
+    int info() const {return info_;}
     //! this function sets the node type, the options are listed in constant.h and include: NODEINIT, CORNER, BUBBLE, SIDE, CONSTRAINED, S_C_CON, S_S_CON, ASSIGNED,and UNASSIGNED.
-    void putinfo(int in){info = in;}
+    void info(int in){info_ = in;}
 
     //! this function returns the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
     const SFC_Key& key() const {return key_;}
@@ -121,9 +121,11 @@ public:
     void zero_flux(){for(int i = 0; i < NUM_STATE_VARS; i++)flux[i] = refinementflux[i] = 0.0;}
 
     //! this function returns the elevation of a node, in the finite difference version of Titan this is not always reliable, use the elevation of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
-    double get_elevation(){return elevation;}
+    double elevation() const {return elevation_;}
+    double & elevation_ref() {return elevation_;}
     //! this function sets the elevation of a node
-    void set_elevation(MatProps* matprops_ptr);
+    void elevation(MatProps* matprops_ptr);
+    void elevation(double new_elevation){elevation_=new_elevation;}
 
     //! this function stores the number of elements associated with this node
     void num_assoc_elem(int numin){num_assoc_elem_ = numin;}
@@ -145,7 +147,7 @@ protected:
     int num_assoc_elem_;
 
     //! says what type of node this is see the comments of Node::get_info()
-    int info;
+    int info_;
 
     //! this is legacy afeapi and is not important though it would involve quite a bit of work to remove because it occurs frequently in Titan
     int order_;
@@ -157,7 +159,7 @@ protected:
     SFC_Key key_;
 
     //! this elevation should currently be the GIS elevation at the finest "scale"
-    double elevation;
+    double elevation_;
 
     //! these are the so called "regular fluxes" that is the ones that are used to update the elements, assume that element normal is parallel to either the x or y axis, Keith is the one who introduced a distinction between regular and refinement fluxes for use with the stopping criteria, this distinction is disabled by default
     double flux[MAX_NUM_STATE_VARS];

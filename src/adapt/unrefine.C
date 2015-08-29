@@ -399,7 +399,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
             assert(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
-            NdTemp->info = S_S_CON;
+            NdTemp->info(S_S_CON);
         }
         
         //the second
@@ -422,17 +422,17 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
             
             NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
             assert(NdTemp);
-            NdTemp->info = SIDE;
+            NdTemp->info(SIDE);
         }
         else if(EmFather->neigh_proc(ineigh) == myid)
         {
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
-            NdTemp->info = S_S_CON;
+            NdTemp->info(S_S_CON);
             
             NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
             assert(NdTemp);
-            NdTemp->info = S_C_CON;
+            NdTemp->info(S_C_CON);
             nodeorder[inode] = NdTemp->order();
         }
         
@@ -451,7 +451,7 @@ void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *E
     
     NdTemp = (Node *) NodeTable->lookup(EmFather->key());
     NdTemp->order(nodeorder[inode]);
-    NdTemp->info = BUBBLE;
+    NdTemp->info(BUBBLE);
     
     return;
 }
@@ -736,7 +736,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                 assert(NdTemp);
                 
                 if(EmFather->neigh_gen(ineigh) - 1 == EmFather->generation())
-                    NdTemp->info = S_C_CON;
+                    NdTemp->info(S_C_CON);
                 
                 //The element I want my neighbor to update
                 SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])), EmFather->neighbor(ineigh));
@@ -855,7 +855,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 }
                                 NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(ineighmod4 + 4));
                                 NdTemp->order(nodeorder);
-                                NdTemp->info = SIDE;
+                                NdTemp->info(SIDE);
                                 
                             }
                             else if(EmTemp->adapted_flag() >= NOTRECADAPTED)
@@ -892,10 +892,10 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                 NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key(ineighmod4 + 4));
                                 assert(NdTemp);
                                 if(EmTemp->neigh_gen(ineighmod4) == EmTemp->generation())
-                                    NdTemp->info = SIDE;
+                                    NdTemp->info(SIDE);
                                 else
                                 {	      //my neighbor was my generation but his father moved in
-                                    NdTemp->info = S_S_CON;
+                                    NdTemp->info(S_S_CON);
                                     
                                     NdTemp = (Node*) NodeTable->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 3) * KEYLENGTH])));
                                     if(!NdTemp)
@@ -904,7 +904,7 @@ void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int
                                                             sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 3) * KEYLENGTH])), stdout);
                                         assert(NdTemp);
                                     }
-                                    NdTemp->info = S_C_CON;
+                                    NdTemp->info(S_C_CON);
                                 }
                             }
                             else

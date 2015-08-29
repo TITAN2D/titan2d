@@ -156,7 +156,7 @@ void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Ke
             {
                 fprintf(fp, " %d:   {", inode);
                 fprintf_sfc_key(fp, NdTemp->key());
-                fprintf(fp, "}  info=%d\n", NdTemp->info);
+                fprintf(fp, "}  info=%d\n", NdTemp->info());
             }
             else
             {
@@ -306,7 +306,7 @@ void ElemBackgroundCheck2(HashTable *El_Table, HashTable *NodeTable, void *EmDeb
             {
                 fprintf(fp, " %d:   {", inode);
                 fprintf_sfc_key(fp, NdTemp->key());
-                fprintf(fp, "}  info=%d\n",NdTemp->info);
+                fprintf(fp, "}  info=%d\n",NdTemp->info());
             }
             else
             {
@@ -360,7 +360,7 @@ void NodeBackgroundCheck(HashTable *El_Table, HashTable* NodeTable, const SFC_Ke
     stringstream ss;
     if(NdDebug)
     {
-        ss<<"NdDebug={"<<nodedbkey<<"} info="<<NdDebug->info<<"belongs to "<<ElemList.get_num_elem()<<" elements\n";
+        ss<<"NdDebug={"<<nodedbkey<<"} info="<<NdDebug->info()<<"belongs to "<<ElemList.get_num_elem()<<" elements\n";
     }
     else
     {
@@ -384,9 +384,9 @@ int ifNodeInfoChange(Node* NdDebug, int *NdDebugInfo)
 {
     
     if(NdDebug)
-        if(NdDebug->getinfo() != *NdDebugInfo)
+        if(NdDebug->info() != *NdDebugInfo)
         {
-            *NdDebugInfo = NdDebug->getinfo();
+            *NdDebugInfo = NdDebug->info();
             return 1;
         }
     
@@ -642,20 +642,20 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                                     assert((EmTemp->node_key(ineigh)==EmNeigh[0]->node_key((ineighme + 1) % 4)));
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineigh));
                                                     assert(NdTemp);
-                                                    assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                    assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                                     
                                                     assert((EmTemp->node_key(ineighp4)==EmNeigh[0]->node_key(ineighme)));
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
                                                     assert(NdTemp);
                                                     
-                                                    if(!(NdTemp->info == S_C_CON))
+                                                    if(!(NdTemp->info() == S_C_CON))
                                                     {
                                                         //printf("myid=%d\n",myid);
                                                         //if(myid==TARGETPROC)
                                                         NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                                                         fclose(fp);
                                                         //MPI_Barrier(MPI_COMM_WORLD);
-                                                        assert(NdTemp->info == S_C_CON);
+                                                        assert(NdTemp->info() == S_C_CON);
                                                     }
                                                     
                                                     break;
@@ -663,13 +663,13 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                                     assert((EmTemp->node_key(ineighp4)==EmNeigh[1]->node_key((ineighme + 1) % 4)));
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
                                                     assert(NdTemp);
-                                                    assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                    assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                                     
                                                     assert((EmTemp->node_key((ineigh + 1) % 4)==EmNeigh[1]->node_key(ineighme)));
                                                     NdTemp = (Node*) NodeTable->lookup(
                                                             EmTemp->node_key((ineigh + 1) % 4));
                                                     assert(NdTemp);
-                                                    assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                    assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                                     
                                                     break;
                                                 default:
@@ -694,24 +694,24 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                             }
                                             NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineigh));
                                             assert(NdTemp);
-                                            if(!((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON)))
+                                            if(!((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON)))
                                             {
                                                 //if(myid==TARGETPROC)
                                                 NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                                                 fclose(fp);
-                                                assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                             }
                                             
                                             assert((EmTemp->node_key(ineighp4)==EmNeigh[i]->node_key(ineighme + 4)));
                                             NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
                                             assert(NdTemp);
-                                            assert(NdTemp->info == SIDE);
+                                            assert(NdTemp->info() == SIDE);
                                             
                                             assert((EmTemp->node_key((ineigh + 1) % 4)==EmNeigh[i]->node_key(ineighme)));
                                             NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key((ineigh + 1) % 4));
                                             assert(NdTemp);
                                             
-                                            if(!((NdTemp->info == S_C_CON) || (NdTemp->info == CORNER)))
+                                            if(!((NdTemp->info() == S_C_CON) || (NdTemp->info() == CORNER)))
                                             {
                                                 //printf("myid=%d\n",myid);
                                                 //if(myid==TARGETPROC)
@@ -719,7 +719,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                                 //MPI_Barrier(MPI_COMM_WORLD);
                                                 //printf("stop me\n");
                                                 fclose(fp);
-                                                assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                             }
                                             break;
                                         case 1:
@@ -730,22 +730,22 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                                     assert((EmTemp->node_key(ineigh)==EmNeigh[i]->node_key(ineighme + 4)));
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineigh));
                                                     assert(NdTemp);
-                                                    if(!(NdTemp->info == S_C_CON))
+                                                    if(!(NdTemp->info() == S_C_CON))
                                                     {
                                                         NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                                                         fclose(fp);
-                                                        assert(NdTemp->info == S_C_CON);
+                                                        assert(NdTemp->info() == S_C_CON);
                                                     }
                                                     
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
                                                     assert(NdTemp);
-                                                    assert(NdTemp->info == S_S_CON);
+                                                    assert(NdTemp->info() == S_S_CON);
                                                     
                                                     assert((EmTemp->node_key((ineigh + 1) % 4)==EmNeigh[i]->node_key(ineighme)));
                                                     NdTemp = (Node*) NodeTable->lookup(
                                                             EmTemp->node_key((ineigh + 1) % 4));
                                                     assert(NdTemp);
-                                                    assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                    assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                                     
                                                     break;
                                                 case 1:
@@ -764,20 +764,20 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                                                     }
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineigh));
                                                     assert(NdTemp);
-                                                    assert((NdTemp->info == CORNER) || (NdTemp->info == S_C_CON));
+                                                    assert((NdTemp->info() == CORNER) || (NdTemp->info() == S_C_CON));
                                                     
                                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
                                                     assert(NdTemp);
-                                                    assert(NdTemp->info == S_S_CON);
+                                                    assert(NdTemp->info() == S_S_CON);
                                                     
                                                     assert((EmTemp->node_key((ineigh + 1) % 4)==EmNeigh[i]->node_key(ineighme)));
                                                     NdTemp = (Node*) NodeTable->lookup( EmTemp->node_key((ineigh + 1) % 4));
                                                     assert(NdTemp);
-                                                    if(!(NdTemp->info == S_C_CON))
+                                                    if(!(NdTemp->info() == S_C_CON))
                                                     {
                                                         NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                                                         fclose(fp);
-                                                        assert(NdTemp->info == S_C_CON);
+                                                        assert(NdTemp->info() == S_C_CON);
                                                     }
                                                     
                                                     break;
@@ -819,8 +819,8 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             assert(NdTemp);
             
             //check to see if node is of an allowed type
-            assert((NdTemp->info == CORNER) || (NdTemp->info == SIDE) || (NdTemp->info == S_S_CON)
-                   || (NdTemp->info == BUBBLE) || (NdTemp->info == S_C_CON));
+            assert((NdTemp->info() == CORNER) || (NdTemp->info() == SIDE) || (NdTemp->info() == S_S_CON)
+                   || (NdTemp->info() == BUBBLE) || (NdTemp->info() == S_C_CON));
             
             /*
              if(!(NdTemp->num_assoc_elem>=1)){
@@ -830,7 +830,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
              }
              */
 
-            if(NdTemp->info == CORNER)
+            if(NdTemp->info() == CORNER)
                 if(!(NdTemp->num_assoc_elem() <= 4))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
@@ -838,7 +838,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                     assert(0);
                 }
             
-            if(NdTemp->info == SIDE)
+            if(NdTemp->info() == SIDE)
                 if(!(NdTemp->num_assoc_elem() <= 2))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
@@ -846,7 +846,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                     assert(0);
                 }
             
-            if(NdTemp->info == S_S_CON)
+            if(NdTemp->info() == S_S_CON)
                 if(!(NdTemp->num_assoc_elem() <= 2))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
@@ -854,7 +854,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                     assert(0);
                 }
             
-            if(NdTemp->info == BUBBLE)
+            if(NdTemp->info() == BUBBLE)
                 if(!(NdTemp->num_assoc_elem() <= 1))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
@@ -862,7 +862,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                     assert(0);
                 }
             
-            if(NdTemp->info == S_C_CON)
+            if(NdTemp->info() == S_C_CON)
                 if(!(NdTemp->num_assoc_elem() <= 3))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
@@ -1127,7 +1127,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             
                             NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineighp4));
                             assert(NdTemp);
-                            NdTemp->info = SIDE;
+                            NdTemp->info(SIDE);
                             //printf("node update yada 1\n");
                             
                             if(ineigh < 4)
@@ -1135,7 +1135,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 //printf("node update yada 2\n");
                                 NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = CORNER;
+                                NdTemp->info(CORNER);
                             }
                             
                             if(EmFather->neigh_proc(ineighother) == myid)
@@ -1182,7 +1182,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = SIDE;
+                                NdTemp->info(SIDE);
                                 //printf("node update yada 1\n");
                                 
                                 if(ineigh >= 4)
@@ -1190,7 +1190,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                     //printf("node update yada 2\n");
                                     NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineighp4));
                                     assert(NdTemp);
-                                    NdTemp->info = CORNER;
+                                    NdTemp->info(CORNER);
                                 }
                             }
                             
@@ -1229,23 +1229,23 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineigh));
                                 assert(NdTemp);
-                                NdTemp->info = CORNER;
+                                NdTemp->info(CORNER);
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = S_S_CON;
+                                NdTemp->info(S_S_CON);
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = S_C_CON;
+                                NdTemp->info(S_C_CON);
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = S_S_CON;
+                                NdTemp->info(S_S_CON);
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key((ineigh + 1) % 4));
                                 assert(NdTemp);
-                                NdTemp->info = CORNER;
+                                NdTemp->info(CORNER);
                                 
                             }
                             break;
@@ -1374,7 +1374,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
         
         NdTemp = (Node*) NodeTable->lookup(EmFather->key());
         assert(NdTemp);
-        NdTemp->info = CORNER;
+        NdTemp->info(CORNER);
         
         //These are my sons, I'm going to introduce them to my neighbors
         for(isonA = 0; isonA < 4; isonA++)
@@ -1384,11 +1384,11 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
             
             NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->key());
             assert(NdTemp);
-            NdTemp->info = BUBBLE;
+            NdTemp->info(BUBBLE);
             
             NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key((isonA + 1) % 4 + 4));
             assert(NdTemp);
-            NdTemp->info = SIDE;
+            NdTemp->info(SIDE);
         }
         
         //visit my neighbors on each side
@@ -1621,25 +1621,25 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         inode = ineigh;
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(CORNER);
+                        NdTemp->info(CORNER);
                         
                         inode = ineighp4;
                         NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(S_S_CON);
+                        NdTemp->info(S_S_CON);
                         
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(S_C_CON);
+                        NdTemp->info(S_C_CON);
                         
                         NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(S_S_CON);
+                        NdTemp->info(S_S_CON);
                         
                         inode = (ineigh + 1) % 4;
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(CORNER);
+                        NdTemp->info(CORNER);
                         
                         //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
                         
@@ -1694,21 +1694,21 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             inode = ineigh;
                             NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                             assert(NdTemp);
-                            NdTemp->putinfo(CORNER);
+                            NdTemp->info(CORNER);
                         }
                         
                         inode = ineigh + 4;
                         NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(SIDE);
+                        NdTemp->info(SIDE);
                         
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(CORNER);
+                        NdTemp->info(CORNER);
                         
                         NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(SIDE);
+                        NdTemp->info(SIDE);
                         
                         if(EmSon[isonB]->neigh_gen((ineigh + 1) % 4) == EmSon[isonB]->generation())
                         {
@@ -1719,7 +1719,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                             inode = (ineigh + 1) % 4;
                             NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                             assert(NdTemp);
-                            NdTemp->putinfo(CORNER);
+                            NdTemp->info(CORNER);
                         }
                         
                         break;
@@ -1731,17 +1731,17 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         inode = ineigh; //father corner node
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(CORNER);
+                        NdTemp->info(CORNER);
                         
                         inode = ineighp4; //father edge node
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(CORNER);
+                        NdTemp->info(CORNER);
                         
                         inode = (ineigh + 1) % 4; //father corner node
                         NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
                         assert(NdTemp);
-                        NdTemp->putinfo(CORNER);
+                        NdTemp->info(CORNER);
                         
                             
                         EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonA]->key());
@@ -1798,23 +1798,23 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         if(EmSon[isonA]->neighbor(ineigh)==EmSon[isonA]->neighbor(ineighp4))
                         {
                             EmSon[isonA]->set_neigh_proc(ineighp4, -2);
-                            NdTemp->putinfo(SIDE);
+                            NdTemp->info(SIDE);
                         }
                         else
                         {
                             EmSon[isonA]->set_neigh_proc(ineighp4, EmSon[isonA]->neigh_proc(ineigh));
                             
-                            NdTemp->putinfo(S_C_CON);
+                            NdTemp->info(S_C_CON);
                             
                             inode = ineighmep4;
                             
                             NdTemp = (Node*) NodeTable->lookup(EmNeighNew[0]->node_key(inode));
                             assert(NdTemp);
-                            NdTemp->putinfo(S_S_CON);
+                            NdTemp->info(S_S_CON);
                             
                             NdTemp = (Node*) NodeTable->lookup(EmNeighNew[1]->node_key(inode));
                             assert(NdTemp);
-                            NdTemp->putinfo(S_S_CON);
+                            NdTemp->info(S_S_CON);
                         }
                         
                         //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
@@ -1824,23 +1824,23 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                         if(EmSon[isonB]->neighbor(ineigh)==EmSon[isonB]->neighbor(ineighp4))
                         {
                             EmSon[isonB]->set_neigh_proc(ineighp4, -2);
-                            NdTemp->putinfo(SIDE);
+                            NdTemp->info(SIDE);
                         }
                         else
                         {
                             EmSon[isonB]->set_neigh_proc(ineighp4, EmSon[isonB]->neigh_proc(ineigh));
                             
-                            NdTemp->putinfo(S_C_CON);
+                            NdTemp->info(S_C_CON);
                             
                             inode = ineighmep4;
                             
                             NdTemp = (Node*) NodeTable->lookup(EmNeighNew[2]->node_key(inode));
                             assert(NdTemp);
-                            NdTemp->putinfo(S_S_CON);
+                            NdTemp->info(S_S_CON);
                             
                             NdTemp = (Node*) NodeTable->lookup(EmNeighNew[3]->node_key(inode));
                             assert(NdTemp);
-                            NdTemp->putinfo(S_S_CON);
+                            NdTemp->info(S_S_CON);
                         }
                         
                         break;
@@ -1961,12 +1961,12 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 inode = isonA;
                                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                                 assert(NdTemp);
-                                NdTemp->info = CORNER;
+                                NdTemp->info(CORNER);
                                 
                                 inode = isonB;
                                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                                 assert(NdTemp);
-                                NdTemp->info = CORNER;
+                                NdTemp->info(CORNER);
                                 
                                 EmSon[0] = EmSon[1] = EmSon[2] = EmSon[3] = NULL;
                                 EmSon[isonA] = (Element*) El_Table->lookup(EmTemp->son(isonA));
@@ -1996,15 +1996,15 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = CORNER;
+                                NdTemp->info(CORNER);
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = SIDE;
+                                NdTemp->info(SIDE);
                                 
                                 NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(ineighp4));
                                 assert(NdTemp);
-                                NdTemp->info = SIDE;
+                                NdTemp->info(SIDE);
                             }
                             else
                             { //my oldneighbor was either a generation older than me
@@ -2017,12 +2017,12 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                     inode = ineigh;
                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                                     assert(NdTemp);
-                                    NdTemp->info = CORNER;
+                                    NdTemp->info(CORNER);
                                     
                                     inode = (ineigh + 1) % 4;
                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                                     assert(NdTemp);
-                                    NdTemp->info = CORNER;
+                                    NdTemp->info(CORNER);
                                 }
                                 else
                                 {
@@ -2035,7 +2035,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                         inode = ineigh;
                                         NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                                         assert(NdTemp);
-                                        NdTemp->info = CORNER;
+                                        NdTemp->info(CORNER);
                                     }
                                     
                                     if(EmTemp->neigh_gen((ineigh + 1) % 4) == EmTemp->generation())
@@ -2043,7 +2043,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                         inode = (ineigh + 1) % 4;
                                         NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                                         assert(NdTemp);
-                                        NdTemp->info = CORNER;
+                                        NdTemp->info(CORNER);
                                     }
                                 }
                                 
@@ -2062,12 +2062,12 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 if(EmTemp->neighbor(ineigh)==EmTemp->neighbor(ineighp4))
                                 {
                                     EmTemp->set_neigh_proc(ineighp4, -2);
-                                    NdTemp->info = SIDE;
+                                    NdTemp->info(SIDE);
                                 }
                                 else
                                 {
                                     EmTemp->set_neigh_proc(ineighp4, iproc);
-                                    NdTemp->info = S_C_CON;
+                                    NdTemp->info(S_C_CON);
                                     /*
                                      if(compare_key(EmTemp->key,ElemDebugKey)){
                                      ElemBackgroundCheck(El_Table,NodeTable,ElemDebugKey,fpbg);
@@ -2080,7 +2080,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, in
                                 {
                                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(EmTemp->which_son()));
                                     assert(NdTemp);
-                                    NdTemp->info = CORNER;
+                                    NdTemp->info(CORNER);
                                 }
                                 //ElemBackgroundCheck(El_Table,NodeTable,EmTemp->key,fpbg);
                                 
@@ -2484,7 +2484,7 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                             
                             which_side = Neighbor->which_neighbor(Mykey);
                             NdTemp = (Node*) (HT_Node_Ptr->lookup(Neighbor->node_key(which_side + 4)));
-                            NdTemp->putinfo(S_C_CON);
+                            NdTemp->info(S_C_CON);
                             //NdTemp->putorder
                             
                             int b1 = which_side;
@@ -2591,27 +2591,27 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
                         if(NeighGeneration == MyGeneration)
                         {
                             NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(j + 4));
-                            NdTemp->putinfo(S_C_CON);
+                            NdTemp->info(S_C_CON);
                             NdTemp->order(EmTemp->order(j));
                             for(int k = 0; k < 2; k++)
                             {
                                 SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(SIDE_SONS[j][k]));
                                 NdTemp = (Node*) HT_Node_Ptr->lookup(SonTemp->node_key(j + 4));
                                 assert(NdTemp);
-                                NdTemp->putinfo(S_S_CON);
+                                NdTemp->info(S_S_CON);
                             }
                         }
                         
                         else //NeighGen < MyGen
                         {
                             NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(j + 4));
-                            NdTemp->putinfo(CORNER);
+                            NdTemp->info(CORNER);
                             for(int k = 0; k < 2; k++)
                             {
                                 SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(SIDE_SONS[j][k]));
                                 NdTemp = (Node*) HT_Node_Ptr->lookup(SonTemp->node_key(j + 4));
                                 assert(NdTemp);
-                                NdTemp->putinfo(SIDE);
+                                NdTemp->info(SIDE);
                                 NdTemp->order(SonTemp->order(j));
                             }
                             

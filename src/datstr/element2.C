@@ -827,7 +827,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
             NodePtr = (Node*) (NodeTable->lookup(node_key(a)));
             assert(NodePtr);
             
-            if(NodePtr->getinfo() == S_C_CON)
+            if(NodePtr->info() == S_C_CON)
                 icon[a] = -1;
             
             a = j + 1;
@@ -836,7 +836,7 @@ void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* N
             NodePtr = (Node*) (NodeTable->lookup(node_key(a)));
             assert(NodePtr);
             
-            if(NodePtr->getinfo() == S_C_CON)
+            if(NodePtr->info() == S_C_CON)
                 icon[j] = 1; //-- j was changed to a
                         
         }
@@ -936,13 +936,13 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     Element *em2 = NULL;
     //check if element has 2 neighbors on either side
     Node* ndtemp = node_keyPtr[xp + 4]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
-    if(ndtemp->info == S_C_CON)
+    if(ndtemp->info() == S_C_CON)
     {
         ep2 = neighborPtr[xp + 4]; //(Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
         assert(neigh_proc(xp + 4) >= 0 && ep2);
     }
     ndtemp = node_keyPtr[xm + 4]; //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
-    if(ndtemp->info == S_C_CON)
+    if(ndtemp->info() == S_C_CON)
     {
         em2 = neighborPtr[xm + 4]; //(Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
         assert(neigh_proc(xm + 4) >= 0 && em2);
@@ -972,13 +972,13 @@ void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma
     em2 = NULL;
     //check if element has 2 neighbors on either side
     ndtemp = node_keyPtr[yp + 4];		//(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
-    if(ndtemp->info == S_C_CON)
+    if(ndtemp->info() == S_C_CON)
     {
         ep2 = neighborPtr[yp + 4];		//(Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
         assert(neigh_proc(yp + 4) >= 0 && ep2);
     }
     ndtemp = node_keyPtr[ym + 4];		//(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
-    if(ndtemp->info == S_C_CON)
+    if(ndtemp->info() == S_C_CON)
     {
         em2 = neighborPtr[ym + 4];		//(Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
         if(!(neigh_proc(ym + 4) >= 0 && em2))
@@ -2670,7 +2670,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
              */
 
-            if(np->info == S_S_CON)
+            if(np->info() == S_S_CON)
             {
                 nm1 = NULL;
                 np2 = NULL;
@@ -2730,7 +2730,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
 
              */
 
-            else if(np->info == S_C_CON)
+            else if(np->info() == S_C_CON)
             {
                 
                 nm1 = NULL;
