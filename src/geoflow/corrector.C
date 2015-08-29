@@ -436,19 +436,19 @@ void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, 
     
     Node* nxp = nodes[xp + 4]; //(Node*) NodeTable->lookup(EmTemp->getNode() + (xp + 4) * 2);
     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-        fluxxp[ivar] = nxp->flux[ivar];
+        fluxxp[ivar] = nxp->flux(ivar);
     
     Node* nyp = nodes[yp + 4]; //(Node*) NodeTable->lookup(EmTemp->getNode() + (yp + 4) * 2);
     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-        fluxyp[ivar] = nyp->flux[ivar];
+        fluxyp[ivar] = nyp->flux(ivar);
     
     Node* nxm = nodes[xm + 4]; //(Node*) NodeTable->lookup(EmTemp->getNode() + (xm + 4) * 2);
     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-        fluxxm[ivar] = nxm->flux[ivar];
+        fluxxm[ivar] = nxm->flux(ivar);
     
     Node* nym = nodes[ym + 4]; //(Node*) NodeTable->lookup(EmTemp->getNode() + (ym + 4) * 2);
     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-        fluxym[ivar] = nym->flux[ivar];
+        fluxym[ivar] = nym->flux(ivar);
     
 
     /* the values being passed to correct are for a SINGLE element, NOT a
