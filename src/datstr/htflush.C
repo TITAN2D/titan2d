@@ -61,18 +61,7 @@ void htflush(HashTable* ht_elem_ptr, HashTable* ht_node_ptr, int option)
                     NdTemp->putdof(INIT, INIT);
                     NdTemp->putglnum(INIT);
                     NdTemp->put_reconstructed(0);
-                    
-                    sol = NdTemp->getsol();
-                    /*if(sol)
-                     delete sol;*/
-
-                    if((!NdTemp->get_sol_deleted()) && (sol != NULL))
-                    {
-                        sol = NdTemp->getsol();
-                        delete sol;
-                        NdTemp->put_sol_deleted(1);
-                    }
-                    
+                                        
                     entryp = entryp->next;
                 }
             }

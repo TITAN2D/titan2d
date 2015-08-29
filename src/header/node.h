@@ -87,26 +87,20 @@ public:
     //! this function writes all of one Node's data necessary for restart to a file in a single fwrite statement
     void save_node(FILE* fp); //for restart
             
-    //! this function is legacy afeapi, it is extraneous for the finite difference/volume version of titan, however it appears once in htflush.C
-    void putdof(int lower, int up);
-
     //! this function is legacy afeapi, it is extraneous for the finite difference/volume version of titan
-    int* getdof();
+    int* getdof(){return dof;}
+    //! this function is legacy afeapi, it is extraneous for the finite difference/volume version of titan, however it appears once in htflush.C
+    void putdof(int lower, int up){dof[0] = lower;dof[1] = up;}
 
     //! this function is legacy afeapi
-    void putglnum(int);
-
+    int getglnum(){return glnum;}
     //! this function is legacy afeapi
-    void putsol(double* s);
-
-    //! this function is legacy afeapi
-    int getglnum();
+    void putglnum(int numbering){glnum = numbering;}
 
     //! this function returns the node type, the options are listed in constant.h and include: NODEINIT, CORNER, BUBBLE, SIDE, CONSTRAINED, S_C_CON, S_S_CON, ASSIGNED,and UNASSIGNED.
-    int getinfo();
-
+    int getinfo(){return info;}
     //! this function sets the node type, the options are listed in constant.h and include: NODEINIT, CORNER, BUBBLE, SIDE, CONSTRAINED, S_C_CON, S_S_CON, ASSIGNED,and UNASSIGNED.
-    void putinfo(int in);
+    void putinfo(int in){info = in;}
 
     //! this function returns the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
     const SFC_Key& key() const {return key_;}
@@ -115,70 +109,50 @@ public:
     //! this function returns the global x and y coordinates of the node, in the finite difference version of Titan this is not always reliable, use the coordinates of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
     double* get_coord(){return coord;}
     double get_coord(int idim) const {return coord[idim];}
-    void set_coord(int idim, double new_crd){coord[idim]=new_crd;}
+    void set_coord(int idim, double new_crd){coord[idim]=new_crd;}   
 
     //! this is legacy afeapi and is not used
-    double* getsol();
-
+    int get_order(){return order;}
     //! this is legacy afeapi and is not used
-    int get_order();
-
+    void put_order(int i){order = i;}
     //! this is legacy afeapi and is not used
-    void put_order(int);
-
-    //! this is legacy afeapi and is not used
-    void increase_order();
+    void increase_order(){order++;}
 
     //! this function sets the node information and order, node order is legacy afeapi but node information is currently used, this function is called in update_element_info.C, another distict function with a similar name refined_neighbor::set_parameters also existis and is used in updatenei.C, these should not be confused
     void set_parameters(int inf, int ord);
 
     //! this is legacy afeapi and is not used
-    int get_reconstructed();
-
+    int get_reconstructed(){return reconstructed;}
     //! this is legacy afeapi and is not used at all except once in htflush.C
-    void put_reconstructed(int);
-
-    //! this is legacy afeapi and is not used at all except once in htflush.C
-    int get_sol_deleted();
-
-    //! this is legacy afeapi and is not used at all except once in htflush.C
-    void put_sol_deleted(int flag);
-
-    //! this function sets the id of a node, it is used in repartitioning, 
-    void put_id(int id_in);
+    void put_reconstructed(int i){reconstructed = i;}
 
     //! this function returns the id of a node, it is used in repartitioning, 
-    int get_id();
+    int get_id(){return id;}
+    //! this function sets the id of a node, it is used in repartitioning, 
+    void put_id(int id_in){id = id_in;}
+
 
     //! this function returns the vector of fluxes stored in an edge node between elements 
-    double* get_flux();
+    double* get_flux(){return flux;}
 
     //! this function zeros the flux used during refinement, this is only distinct from the regular flux if flux velocity is being zero'd because the experimental stopping criteria says it should be.  This feature is disabled by default.  Keith implemented it.
-    void zero_flux();
+    void zero_flux(){for(int i = 0; i < NUM_STATE_VARS; i++)flux[i] = refinementflux[i] = 0.0;}
 
     //! this function returns the elevation of a node, in the finite difference version of Titan this is not always reliable, use the elevation of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
-    double get_elevation();
-
+    double get_elevation(){return elevation;}
     //! this function sets the elevation of a node
     void set_elevation(MatProps* matprops_ptr);
 
     //! this function stores the number of elements associated with this node
-    void put_num_assoc_elem(int numin);
-
+    void put_num_assoc_elem(int numin){num_assoc_elem = numin;}
     //! this function returns the number of elements associated with this node
-    int get_num_assoc_elem();
+    int get_num_assoc_elem(){return num_assoc_elem;}
 
     //! set connection id
-    void put_con_id(int id)
-    {
-        connection_id = id;
-    }
+    void put_con_id(int id){connection_id = id;}
     
     //! get connection id 
-    int get_con_id()
-    {
-        return connection_id;
-    }
+    int get_con_id(){return connection_id;}
     
 protected:
     //! used in delete_unused_nodes_and_elements() function 
@@ -212,14 +186,8 @@ protected:
     //! glnum is legacy afeapit but came with the comment "the node occupies the position from glnum to glnum+dof"
     int glnum;
 
-    //! sol is legacy afeapi and pointed to the nodal solution array
-    double* sol;
-
     //! reconstructed is legacy afeapi
     int reconstructed;
-
-    //! sol_deleted is legacy afeapi, it appears in node.C and htflush.C
-    int sol_deleted;
 
     //! this elevation should currently be the GIS elevation at the finest "scale"
     double elevation;
@@ -234,120 +202,5 @@ protected:
     int connection_id;
 };
 
-inline void Node::putsol(double* s)
-{
-    sol = s;
-}
-;
-
-inline int Node::getinfo()
-{
-    return info;
-}
-;
-
-
-inline double* Node::getsol()
-{
-    return sol;
-}
-;
-
-inline int Node::get_sol_deleted()
-{
-    return sol_deleted;
-}
-;
-
-inline void Node::put_sol_deleted(int flag)
-{
-    sol_deleted = flag;
-}
-;
-
-inline void Node::put_id(int id_in)
-{
-    id = id_in;
-}
-;
-
-inline int Node::get_id()
-{
-    return id;
-}
-;
-
-inline double* Node::get_flux()
-{
-    return flux;
-}
-;
-
-inline double Node::get_elevation()
-{
-    return elevation;
-}
-;
-
-//above this line Keith made inline on 20061128
-
-inline void Node::putdof(int lower, int up)
-{
-    dof[0] = lower;
-    dof[1] = up;
-}
-
-inline int* Node::getdof()
-{
-    return dof;
-}
-
-inline void Node::putglnum(int numbering)
-{
-    glnum = numbering;
-}
-
-inline int Node::getglnum()
-{
-    return glnum;
-}
-
-
-inline int Node::get_order()
-{
-    return order;
-}
-
-inline void Node::put_order(int i)
-{
-    order = i;
-}
-
-inline void Node::increase_order()
-{
-    order++;
-}
-
-inline void Node::put_reconstructed(int i)
-{
-    reconstructed = i;
-}
-
-inline int Node::get_reconstructed()
-{
-    return reconstructed;
-}
-
-inline void Node::put_num_assoc_elem(int numin)
-{
-    num_assoc_elem = numin;
-}
-;
-
-inline int Node::get_num_assoc_elem()
-{
-    return num_assoc_elem;
-}
-;
 
 #endif
