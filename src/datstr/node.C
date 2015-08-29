@@ -49,8 +49,6 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
      assigning it zero gets rid of what looks like a "self 
      contained" memory error
      */
-    nextptr = 0;
-    preptr = 0;
     
     connection_id = -1;
     
@@ -96,8 +94,6 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     
-    nextptr = 0;
-    preptr = 0;
     connection_id = -1;
     info = INIT;
     
@@ -146,8 +142,6 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     
-    nextptr = 0;
-    preptr = 0;
     connection_id = -1;
     
     info = INIT;
@@ -293,9 +287,7 @@ void Node::save_node(FILE* fp)
 }
 
 Node::Node(FILE* fp, MatProps* matprops_ptr)
-{
-    nextptr = preptr = 0;   //never USED anywhere in TITAN except when initialized
-            
+{      
     FourBytes temp4;
     EightBytes temp8;
     //unsigned readspace[13];

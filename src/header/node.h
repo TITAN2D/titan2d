@@ -159,12 +159,6 @@ protected:
     //! this is the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
     SFC_Key key_;
 
-    //! points to the next node
-    void* nextptr;
-
-    //! points to the previous node
-    void* preptr;
-
     //! this elevation should currently be the GIS elevation at the finest "scale"
     double elevation;
 
