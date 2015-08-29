@@ -56,7 +56,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     {
         node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem->node_key[i]));
         assert(node);
-        elem->n_order[i] = node->order;
+        elem->n_order[i] = node->order();
         elem->n_info[i] = node->info;
         for(j = 0; j < 2; j++)
             elem->n_coord[i][j] = node->coord(j);
@@ -65,7 +65,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     
     node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem->key));
     assert(node);
-    elem->n_order[8] = node->order;
+    elem->n_order[8] = node->order();
     elem->n_info[8] = node->info;
     for(j = 0; j < 2; j++)
         elem->n_coord[8][j] = node->coord(j);

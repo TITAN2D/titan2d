@@ -42,7 +42,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
     id(0); /* keith added this so save_node wouldn't write an uninitialized
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
-    order = 0; /* keith added this for no good reason, so if you don't know 
+    order(0); /* keith added this for no good reason, so if you don't know 
      that this is right find out, keith isn't responsible for 
      any errors it may cause because right now the node order 
      is unused, it shouldn't be used, but I wanted to see if 
@@ -103,7 +103,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
     set_key(keyi);
     
     info = inf;
-    order = ord;
+    order(ord);
     //geoflow stuff
     zero_flux();
     // find the max resolution of the GIS info and then get the elevation at this node
@@ -152,7 +152,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
     set_key(keyi);
     
     info = inf;
-    order = ord;
+    order(ord);
     //geoflow stuff
     zero_flux();
     elevation = elev;
@@ -168,7 +168,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
 void Node::set_parameters(int inf, int ord)
 {
     info = inf;
-    order = ord;
+    order(ord);
     /*  if(key[0] == (unsigned) 3197207111) {
      int mmmyid;
      MPI_Comm_rank(MPI_COMM_WORLD, &mmmyid);

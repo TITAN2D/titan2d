@@ -101,11 +101,9 @@ public:
     void coord(int idim, double new_crd){coord_[idim]=new_crd;}   
 
     //! this is legacy afeapi and is not used
-    int get_order(){return order;}
+    int order(){return order_;}
     //! this is legacy afeapi and is not used
-    void put_order(int i){order = i;}
-    //! this is legacy afeapi and is not used
-    void increase_order(){order++;}
+    void order(int i){order_ = i;}
 
     //! this function sets the node information and order, node order is legacy afeapi but node information is currently used, this function is called in update_element_info.C, another distict function with a similar name refined_neighbor::set_parameters also existis and is used in updatenei.C, these should not be confused
     void set_parameters(int inf, int ord);
@@ -150,7 +148,7 @@ protected:
     int info;
 
     //! this is legacy afeapi and is not important though it would involve quite a bit of work to remove because it occurs frequently in Titan
-    int order;
+    int order_;
 
     //! the global x and y coordinates of the node
     double coord_[DIMENSION];

@@ -316,7 +316,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     p = HT_Node_Ptr->lookup(EmTemp->node_key(recv->side + 4)); //-- cc
                     assert(p);
                     Node* NdTemp = (Node*) p;
-                    NdTemp->put_order(EmTemp->order(recv->side));
+                    NdTemp->order(EmTemp->order(recv->side));
                 }
             }
             
@@ -377,7 +377,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     
                     int final_order = EmTemp->order(start);
                     
-                    NdTemp->put_order(final_order);
+                    NdTemp->order(final_order);
                 }
                 
             }
@@ -438,7 +438,7 @@ void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead,
                     
                     int final_order = EmTemp->order(start);
                     
-                    NdTemp->put_order(final_order);
+                    NdTemp->order(final_order);
                 }
                 
             }
@@ -479,14 +479,14 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER); //-- node 0 of son 0 in case 1 or case 3 is a corner
                     NdTemp2->putinfo(CORNER); //-- node 1 of son 0 in case 1 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 4 of son 0 in case 1 is a side
-                    NdTemp3->put_order(Em1->order(0));
+                    NdTemp3->order(Em1->order(0));
                 }
                 else if(case_flag == 3)
                 {
                     NdTemp1->putinfo(CORNER);
                     NdTemp2->putinfo(S_C_CON); //-- node 1 of son 0 in case 3 is a constrained node, has side dof
                     order = Em1->order(0) > Em2->order(0) ? Em1->order(0) : Em2->order(0);
-                    NdTemp2->put_order(order);
+                    NdTemp2->order(order);
                     NdTemp3->putinfo(S_S_CON);  //-- node 4 of son 0 in case 3 has no dof
                 }
                 
@@ -501,7 +501,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);  //-- node 0 of son 1 in case 1 is a corner
                     NdTemp2->putinfo(CORNER);  //-- node 1 of son 1 in case 1 or case 3 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 4 of son 1 in case 1 is a side
-                    NdTemp3->put_order(Em2->order(0));
+                    NdTemp3->order(Em2->order(0));
                 }
                 else if(case_flag == 3)
                 {
@@ -524,7 +524,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);	      //-- node 1 of son 1 in case 1 or case 3 is a corner
                     NdTemp2->putinfo(CORNER);	      //-- node 2 of son 1 in case 1 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 5 of son 1 in case 1 is a side node
-                    NdTemp3->put_order(Em1->order(1));
+                    NdTemp3->order(Em1->order(1));
                 }
                 else if(case_flag == 3)
                 {
@@ -532,7 +532,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp2->putinfo(S_C_CON); //-- node 2 of son 1 in case 3 is a constrained node, has side dof
                     order = Em1->order(1) > Em2->order(1) ?
                             Em1->order(1) : Em2->order(1);
-                    NdTemp2->put_order(order);
+                    NdTemp2->order(order);
                     NdTemp3->putinfo(S_S_CON);  //-- node 5 of son 1 in case 3 has no dof
                 }
                 
@@ -547,7 +547,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);  //-- node 1 of son 2 in case 1 is a corner
                     NdTemp2->putinfo(CORNER);  //-- node 2 of son 2 in case 1 or case 3 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 5 of son 2 in case 1 is a side
-                    NdTemp3->put_order(Em2->order(1));
+                    NdTemp3->order(Em2->order(1));
                 }
                 else if(case_flag == 3)
                 {
@@ -570,7 +570,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);  //-- node 2 of son 2 in case 1 or case 3 is a corner
                     NdTemp2->putinfo(CORNER);  //-- node 3 of son 2 in case 1 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 6 of son 2 in case 1 is a side node
-                    NdTemp3->put_order(Em1->order(2));
+                    NdTemp3->order(Em1->order(2));
                 }
                 else if(case_flag == 3)
                 {
@@ -578,7 +578,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp2->putinfo(S_C_CON); //-- node 3 of son 2 in case 3 is a constrained node, has side dof
                     order = Em1->order(2) > Em2->order(2) ?
                             Em1->order(2) : Em2->order(2);
-                    NdTemp2->put_order(order);
+                    NdTemp2->order(order);
                     NdTemp3->putinfo(S_S_CON);  //-- node 6 of son 2 in case 3 has no dof
                 }
                 
@@ -593,7 +593,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);  //-- node 2 of son 3 in case 1 is a corner
                     NdTemp2->putinfo(CORNER);  //-- node 3 of son 3 in case 1 or case 3 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 6 of son 3 in case 1 is a side
-                    NdTemp3->put_order(Em2->order(2));
+                    NdTemp3->order(Em2->order(2));
                 }
                 else if(case_flag == 3)
                 {
@@ -616,7 +616,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);  //-- node 3 of son 3 in case 1 or case 3 is a corner
                     NdTemp2->putinfo(CORNER);  //-- node 0 of son 3 in case 1 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 7 of son 3 in case 1 is a side node
-                    NdTemp3->put_order(Em1->order(3));
+                    NdTemp3->order(Em1->order(3));
                 }
                 else if(case_flag == 3)
                 {
@@ -624,7 +624,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp2->putinfo(S_C_CON); //-- node 0 of son 3 in case 3 is a constrained node, has side dof
                     order = Em1->order(3) > Em2->order(3) ?
                             Em1->order(3) : Em2->order(3);
-                    NdTemp2->put_order(order);
+                    NdTemp2->order(order);
                     NdTemp3->putinfo(S_S_CON);  //-- node 7 of son 3 in case 3 has no dof
                 }
                 
@@ -639,7 +639,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
                     NdTemp1->putinfo(CORNER);  //-- node 3 of son 0 in case 1 is a corner
                     NdTemp2->putinfo(CORNER);  //-- node 0 of son 0 in case 1 or case 3 is a corner
                     NdTemp3->putinfo(SIDE);  //-- node 7 of son 0 in case 1 is a side
-                    NdTemp3->put_order(Em2->order(3));
+                    NdTemp3->order(Em2->order(3));
                 }
                 else if(case_flag == 3)
                 {
@@ -663,11 +663,11 @@ void write_node_info_ext(HashTable* HT_Node_Ptr, Element* Em, int start, int mid
     NdTemp = (Node*) (HT_Node_Ptr->lookup(Em->node_key(start)));
     assert(NdTemp);
     NdTemp->putinfo(CORNER);
-    NdTemp->put_order(1);
+    NdTemp->order(1);
     
     NdTemp = (Node*) (HT_Node_Ptr->lookup(Em->node_key(mid)));
     assert(NdTemp);
     NdTemp->putinfo(SIDE);
-    NdTemp->put_order(order);
+    NdTemp->order(order);
     
 }
