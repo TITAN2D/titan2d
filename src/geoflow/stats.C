@@ -332,19 +332,18 @@ void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTab
                 {
                     //calculate volume passing through "discharge planes"
                     Node** nodesPtr = Curr_El->getNodesPtrs();
-                    double nodescoord[9][2], *coord;
+                    double nodescoord[9][2];
                     Node* node;
                     
                     for(int inode = 0; inode < 8; inode++)
                     {
                         node = nodesPtr[inode];				//(Node*) NodeTable->lookup(nodes + 2 * inode);
-                        coord = node->get_coord();
                         /*if ((timeprops->iter == 291) && (inode == 8)) {
                          printf("coord=(%g,%g) node=%u  ", coord[0], coord[1], node);
                          fflush(stdout);
                          }*/
-                        nodescoord[inode][0] = coord[0];
-                        nodescoord[inode][1] = coord[1];
+                        nodescoord[inode][0] = node->coord(0);
+                        nodescoord[inode][1] = node->coord(1);
                         /*if ((timeprops->iter == 291) && (inode >= 8)) {
                          printf("inode=%d node=%u", inode, node);
                          fflush(stdout);

@@ -633,7 +633,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
 
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->get_coord(i);
+        coord[i] = n1->coord(i);
     //neighbors
     neigh[0] = neigh[4] = EmTemp->neighbor(0); //Why is this ok if not ok for 3 down
     neigh[1] = neigh[5] = NewNodeKey[1];
@@ -718,7 +718,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
 
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->get_coord(i);
+        coord[i] = n1->coord(i);
     
     //neighbors
     if(EmTemp->neigh_proc(4) != -2)
@@ -797,7 +797,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
 
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->get_coord(i);
+        coord[i] = n1->coord(i);
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[1];
@@ -877,7 +877,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     
     n1 = (Node*) HT_Node_Ptr->lookup(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->get_coord(i);
+        coord[i] = n1->coord(i);
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[0];
@@ -979,7 +979,7 @@ void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, No
     }
     
     for(i = 0; i < 2; i++)
-        NewNodeCoord[i] = (*(NodeTemp[Node1]->get_coord() + i) + *(NodeTemp[Node2]->get_coord() + i)) * .5;
+        NewNodeCoord[i] = (NodeTemp[Node1]->coord(i) + NodeTemp[Node2]->coord(i)) * .5;
     
     norm_coord[0] = (NewNodeCoord[0] - XRange[0]) / (XRange[1] - XRange[0]);
     norm_coord[1] = (NewNodeCoord[1] - YRange[0]) / (YRange[1] - YRange[0]);
@@ -1002,7 +1002,7 @@ void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, No
         
     }
     
-    else if(p->get_coord(0) != NewNodeCoord[0] || p->get_coord(1) != NewNodeCoord[1])
+    else if(p->coord(0) != NewNodeCoord[0] || p->coord(1) != NewNodeCoord[1])
     {
         short same_key = 0;
         assert(same_key);

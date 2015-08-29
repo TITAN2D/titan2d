@@ -278,7 +278,6 @@ double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *Em
 
         //get pile height at each node...
         Node* ndtemp = (Node*) HT_Node_Ptr->lookup(nodes[inode]);
-        double* ndcoord = ndtemp->get_coord();
 
         // for multiple piles which may overlap, the highest value is used..
         node_pile_height[inode] = 0.0;
@@ -290,8 +289,8 @@ double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *Em
         for(int ipile = 0; ipile < numpiles; ipile++)
         {
             //get position relative to pile center
-            double major = ndcoord[0] - xCen[ipile];
-            double minor = ndcoord[1] - yCen[ipile];
+            double major = ndtemp->coord(0) - xCen[ipile];
+            double minor = ndtemp->coord(1) - yCen[ipile];
 
             /* "undo" elliptical pile rotation ... from (x,y)->(major,minor)
              also make  nondimensional (by dividing by major and minor radius) */

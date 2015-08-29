@@ -867,14 +867,14 @@ void Element::find_positive_x_side(HashTable* nodetable)
     Node* nodeptr;
     
     nodeptr = (Node*) (nodetable->lookup(key()));
-    xmax = nodeptr->coord[0];
+    xmax = nodeptr->coord(0);
     set_coord(0, xmax);
-    set_coord(1, nodeptr->get_coord(1));
+    set_coord(1, nodeptr->coord(1));
     
     for(i = 4; i < 8; i++)
     {
         nodeptr = (Node*) (nodetable->lookup(node_key(i)));
-        double xcoord = nodeptr->coord[0];
+        double xcoord = nodeptr->coord(0);
         if(xcoord > xmax)
         {
             xmax = xcoord;
@@ -1043,17 +1043,17 @@ void Element::calculate_dx(HashTable* NodeTable)
     np = (Node*) NodeTable->lookup(node_key(xp + 4));
     nm = (Node*) NodeTable->lookup(node_key(xm + 4));
     
-    dx(0,(np->coord[0] - nm->coord[0])); /*(zeta[0]*zeta[0]+1)*/
+    dx(0,(np->coord(0) - nm->coord(0))); /*(zeta[0]*zeta[0]+1)*/
     if(dx(0) == 0)
-        printf("np %p,nm %p,dx, np_coord, nm_coord %e %e\n", np, nm, np->coord[0], nm->coord[0]);
+        printf("np %p,nm %p,dx, np_coord, nm_coord %e %e\n", np, nm, np->coord(0), nm->coord(0));
     
     np = (Node*) NodeTable->lookup(node_key(yp + 4));
     nm = (Node*) NodeTable->lookup(node_key(ym + 4));
     
-    dx(1,(np->coord[1] - nm->coord[1]) /*(zeta[1]*zeta[1]+1)*/);
+    dx(1,(np->coord(1) - nm->coord(1)) /*(zeta[1]*zeta[1]+1)*/);
     
     if(dx(1) == 0)
-        printf("dy, np_coord, nm_coord %e %e\n", np->coord[1], nm->coord[1]);
+        printf("dy, np_coord, nm_coord %e %e\n", np->coord(1), nm->coord(1));
     
     return;
 }
@@ -1064,7 +1064,7 @@ void Element::insert_coord(HashTable* NodeTable)
     Node* node = (Node*) (NodeTable->lookup(key()));
     int i;
     for(i = 0; i < DIMENSION; i++)
-        set_coord(i, node->get_coord(i));
+        set_coord(i, node->coord(i));
     
     return;
 }

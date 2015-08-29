@@ -510,7 +510,6 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             }
             
             double xmax = -HUGE_VAL, xmin = HUGE_VAL, ymax = -HUGE_VAL, ymin = HUGE_VAL;
-            double *coord;
             for(int inode = 0; inode < 8; inode++)
             {
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
@@ -521,15 +520,14 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 }
                 if(NdTemp)
                 {
-                    coord = NdTemp->get_coord();
-                    if(coord[0] > xmax)
-                        xmax = coord[0];
-                    if(coord[0] < xmin)
-                        xmin = coord[0];
-                    if(coord[1] > ymax)
-                        ymax = coord[1];
-                    if(coord[1] < ymin)
-                        ymin = coord[1];
+                    if(NdTemp->coord(0) > xmax)
+                        xmax = NdTemp->coord(0);
+                    if(NdTemp->coord(0) < xmin)
+                        xmin = NdTemp->coord(0);
+                    if(NdTemp->coord(1) > ymax)
+                        ymax = NdTemp->coord(1);
+                    if(NdTemp->coord(1) < ymin)
+                        ymin = NdTemp->coord(1);
                 }
             }
             
@@ -542,21 +540,18 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(0));
                 assert(NdTemp);
-                coord = NdTemp->get_coord();
-                assert((coord[0] - tol <= xmin) && (xmin <= coord[0] + tol) && (coord[1] - tol <= ymin)
-                       && (ymin <= coord[1] + tol));
+                assert((NdTemp->coord(0) - tol <= xmin) && (xmin <= NdTemp->coord(0) + tol) && (NdTemp->coord(1) - tol <= ymin)
+                       && (ymin <= NdTemp->coord(1) + tol));
                 
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(2));
                 assert(NdTemp);
-                coord = NdTemp->get_coord();
-                assert((coord[0] - tol <= xmax) && (xmax <= coord[0] + tol) && (coord[1] - tol <= ymax)
-                       && (ymax <= coord[1] + tol));
+                assert((NdTemp->coord(0) - tol <= xmax) && (xmax <= NdTemp->coord(0) + tol) && (NdTemp->coord(1) - tol <= ymax)
+                       && (ymax <= NdTemp->coord(1) + tol));
                 
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
                 assert(NdTemp);
-                coord = NdTemp->get_coord();
-                assert((coord[0] - tol <= xmean) && (xmean <= coord[0] + tol) && (coord[1] - tol <= ymean)
-                       && (ymean <= coord[1] + tol));
+                assert((NdTemp->coord(0) - tol <= xmean) && (xmean <= NdTemp->coord(0) + tol) && (NdTemp->coord(1) - tol <= ymean)
+                       && (ymean <= NdTemp->coord(1) + tol));
                 
                 for(iside = 0; iside < 4; iside++)
                 {

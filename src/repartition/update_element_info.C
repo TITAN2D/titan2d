@@ -234,10 +234,10 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
             //because of storing all the node but not updating the 
             //info and order if the node was not previously in the subdomain
             //check if the sfc is screwed
-            if(node->get_coord(0) != elem2->n_coord[i][0] || node->get_coord(1) != elem2->n_coord[i][1])
+            if(node->coord(0) != elem2->n_coord[i][0] || node->coord(1) != elem2->n_coord[i][1])
             {
                 printf("myid=%d\n  pack  elem(x,y)=(%20g,%20g)\n exist elem(x,y)=(%20g,%20g)\n\n", myid,
-                       elem2->n_coord[i][0], elem2->n_coord[i][1], node->get_coord(0), node->get_coord(1));
+                       elem2->n_coord[i][0], elem2->n_coord[i][1], node->coord(0), node->coord(1));
                 fflush(stdout);
                 int screwd = 0;
                 assert(screwd);

@@ -59,7 +59,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
         elem->n_order[i] = node->order;
         elem->n_info[i] = node->info;
         for(j = 0; j < 2; j++)
-            elem->n_coord[i][j] = node->coord[j];
+            elem->n_coord[i][j] = node->coord(j);
         elem->node_elevation[i] = node->elevation;
     }
     
@@ -68,7 +68,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int d
     elem->n_order[8] = node->order;
     elem->n_info[8] = node->info;
     for(j = 0; j < 2; j++)
-        elem->n_coord[8][j] = node->coord[j];
+        elem->n_coord[8][j] = node->coord(j);
     elem->node_elevation[8] = node->elevation;
     
     if(sendel->bcptr() != nullptr)

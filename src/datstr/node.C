@@ -55,14 +55,14 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
     info = INIT;
     
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(coordi + i);
+        coord(i,coordi[i]);
     
     set_key(keyi);
     zero_flux();
     // find the max resolution of the GIS info and then get the elevation at this node
     double resolution = 0;
-    double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
+    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
     i = Get_max_resolution(&resolution);
     if(i != 0)
     {
@@ -98,7 +98,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
     info = INIT;
     
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(coordi + i);
+        coord(i, coordi[i]);
     
     set_key(keyi);
     
@@ -114,8 +114,8 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
         printf("error in Get_max_resolution\n");
         exit(1);
     }
-    double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
+    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
     i = Get_elevation(resolution, xcoord, ycoord, elevation);
     if(i != 0)
     {
@@ -147,7 +147,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
     info = INIT;
     
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = *(coordi + i);
+        coord(i, coordi[i]);
     
     set_key(keyi);
     
@@ -188,8 +188,8 @@ Node::~Node()
 void Node::set_elevation(MatProps* matprops_ptr)
 {
     double resolution = 0;
-    double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
+    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
     int i = Get_max_resolution(&resolution);
     if(i != 0)
     {
@@ -223,12 +223,12 @@ void Node::save_node(FILE* fp)
     
     for(itemp = 0; itemp < DIMENSION; itemp++)
     {
-        temp8.d = coord[itemp];
+        temp8.d = coord(itemp);
         writespace[Itemp++] = temp8.u[0];
         writespace[Itemp++] = temp8.u[1];
     }
 #ifdef DEBUG_SAVE_NODE
-    fprintf(fpdb,"coord=%g %g\n",coord[0],coord[1]);
+    fprintf(fpdb,"coord=%g %g\n",coord(0),coord(1));
 #endif
     assert(Itemp == 6);
     
@@ -306,7 +306,7 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
     {
         temp8.u[0] = readspace[Itemp++];
         temp8.u[1] = readspace[Itemp++];
-        coord[itemp] = temp8.d;
+        coord(itemp, temp8.d);
     }
     assert(Itemp == 6);
     
@@ -339,8 +339,8 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
      */
     // find the max resolution of the GIS info and then get the elevation at this node
     double resolution = 0;
-    double xcoord = coord[0] * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord[1] * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
+    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
     int i = Get_max_resolution(&resolution);
     if(i != 0)
     {

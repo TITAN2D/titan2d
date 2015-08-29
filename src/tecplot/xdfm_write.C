@@ -48,7 +48,7 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
     vector<int> C1, C2, C3, C4;
     int num_nodes = 0, num_elm = 0;
     int i, j, k;
-    double *coord, elevation;
+    double elevation;
     int conn[4];
     
     // scaling factor for the momentums
@@ -75,9 +75,8 @@ int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *
                 for(j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
-                    coord = NodeTemp->get_coord();
-                    xcoord.push_back(coord[0] * matprops_ptr->LENGTH_SCALE);
-                    ycoord.push_back(coord[1] * matprops_ptr->LENGTH_SCALE);
+                    xcoord.push_back(NodeTemp->coord(0) * matprops_ptr->LENGTH_SCALE);
+                    ycoord.push_back(NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE);
                     conn[j] = num_nodes;
                     // Side-Corner node will have discontinuity in elevation
                     if(NodeTemp->getinfo() != S_C_CON)
@@ -213,7 +212,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                MapNames *mapnames, const int mode)
 {
     int i, j, k;
-    double *coord, elevation;
+    double elevation;
     
     // scaling factor for the momentums
     double momentum_scale = matprops_ptr->HEIGHT_SCALE
@@ -313,9 +312,8 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     int inode = NodeTemp->get_con_id();
-                    coord = NodeTemp->get_coord();
-                    xyz[3 * inode] = coord[0] * matprops_ptr->LENGTH_SCALE;
-                    xyz[3 * inode + 1] = coord[1] * matprops_ptr->LENGTH_SCALE;
+                    xyz[3 * inode] = NodeTemp->coord(0) * matprops_ptr->LENGTH_SCALE;
+                    xyz[3 * inode + 1] = NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE;
                     connections[4 * ielm + j] = inode;
                     // Side-Corner node will have discontinuity in elevation
                     if(NodeTemp->getinfo() != S_C_CON)

@@ -97,9 +97,8 @@ public:
     void set_key(const SFC_Key& new_key){key_=new_key;}
 
     //! this function returns the global x and y coordinates of the node, in the finite difference version of Titan this is not always reliable, use the coordinates of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
-    double* get_coord(){return coord;}
-    double get_coord(int idim) const {return coord[idim];}
-    void set_coord(int idim, double new_crd){coord[idim]=new_crd;}   
+    double coord(int idim) const {return coord_[idim];}
+    void coord(int idim, double new_crd){coord_[idim]=new_crd;}   
 
     //! this is legacy afeapi and is not used
     int get_order(){return order;}
@@ -154,7 +153,7 @@ protected:
     int order;
 
     //! the global x and y coordinates of the node
-    double coord[DIMENSION];
+    double coord_[DIMENSION];
 
     //! this is the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
     SFC_Key key_;
