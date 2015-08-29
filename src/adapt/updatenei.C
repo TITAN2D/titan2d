@@ -453,7 +453,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
             NdTemp = (Node*) (NodeTable_entry_ptr->value);
             NodeTable_entry_ptr = NodeTable_entry_ptr->next;
             assert(NdTemp);
-            NdTemp->num_assoc_elem = 0;
+            NdTemp->num_assoc_elem(0);
         }      //while(NodeTable_entry_ptr)
     }      //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
     
@@ -504,8 +504,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                 {
                     assert(NdTemp);
-                    //if(NdTemp)
-                    NdTemp->num_assoc_elem++;
+                    NdTemp->num_assoc_elem(NdTemp->num_assoc_elem()+1);
                 }
             }
             
@@ -516,7 +515,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                 {
                     assert(NdTemp);
-                    NdTemp->num_assoc_elem++;
+                    NdTemp->num_assoc_elem(NdTemp->num_assoc_elem()+1);
                 }
                 if(NdTemp)
                 {
@@ -832,7 +831,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
              */
 
             if(NdTemp->info == CORNER)
-                if(!(NdTemp->num_assoc_elem <= 4))
+                if(!(NdTemp->num_assoc_elem() <= 4))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                     fclose(fp);
@@ -840,7 +839,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 }
             
             if(NdTemp->info == SIDE)
-                if(!(NdTemp->num_assoc_elem <= 2))
+                if(!(NdTemp->num_assoc_elem() <= 2))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                     fclose(fp);
@@ -848,7 +847,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 }
             
             if(NdTemp->info == S_S_CON)
-                if(!(NdTemp->num_assoc_elem <= 2))
+                if(!(NdTemp->num_assoc_elem() <= 2))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                     fclose(fp);
@@ -856,7 +855,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 }
             
             if(NdTemp->info == BUBBLE)
-                if(!(NdTemp->num_assoc_elem <= 1))
+                if(!(NdTemp->num_assoc_elem() <= 1))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                     fclose(fp);
@@ -864,7 +863,7 @@ void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs
                 }
             
             if(NdTemp->info == S_C_CON)
-                if(!(NdTemp->num_assoc_elem <= 3))
+                if(!(NdTemp->num_assoc_elem() <= 3))
                 {
                     NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
                     fclose(fp);

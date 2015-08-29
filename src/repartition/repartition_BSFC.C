@@ -1988,7 +1988,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             NdTemp = (Node*) (NodeTable_entry_ptr->value);
             NodeTable_entry_ptr = NodeTable_entry_ptr->next;
             assert(NdTemp);
-            NdTemp->put_num_assoc_elem(0);
+            NdTemp->num_assoc_elem(0);
         }  //while(NodeTable_entry_ptr)
     }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
     
@@ -2006,7 +2006,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             assert(EmTemp);
             NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
             assert(NdTemp);
-            NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
+            NdTemp->num_assoc_elem(NdTemp->num_assoc_elem() + 1);
             
             for(inode = 0; inode < 8; inode++)
             {
@@ -2032,7 +2032,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
                 }
                 
                 assert(NdTemp);
-                NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
+                NdTemp->num_assoc_elem(NdTemp->num_assoc_elem() + 1);
             }
         }	  //while(currentPtr)
     }	  //for(ibuck=0; ibuck<num_buck; ibuck++)
@@ -2049,7 +2049,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             NodeTable_entry_ptr = NodeTable_entry_ptr->next;
             assert(NdTemp);
             
-            if(NdTemp->get_num_assoc_elem() == 0)
+            if(NdTemp->num_assoc_elem() == 0)
             {
                 NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 4);
                 delete NdTemp;
@@ -2612,7 +2612,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 NdTemp = (Node*) (NodeTable_entry_ptr->value);
                 NodeTable_entry_ptr = NodeTable_entry_ptr->next;
                 assert(NdTemp);
-                NdTemp->put_num_assoc_elem(0);
+                NdTemp->num_assoc_elem(0);
             }  //while(NodeTable_entry_ptr)
         }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
         
@@ -2628,13 +2628,13 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 assert(EmTemp);
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
                 assert(NdTemp);
-                NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
+                NdTemp->num_assoc_elem(NdTemp->num_assoc_elem() + 1);
                 
                 for(inode = 0; inode < 8; inode++)
                 {
                     NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
                     assert(NdTemp);
-                    NdTemp->put_num_assoc_elem(NdTemp->get_num_assoc_elem() + 1);
+                    NdTemp->num_assoc_elem(NdTemp->num_assoc_elem() + 1);
                 }
             }  //while(currentPtr)
         }  //for(ibuck=0; ibuck<num_buck; ibuck++)
@@ -2651,7 +2651,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 NodeTable_entry_ptr = NodeTable_entry_ptr->next;
                 assert(NdTemp);
                 
-                if(NdTemp->get_num_assoc_elem() == 0)
+                if(NdTemp->num_assoc_elem() == 0)
                 {
                     NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 6);
                     delete NdTemp;

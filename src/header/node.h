@@ -126,9 +126,9 @@ public:
     void set_elevation(MatProps* matprops_ptr);
 
     //! this function stores the number of elements associated with this node
-    void put_num_assoc_elem(int numin){num_assoc_elem = numin;}
+    void num_assoc_elem(int numin){num_assoc_elem_ = numin;}
     //! this function returns the number of elements associated with this node
-    int get_num_assoc_elem(){return num_assoc_elem;}
+    int num_assoc_elem() const {return num_assoc_elem_;}
 
     //! set connection id
     void put_con_id(int id){connection_id = id;}
@@ -142,7 +142,7 @@ protected:
 
     //! the number of associated elements, it is used in extraneous node 
     //deletion and debugging function AssertMeshErrorFree()
-    int num_assoc_elem;
+    int num_assoc_elem_;
 
     //! says what type of node this is see the comments of Node::get_info()
     int info;
