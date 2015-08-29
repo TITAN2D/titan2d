@@ -60,7 +60,6 @@ void htflush(HashTable* ht_elem_ptr, HashTable* ht_node_ptr, int option)
                     //NdTemp->putinfo(INIT);
                     NdTemp->putdof(INIT, INIT);
                     NdTemp->putglnum(INIT);
-                    NdTemp->put_reconstructed(0);
                                         
                     entryp = entryp->next;
                 }

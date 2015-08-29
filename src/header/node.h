@@ -121,11 +121,6 @@ public:
     //! this function sets the node information and order, node order is legacy afeapi but node information is currently used, this function is called in update_element_info.C, another distict function with a similar name refined_neighbor::set_parameters also existis and is used in updatenei.C, these should not be confused
     void set_parameters(int inf, int ord);
 
-    //! this is legacy afeapi and is not used
-    int get_reconstructed(){return reconstructed;}
-    //! this is legacy afeapi and is not used at all except once in htflush.C
-    void put_reconstructed(int i){reconstructed = i;}
-
     //! this function returns the id of a node, it is used in repartitioning, 
     int get_id(){return id;}
     //! this function sets the id of a node, it is used in repartitioning, 
@@ -185,9 +180,6 @@ protected:
 
     //! glnum is legacy afeapit but came with the comment "the node occupies the position from glnum to glnum+dof"
     int glnum;
-
-    //! reconstructed is legacy afeapi
-    int reconstructed;
 
     //! this elevation should currently be the GIS elevation at the finest "scale"
     double elevation;
