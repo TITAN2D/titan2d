@@ -50,7 +50,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
      contained" memory error
      */
     
-    connection_id = -1;
+    connection_id(-1);
     
     info(INIT);
     
@@ -94,7 +94,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     
-    connection_id = -1;
+    connection_id(-1);
     info(INIT);
     
     for(i = 0; i < DIMENSION; i++)
@@ -142,7 +142,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     
-    connection_id = -1;
+    connection_id(-1);
     
     info(INIT);
     

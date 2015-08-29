@@ -133,10 +133,10 @@ public:
     int num_assoc_elem() const {return num_assoc_elem_;}
 
     //! set connection id
-    void put_con_id(int id){connection_id = id;}
+    void connection_id(int id){connection_id_ = id;}
     
     //! get connection id 
-    int get_con_id(){return connection_id;}
+    int connection_id() const {return connection_id_;}
     
 protected:
     //! used in delete_unused_nodes_and_elements() function 
@@ -168,7 +168,7 @@ protected:
     double refinementflux[MAX_NUM_STATE_VARS];
 
     //! node number for connection data -- varies with adaptation
-    int connection_id;
+    int connection_id_;
 };
 
 

@@ -253,7 +253,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
         while (entryptr)
         {
             NodeTemp = (Node *) entryptr->value;
-            NodeTemp->put_con_id(-1);
+            NodeTemp->connection_id(-1);
             entryptr = entryptr->next;
         }
     }
@@ -275,9 +275,9 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                 for(j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
-                    if(NodeTemp->get_con_id() < 0)
+                    if(NodeTemp->connection_id() < 0)
                     {
-                        NodeTemp->put_con_id(id++);
+                        NodeTemp->connection_id(id++);
                         num_node++;
                     }
                 }
@@ -311,7 +311,7 @@ int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps
                 for(j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
-                    int inode = NodeTemp->get_con_id();
+                    int inode = NodeTemp->connection_id();
                     xyz[3 * inode] = NodeTemp->coord(0) * matprops_ptr->LENGTH_SCALE;
                     xyz[3 * inode + 1] = NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE;
                     connections[4 * ielm + j] = inode;
