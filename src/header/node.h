@@ -112,9 +112,9 @@ public:
     void set_parameters(int inf, int ord);
 
     //! this function returns the id of a node, it is used in repartitioning, 
-    int get_id(){return id;}
+    int id() const {return id_;}
     //! this function sets the id of a node, it is used in repartitioning, 
-    void put_id(int id_in){id = id_in;}
+    void id(int id_in){id_ = id_in;}
 
 
     //! this function returns the vector of fluxes stored in an edge node between elements 
@@ -141,7 +141,7 @@ public:
     
 protected:
     //! used in delete_unused_nodes_and_elements() function 
-    int id;
+    int id_;
 
     //! the number of associated elements, it is used in extraneous node 
     //deletion and debugging function AssertMeshErrorFree()

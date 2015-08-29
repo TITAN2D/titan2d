@@ -307,7 +307,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
         while (entryp)
         {
             NdTemp = (Node*) (entryp->value);
-            NdTemp->put_id(0);
+            NdTemp->id(0);
             entryp = entryp->next;
         }
     }
@@ -330,10 +330,10 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
                 for(j = 0; j < 8; j++)
                 {
                     NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(j));
-                    NdTemp->put_id(1);
+                    NdTemp->id(1);
                 }
                 NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->key());
-                NdTemp->put_id(1);
+                NdTemp->id(1);
             }
         }
     }
@@ -346,7 +346,7 @@ void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr
         {
             NdTemp = (Node*) (entryp->value);
             entryp = entryp->next;
-            if(NdTemp->get_id() == 0)
+            if(NdTemp->id() == 0)
             {
                 HT_Node_Ptr->remove(NdTemp->key());
                 delete NdTemp;

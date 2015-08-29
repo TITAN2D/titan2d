@@ -39,7 +39,7 @@ Node::Node()
 Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
 {
     int i;
-    id = 0; /* keith added this so save_node wouldn't write an uninitialized
+    id(0); /* keith added this so save_node wouldn't write an uninitialized
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     order = 0; /* keith added this for no good reason, so if you don't know 
@@ -90,7 +90,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
 Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matprops_ptr)  //for refined
 {
     int i;
-    id = 0; /* keith added this so save_node wouldn't write an uninitialized
+    id(0); /* keith added this so save_node wouldn't write an uninitialized
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     
@@ -138,7 +138,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
 Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
 {
     int i;
-    id = 0; /* keith added this so save_node wouldn't write an uninitialized
+    id(0); /* keith added this so save_node wouldn't write an uninitialized
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
     
@@ -232,11 +232,11 @@ void Node::save_node(FILE* fp)
 #endif
     assert(Itemp == 6);
     
-    temp4.i = id;
+    temp4.i = id();
     writespace[Itemp++] = temp4.u;
     assert(Itemp == 7);
 #ifdef DEBUG_SAVE_NODE
-    fprintf(fpdb,"id=%d\n",id);
+    fprintf(fpdb,"id=%d\n",id());
 #endif
     
     temp4.i = info;
@@ -311,7 +311,7 @@ Node::Node(FILE* fp, MatProps* matprops_ptr)
     assert(Itemp == 6);
     
     temp4.u = readspace[Itemp++];
-    id = temp4.i;
+    id(temp4.i);
     assert(Itemp == 7);
     
     temp4.u = readspace[Itemp++];
