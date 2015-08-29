@@ -60,8 +60,6 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
         coord[i] = *(coordi + i);
     
     set_key(keyi);
-    dof[0] = INIT;
-    dof[1] = INIT;
     zero_flux();
     // find the max resolution of the GIS info and then get the elevation at this node
     double resolution = 0;
@@ -107,8 +105,6 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
         coord[i] = *(coordi + i);
     
     set_key(keyi);
-    dof[0] = INIT;
-    dof[1] = INIT;
     
     info = inf;
     order = ord;
@@ -160,8 +156,6 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, i
         coord[i] = *(coordi + i);
     
     set_key(keyi);
-    dof[0] = INIT;
-    dof[1] = INIT;
     
     info = inf;
     order = ord;

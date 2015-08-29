@@ -86,16 +86,6 @@ public:
 
     //! this function writes all of one Node's data necessary for restart to a file in a single fwrite statement
     void save_node(FILE* fp); //for restart
-            
-    //! this function is legacy afeapi, it is extraneous for the finite difference/volume version of titan
-    int* getdof(){return dof;}
-    //! this function is legacy afeapi, it is extraneous for the finite difference/volume version of titan, however it appears once in htflush.C
-    void putdof(int lower, int up){dof[0] = lower;dof[1] = up;}
-
-    //! this function is legacy afeapi
-    int getglnum(){return glnum;}
-    //! this function is legacy afeapi
-    void putglnum(int numbering){glnum = numbering;}
 
     //! this function returns the node type, the options are listed in constant.h and include: NODEINIT, CORNER, BUBBLE, SIDE, CONSTRAINED, S_C_CON, S_S_CON, ASSIGNED,and UNASSIGNED.
     int getinfo(){return info;}
@@ -174,12 +164,6 @@ protected:
 
     //! points to the previous node
     void* preptr;
-
-    //! nodal degrees of freedom are legacy afeapi but came with the comment "dof[1]-dof[0]+1 = dof of the node"
-    int dof[2];
-
-    //! glnum is legacy afeapit but came with the comment "the node occupies the position from glnum to glnum+dof"
-    int glnum;
 
     //! this elevation should currently be the GIS elevation at the finest "scale"
     double elevation;
