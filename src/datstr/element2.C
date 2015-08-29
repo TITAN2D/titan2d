@@ -2554,7 +2554,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             
     //ghost elements don't have nodes so you have to make temp storage for flux
     double ghostflux[MAX_NUM_STATE_VARS]; //, (*fluxptr)[MAX_NUM_STATE_VARS];
-    
+    double flux[MAX_NUM_STATE_VARS];
     //double min(double x,double y), max(double x,double y);
     
     *outflow = 0.0;
@@ -2587,8 +2587,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(elm1->elementType(),hfv, hfv1, np->fluxABCDE);
-            riemannflux(elm1->elementType(),hrfv, hrfv1, np->refinementfluxABCDE);
+            riemannflux(elm1->elementType(),hfv, hfv1, flux);
+            for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
+            riemannflux(elm1->elementType(),hrfv, hrfv1, flux);
+            for(int i=0;i<NUM_STATE_VARS;++i)np->refinementflux(i,flux[i]);
             
             elm2 = neighborPtr[zp + 4]; //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
             assert(elm2);
@@ -2601,8 +2603,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 zm2 = elm2->which_neighbor(key()) % 4;
                 nm2 = elm2->node_keyPtr[zm2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
                 
-                riemannflux(elm2->elementType(),hfv, hfv2, nm2->fluxABCDE);
-                riemannflux(elm2->elementType(),hrfv, hrfv2, nm2->refinementfluxABCDE);
+                riemannflux(elm2->elementType(),hfv, hfv2, flux);
+                for(int i=0;i<NUM_STATE_VARS;++i)nm2->flux(i,flux[i]);
+                riemannflux(elm2->elementType(),hrfv, hrfv2, flux);
+                for(int i=0;i<NUM_STATE_VARS;++i)nm2->refinementflux(i,flux[i]);
                 
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 {
@@ -2632,8 +2636,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(elm1->elementType(),hfv, hfv1, np->fluxABCDE);
-            riemannflux(elm1->elementType(),hrfv, hrfv1, np->refinementfluxABCDE);
+            riemannflux(elm1->elementType(),hfv, hfv1, flux);
+            for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
+            riemannflux(elm1->elementType(),hrfv, hrfv1, flux);
+            for(int i=0;i<NUM_STATE_VARS;++i)np->refinementflux(i,flux[i]);
             
             /* CASE I
              ------------------- -------------------               
@@ -2689,8 +2695,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 {
                     zp2 = elm2->which_neighbor(elm1->key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
-                    riemannflux(elm2->elementType(),hfv2, hfv1, np2->fluxABCDE);
-                    riemannflux(elm2->elementType(),hrfv2, hrfv1, np2->refinementfluxABCDE);
+                    riemannflux(elm2->elementType(),hfv2, hfv1, flux);
+                    for(int i=0;i<NUM_STATE_VARS;++i)np2->flux(i,flux[i]);
+                    riemannflux(elm2->elementType(),hrfv2, hrfv1,flux);
+                    for(int i=0;i<NUM_STATE_VARS;++i)np2->refinementflux(i,flux[i]);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2749,8 +2757,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 {
                     zelmpos_2 = elm2->which_neighbor(key()) % 4;
                     nm2 = elm2->node_keyPtr[zelmpos_2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
-                    riemannflux(elm2->elementType(),hfv, hfv2, nm2->fluxABCDE);
-                    riemannflux(elm2->elementType(),hrfv, hrfv2, nm2->refinementfluxABCDE);
+                    riemannflux(elm2->elementType(),hfv, hfv2, flux);
+                    for(int i=0;i<NUM_STATE_VARS;++i)nm2->flux(i,flux[i]);
+                    riemannflux(elm2->elementType(),hrfv, hrfv2, flux);
+                    for(int i=0;i<NUM_STATE_VARS;++i)nm2->refinementflux(i,flux[i]);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
@@ -2855,8 +2865,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm1, dt);
                 elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, this, dt);
-                riemannflux(elm1->elementType(),hfv1, hfv, nm->fluxABCDE);
-                riemannflux(elm1->elementType(),hrfv1, hrfv, nm->refinementfluxABCDE);
+                riemannflux(elm1->elementType(),hfv1, hfv, flux);
+                for(int i=0;i<NUM_STATE_VARS;++i)nm->flux(i,flux[i]);
+                riemannflux(elm1->elementType(),hrfv1, hrfv, flux);
+                for(int i=0;i<NUM_STATE_VARS;++i)nm->refinementflux(i,flux[i]);
                 
                 elm2 = neighborPtr[zm + 4]; //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
                 assert(elm2);
@@ -2870,8 +2882,10 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
                     zp2 = elm2->which_neighbor(key()) % 4;
                     np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     
-                    riemannflux(elm2->elementType(),hfv2, hfv, np2->fluxABCDE);
-                    riemannflux(elm2->elementType(),hrfv2, hrfv, np2->refinementfluxABCDE);
+                    riemannflux(elm2->elementType(),hfv2, hfv, flux);
+                    for(int i=0;i<NUM_STATE_VARS;++i)np2->flux(i,flux[i]);
+                    riemannflux(elm2->elementType(),hrfv2, hrfv, flux);
+                    for(int i=0;i<NUM_STATE_VARS;++i)np2->refinementflux(i,flux[i]);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {

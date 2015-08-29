@@ -115,14 +115,14 @@ public:
 
 
     //! this function returns the vector of fluxes stored in an edge node between elements 
-    double flux(int idim) const {return fluxABCDE[idim];}
-    void flux(int idim, double value){fluxABCDE[idim]=value;}
+    double flux(int idim) const {return flux_[idim];}
+    void flux(int idim, double value){flux_[idim]=value;}
 
     //! this function zeros the flux used during refinement, this is only distinct from the regular flux if flux velocity is being zero'd because the experimental stopping criteria says it should be.  This feature is disabled by default.  Keith implemented it.
     void zero_flux(){for(int i = 0; i < NUM_STATE_VARS; i++){flux(i,0.0);refinementflux(i, 0.0);}}
     
-    double refinementflux(int idim) const {return refinementfluxABCDE[idim];}
-    void refinementflux(int idim, double value){refinementfluxABCDE[idim]=value;}
+    double refinementflux(int idim) const {return refinementflux_[idim];}
+    void refinementflux(int idim, double value){refinementflux_[idim]=value;}
 
     //! this function returns the elevation of a node, in the finite difference version of Titan this is not always reliable, use the elevation of the element instead.  It is reliable in the Discontinuous Galerkin version of Titan however.
     double elevation() const {return elevation_;}
@@ -166,10 +166,10 @@ protected:
     double elevation_;
 
     //! these are the so called "regular fluxes" that is the ones that are used to update the elements, assume that element normal is parallel to either the x or y axis, Keith is the one who introduced a distinction between regular and refinement fluxes for use with the stopping criteria, this distinction is disabled by default
-    double fluxABCDE[MAX_NUM_STATE_VARS];
+    double flux_[MAX_NUM_STATE_VARS];
 
     //! the "refinement flux" is necessary when using the stopping criteria to reset the "regular" fluxes to what they would be if velocity was zero in the cell(s) involved.  The refinement flux is what the flux would have been if it had not been reset, they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here) Keith is the one who introduced a distinction between regular and refinement fluxes for use with the stopping criteria, this distinction is disabled by default.
-    double refinementfluxABCDE[MAX_NUM_STATE_VARS];
+    double refinementflux_[MAX_NUM_STATE_VARS];
 
     //! node number for connection data -- varies with adaptation
     int connection_id_;
