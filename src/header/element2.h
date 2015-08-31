@@ -175,10 +175,10 @@ protected:
 
     //! constructor that creates/restores a saved element during restart
     void init(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
-public:
+
     //! destructor that does nothing except delete boundary condition pointer
     virtual ~Element();
-
+public:
     //! this member function saves a single element to a file with a single fwrite call, this allows the element to be recreated/restored upon restart of a simulation
     void save_elem(FILE* fp, FILE* fptxt); //for restart
 

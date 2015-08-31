@@ -142,7 +142,7 @@ extern void smooth(ElementsHashTable*, HashTable*);
 extern void smooth_II(ElementsHashTable*, HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void Delete_Table(ElementsHashTable*, HashTable*);
+//extern void Delete_Table(ElementsHashTable*, HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
 extern void all_check(ElementsHashTable* eltab, HashTable* ndtab, int myid, int m);

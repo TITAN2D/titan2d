@@ -20,7 +20,7 @@
 #endif
 
 #include "../header/hpfem.h"
-
+/*
 void Delete_Table(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr)
 {
     
@@ -55,3 +55,4 @@ void Delete_Table(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr)
     delete HT_Node_Ptr;
     
 }
+*/

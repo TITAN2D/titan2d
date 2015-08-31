@@ -100,6 +100,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
 // bsfc repartitioning scheme
 void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
 {
+    if(elem2->key[0]==0 && elem2->key[1]==0)return;
     Element* newelement = HT_Elem_Ptr->generateElement();
     double e_error = 0;
     construct_el(newelement, elem2, HT_Node_Ptr, myid, &e_error);
@@ -119,10 +120,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
         // the same element...
         HT_Elem_Ptr->removeElement(EmTemp);
     }
-    if(newelement->key()!=sfc_key_null)
-        HT_Elem_Ptr->add(newelement->key(), newelement);
-    else
-        delete newelement;
+    HT_Elem_Ptr->add(newelement->key(), newelement);
     //printf("processor %d just added element %u %u\n",myid, elem2->key[0], elem2->key[1]);
     if(myid == 3 && elem2->key[0] == 0)
         e_error = 0;
