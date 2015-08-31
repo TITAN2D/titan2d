@@ -409,7 +409,7 @@ void correct2ph(Element *Elm, const double *fluxxp,
          Elm->state_vars(i, Ustore[i]);
 
 }
-void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
+void correct(ElementType elementType,HashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
              TimeProps *timeprops, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
              double *deposited)
 {

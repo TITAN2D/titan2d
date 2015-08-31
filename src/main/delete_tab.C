@@ -21,7 +21,7 @@
 
 #include "../header/hpfem.h"
 
-void Delete_Table(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr)
+void Delete_Table(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr)
 {
     
     int i, j, k;

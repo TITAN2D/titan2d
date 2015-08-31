@@ -60,7 +60,7 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
                       float* total_weight_ptr, int* balanced_flag, unstructured_communication* verts_in_cuts_info,
                       int* number_of_cuts, int bins_per_proc, int myid, int numprocs);
 
-void BSFC_update_element_proc(int myid, int numprocs, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
                               BSFC_VERTEX_PTR sfc_vert_ptr);
 
 /* Space filling curve (BSFC) partioning routine */

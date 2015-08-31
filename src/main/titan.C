@@ -81,9 +81,10 @@ int main(int argc, char *argv[])
     init_cxxtitan();
     PyRun_SimpleString("from titan import *");
     
-    //init some titan staff
+    //init some titan staff should be in function titan_init
     sfc_key_null=0;
     sfc_key_zero=0;
+    elementsHashTable=nullptr;
     
     if(argc > 0)
     {

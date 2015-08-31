@@ -558,7 +558,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
 /* determines and returns v_star the non-dimensional stopping velocity */
 /***********************************************************************/
 
-void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
+void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
                  double *v_star, double *nz_star)
 {
     int i, j, k, counter, imax = 0;
@@ -688,7 +688,7 @@ void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps
 /* can think of a better place to put it go ahead                      */
 /***********************************************************************/
 
-double get_max_momentum(ElementType elementType,HashTable* El_Table, MatProps* matprops_ptr)
+double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
     int numprocs, myid;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -758,7 +758,7 @@ double get_max_momentum(ElementType elementType,HashTable* El_Table, MatProps* m
 /* can think of a better place to put it go ahead                     */
 /**********************************************************************/
 
-void sim_end_warning(ElementType elementType,HashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double v_star)
+void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double v_star)
 {
     FILE *fp;
     int myid, numprocs;

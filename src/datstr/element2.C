@@ -208,7 +208,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
 //used for refinement
 void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
-                 HashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
+                 ElementsHashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
     if(NUM_STATE_VARS == 3)
@@ -341,7 +341,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
 /*********************************
  making a father element from its sons
  *****************************************/
-void Element::init(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
+void Element::init(Element* sons[], HashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
     if(NUM_STATE_VARS == 3)
         elementType(ElementType::SinglePhase);
@@ -754,7 +754,7 @@ void Element::update_ndof()
     set_ndof(help);
 }
 
-void Element::get_nelb_icon(HashTable* NodeTable, HashTable* HT_Elem_Ptr, int* Nelb, int* icon)
+void Element::get_nelb_icon(HashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon)
 
 //for ONE step H-refinement (icon)
 
@@ -887,7 +887,7 @@ void Element::find_positive_x_side(HashTable* nodetable)
     return;
 }
 
-void Element::get_slopes(HashTable* El_Table, HashTable* NodeTable, double gamma)
+void Element::get_slopes(ElementsHashTable* El_Table, HashTable* NodeTable, double gamma)
 {
     int j = 0, bc = 0;
     /* check to see if this is a boundary */
@@ -1094,7 +1094,7 @@ double min(double x, double y)
 }
 
 // the element member function calc_wet_dry_orient() calculates the orientation of the dryline (drylineorient), the wet length (Swet), the location of the drypoint, and the location of the wetpoint... it does NOT calculate the wet area (Awet)... these quantities are used in the wetted area adjustment of fluxes. calc_wet_dry_orient() is not coded for generic element orientation, positive_x_side must be side 1.  Keith wrote this may 2007
-void Element::calc_wet_dry_orient(HashTable *El_Table)
+void Element::calc_wet_dry_orient(ElementsHashTable *El_Table)
 {
     
     int ifsidewet[4], numwetsides = 0;
@@ -2435,7 +2435,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 }
 
 //note z is not "z" but either x or y
-void Element::zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
+void Element::zdirflux(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
                        double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element *EmNeigh, double dt)
 {
     double dz = 0.0;
@@ -2540,7 +2540,7 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
     return;
 }
 
-void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
+void Element::calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
                                int* order_flag, double *outflow)
 {
     Node *np, *np1, *np2, *nm, *nm1, *nm2;
@@ -2912,7 +2912,7 @@ void Element::calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatPro
     return;
 }
 #if 0
-void Element::correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr,
+void Element::correct(HashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr,
                       FluxProps *fluxprops, TimeProps *timeprops, double *forceint, double *forcebed, double *eroded,
                       double *deposited)
 {
@@ -3341,7 +3341,7 @@ int Element::determine_refinement(double target)
     return flag;
 }
 
-void Element::calc_d_gravity(HashTable* El_Table)
+void Element::calc_d_gravity(ElementsHashTable* El_Table)
 {
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
     xp = positive_x_side();
@@ -3566,7 +3566,7 @@ void Element::calc_which_son()
 
 //should be full proof way to get key of opposite brother, 
 //as long as you know your own coord, dx, and which_son
-void Element::find_opposite_brother(HashTable* El_Table)
+void Element::find_opposite_brother(ElementsHashTable* El_Table)
 {
     
     if(opposite_brother_flag() == 1)
@@ -3604,7 +3604,7 @@ void Element::find_opposite_brother(HashTable* El_Table)
     
 }
 #ifdef OLDCODE
-void Element::find_opposite_brother(HashTable* El_Table)
+void Element::find_opposite_brother(ElementsHashTable* El_Table)
 {   
     /* brother information -- requires that atleast one of this
      element's neighboring brothers is on this process in 
@@ -3925,7 +3925,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
     
 }
 
-int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
+int Element::if_pile_boundary(ElementsHashTable *ElemTable, double contour_height)
 {
     
     int ineigh;
@@ -3975,7 +3975,7 @@ int Element::if_pile_boundary(HashTable *ElemTable, double contour_height)
     return (0); //not on pileheight contour line
 }
 
-int Element::if_source_boundary(HashTable *ElemTable)
+int Element::if_source_boundary(ElementsHashTable *ElemTable)
 {
     
     int ineigh;
@@ -4051,7 +4051,7 @@ int Element::if_source_boundary(HashTable *ElemTable)
     return (0); //not on line bounding area with mass source/sink
 }
 
-int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_height)
+int Element::if_first_buffer_boundary(ElementsHashTable *ElemTable, double contour_height)
 {
     
     int ineigh;
@@ -4132,7 +4132,7 @@ int Element::if_first_buffer_boundary(HashTable *ElemTable, double contour_heigh
     return (0);
 }
 
-int Element::if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable, double contour_height)
+int Element::if_next_buffer_boundary(ElementsHashTable *ElemTable, HashTable *NodeTable, double contour_height)
 {
     
     int ineigh;

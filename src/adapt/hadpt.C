@@ -28,7 +28,7 @@ void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProp
 
 extern void refine(Element*, ElementsHashTable*, HashTable*, MatProps* matprops_ptr);
 
-extern void depchk(Element*, HashTable*, HashTable*, int*, ElemPtrList*);
+extern void depchk(Element*, ElementsHashTable*, HashTable*, int*, ElemPtrList*);
 
 //void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int numprocs,
 //                          HashTable* HT_Node_Ptr, int h_count);

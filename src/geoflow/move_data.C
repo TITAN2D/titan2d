@@ -327,7 +327,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
 }
 
 /* delete the ghost elements that were put in the element hashtable */
-void delete_ghost_elms(HashTable* El_Table, int myid)
+void delete_ghost_elms(ElementsHashTable* El_Table, int myid)
 {
     int ibuck;
     int delete_counter = 0;

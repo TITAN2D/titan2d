@@ -32,6 +32,8 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+
 #include "constant.h"
 #include "sfc.h"
 #include "tivector.h"
@@ -103,7 +105,7 @@ public:
     int hash(const SFC_Key& key) const;
     void add(const SFC_Key& key, void* value);
     void* lookup(const SFC_Key& key);
-    void remove(const SFC_Key& key);
+    virtual void remove(const SFC_Key& key);
     void print_out(int);
     int get_no_of_buckets();
 //    void   get_element_stiffness(HashTable*);
@@ -244,20 +246,24 @@ public:
 
     //! constructor that creates a son element from its father during refinement
     virtual Element* generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
-                int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
+                int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
     //! constructor that creates a father element from its four sons during unrefinement
-    virtual Element* generateElement(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr);
+    virtual Element* generateElement(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
     virtual Element* generateElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
     
+    virtual void remove(const SFC_Key& key){HashTable::remove(key);}
+    void removeElement(Element* elm);
     
     //here goes element content storage probably should be separate class at the end
     
     tivector<SFC_Key> key_;
 
 };
+
+extern ElementsHashTable *elementsHashTable;
 
 #endif

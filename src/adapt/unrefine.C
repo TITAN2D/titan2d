@@ -305,7 +305,7 @@ int Element::check_unrefinement(HashTable* El_Table, double target)
     return (1);
 }
 
-void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather_in)
+void delete_oldsons(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather_in)
 {
     int ison, isonneigh, ineigh, inode, nodeorder[9];
     Element *EmSon, *EmNeigh;
@@ -508,7 +508,7 @@ void Element::change_neigh_info(unsigned* fth_key, unsigned* ng_key, int neworde
 }
 */
 //make this an element friend function
-void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, void* NFL)
+void unrefine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, void* NFL)
 {
     
     ElemPtrList* NewFatherList = (ElemPtrList*) NFL;
@@ -612,7 +612,7 @@ void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, 
 }
 
 //make this a Node and Element friend fucntion
-void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, int myid, void* OPU)
+void unrefine_interp_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int nump, int myid, void* OPU)
 {
     ElemPtrList* OtherProcUpdate = (ElemPtrList*) OPU;
     

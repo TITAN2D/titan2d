@@ -35,28 +35,28 @@ extern int REFINE_LEVEL; //make REFINE_LEVEL a global variable that can be chang
 #define MIN_GENERATION -3 //minimum refinement level
 
 //! non member C++ function that wraps the fortran correct_() function
-void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
+void correct(ElementType elementType,HashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
              TimeProps *timeprops, void *EmTemp, double *forceint, double *forcebed, double *eroded, double *deposited);
 
 //! this function is legacy, the prototype exists but the function is not defined
 void checknodesol(HashTable*);
 
 //! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
-double element_weight(HashTable* El_Table, HashTable*, int myid, int nump);
+double element_weight(ElementsHashTable* El_Table, HashTable*, int myid, int nump);
 
 //! This function calculates the vast majority of statistics used for output, including most of what appears in output_summary.######, the friction body forces however are not calculated in here, Keith wrote this to replace calc_volume()
-void calc_stats(ElementType elementType,HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
+void calc_stats(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
                 StatProps* statprops, DischargePlanes* discharge, double d_time);
 
 //! calc_volume() has been replaced by calc_stats(), calc_volume() is out of date legacy code, the function is still defined in step.C but it is not called.
-void calc_volume(ElementType elementType,HashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
+void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
                  double* v_star, double* nz_star);
 
 //! get_max_momentum() is legacy, it has been replaced by calc_stats()
-double get_max_momentum(ElementType elementType,HashTable* El_Table, MatProps* matprops_ptr);
+double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, MatProps* matprops_ptr);
 
 //! this function prints a warning message at end of the simulation to say if the flow is still moving and thus should be run longer before using the data to make decisions
-void sim_end_warning(ElementType elementType, HashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double v_star);
+void sim_end_warning(ElementType elementType, ElementsHashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double v_star);
 
 //! this function outputs final stats for one run in a collection of stochastic/probabilistic runs
 void out_final_stats(TimeProps* timeprops_ptr, StatProps* statprops_ptr);
@@ -69,17 +69,17 @@ void setup_geoflow(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, 
 void slopes(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr);
 
 //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model) calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum allowable timestep for this iteration.
-double get_coef_and_eigen(ElementType elementType, HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptrs,
+double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptrs,
                           TimeProps* timeprops_ptr, int ghost_flag);
 
 //! this function transfers information during events such as ghost element data exchange and repartitioning
 void move_data(int nump, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr);
 
 //! this function deletes the current ghost elements
-void delete_ghost_elms(HashTable* El_Table, int myid);
+void delete_ghost_elms(ElementsHashTable* El_Table, int myid);
 
 //! This function loops through all the non-ghost current elements and calls the Element member function Element::calc_edge_states() which calculates the Riemann fluxes between elements and stores the Riemann fluxes in the edge nodes. 
-void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
+void calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
                       int myid, int* order_flag, double *outflow);
 
 //! c++ sgn function 

@@ -34,6 +34,9 @@ using namespace std;
 class TimeProps;
 class FluxProps;
 class Node;
+class ElementsHashTable;
+
+extern ElementsHashTable *elementsHashTable;
 
 //! The Element class is a data structure designed to hold all the information need for an h (cell edge length) p (polynomial order) adaptive finite element.  Titan doesn't use p adaptation because it is a finite difference/volume code, hence many of the members are legacy from afeapi (adaptive finite element application programmers interface) which serves as the core of titan.  There is a seperate Discontinuous Galerkin Method (finite elements + finite volumes) version of titan and the polynomial information is not legacy there.  However in this version of Titan elements function simply as finite volume cells.
 
@@ -103,7 +106,7 @@ protected:
 
     //! constructor that creates a son element from its father during refinement
     Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
-            int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
+            int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
             HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in)
     {
@@ -114,7 +117,7 @@ protected:
     }
 
     //! constructor that creates a father element from its four sons during unrefinement
-    Element(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr)
+    Element(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr)
     {
         init(sons, NodeTable, El_Table, matprops_ptr);
     }
@@ -163,12 +166,12 @@ protected:
 
     //! constructor that creates a son element from its father during refinement
     void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
-            int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
+            int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
             HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
 
     //! constructor that creates a father element from its four sons during unrefinement
-    void init(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr);
+    void init(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
     void init(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
@@ -462,7 +465,7 @@ public:
     double* get_el_err();
 
     //! this function is afeapi legacy it is not called anywhere in the finite difference/volume version of titan
-    void get_nelb_icon(HashTable*, HashTable*, int*, int*);
+    void get_nelb_icon(HashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon);
 
 
 
@@ -518,7 +521,7 @@ public:
     }
 
     //! this function computes searches for an element's brother, i.e. the brother (son of the same father) that is located diagonally from it, to get the brother information requires that atleast one of this element's neighboring brothers is on this process in order to get information onthe brother that is not a neighbor
-    void find_opposite_brother(HashTable*);
+    void find_opposite_brother(ElementsHashTable*);
     //void      get_icon(HashTable*, HashTable*, int[4]);
     //void      get_boundary(int[4], double[4]);
     /* geoflow functions */
@@ -595,7 +598,7 @@ public:
 
 
     //! this function computes the x and y derivatives of the state variables
-    void get_slopes(HashTable*, HashTable*, double);
+    void get_slopes(ElementsHashTable* El_Table, HashTable* NodeTable, double gamma);
 
 
 
@@ -606,7 +609,7 @@ public:
     void insert_coord(HashTable* NodeTable);
 
     //! this function, based on the dir flag, chooses between calling xdirflux and ydirflux, which respectively, calculate either the x or y direction analytical cell center fluxes (or the fluxes at the the boundary if 2nd order flux option is checked on the gui). Keith wrote this.
-    void zdirflux(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
+    void zdirflux(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
             double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element* EmNeigh, double dt);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) x direction fluxes. Keith wrote this
@@ -618,7 +621,7 @@ public:
             double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function (indirectly) calculates the fluxes that will be used to perform the finite volume corrector step and stores them in element edge nodes, indirectly because it calls other functions to calculate the analytical fluxes and then calls another function to compute the riemann fluxes from the analytical fluxes. Talk to me (Keith) before you modify this, as I am fairly certain that it is now completely bug free and parts of it can be slightly confusing.
-    void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
+    void calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
             int* order_flag, double *outflow);
 
     //! this function calculates the maximum x and y direction wavespeeds which are the eigenvalues of the flux jacobian
@@ -702,7 +705,7 @@ public:
     void calc_topo_data(MatProps *matprops_ptr);
 
     //! this function calculates the (global) x and y derivatives of the local z component of gravity as an approximation of the local derivatives, it wouldn't be that difficult to correct incorporating the terrain slopes in the calculation it is calculated in the creation of a father element, after mesh refinement and, during a restart.
-    void calc_d_gravity(HashTable *El_Table);
+    void calc_d_gravity(ElementsHashTable *El_Table);
 
     //! this function calculates the gravity vector in local coordinates
     void calc_gravity_vector(MatProps *matprops_ptr);
@@ -764,16 +767,16 @@ public:
     void calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *timeprops);
 
     //! this function returns 2 if this element contains pileheight>=contour_height and has a neighbor who contains pileheight<contour_height.  It returns 1 if this element contains pileheight<contour_height and has a neighbor who contains pileheight>=contour_height.  It returns 0 otherwise. The intended use if if(EmTemp->if_pile_boundary(ElemTable,contour_height)) but I (Keith) added the distinction bewteen 1 and 2 to allow future developers to distinguish between the inside and outside of a pileheight contour line, as this functionality could be useful in the future.
-    int if_pile_boundary(HashTable *ElemTable, double contour_height);
+    int if_pile_boundary(ElementsHashTable *ElemTable, double contour_height);
 
     //! this function returns 2 if this element has Influx[0]>0 and has a neighbor who has Influx[0]<=0.  It returns 1 if this element has Influx[0]==0 and has a neighbor who has Influx[0]!=0.  It returns -1 if this element has Influx[0]<0 and a neighbor with Influx[0]>=0. It returns 0 otherwise. Influx[0] is a pileheight per unit time source term.  Currently Influx[0] is restricted to be non-negative (a source or no source with sinks not allowed), but I (Keith) have added the extra functionality because it may be useful at a future date. The intended use if if(EmTemp->if_source_boundary(ElemTable)), but the distinction between 1 and 2 allows futuredevelopers to distinguish between the strictly inside and strictly outside of an area with a flux source term.
-    int if_source_boundary(HashTable *ElemTable);
+    int if_source_boundary(ElementsHashTable *ElemTable);
 
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the innermost boundary of the buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be members of the innermost boundary of the buffer layer 
-    int if_first_buffer_boundary(HashTable *ElemTable, double contour_height);
+    int if_first_buffer_boundary(ElementsHashTable *ElemTable, double contour_height);
 
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the boundary of the buffer that is one element wider than the current buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be in the next buffer boundary
-    int if_next_buffer_boundary(HashTable *ElemTable, HashTable *NodeTable, double contour_height);
+    int if_next_buffer_boundary(ElementsHashTable *ElemTable, HashTable *NodeTable, double contour_height);
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
 
@@ -819,7 +822,7 @@ public:
     
 
     //! the element member function calc_wet_dry_orient() determines the orientation of the dryline and which side of it is wet, the wet fraction (Swet) of a partially wet edge, the location of the drypoint, it does NOT calculate the wet area (Awet)... these quantities are used in the adjustment of fluxes in partially wet elements. calc_wet_dry_orient() is not coded for generic element orientation, i.e. the positive_x_side must be side 1.  Keith wrote this may 2007
-    void calc_wet_dry_orient(HashTable *El_Table);
+    void calc_wet_dry_orient(ElementsHashTable *El_Table);
 
     //! The Element member function calc_elem_edge_wet_fraction() returns the "how much of this is wet" fraction of side that this element shares with its ineigh-th neighboring element . This fraction is used to determine wether or not to "zero" the state variables used to compute physical fluxes through a "dry" side.  Keith wrote this function may 2007
     double calc_elem_edge_wet_fraction(int ineigh, int ifusewholeside);

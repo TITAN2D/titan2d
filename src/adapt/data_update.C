@@ -25,7 +25,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
 
 void write_node_info_ext(HashTable* HT_Node_Ptr, Element* Em, int start, int mid);
 
-void data_update(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead, int myid, int numprocs, int h_count)
+void data_update(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead, int myid, int numprocs, int h_count)
 {
     int i, j, k;
     

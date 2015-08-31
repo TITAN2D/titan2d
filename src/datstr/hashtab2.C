@@ -314,11 +314,12 @@ ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double 
 {
     NlocalElements = 0;
     NodeTable = nodeTable;
+    elementsHashTable=this;
 }
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table
 {
-    
+    elementsHashTable=nullptr;
 }
 void ElementsHashTable::updateLocalElements()
 {
@@ -481,7 +482,7 @@ Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_K
 //used for refinement
 Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
-                 HashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
+                 ElementsHashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
     return (Element*) new Element(nodekeys, neigh, n_pro, b, gen,
@@ -489,7 +490,7 @@ Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_K
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
 }
-Element* ElementsHashTable::generateElement(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
+Element* ElementsHashTable::generateElement(Element* sons[], HashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
     return (Element*) new Element(sons, NodeTable, El_Table, matprops_ptr);
 }
@@ -497,6 +498,12 @@ Element* ElementsHashTable::generateElement(FILE* fp, HashTable* NodeTable, MatP
 {
     return (Element*) new Element(fp, NodeTable, matprops_ptr, myid);
 }
+void ElementsHashTable::removeElement(Element* elm)
+{
+    HashTable::remove(elm->key());
+    delete elm;
+}
+
 
 /*void ElementsHashTable::add(unsigned* key, void* value) {
  int i;

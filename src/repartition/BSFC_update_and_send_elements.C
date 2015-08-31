@@ -291,7 +291,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
     return;
 }
 
-void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
+void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
 {
     int i, j;
     HashEntryPtr entryp;

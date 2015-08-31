@@ -24,37 +24,37 @@
 const int QUADNODES = 9;
 
 //! this function checks for any and all possible mesh errors, i.e. it checks if the mesh is legal, it says nothing about the quality of a legal mesh, you must have ghost information present before performing this check, WARNING THIS CHECK TAKES A LOT OF TIME, ONLY USE IT TO DEBUG.
-void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
+void AssertMeshErrorFree(ElementsHashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
 //! investigate an Element, question his "friends and family" about him.
-void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
+void ElemBackgroundCheck(ElementsHashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
-void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
+void ElemBackgroundCheck2(ElementsHashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
 
 //! investigate a Node question his "friends and family" about him.
-void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
+void NodeBackgroundCheck(ElementsHashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
 //! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
 void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
               MatProps* matprops_ptr);
 
-void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
+void delete_oldsons(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
 
-void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int numprocs, int myid, void* RefinedList,
+void refine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int numprocs, int myid, void* RefinedList,
                          TimeProps* timeprops_ptr);
 
-void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, void* NewFatherList);
+void unrefine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, void* NewFatherList);
 
-//void unrefine_neigh_update(HashTable* El_Table, int myid, int NumNewFathers, Element** NewFatherList);
+//void unrefine_neigh_update(ElementsHashTable* El_Table, int myid, int NumNewFathers, Element** NewFatherList);
 
-void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, int myid, void* OtherProcUpdate);
+void unrefine_interp_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int nump, int myid, void* OtherProcUpdate);
 //void  unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable,				   int nump, int myid, int NumOtherProcUpdate, 				   Element **OtherProcUpdate);
 
 //! only used in debugging
 //int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch);
 
 //! only used in debugging
-void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr);
+void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr);
 
 //! this function implements 1 time step which consists of (by calling other functions) computing spatial derivatives of state variables, computing k active/passive and wave speeds and therefore timestep size, does a finite difference predictor step, followed by a finite volume corrector step, and lastly computing statistics from the current timestep's data.
 void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
@@ -62,9 +62,9 @@ void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTa
           int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag);
 
 //! this function deletes unused elements and nodes, this is called durring grid adaptation in hadpt.C
-void delete_unused_elements_nodes(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid);
+void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid);
 //! this function is used for dynamic replacement of a GIS digital elevation map, for example, when you're running a large simulation on multiple processors about a real life scenario you're expecting to occur soon and a channel collapses.  If in the simulation the flow has not yet a gotten to the channel this could allow you to replace the DEM with another one in which the channel has collapsed and continue running the simulation without having to restart from the beginning.  while this code updates the map, the logic and external programs used to in real time decide if the map should be updated have not been fully developed, this is the damd (data manager daemon, area of research in which Dr. Matt Jones is Participating).
-int update_topo(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nump, MatProps* matprops,
+int update_topo(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nump, MatProps* matprops,
                 TimeProps* timeprops, MapNames* mapnames);
 
 /* this before the addition of the restart capability... 
@@ -136,22 +136,22 @@ extern void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeT
 extern void q_sort_data(double *numbers, void **data, int left, int right);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void smooth(HashTable*, HashTable*);
+extern void smooth(ElementsHashTable*, HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void smooth_II(HashTable*, HashTable*);
+extern void smooth_II(ElementsHashTable*, HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void Delete_Table(HashTable*, HashTable*);
+extern void Delete_Table(ElementsHashTable*, HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void all_check(HashTable* eltab, HashTable* ndtab, int myid, int m);
+extern void all_check(ElementsHashTable* eltab, HashTable* ndtab, int myid, int m);
 
 //! at every output interval this function writes a line of revelant statistics about the flow to a file named output_summary.######, among the information contained in the file is which times of output match with which timestep numbers (which are used in the file names of the tecplot output files).  Keith wrote this.
 extern void output_summary(TimeProps* timeprops, StatProps* statprops, int savefileflag);
 
 //! Adam Stinton wanted some particular outputs, such as coordinates, speed, an pile height at locations of pile centroid, maximum pileheight and maximum flow speed, so I (Keith) wrote this for him.  The function writes to a file named "flow_dynamics.stats" (Adam's choice of file name).  The information is useful enough that I included it in the mainline version of the code but we are getting too many output files, it's about time to combine a bunch of them into one file (prefereably output_summary.######)
-void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, StatProps* statprops_ptr);
+void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, StatProps* statprops_ptr);
 
 //! titan now has the capability to caclulate the flux through discharge planes, the sign of the flux follows a righthand rule convention, net v cross ds is non negative for a series os segments "ds" drawn counter clockwise surrounding the pile(s) (out of the box is positive into the box in negative), Keith wrote this
 extern void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes* discharge, int myid);
@@ -160,40 +160,40 @@ extern void output_discharge(MatProps* matprops, TimeProps* timeprops, Discharge
 extern void output_stoch_stats(MatProps* matprops, StatProps* statprops);
 
 //! this function writes text tecplot output files in the tecplxxxxxxxx.plt format.  Keith rewrote this function to eliminate a lot of bugs shortly after he started the project, since then files were 1/3 the size they were previously.
-extern void tecplotter(ElementType elementType, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
+extern void tecplotter(ElementType elementType, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
                        MapNames* mapnames, double v_star);
 
 //! this function writes text tecplot output files in the mshplxxxxxxxx.plt format.  This is largely untouched since before I (Keith) joined the GMFG, just minor changes.  This is the preferred (by Professor Patra) format of output for debugging purposes even though tecplxxxxxxxx.plt create nicer images.
-extern void meshplotter(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
+extern void meshplotter(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
                         MapNames* mapnames, double v_star);
 
 //! one of "pady's" output functions, since Keith never met "pady" this is probably long out of date
-extern void vizplotter(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops);
+extern void vizplotter(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops);
 
 //! another of "pady's" output functions, since Keith never met "pady" this is probably long out of date
-void viz_output(ElementType elementType,HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, MatProps* matprops,
+void viz_output(ElementType elementType,ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, MatProps* matprops,
                 TimeProps* timeprops, MapNames* mapnames);
 #if HAVE_LIBHDF5 == 1 && HAVE_LIBHDF5_HL == 1
 //! the hdf output never worked right (never got debugged)
-void hdfviz_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+void hdfviz_output(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
         int time_step, double time, int myid, int numprocs, MatProps*);
 //! the hdf output never worked right (never got debugged)
-void hdf_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+void hdf_output(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
         int time_step, double time, int myid, int numprocs, MatProps*);
 #endif
 
 //! eXtensible Data Model and Format (http://www.arl.hpc.mil/ice/) is a Paraview readable data format 
-int write_xdmf_single_phase(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_single_phase(ElementsHashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode);
-int write_xdmf_two_phases(HashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_two_phases(ElementsHashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode);
 
 //! this is Amrita's output function, Keith wrote it to her specifications, it is for use with the gmfg viewer, which Daniel rewrote during the summer of 2006 to remove a lot dependencies and use basically only opengl calls.  This makes the viewer compatible with almost every linux machine and a lot easier (read as possible) to install
-void incr_tri_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, MatProps* matprops,
+void incr_tri_output(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, MatProps* matprops,
                      TimeProps* timeprops, double v_star);
 
 //! this is one of the small output file size functions, this output format is meant for use with a web browser based viewer, this is now out of date.
-void web_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double time, int numprocs, MatProps* matprops,
+void web_output(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double time, int numprocs, MatProps* matprops,
                 TimeProps* timeprops);
 //! this is one of the small output file size functions, this output format is meant for use with a web browser based viewer, this is now out of date.
 void web_simplify(TimeProps* timeprops);
@@ -204,11 +204,11 @@ void web_correct(TimeProps* timeprops);
 void grass_sites_header_output(TimeProps* timeprops);
 
 //! this function writes one processors grass sites style output, the grass sites output format is correct and works, but importing the data into GIS packages such as ARCGIS is non trivial until you know the trick to it.  Keith does not know the trick, I (Keith) just wrote this in the format Alex Sorokine specified.
-void grass_sites_proc_output(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, MatProps* matprops,
+void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, MatProps* matprops,
                              TimeProps* timeprops);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void check_p_order(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr);
+extern void check_p_order(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
 extern int howmanyelements(HashTable*);
@@ -217,7 +217,7 @@ extern int howmanyelements(HashTable*);
 extern double random_error(HashTable*);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
-extern void search_object(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, unsigned* key, int myid);
+extern void search_object(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, unsigned* key, int myid);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
 extern void list_elements(HashTable*, HashTable*, int, int);
@@ -239,7 +239,7 @@ extern int make_block(int, int**, int**, int**, int**, int*, int*, HashTable*, H
 
 #endif
 #ifdef DEBUG_HEADER  //debug stuff is in SGI/SUNOS fortran interface 
-extern void view_elm(HashTable* El_Table, HashTable* NodeTable, int myid);
+extern void view_elm(ElementsHashTable* El_Table, HashTable* NodeTable, int myid);
 extern void Mat_write(int, double*, int, int, int);
 extern void Mat_write_f(int, double*, int, int, int);
 extern "C" void mat_view_(double*, int*, int*);

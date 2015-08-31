@@ -26,7 +26,7 @@
  titan), it will then be moved to ../header/geoflow.h */
 #define STAT_VOL_FRAC 0.95
 
-void calc_stats(ElementType elementType, HashTable* El_Table, HashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
+void calc_stats(ElementType elementType, ElementsHashTable* El_Table, HashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
                 StatProps* statprops, DischargePlanes* discharge, double d_time)
 {
     int i, iproc;
@@ -644,7 +644,7 @@ void out_final_stats(TimeProps* timeprops, StatProps* statprops)
     return;
 }
 
-void InsanityCheck(HashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr)
+void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr)
 {
 
     int num_buck = El_Table->get_no_of_buckets();

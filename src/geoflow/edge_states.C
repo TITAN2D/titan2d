@@ -29,7 +29,7 @@
  *  GIS map's cummulative outflow (defined as the mass flow off of the
  *  GIS map).  Also, the elements are checked for multiple pile-height values 
  */
-void calc_edge_states(HashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
+void calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
                       int myid, int* order_flag, double *outflow)
 {
     int i, j, k, counter;

@@ -12,6 +12,7 @@
 #include <assert.h>
 
 typedef int tisize_t;
+typedef int tipos_t;
 
 template<typename T>
 class tivector
@@ -72,7 +73,7 @@ public:
         }
         size_=new_size;
     }
-    void insert(size_t pos){
+    void insert(tipos_t pos){
         assert(pos<=size_);
         swap_arrays();
         //reallocate array_ if needed
@@ -92,10 +93,31 @@ public:
         //    array_[i]=array_old_[i-1];
         memcpy(array_+pos+1, array_old_+pos, sizeof(T)*(size_old_-pos));
     }
+    void remove(tipos_t pos){
+        assert(pos<size_);
+        swap_arrays();
+        //reallocate array_ if needed
+        if(size_old_-1>reserved_size_){
+            //move to array_old_
+            delete [] array_;
+            //allocate new
+            size_=size_old_-1;
+            reserved_size_=2*(size_/reserved_size_)*reserved_size_;
+            array_=new T[reserved_size_];
+        }
+        size_=size_old_-1;
+        //size_=size_+1;
+        //for(tisize_t i=0;i<pos;++i)
+        //    array_[i]=array_old_[i];
+        memcpy(array_, array_old_, sizeof(T)*pos);
+        //for(tisize_t i=pos+1;i<size_;++i)
+        //    array_[i]=array_old_[i-1];
+        memcpy(array_+pos, array_old_+pos+1, sizeof(T)*(size_-pos));
+    }
     
     
-    T& operator[](tisize_t i){ return *(array_ + i);}
-    const T& operator[](tisize_t i) const { return *(array_ + i);}
+    T& operator[](tipos_t i){ return *(array_ + i);}
+    const T& operator[](tipos_t i) const { return *(array_ + i);}
 };
 
 #endif	/* TIVECTOR_H */

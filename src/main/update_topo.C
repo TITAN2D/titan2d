@@ -22,7 +22,7 @@
 #include "../header/hpfem.h"
 #define WORKDIR "."
 
-int update_topo(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nump, MatProps* matprops,
+int update_topo(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int nump, MatProps* matprops,
                 TimeProps* timeprops, MapNames* mapnames)
 {
     

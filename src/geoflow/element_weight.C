@@ -33,7 +33,7 @@
  *  function is calculated and stored in global_weight[] (i.e. the sum of 
  *  sub_weight[] from all processors).
  */
-double element_weight(HashTable* El_Table, HashTable* NodeTable, int myid, int nump)
+double element_weight(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump)
 {
     int i, j, k, counter;
     double tiny = GEOFLOW_TINY;

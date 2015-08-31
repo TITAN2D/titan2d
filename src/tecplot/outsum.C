@@ -113,7 +113,7 @@ void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes*
 /* adam's function: written by keith */
 /*************************************/
 
-void OUTPUT_ADAM_STATS(HashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, StatProps* statprops_ptr)
+void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, StatProps* statprops_ptr)
 {
     int myid, numprocs;
     MPI_Status status;

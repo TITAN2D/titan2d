@@ -41,7 +41,7 @@ struct unstructured_communication
 void BSFC_update_element_proc(int, Element*, HashTable*, HashTable*, int);
 
 //! this function figures out how to "bunch" together elements that cannot be put on different processors because of a constrained node, B stands for bunch SFC stands for space filling curve 
-void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, HashTable *HT_Node_Ptr,
+void BSFC_combine_elements(int side, Element *EmTemp, ElementsHashTable *HT_Elem_Ptr, HashTable *HT_Node_Ptr,
                            int destination_proc);
 
 //void BSFC_combine_elements(int, Element*, HashTable*, HashTable*);
