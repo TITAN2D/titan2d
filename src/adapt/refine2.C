@@ -682,24 +682,30 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     double dpson[2];
     dpson[0] = EmTemp->drypoint(0) * 2 + 0.5;
     dpson[1] = EmTemp->drypoint(1) * 2 + 0.5;
-    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+    
+    Element* old_elm = (Element*) HT_Elem_Ptr->lookup(nodes[8]);
+    if(old_elm != NULL)
+    {
+        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->void_bcptr();
+        //HT_Elem_Ptr->removeElement(old_elm);
+        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
+        Quad9P = old_elm;
+    }
+    else{
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+                         EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
+                         dpson);
+    }
     //double* state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(0);  //--by jp, 0 means son 0
             
     Quad9P->putel_sq(sol, err);  //added by jp oct11
-    Element* old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
-    if(old_elm != NULL)
-    {
-        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
-        HT_Elem_Ptr->removeElement(old_elm);
-    }
     
-    HT_Elem_Ptr->add(nodes[8], Quad9P);
     
     //---1st new element---
     
@@ -761,24 +767,30 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     my_elm_loc[1] = elm_loc[1];
     dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
     dpson[1] = EmTemp->drypoint(1) * 2 + 0.5;
-    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+    
+    old_elm = (Element*) HT_Elem_Ptr->lookup(nodes[8]);
+    if(old_elm != NULL)
+    {
+        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->void_bcptr();
+        //HT_Elem_Ptr->removeElement(old_elm);
+        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
+        Quad9P = old_elm;
+    }
+    else{
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+                         EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
+                         dpson);
+    }
     //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(1); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
-    if(old_elm != NULL)
-    {
-        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
-        HT_Elem_Ptr->removeElement(old_elm);
-    }
     
-    HT_Elem_Ptr->add(nodes[8], Quad9P);
     
     //---2nd new element---
     
@@ -840,24 +852,32 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     my_elm_loc[1] = elm_loc[1] + 1;
     dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
     dpson[1] = EmTemp->drypoint(1) * 2 - 0.5;
-    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+    
+    old_elm = (Element*) HT_Elem_Ptr->lookup(nodes[8]);
+    if(old_elm != NULL)
+    {
+        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->void_bcptr();
+        //HT_Elem_Ptr->removeElement(old_elm);
+        
+        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
+        Quad9P = old_elm;
+    }
+    else{
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+                         EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
+                         dpson);
+    }
     //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(2); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
-    if(old_elm != NULL)
-    {
-        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
-        HT_Elem_Ptr->removeElement(old_elm);
-    }
     
-    HT_Elem_Ptr->add(nodes[8], Quad9P);
+    
     
     //---3rd new element---
     
@@ -921,24 +941,31 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     my_elm_loc[1] = elm_loc[1] + 1;
     dpson[0] = EmTemp->drypoint(0) * 2 + 0.5;
     dpson[1] = EmTemp->drypoint(1) * 2 - 0.5;
-    Quad9P = HT_Elem_Ptr->generateElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+    
+    old_elm = (Element*) HT_Elem_Ptr->lookup(nodes[8]);
+    if(old_elm != NULL)
+    {
+        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+        old_elm->void_bcptr();
+        //HT_Elem_Ptr->removeElement(old_elm);
+        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
+        Quad9P = old_elm;
+    }
+    else{
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+                         EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
+                         dpson);
+    }
     //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n\n",state_vars[0],state_vars[1],state_vars[2]);
     
     Quad9P->set_which_son(3); //--by jp
             
     Quad9P->putel_sq(sol, err); //added by jp oct11
-    old_elm = (Element*) HT_Elem_Ptr->lookup(Quad9P->key());
-    if(old_elm != NULL)
-    {
-        old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
-        HT_Elem_Ptr->removeElement(old_elm);
-    }
     
-    HT_Elem_Ptr->add(nodes[8], Quad9P);
+    
     
     //---CHANGING THE FATHER---
     EmTemp->set_sons(NewNodeKey);

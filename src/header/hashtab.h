@@ -236,31 +236,33 @@ public:
 
     //! check that neighboring elements and nodes pointers are correct
     int checkPointersToNeighbours(const char *prefix);
-    
+        
+    //@TODO don't delete elements with same keys
     //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
-    virtual Element* generateElement();
+    virtual Element* generateAddElement(const SFC_Key& key);
 
     //! constructor that creates an original element when funky is read in
-    virtual Element* generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+    virtual Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
                              double pile_height, int myid, const SFC_Key& opposite_brother);
 
     //! constructor that creates a son element from its father during refinement
-    virtual Element* generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    virtual Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
     //! constructor that creates a father element from its four sons during unrefinement
-    virtual Element* generateElement(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
+    virtual Element* generateAddElement(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
-    virtual Element* generateElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
+    virtual Element* generateAddElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
     
-    virtual void remove(const SFC_Key& key){HashTable::remove(key);}
+    
+    virtual void remove(const SFC_Key& key){assert(0);}
     void removeElement(Element* elm);
     
     //here goes element content storage probably should be separate class at the end
     
-    tivector<SFC_Key> key_;
+    tivector<Element> elements_;
 
 };
 

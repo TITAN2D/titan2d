@@ -114,6 +114,11 @@ public:
         //    array_[i]=array_old_[i-1];
         memcpy(array_+pos, array_old_+pos+1, sizeof(T)*(size_-pos));
     }
+    tipos_t push_back()
+    {
+        resize(size_+1);
+        return size_-1;
+    }
     
     
     T& operator[](tipos_t i){ return *(array_ + i);}

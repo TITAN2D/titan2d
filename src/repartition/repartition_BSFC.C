@@ -2889,12 +2889,14 @@ void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, i
 
     for(ielem = 0; ielem < num_recv; ielem++)
     {
-        if(sfc_key_from_oldkey(recv_array[ielem].key)==sfc_key_null)
+        SFC_Key key;
+        SET_NEWKEY(key,recv_array[ielem].key);
+        if(key==sfc_key_null)
         {
             printf("myid=%d num_recv=%d recv_array[%d].key=={0,0}\n", myid, num_recv, ielem);
             assert(0);
         }
-        EmTemp = (Element*) (El_Table->lookup(sfc_key_from_oldkey(recv_array[ielem].key)));
+        EmTemp = (Element*) (El_Table->lookup(key));
         
         assert(EmTemp==NULL);  //this forces a deletion of ghost elements 
         //before repartitioning, which is done within repartition2(), if
@@ -2905,13 +2907,12 @@ void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, i
         //their node, secondly the presence of ghost cells screws up the
         //neighbor updating.
         
-        Element* EmNew = El_Table->generateElement();
+        Element* EmNew = El_Table->generateAddElement(key);
         double not_used;
         //if((timeprops_ptr->iter==119)&&(myid==0))
         //printf("myid=%d num_recv=%d ielem=%d\n",myid,num_recv,ielem);
         
         construct_el(EmNew, recv_array + ielem, NodeTable, myid, &not_used);
-        El_Table->add(EmNew->key(), EmNew);
     }
     
     return;

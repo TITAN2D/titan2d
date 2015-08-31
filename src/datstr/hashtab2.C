@@ -469,35 +469,51 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
      }*/
     return count;
 }
-Element* ElementsHashTable::generateElement()
+
+Element* ElementsHashTable::generateAddElement(const SFC_Key& key)
 {
-    return (Element*) new Element();
+    Element* elm=new Element(key);
+    add(key, elm);
+    return elm;
 }
-Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
+    
+Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
                                             int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
-    return (Element*) new Element(nodekeys, neigh, n_pro, b, mat,
-                                  elm_loc_in, pile_height, myid, opposite_brother);
+    Element* elm=new Element(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
+    add(elm->key(), elm);
+    return elm;
 }
 //used for refinement
-Element* ElementsHashTable::generateElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
+Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
                  ElementsHashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
-    return (Element*) new Element(nodekeys, neigh, n_pro, b, gen,
+    Element* elm=new Element(nodekeys, neigh, n_pro, b, gen,
                                   elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
+    add(elm->key(), elm);
+    return elm;
 }
-Element* ElementsHashTable::generateElement(Element* sons[], HashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
+Element* ElementsHashTable::generateAddElement(Element* sons[], HashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
-    return (Element*) new Element(sons, NodeTable, El_Table, matprops_ptr);
+    Element* elm=new Element(sons, NodeTable, El_Table, matprops_ptr);
+    add(elm->key(), elm);
+    return elm;
 }
-Element* ElementsHashTable::generateElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+Element* ElementsHashTable::generateAddElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
-    return (Element*) new Element(fp, NodeTable, matprops_ptr, myid);
+    Element* elm=new Element(fp, NodeTable, matprops_ptr, myid);
+    add(elm->key(), elm);
+    return elm;
 }
+
+
+
+
+
 void ElementsHashTable::removeElement(Element* elm)
 {
     HashTable::remove(elm->key());

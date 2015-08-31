@@ -256,8 +256,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
         //if(*(bros[1]->getfather()) == (unsigned) 1529353130)
         //    printf("creating father %u %u from %u %u\n", *(bros[1]->getfather()), *(bros[1]->getfather() + 1),
         //           *(bros[1]->pass_key()), *(bros[1]->pass_key() + 1));
-        bros[0] = El_Table->generateElement((bros + 1), NodeTable, El_Table, matprops_ptr);
-        El_Table->add(bros[0]->key(), bros[0]);
+        bros[0] = El_Table->generateAddElement((bros + 1), NodeTable, El_Table, matprops_ptr);
         assert(bros[0]);  // a copy of the parent should always be on the same process as the sons
         NewFatherList->add(bros[0]);
         

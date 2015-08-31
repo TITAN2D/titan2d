@@ -253,15 +253,18 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* N
                     
                     for(ielem = 0; ielem < num_send_recv[iproc]; ielem++)
                     {
-                        elm = (Element*) (El_Table->lookup(sfc_key_from_oldkey((recv_array[iproc] + ielem)->key)));
+                        SFC_Key key;
+                        SET_NEWKEY(key,recv_array[iproc][ielem].key);
+                        
+                        elm = (Element*) (El_Table->lookup(key));
                         if(elm == NULL)
                         { // this elm doesn't exist on this proc
-                            new_elm = El_Table->generateElement();
+                            new_elm = El_Table->generateAddElement(key);
                             
                             construct_el(new_elm, (recv_array[iproc] + ielem), NodeTable, myid, &not_used);
                             if((new_elm->adapted_flag() < 0) && (new_elm->adapted_flag() >= -BUFFER))
                                 new_elm->set_myprocess(iproc);
-                            El_Table->add(new_elm->key(), new_elm);
+                            
                             add_counter++;
                         } //if(elm == NULL)
                         else

@@ -259,9 +259,8 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         
         if(!bcf)
             bcptr = NULL; //--this element is not on the bound
-        Quad9P = (*ElemTable)->generateElement(nodes, neigh, neighbor_proc, bcptr, material, elm_loc, pile_height, myid,
+        Quad9P = (*ElemTable)->generateAddElement(nodes, neigh, neighbor_proc, bcptr, material, elm_loc, pile_height, myid,
                                                sfc_key_from_oldkey(opposite_brother));
-        (*ElemTable)->add(nodes[8], Quad9P);
         Quad9P->find_positive_x_side(*NodeTable);
         Quad9P->calculate_dx(*NodeTable);
     }

@@ -37,12 +37,13 @@ class Node;
 class ElementsHashTable;
 
 extern ElementsHashTable *elementsHashTable;
-
+template<typename T> class tivector;
 //! The Element class is a data structure designed to hold all the information need for an h (cell edge length) p (polynomial order) adaptive finite element.  Titan doesn't use p adaptation because it is a finite difference/volume code, hence many of the members are legacy from afeapi (adaptive finite element application programmers interface) which serves as the core of titan.  There is a seperate Discontinuous Galerkin Method (finite elements + finite volumes) version of titan and the polynomial information is not legacy there.  However in this version of Titan elements function simply as finite volume cells.
 
 class Element {
     friend class HashTable;
     friend class ElementsHashTable;
+    friend class tivector<Element>;
 #if 0
     friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
 
@@ -96,6 +97,9 @@ protected:
     Element() {
         init();
     }
+    Element(const SFC_Key& key) {
+        init(key);
+    }
     //! constructor that creates an original element when funky is read in
     Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
             double pile_height, int myid, const SFC_Key& opposite_brother)
@@ -128,7 +132,7 @@ protected:
         init(fp, NodeTable, matprops_ptr, myid);
     }
     
-    
+public:
     /**
      *  default initiator, does nothing except set stoppedflags=2, this should never be used
      *
@@ -159,6 +163,10 @@ protected:
         set_stoppedflags(2); //material in all elements start from rest
         //do_erosion=-1;
         set_myprocess(-1);
+    }
+    void init(const SFC_Key& key) {
+        init();
+        set_key(key);
     }
     //! constructor that creates an original element when funky is read in
     void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,

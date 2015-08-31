@@ -86,11 +86,10 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
 void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double* e_error)
 {
     
-    Element* newelement = HT_Elem_Ptr->generateElement();
+    Element* newelement = HT_Elem_Ptr->generateAddElement(sfc_key_from_oldkey(elem2->key));
     
     construct_el(newelement, elem2, HT_Node_Ptr, myid, e_error);
     
-    HT_Elem_Ptr->add(newelement->key(), newelement);
     
     if(!newelement->refined_flag()) //if parent .... don't care about neighbor info
         check_neighbor_info(newelement, HT_Elem_Ptr, myid);
@@ -100,12 +99,12 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
 // bsfc repartitioning scheme
 void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
 {
-    if(elem2->key[0]==0 && elem2->key[1]==0)return;
-    Element* newelement = HT_Elem_Ptr->generateElement();
-    double e_error = 0;
-    construct_el(newelement, elem2, HT_Node_Ptr, myid, &e_error);
+    SFC_Key key;
+    SET_NEWKEY(key,elem2->key);
+    if(key==sfc_key_null)return;
     
-    Element* EmTemp = (Element*) HT_Elem_Ptr->lookup(newelement->key());
+    Element* newelement;
+    Element* EmTemp = (Element*) HT_Elem_Ptr->lookup(key);
     if(EmTemp != NULL)
     { // update this element
       // first check that it is the same element
@@ -118,9 +117,17 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
             assert(elem2->which_son == EmTemp->which_son());
         }
         // the same element...
-        HT_Elem_Ptr->removeElement(EmTemp);
+        //HT_Elem_Ptr->removeElement(EmTemp);
+        newelement=EmTemp;
+        newelement->init(key);
     }
-    HT_Elem_Ptr->add(newelement->key(), newelement);
+    else{
+        newelement = HT_Elem_Ptr->generateAddElement(key);
+    }
+    double e_error = 0;
+    construct_el(newelement, elem2, HT_Node_Ptr, myid, &e_error);
+    
+    
     //printf("processor %d just added element %u %u\n",myid, elem2->key[0], elem2->key[1]);
     if(myid == 3 && elem2->key[0] == 0)
         e_error = 0;
