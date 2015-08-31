@@ -34,6 +34,8 @@
 #define MaxBits ( sizeof(unsigned) * CHAR_BIT )
 #define IScale  ((unsigned)((MaxBits <= 32) ? ~(0u) : (0xffffffff << (MaxBits - 32))))
 
+ElementsHashTable *elementsHashTable;
+
 
 HashTable::HashTable(double *doublekeyrangein, int size, double XR[], double YR[])
 {

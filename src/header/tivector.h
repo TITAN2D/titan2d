@@ -93,6 +93,7 @@ public:
         memcpy(array_+pos+1, array_old_+pos, sizeof(T)*(size_old_-pos));
     }
     
+    
     T& operator[](tisize_t i){ return *(array_ + i);}
     const T& operator[](tisize_t i) const { return *(array_ + i);}
 };

@@ -30,7 +30,7 @@
 //#define PRINT_GIS_ERRORS
 
 /*  original element   */
-Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
+void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
                  int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
     if(NUM_STATE_VARS==3)elementType(ElementType::SinglePhase);
@@ -206,7 +206,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC*
 }
 
 //used for refinement
-Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
+void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
                  HashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
@@ -341,7 +341,7 @@ Element::Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC 
 /*********************************
  making a father element from its sons
  *****************************************/
-Element::Element(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
+void Element::init(Element* sons[], HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr)
 {
     if(NUM_STATE_VARS == 3)
         elementType(ElementType::SinglePhase);
@@ -4461,7 +4461,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     return;
 }
 
-Element::Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+void Element::init(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
     set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){

@@ -175,7 +175,13 @@ inline int HashTable::hash(const SFC_Key& key) const
      (doublekeyrange[0]*doublekeyrange[1]+doublekeyrange[1])*
      NBUCKETS*2+0.5) )%NBUCKETS);
      */
+#if USE_ARRAY_SFC_KEY
     return (((int) ((key.key[0] * doublekeyrange[1] + key.key[1]) * hashconstant + 0.5)) % NBUCKETS);
+#else
+    unsigned oldkey[KEYLENGTH];
+    SET_OLDKEY(oldkey,key);
+    return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
+#endif
 }
 //! Hashtables for Elements
 class ElementsHashTable: public HashTable

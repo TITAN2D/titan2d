@@ -91,6 +91,46 @@ protected:
      *
      */
     Element() {
+        init();
+    }
+    //! constructor that creates an original element when funky is read in
+    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+            double pile_height, int myid, const SFC_Key& opposite_brother)
+    {
+        init(nodekeys, neigh, n_pro, b, mat, elm_loc_in,
+            pile_height, myid, opposite_brother);
+    }
+
+    //! constructor that creates a son element from its father during refinement
+    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+            int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
+            HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+            double *drypoint_in)
+    {
+        init(nodekeys, neigh, n_pro, b, gen, elm_loc_in,
+            ord, gen_neigh, mat, fthTemp, coord_in, El_Table,
+            NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+            drypoint_in);
+    }
+
+    //! constructor that creates a father element from its four sons during unrefinement
+    Element(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr)
+    {
+        init(sons, NodeTable, El_Table, matprops_ptr);
+    }
+
+    //! constructor that creates/restores a saved element during restart
+    Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+    {
+        init(fp, NodeTable, matprops_ptr, myid);
+    }
+    
+    
+    /**
+     *  default initiator, does nothing except set stoppedflags=2, this should never be used
+     *
+     */
+    void init() {
         if (NUM_STATE_VARS == 3)
             elementType(ElementType::SinglePhase);
         else if (NUM_STATE_VARS == 6)
@@ -118,20 +158,20 @@ protected:
         set_myprocess(-1);
     }
     //! constructor that creates an original element when funky is read in
-    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
             double pile_height, int myid, const SFC_Key& opposite_brother);
 
     //! constructor that creates a son element from its father during refinement
-    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, HashTable *El_Table,
             HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
 
     //! constructor that creates a father element from its four sons during unrefinement
-    Element(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr);
+    void init(Element *sons[], HashTable *NodeTable, HashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
-    Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
+    void init(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
 public:
     //! destructor that does nothing except delete boundary condition pointer
     virtual ~Element();
