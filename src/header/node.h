@@ -30,7 +30,7 @@ class FluxProps;
 class Node
 {
     
-    friend class Element;
+    /*friend class Element;
 
     friend void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr,
                         FluxProps *fluxprops, TimeProps *timeprops, void *EmTemp, double *forceint, double *forcebed,
@@ -49,12 +49,6 @@ class Node
     friend void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int numprocs, int myid,
                                     void* RefinedList, TimeProps* timeprops_ptr);
 
-    /*
-     friend void unrefine_interp_neigh_update(HashTable* El_Table, 
-     HashTable* NodeTable, int nump, 
-     int myid, int NumOtherProcUpdate, 
-     Element **OtherProcUpdate);
-     */
     friend void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, int myid,
                                              void* OtherProcUpdate);
 
@@ -64,7 +58,7 @@ class Node
 
     friend void destroy_element(void *r_element, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr);
 
-    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, double* e_error);
+    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, double* e_error);*/
 
 public:
     //! this is the constructor that creates a node when the initial grid is read in
@@ -106,7 +100,7 @@ public:
     void order(int i){order_ = i;}
 
     //! this function sets the node information and order, node order is legacy afeapi but node information is currently used, this function is called in update_element_info.C, another distict function with a similar name refined_neighbor::set_parameters also existis and is used in updatenei.C, these should not be confused
-    void set_parameters(int inf, int ord);
+    void set_parameters(int inf, int ord){info(inf);order(ord);}
 
     //! this function returns the id of a node, it is used in repartitioning, 
     int id() const {return id_;}
@@ -138,7 +132,6 @@ public:
 
     //! set connection id
     void connection_id(int id){connection_id_ = id;}
-    
     //! get connection id 
     int connection_id() const {return connection_id_;}
     
