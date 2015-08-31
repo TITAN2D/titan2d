@@ -62,5 +62,5 @@ src/stochastic/gentitanteststats
 src/preproc/titan_preprocess
 src/preproc/titan_materialnames
 src/main/titan
-
+src/tests/tivector_test
 

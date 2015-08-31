@@ -34,6 +34,7 @@ using namespace std;
 #include <stdint.h>
 #include "constant.h"
 #include "sfc.h"
+#include "tivector.h"
 
 class Element;
 class BC;
@@ -245,6 +246,11 @@ public:
 
     //! constructor that creates/restores a saved element during restart
     virtual Element* generateElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
+    
+    
+    //here goes element content storage probably should be separate class at the end
+    
+    tivector<SFC_Key> key_;
 
 };
 
