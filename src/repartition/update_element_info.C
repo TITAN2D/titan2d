@@ -51,6 +51,7 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid);
  *
  *  3.  Remove some nodes..........later not now
  */
+/*
 void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int target_proc,
                      ELinkPtr* EL_head)
 {
@@ -73,9 +74,9 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
         }
     }
     
-    HT_Elem_Ptr->remove(r_element->key());//, 1, stdout, myid, 26);
+    HT_Elem_Ptr->removeElement(r_element->key());//, 1, stdout, myid, 26);
     
-}
+}*/
 
 /**
  * create_element() is a friend function of the Element and Node classes. After receiving an ElemPack, create_element()
@@ -116,8 +117,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
             assert(elem2->which_son == EmTemp->which_son());
         }
         // the same element...
-        HT_Elem_Ptr->remove(*(elem2->key));//, 1, stdout, myid, 27);
-        delete EmTemp;
+        HT_Elem_Ptr->removeElement(EmTemp);
     }
     if(newelement->key()!=sfc_key_null)
         HT_Elem_Ptr->add(newelement->key(), newelement);

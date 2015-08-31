@@ -316,8 +316,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
                 case TOBEDELETED:
                     //deleting the refined father elements but not ghost element so don't need to call move_data() again
                     EmTemp->void_bcptr();
-                    HT_Elem_Ptr->remove(EmTemp->key());//, 1, stdout, myid, 20);
-                    delete EmTemp;
+                    HT_Elem_Ptr->removeElement(EmTemp);
                     break;
                 case -NOTRECADAPTED:
                 case -NEWFATHER:
@@ -389,7 +388,7 @@ void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matpr
 }
 #endif
 //Keith wrote this because the code block was repeated so many times
-void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
+void refinewrapper(ElementsHashTable* HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
                    Element *EmTemp)
 {
     
@@ -1225,8 +1224,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                     (EmTemp->adapted_flag()<=-NOTRECADAPTED))
             {   
                 EmTemp->void_bcptr();
-                HT_Elem_Ptr->remove(EmTemp->key(), 1,stdout,myid,21);
-                delete EmTemp;
+                HT_Elem_Ptr->removeElement(EmTemp);
             }
         }
     }
@@ -1287,8 +1285,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
                 case TOBEDELETED:
                     //deleting the refined father elements but ghost element so don't need to call move_data() again before AssertMeshErrorFree
                     EmTemp->void_bcptr();
-                    HT_Elem_Ptr->remove(EmTemp->key());//, 1, stdout, myid, 22);
-                    delete EmTemp;
+                    HT_Elem_Ptr->removeElement(EmTemp);
                     break;
                 case -NOTRECADAPTED:
                 case -NEWFATHER:
@@ -1451,8 +1448,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                         else
                         {
                             EmTemp->void_bcptr();
-                            El_Table->remove(EmTemp->key());//, 1, stdout, myid, 24);
-                            delete EmTemp;
+                            El_Table->removeElement(EmTemp);
                         }
                     }
                 }
@@ -1478,8 +1474,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProp
                         else
                         {
                             EmTemp->void_bcptr();
-                            El_Table->remove(EmTemp->key());//, 1, stdout, myid, 25);
-                            delete EmTemp;
+                            El_Table->removeElement(EmTemp);
                         }
                     }
                 }

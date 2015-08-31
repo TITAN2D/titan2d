@@ -350,8 +350,7 @@ void delete_ghost_elms(ElementsHashTable* El_Table, int myid)
             )
             { //this is a GHOST element
                 EmTemp->void_bcptr();
-                El_Table->remove(EmTemp->key());//, 1, stdout, myid, 26);
-                delete EmTemp;
+                El_Table->removeElement(EmTemp);
                 delete_counter++;
             }
         } //while(currentPtr)

@@ -758,8 +758,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
             {
                 //delete the non active elements
                 EmTemp->void_bcptr();
-                El_Table->remove(EmTemp->key());//, 1, stdout, myid, 1);
-                delete EmTemp;
+                El_Table->removeElement(EmTemp);
             }
         } //while(currentPtr)
     } //for(ibuck=0; ibuck<num_buck; ibuck++)
@@ -1949,16 +1948,14 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
             ElemArray[ielem]->void_bcptr();
-            El_Table->remove(ElemArray[ielem]->key());//, 1, stdout, myid, 2);
-            delete ElemArray[ielem];
+            El_Table->removeElement(ElemArray[ielem]);
         }
     
     if(num_send[1] > 0)
     {
         for(ielem = isend[1]; ielem < num_elem; ielem++)
         {
-            El_Table->remove(ElemArray[ielem]->key());//, 1, stdout, myid, 3);
-            delete ElemArray[ielem];
+            El_Table->removeElement(ElemArray[ielem]);
         }
     }
     free(ElemArray);
@@ -2593,8 +2590,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     for(ielem = 0; ielem < NotMyElem.get_num_elem(); ielem++)
     {
         NotMyElem.get(ielem)->void_bcptr();
-        El_Table->remove(NotMyElem.get_key(ielem));//, 1, stdout, myid, 5);
-        delete NotMyElem.get(ielem);
+        El_Table->removeElement(NotMyElem.get(ielem));
     }
     
     if(NotMyElem.get_num_elem() > 0)

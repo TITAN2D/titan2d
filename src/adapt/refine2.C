@@ -696,8 +696,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 16);
-        delete old_elm;
+        HT_Elem_Ptr->removeElement(old_elm);
     }
     
     HT_Elem_Ptr->add(nodes[8], Quad9P);
@@ -776,8 +775,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 17);
-        delete old_elm;
+        HT_Elem_Ptr->removeElement(old_elm);
     }
     
     HT_Elem_Ptr->add(nodes[8], Quad9P);
@@ -856,8 +854,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 18);
-        delete old_elm;
+        HT_Elem_Ptr->removeElement(old_elm);
     }
     
     HT_Elem_Ptr->add(nodes[8], Quad9P);
@@ -938,8 +935,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     {
         old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
         old_elm->void_bcptr();
-        HT_Elem_Ptr->remove(old_elm->key());//, 1, stdout, myid, 19);
-        delete old_elm;
+        HT_Elem_Ptr->removeElement(old_elm);
     }
     
     HT_Elem_Ptr->add(nodes[8], Quad9P);

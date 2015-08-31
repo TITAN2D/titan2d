@@ -1942,10 +1942,8 @@ void refine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int 
                                     ElemBackgroundCheck(El_Table, NodeTable, EmNeigh->key(), stdout);
                                     assert(EmNeigh);
                                 }
-                                
-                                El_Table->remove(EmNeigh->key());//, 1, stdout, myid, 13);
                                 EmNeigh->void_bcptr();
-                                delete EmNeigh;
+                                El_Table->removeElement(EmNeigh);
                             }
                             
                             //EmFather=(Element*) El_Table->lookup(EmTemp->father);
@@ -2305,8 +2303,7 @@ void refine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int 
         assert(EmFather->refined_flag() == 1);
         EmFather->set_adapted_flag(TOBEDELETED); //I've lived a good life, it's my time to die
         EmFather->void_bcptr();
-        El_Table->remove(EmFather->key());//, 1, stdout, myid, 15);
-        delete EmFather;
+        El_Table->removeElement(EmFather);
     }
     //RefinedList->set_inewstart(RefinedList->get_num_elem());
     

@@ -437,9 +437,8 @@ void delete_oldsons(ElementsHashTable* El_Table, HashTable* NodeTable, int myid,
         }
         
         //Now delete this oldson Element
-        El_Table->remove(EmSon->key());
         EmSon->void_bcptr();
-        delete EmSon;
+        El_Table->removeElement(EmSon);
     }
     
     for(inode = 4; inode < 8; inode++)

@@ -249,8 +249,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                     assert(myprocess >= 0 && myprocess < numprocs);
                     Pack_element(EmTemp, (send_elm_array + counter_send_proc[myprocess]), HT_Node_Ptr, myprocess);
                     counter_send_proc[myprocess] += 1;
-                    HT_Elem_Ptr->remove(EmTemp->key());//, 1);
-                    delete EmTemp;
+                    HT_Elem_Ptr->removeElement(EmTemp);
                 }
             }
         }
@@ -322,8 +321,7 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_
             if(EmTemp->refined_flag() != 0)
             {  // not an active element
                 EmTemp->void_bcptr();  // don't remove bc's
-                HT_Elem_Ptr->remove(EmTemp->key());
-                delete EmTemp;
+                HT_Elem_Ptr->removeElement(EmTemp);
             }
             else
             {  //active element on this processor -- flag all nodes as being used
