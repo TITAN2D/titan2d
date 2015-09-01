@@ -23,9 +23,9 @@
 
 #include "../header/titan_simulation.h"
 
-int get_elem_elev(HashTable *HT_Node_Ptr, MatProps *matprops, Element *EmTemp, double &elevation);
+int get_elem_elev(NodeHashTable *HT_Node_Ptr, MatProps *matprops, Element *EmTemp, double &elevation);
 
-void print_grid(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops)
+void print_grid(NodeHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops)
 {
     
     FILE *fp = fopen("gridplot00.txt", "w");
@@ -71,7 +71,7 @@ void cxxTitanSinglePhase::init_piles()
     StatProps* statprops_ptr = get_statprops();
 
     ElementsHashTable* HT_Elem_Ptr=get_HT_Elem();
-    HashTable* HT_Node_Ptr=get_HT_Node();
+    NodeHashTable* HT_Node_Ptr=get_HT_Node();
 
     PileProps* pileprops_ptr=get_pileprops();
 

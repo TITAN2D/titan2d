@@ -389,7 +389,7 @@ void cxxTitanSinglePhase::run()
         Read_grid(myid, numprocs, &HT_Node, &HT_Elem, matprops_ptr, &outline);
 
     ElementsHashTable* HT_Elem_Ptr=get_HT_Elem();
-    HashTable* HT_Node_Ptr=get_HT_Node();
+    NodeHashTable* HT_Node_Ptr=get_HT_Node();
 
 
 

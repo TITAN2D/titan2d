@@ -233,7 +233,7 @@ void predict2ph(Element *Elm, const double *dUdx, const double *dUdy,
 }
 
 
-void step(ElementType elementType,ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
           TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
           int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag)
 {

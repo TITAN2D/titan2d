@@ -25,7 +25,7 @@
 
 // this routine updates the processor that an element is assigned to
 
-void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                               BSFC_VERTEX_PTR sfc_vert_ptr)
 {
     int i, j, k, no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();

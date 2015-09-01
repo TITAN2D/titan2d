@@ -36,7 +36,7 @@ public:
     int myid;
     void identify();
 
-    Recv(HashTable* ht_elem_ptr, unsigned* recv_buf, int assoc, int iam)
+    Recv(NodeHashTable* ht_elem_ptr, unsigned* recv_buf, int assoc, int iam)
     {
         int i, j;
         side = INIT;

@@ -24,7 +24,7 @@
 #include "properties.h"
 
 class ElementsHashTable;
-class HashTable;
+class NodeHashTable;
 
 /**
  * cxxTitanSimulation
@@ -83,7 +83,7 @@ public:
     virtual MapNames* get_mapnames()=0;
     virtual OutLine* get_outline()=0;
     virtual DischargePlanes* get_discharge_planes()=0;
-    virtual HashTable* get_HT_Node()=0;
+    virtual NodeHashTable* get_HT_Node()=0;
     virtual ElementsHashTable* get_HT_Elem()=0;
 };
 
@@ -121,7 +121,7 @@ public:
     MapNames mapnames;
     OutLine outline;
 
-    HashTable* HT_Node;
+    NodeHashTable* HT_Node;
     ElementsHashTable* HT_Elem;
 
     virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
@@ -133,7 +133,7 @@ public:
     virtual MapNames* get_mapnames(){return &mapnames;}
     virtual OutLine* get_outline(){return &outline;}
 
-    virtual HashTable* get_HT_Node(){return HT_Node;}
+    virtual NodeHashTable* get_HT_Node(){return HT_Node;}
     virtual ElementsHashTable* get_HT_Elem(){return HT_Elem;}
 
 protected:

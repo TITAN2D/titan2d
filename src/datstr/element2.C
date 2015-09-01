@@ -208,7 +208,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
 //used for refinement
 void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
-                 ElementsHashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
+                 ElementsHashTable *El_Table, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
     if(NUM_STATE_VARS == 3)
@@ -341,7 +341,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
 /*********************************
  making a father element from its sons
  *****************************************/
-void Element::init(Element* sons[], HashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
+void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
     if(NUM_STATE_VARS == 3)
         elementType(ElementType::SinglePhase);
@@ -754,7 +754,7 @@ void Element::update_ndof()
     set_ndof(help);
 }
 
-void Element::get_nelb_icon(HashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon)
+void Element::get_nelb_icon(NodeHashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon)
 
 //for ONE step H-refinement (icon)
 
@@ -860,7 +860,7 @@ Element::~Element()
 }
 
 /* routine also puts in the coords of the center node in the elm */
-void Element::find_positive_x_side(HashTable* nodetable)
+void Element::find_positive_x_side(NodeHashTable* nodetable)
 {
     int i, j, side;
     double xmax;
@@ -887,7 +887,7 @@ void Element::find_positive_x_side(HashTable* nodetable)
     return;
 }
 
-void Element::get_slopes(ElementsHashTable* El_Table, HashTable* NodeTable, double gamma)
+void Element::get_slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double gamma)
 {
     int j = 0, bc = 0;
     /* check to see if this is a boundary */
@@ -1009,7 +1009,7 @@ void Element::get_slopes(ElementsHashTable* El_Table, HashTable* NodeTable, doub
     return;
 }
 
-void Element::calculate_dx(HashTable* NodeTable)
+void Element::calculate_dx(NodeHashTable* NodeTable)
 {
     int i, j;
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
@@ -1058,7 +1058,7 @@ void Element::calculate_dx(HashTable* NodeTable)
     return;
 }
 
-void Element::insert_coord(HashTable* NodeTable)
+void Element::insert_coord(NodeHashTable* NodeTable)
 {
     
     Node* node = (Node*) (NodeTable->lookup(key()));
@@ -2435,7 +2435,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 }
 
 //note z is not "z" but either x or y
-void Element::zdirflux(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
+void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
                        double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element *EmNeigh, double dt)
 {
     double dz = 0.0;
@@ -2540,7 +2540,7 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
     return;
 }
 
-void Element::calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
+void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
                                int* order_flag, double *outflow)
 {
     Node *np, *np1, *np2, *nm, *nm1, *nm2;
@@ -2912,7 +2912,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable
     return;
 }
 #if 0
-void Element::correct(HashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr,
+void Element::correct(NodeHashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr,
                       FluxProps *fluxprops, TimeProps *timeprops, double *forceint, double *forcebed, double *eroded,
                       double *deposited)
 {
@@ -3484,7 +3484,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
     return;
 }
 
-void Element::calc_flux_balance(HashTable* NodeTable)
+void Element::calc_flux_balance(NodeHashTable* NodeTable)
 {
     int i, j;
     double flux[3] =
@@ -4132,7 +4132,7 @@ int Element::if_first_buffer_boundary(ElementsHashTable *ElemTable, double conto
     return (0);
 }
 
-int Element::if_next_buffer_boundary(ElementsHashTable *ElemTable, HashTable *NodeTable, double contour_height)
+int Element::if_next_buffer_boundary(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_height)
 {
     
     int ineigh;
@@ -4461,7 +4461,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     return;
 }
 
-void Element::init(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+void Element::init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
     set_father(sfc_key_zero);
     for(int i = 0; i < 4; i++){

@@ -36,7 +36,7 @@ extern "C" void INITIAL(int*, double*, double*);
 
 //this reads in the funky grid, ignoring the material properties at the 
 //end of the file, those are now read from frict.data in Read_data()
-void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
+void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
                OutLine* outline_ptr)
 {
     int Node_Num, Elem_Num;
@@ -119,7 +119,7 @@ void Read_grid(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable*
         yminmax[i] = YRange[i];
     }
     
-    *NodeTable = new HashTable(doublekeyrange, NODE_TABLE_SIZE, XRange, YRange);
+    *NodeTable = new NodeHashTable(doublekeyrange, NODE_TABLE_SIZE, XRange, YRange);
     
     for(i = 0; i < Node_Num; i++)
     {

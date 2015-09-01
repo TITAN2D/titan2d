@@ -246,7 +246,7 @@ void PileProps::print0()
         printf("Piles:    there is no piles\n");
     }
 }
-void PileProps::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
+void PileProps::set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
 {
     double pileheight;
     double xmom, ymom;
@@ -255,7 +255,7 @@ void PileProps::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_
     ElementSinglePhase* EmTemp=(ElementSinglePhase*)m_EmTemp;
     EmTemp->put_height_mom(pileheight, xmom, ymom);
 }
-double PileProps::get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom,
+double PileProps::get_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom,
                                          double* m_ymom)
 {
     SFC_Key nodes[9];
@@ -405,7 +405,7 @@ void PilePropsTwoPhases::print_pile(int i)
     PileProps::print_pile(i);
     printf("\t\tInitial solid-volume fraction,(0:1.): %f\n", vol_fract[i]);
 }
-void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
+void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
 {
     double pileheight;
     double xmom, ymom;

@@ -174,7 +174,7 @@ void eigen2ph( const double h_sol, const double h_liq, double &eigenvxmax, doubl
 }
 
 
-double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
+double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
                           TimeProps* timeprops_ptr, int ghost_flag)
 {
     MatPropsTwoPhases* matprops2_ptr{nullptr};

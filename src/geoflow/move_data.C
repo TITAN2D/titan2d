@@ -25,7 +25,7 @@
 
 //#define PRINT_MOVE
 
-void move_data(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr)
+void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr)
 {
     
     if(numprocs < 2)

@@ -55,7 +55,7 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch)
     return (1);
 }*/
 
-void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
+void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
               MatProps* matprops_ptr)
 {
     
@@ -219,7 +219,7 @@ void unrefine(ElementsHashTable* El_Table, HashTable* NodeTable, double target, 
     return;
 }
 
-int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
+int Element::find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
                            void *NFL, void *OPU)
 {
     ElemPtrList* NewFatherList = (ElemPtrList*) NFL;
@@ -271,7 +271,7 @@ int Element::find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, do
     return unrefine_flag;
 }
 
-int Element::check_unrefinement(HashTable* El_Table, double target)
+int Element::check_unrefinement(ElementsHashTable* El_Table, double target)
 {
     int unrefine_flag = 1, i = 0;
     
@@ -304,7 +304,7 @@ int Element::check_unrefinement(HashTable* El_Table, double target)
     return (1);
 }
 
-void delete_oldsons(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather_in)
+void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void *EmFather_in)
 {
     int ison, isonneigh, ineigh, inode, nodeorder[9];
     Element *EmSon, *EmNeigh;
@@ -506,7 +506,7 @@ void Element::change_neigh_info(unsigned* fth_key, unsigned* ng_key, int neworde
 }
 */
 //make this an element friend function
-void unrefine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, void* NFL)
+void unrefine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void* NFL)
 {
     
     ElemPtrList* NewFatherList = (ElemPtrList*) NFL;
@@ -610,7 +610,7 @@ void unrefine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, in
 }
 
 //make this a Node and Element friend fucntion
-void unrefine_interp_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int nump, int myid, void* OPU)
+void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int nump, int myid, void* OPU)
 {
     ElemPtrList* OtherProcUpdate = (ElemPtrList*) OPU;
     

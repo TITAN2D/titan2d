@@ -38,10 +38,10 @@ struct unstructured_communication
 };
 
 /* declare functions in the sfc routines */
-void BSFC_update_element_proc(int, Element*, HashTable*, HashTable*, int);
+void BSFC_update_element_proc(int, Element*, NodeHashTable*, NodeHashTable*, int);
 
 //! this function figures out how to "bunch" together elements that cannot be put on different processors because of a constrained node, B stands for bunch SFC stands for space filling curve 
-void BSFC_combine_elements(int side, Element *EmTemp, ElementsHashTable *HT_Elem_Ptr, HashTable *HT_Node_Ptr,
+void BSFC_combine_elements(int side, Element *EmTemp, ElementsHashTable *HT_Elem_Ptr, NodeHashTable *HT_Node_Ptr,
                            int destination_proc);
 
 //void BSFC_combine_elements(int, Element*, HashTable*, HashTable*);
@@ -72,6 +72,6 @@ int BSFC_create_compare_key(unsigned sfc_key[], unsigned compare_key[], unsigned
 
 int BSFC_check_refine(unsigned* sfc_key, unsigned* compare_key, unsigned* AND_operator_array);
 
-void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int);
+void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int);
 
 int BSFC_pow(int intbase, int intexp);

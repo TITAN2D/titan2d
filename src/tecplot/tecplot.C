@@ -33,10 +33,10 @@
 void get_elem_orient(Element * EmTemp, int *xm, int *xp, int *ym, int *yp);
 int get_elem_elev(ElementsHashTable * NodeTable, MatProps * matprops, Element * EmTemp, double *elevation);
 
-int get_ll_polygon(ElementsHashTable * El_Table, HashTable * NodeTable, int myid, Element * EmArray[4]);
-int get_ur_tri(ElementsHashTable * El_Table, HashTable * NodeTable, int myid, Element * EmArray[4]);
+int get_ll_polygon(ElementsHashTable * El_Table, NodeHashTable * NodeTable, int myid, Element * EmArray[4]);
+int get_ur_tri(ElementsHashTable * El_Table, NodeHashTable * NodeTable, int myid, Element * EmArray[4]);
 
-int print_bubble_node(ElementType elementType, FILE * fp, HashTable * NodeTable, MatProps * matprops, Element * EmTemp);
+int print_bubble_node(ElementType elementType, FILE * fp, NodeHashTable * NodeTable, MatProps * matprops, Element * EmTemp);
 
 void DumpString(FILE * fp, char *str);
 
@@ -70,7 +70,7 @@ void testkey2(ElementsHashTable * El_Table)
     return;
 }
 
-void tecplotter(ElementType elementType,ElementsHashTable * El_Table, HashTable * NodeTable, MatProps * matprops, TimeProps * timeprops,
+void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProps * matprops, TimeProps * timeprops,
                 MapNames * mapnames, double v_star)
 {
     int i_buck, i_neigh;          //indices
@@ -347,7 +347,7 @@ void get_elem_orient(Element * EmTemp, int *xm, int *xp, int *ym, int *yp)
  ***********************************************************
  */
 
-int get_elem_elev(HashTable * NodeTable, MatProps * matprops, Element * EmTemp, double &elevation)
+int get_elem_elev(NodeHashTable * NodeTable, MatProps * matprops, Element * EmTemp, double &elevation)
 {
     int j;
     double resolution, xcoord, ycoord;
@@ -389,7 +389,7 @@ int get_elem_elev(HashTable * NodeTable, MatProps * matprops, Element * EmTemp, 
  * returns 0 if shouldn't draw a lower left polygon
  ************************************************************************
  */
-int get_ll_polygon(ElementsHashTable * El_Table, HashTable * NodeTable, int myid, Element * EmArray[4])
+int get_ll_polygon(ElementsHashTable * El_Table, NodeHashTable * NodeTable, int myid, Element * EmArray[4])
 {
     
     int xm, xp, ym, yp;           //this element's  left right down up 
@@ -484,7 +484,7 @@ int get_ll_polygon(ElementsHashTable * El_Table, HashTable * NodeTable, int myid
  ************************************************************************
  */
 
-int get_ur_tri(ElementsHashTable * El_Table, HashTable * NodeTable, int myid, Element * EmArray[4])
+int get_ur_tri(ElementsHashTable * El_Table, NodeHashTable * NodeTable, int myid, Element * EmArray[4])
 {
     int xm, xp, ym, yp;           //this  element's  left right down up 
     int xpxm, xpxp, xpym, xpyp;   //right neighbor's left right down up
@@ -548,7 +548,7 @@ int get_ur_tri(ElementsHashTable * El_Table, HashTable * NodeTable, int myid, El
  ***********************************************************
  */
 //for use when writing ascii tecplot files
-int print_bubble_node(ElementType elementType,FILE * fp, HashTable * NodeTable, MatProps * matprops, Element * EmTemp)
+int print_bubble_node(ElementType elementType,FILE * fp, NodeHashTable * NodeTable, MatProps * matprops, Element * EmTemp)
 {
     int num_missing_bubble_node;
     double velocity_scale, momentum_scale, elevation;
@@ -618,7 +618,7 @@ void DumpString(FILE * fp, char *str)
  ***********************************************************
  */
 
-void viz_output(ElementType elementType,ElementsHashTable * El_Table, HashTable * NodeTable, int myid, int numprocs, MatProps * matprops,
+void viz_output(ElementType elementType,ElementsHashTable * El_Table, NodeHashTable * NodeTable, int myid, int numprocs, MatProps * matprops,
                 TimeProps * timeprops, MapNames * mapnames)
 {
     int i, k;
@@ -758,7 +758,7 @@ void viz_output(ElementType elementType,ElementsHashTable * El_Table, HashTable 
  **************************************
  **************************************
  *************************************/
-void meshplotter(ElementsHashTable * El_Table, HashTable * NodeTable, MatProps * matprops, TimeProps * timeprops,
+void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProps * matprops, TimeProps * timeprops,
                  MapNames * mapnames, double v_star)
 {
     int myid, i;
@@ -1028,7 +1028,7 @@ void meshplotter(ElementsHashTable * El_Table, HashTable * NodeTable, MatProps *
  **************************************
  **************************************
  *************************************/
-void vizplotter(ElementsHashTable * El_Table, HashTable * NodeTable, MatProps * matprops, TimeProps * timeprops)
+void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProps * matprops, TimeProps * timeprops)
 {
     int myid, i;
     int numprocs;

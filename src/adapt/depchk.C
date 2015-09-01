@@ -23,7 +23,7 @@
 
 #define NumTriggerRef 256
 
-void depchk(Element* EmTemp, ElementsHashTable* El_Table, HashTable* NodeTable, int* ifg, ElemPtrList* RefinedList)
+void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTable, int* ifg, ElemPtrList* RefinedList)
 
 /*---
  refined[] stores the address of ready-for-refinement element of the sub-domain

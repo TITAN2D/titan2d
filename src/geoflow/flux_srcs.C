@@ -29,7 +29,7 @@
  but none of the cells marked passive should go active
  */
 
-void mark_flux_region(HashTable* ElemTable, HashTable* NodeTable, MatProps *matprops, FluxProps *fluxprops,
+void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, MatProps *matprops, FluxProps *fluxprops,
                       TimeProps *timeprops)
 {
     
@@ -90,7 +90,7 @@ void mark_flux_region(HashTable* ElemTable, HashTable* NodeTable, MatProps *matp
     return;
 }
 
-void adapt_fluxsrc_region(ElementsHashTable *ElemTable, HashTable *NodeTable, MatProps *matprops, PileProps *pileprops,
+void adapt_fluxsrc_region(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, MatProps *matprops, PileProps *pileprops,
                           FluxProps *fluxprops, TimeProps *timeprops, double dt, int myid, int adaptflag)
 {
     
@@ -117,7 +117,7 @@ void adapt_fluxsrc_region(ElementsHashTable *ElemTable, HashTable *NodeTable, Ma
     return;
 }
 
-void Element::calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *timeprops)
+void Element::calc_flux(NodeHashTable *NodeTable, FluxProps *fluxprops, TimeProps *timeprops)
 {
     
     int no_of_sources = fluxprops->no_of_sources;

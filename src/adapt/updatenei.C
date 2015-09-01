@@ -31,7 +31,7 @@
 #define AssertMeshNodeCheck
 
 //! investigate an Element, question his "friends and family" about him.
-void ElemBackgroundCheck(ElementsHashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp)
+void ElemBackgroundCheck(ElementsHashTable* El_Table, NodeHashTable* NodeTable, const SFC_Key& debugkey, FILE *fp)
 {
     Element* EmDebug = (Element*) El_Table->lookup(debugkey);
     Element* EmTemp;
@@ -178,7 +178,7 @@ void ElemBackgroundCheck(ElementsHashTable* El_Table, HashTable* NodeTable, cons
     return;
 }
 
-void ElemBackgroundCheck2(ElementsHashTable *El_Table, HashTable *NodeTable, void *EmDebug_in, FILE *fp)
+void ElemBackgroundCheck2(ElementsHashTable *El_Table, NodeHashTable *NodeTable, void *EmDebug_in, FILE *fp)
 {
     if(!EmDebug_in)
         return;
@@ -320,7 +320,7 @@ void ElemBackgroundCheck2(ElementsHashTable *El_Table, HashTable *NodeTable, voi
     return;
 }
 
-void NodeBackgroundCheck(ElementsHashTable *El_Table, HashTable* NodeTable, const SFC_Key& nodedbkey, FILE *fp)
+void NodeBackgroundCheck(ElementsHashTable *El_Table, NodeHashTable* NodeTable, const SFC_Key& nodedbkey, FILE *fp)
 {
     Node* NdDebug = (Node*) NodeTable->lookup(nodedbkey);
     Element* EmTemp;
@@ -418,7 +418,7 @@ int ifNodeInfoChange(Node* NdDebug, int *NdDebugInfo)
 //the quality of a legal mesh, you must have ghost information 
 //present before performing this check, WARNING THIS CHECK TAKES
 //A LOT OF TIME, ONLY USE IT TO DEBUG.
-void AssertMeshErrorFree(ElementsHashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc)
+void AssertMeshErrorFree(ElementsHashTable *El_Table, NodeHashTable* NodeTable, int numprocs, int myid, double loc)
 {
     
     return;
@@ -879,7 +879,7 @@ void AssertMeshErrorFree(ElementsHashTable *El_Table, HashTable* NodeTable, int 
     return;
 }
 
-int IfNeighProcChange(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, Element* EmDebug, Element* EmTemp)
+int IfNeighProcChange(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, Element* EmDebug, Element* EmTemp)
 {
     if(myid == 2)
         if(EmDebug->neigh_proc(1) == 2)
@@ -895,11 +895,11 @@ int IfNeighProcChange(ElementsHashTable* El_Table, HashTable* NodeTable, int myi
 }
 
 void update_neighbor_info(ElementsHashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int numprocs,
-                          HashTable* HT_Node_Ptr, int h_count);
+                          NodeHashTable* HT_Node_Ptr, int h_count);
 
 //#define NEWCODEDOESNOTWORKYET
 #ifdef NEWCODEDOESNOTWORKYET
-void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable,
+void refine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable,
         int numprocs, int myid, void* RL,
         TimeProps* timeprops_ptr)
 {   
@@ -910,7 +910,7 @@ void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable,
 }
 
 #else
-void refine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int nump, int myid, void* RL,
+void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int nump, int myid, void* RL,
                          TimeProps* timeprops_ptr)
 {
     
@@ -2369,10 +2369,10 @@ void refine_neigh_update(ElementsHashTable* El_Table, HashTable* NodeTable, int 
 
 #endif
 
-extern void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+extern void update_neighbor_interprocessor(NodeHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                                            refined_neighbor* refined_start, int myid, int nump);
 
-void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int nump, HashTable* HT_Node_Ptr,
+void update_neighbor_info(NodeHashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int nump, NodeHashTable* HT_Node_Ptr,
                           int h_count)/*-h_count for  debugging-*/
 {
     int son_order[2];
@@ -2629,9 +2629,9 @@ void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int 
 }
 
 #ifdef DISABLED
-void update_neighbor_info(HashTable* HT_Elem_Ptr, Element* refined[],
+void update_neighbor_info(NodeHashTable* HT_Elem_Ptr, Element* refined[],
         int count, int myid, int nump,
-        HashTable* HT_Node_Ptr, int h_count )/*-h_count for  debugging-*/
+        NodeHashTable* HT_Node_Ptr, int h_count )/*-h_count for  debugging-*/
 {   
     int son_order[2];
     Element* EmTemp;

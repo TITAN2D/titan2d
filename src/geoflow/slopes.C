@@ -22,7 +22,7 @@
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
 
-void slopes(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr)
+void slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr)
 {
     int i;
     //-------------------go through all the elements of the subdomain------------------------

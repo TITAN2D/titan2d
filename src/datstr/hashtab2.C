@@ -37,7 +37,7 @@
 ElementsHashTable *elementsHashTable;
 
 
-HashTable::HashTable(double *doublekeyrangein, int size, double XR[], double YR[])
+HashTableBase::HashTableBase(double *doublekeyrangein, int size, double XR[], double YR[])
 {
     int i;
 
@@ -67,7 +67,7 @@ HashTable::HashTable(double *doublekeyrangein, int size, double XR[], double YR[
     ENTRIES = 0;
 }
 
-HashTable::~HashTable()              //evacuate the table
+HashTableBase::~HashTableBase()              //evacuate the table
 {
     for(int i = 0; i < NBUCKETS; i++)
     {
@@ -85,7 +85,7 @@ HashTable::~HashTable()              //evacuate the table
     ENTRIES = 0;
 }
 
-HashEntryPtr HashTable::searchBucket(HashEntryPtr p, const SFC_Key& keyi)
+HashEntryPtr HashTableBase::searchBucket(HashEntryPtr p, const SFC_Key& keyi)
 {
     int i;
     uint64_t ukey = get_ukey_from_sfc_key(keyi);
@@ -98,7 +98,7 @@ HashEntryPtr HashTable::searchBucket(HashEntryPtr p, const SFC_Key& keyi)
     return NULL;
 }
 
-HashEntryPtr HashTable::addElement(int entry, const SFC_Key& key)
+HashEntryPtr HashTableBase::addElement(int entry, const SFC_Key& key)
 {
     
     HashEntryPtr p = new HashEntry(key);
@@ -159,7 +159,7 @@ HashEntryPtr HashTable::addElement(int entry, const SFC_Key& key)
 
 #define HASHTABLE_LOOKUP_LINSEARCH 8
 void*
-HashTable::lookup(const SFC_Key &key)
+HashTableBase::lookup(const SFC_Key &key)
 {
     int entry = hash(key);
     
@@ -215,7 +215,7 @@ HashTable::lookup(const SFC_Key &key)
     return NULL;
 }
 
-void HashTable::add(const SFC_Key& key, void* value)
+void HashTableBase::add(const SFC_Key& key, void* value)
 {
     void* v = lookup(key);
     if(v == NULL)
@@ -227,7 +227,7 @@ void HashTable::add(const SFC_Key& key, void* value)
     return;
 }
 
-void HashTable::remove(const SFC_Key& key)
+void HashTableBase::remove(const SFC_Key& key)
 {
     /* if(key[0] == (unsigned) 270752286)
      printf(" removing an unknown object with key %u %u\n",key[0], key[1]);*/
@@ -269,7 +269,7 @@ void HashTable::remove(const SFC_Key& key)
     }
     ENTRIES--;
 }
-void HashTable::print0()
+void HashTableBase::print0()
 {
     bool minmax_init=false;
     uint64_t ukey_min;
@@ -297,7 +297,7 @@ void HashTable::print0()
     return;
 }
 /*
- int HashTable:: hash(unsigned* key)
+ int HashTableBase:: hash(unsigned* key)
  {
  unsigned numer = *key;
  float    igaze = (float)numer/Range;
@@ -309,8 +309,8 @@ void HashTable::print0()
  }
  */
 
-ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], HashTable* nodeTable) :
-        HashTable(doublekeyrangein, size, XR, YR)
+ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable) :
+        HashTableBase(doublekeyrangein, size, XR, YR)
 {
     NlocalElements = 0;
     NodeTable = nodeTable;
@@ -475,6 +475,11 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key& key)
     Element* elm=new Element(key);
     add(key, elm);
     return elm;
+    
+    /*tipos_t pos=elements_.push_back();
+    elements_[pos].init(key);
+    add(key, elements_.array_+pos);
+    return elements_.array_+pos;*/
 }
     
 Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
@@ -483,11 +488,16 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SF
     Element* elm=new Element(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
     add(elm->key(), elm);
     return elm;
+    
+    /*tipos_t pos=elements_.push_back();
+    elements_[pos].init(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
+    add(elements_[pos].key(), elements_.array_+pos);
+    return elements_.array_+pos;*/
+    
 }
-//used for refinement
 Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
-                 ElementsHashTable *El_Table, HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
+                 ElementsHashTable *El_Table, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
     Element* elm=new Element(nodekeys, neigh, n_pro, b, gen,
@@ -496,30 +506,99 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SF
                                   Awetfather, drypoint_in);
     add(elm->key(), elm);
     return elm;
+    
+    /*tipos_t pos=elements_.push_back();
+    elements_[pos].init(nodekeys, neigh, n_pro, b, gen,
+                                  elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
+                                  El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
+                                  Awetfather, drypoint_in);
+    add(elements_[pos].key(), elements_.array_+pos);
+    return elements_.array_+pos;*/
 }
-Element* ElementsHashTable::generateAddElement(Element* sons[], HashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
+Element* ElementsHashTable::generateAddElement(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
     Element* elm=new Element(sons, NodeTable, El_Table, matprops_ptr);
     add(elm->key(), elm);
     return elm;
+    
+    /*tipos_t pos=elements_.push_back();
+    elements_[pos].init(sons, NodeTable, El_Table, matprops_ptr);
+    add(elements_[pos].key(), elements_.array_+pos);
+    return elements_.array_+pos;*/
 }
-Element* ElementsHashTable::generateAddElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+Element* ElementsHashTable::generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
     Element* elm=new Element(fp, NodeTable, matprops_ptr, myid);
     add(elm->key(), elm);
     return elm;
+    
+    /*tipos_t pos=elements_.push_back();
+    elements_[pos].init(fp, NodeTable, matprops_ptr, myid);
+    add(elements_[pos].key(), elements_.array_+pos);
+    return elements_.array_+pos;*/
 }
-
-
-
-
 
 void ElementsHashTable::removeElement(Element* elm)
 {
-    HashTable::remove(elm->key());
-    delete elm;
+    HashTableBase::remove(elm->key());
+    //delete elm;
 }
 
+void* ElementsHashTable::lookup(const SFC_Key &key)
+{
+    int entry = hash(key);
+    
+    uint64_t ukey = get_ukey_from_sfc_key(key);
+    int size = ukeyBucket[entry].size();
+    uint64_t *ukeyArr = &(ukeyBucket[entry][0]);
+    int i;
+    
+    if(size == 0)
+        return NULL;
+    if(ukey < ukeyArr[0])
+        return NULL;
+    if(ukey > ukeyArr[size - 1])
+        return NULL;
+    
+    if(size < HASHTABLE_LOOKUP_LINSEARCH)
+    {
+        for(i = 0; i < size; i++)
+        {
+            if(ukey == ukeyArr[i])
+            {
+                return hashEntryBucket[entry][i]->value;
+            }
+        }
+    }
+    else
+    {
+        int i0, i1, i2;
+        i0 = 0;
+        i1 = size / 2;
+        i2 = size - 1;
+        while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH)
+        {
+            if(ukey > ukeyArr[i1])
+            {
+                i0 = i1 + 1;
+                i1 = (i0 + i2) / 2;
+            }
+            else
+            {
+                i2 = i1;
+                i1 = (i0 + i2) / 2;
+            }
+        }
+        for(i = i0; i <= i2; i++)
+        {
+            if(ukey == ukeyArr[i])
+            {
+                return hashEntryBucket[entry][i]->value;
+            }
+        }
+    }
+    return NULL;
+}
 
 /*void ElementsHashTable::add(unsigned* key, void* value) {
  int i;

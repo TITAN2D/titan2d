@@ -36,7 +36,7 @@
 
 class FluxProps;
 class MatProps;
-class HashTable;
+class NodeHashTable;
 class Element;
 
 
@@ -222,8 +222,8 @@ public:
      * the pile can be either parabolic (in the z direction) or be
      * cylindrical (have uniform pile height)
      */
-    virtual void set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
-    virtual double get_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom=NULL, double* ymom=NULL);
+    virtual void set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
+    virtual double get_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom=NULL, double* ymom=NULL);
 
     virtual void print_pile(int i);
     virtual void print0();
@@ -254,7 +254,7 @@ public:
      * the pile can be either parabolic (in the z direction) or be
      * cylindrical (have uniform pile height)
      */
-    virtual void set_element_height_to_elliptical_pile_height(HashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
+    virtual void set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
     virtual PileProps::PileType get_default_piletype()
     {
         return PARABALOID;

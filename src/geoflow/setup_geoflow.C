@@ -21,7 +21,7 @@
 
 #include "../header/hpfem.h"
 
-void setup_geoflow(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void setup_geoflow(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
                    TimeProps *timeprops_ptr)
 {
     

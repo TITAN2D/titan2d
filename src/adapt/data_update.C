@@ -21,11 +21,11 @@
 
 #include "../header/hpfem.h"
 
-void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int side, int case_flag);
+void write_node_info(NodeHashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int side, int case_flag);
 
-void write_node_info_ext(HashTable* HT_Node_Ptr, Element* Em, int start, int mid);
+void write_node_info_ext(NodeHashTable* HT_Node_Ptr, Element* Em, int start, int mid);
 
-void data_update(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* RecvHead, int myid, int numprocs, int h_count)
+void data_update(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, Recv* RecvHead, int myid, int numprocs, int h_count)
 {
     int i, j, k;
     
@@ -449,7 +449,7 @@ void data_update(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, Recv* R
     }
 }
 
-void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int side, int case_flag)
+void write_node_info(NodeHashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int side, int case_flag)
 {
     void* p;
     Node* NdTemp1;
@@ -653,7 +653,7 @@ void write_node_info(HashTable* HT_Node_Ptr, Element* Em1, Element* Em2, int sid
     }
 }
 
-void write_node_info_ext(HashTable* HT_Node_Ptr, Element* Em, int start, int mid)
+void write_node_info_ext(NodeHashTable* HT_Node_Ptr, Element* Em, int start, int mid)
 {
     
     Node* NdTemp;

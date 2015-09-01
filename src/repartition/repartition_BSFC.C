@@ -45,10 +45,10 @@
 //(mdj)#define DEBUG_ITER 179
 #define DEBUG_ITER 1000000
 
-int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
+int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend);
 
-void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable,
+void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable,
                                      TimeProps* timeprops_ptr, double *NewProcDoubleKeyBoundaries);
 
 void BSFC_create_refinement_info(int* number_of_cuts, float* global_actual_work_allocated, float total_weight,
@@ -60,7 +60,7 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
                       float* total_weight_ptr, int* balanced_flag, unstructured_communication* verts_in_cuts_info,
                       int* number_of_cuts, int bins_per_proc, int myid, int numprocs);
 
-void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr,
+void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                               BSFC_VERTEX_PTR sfc_vert_ptr);
 
 /* Space filling curve (BSFC) partioning routine */
@@ -69,7 +69,7 @@ void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 
-void repartition(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int time_step)
+void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int time_step)
 {
     int ierr, i, j, k; /* local variables */
     int num_local_objects; /* the number of objects this processor owns */
@@ -430,7 +430,7 @@ void BSFC_create_refinement_info(int* number_of_cuts, float* global_actual_work_
 
 //#define NEWCODEDOESNOTWORKYET
 #ifdef NEWCODEDOESNOTWORKYET
-void repartition2(HashTable* El_Table, HashTable* NodeTable,
+void repartition2(NodeHashTable* El_Table, NodeHashTable* NodeTable,
         TimeProps* timeprops_ptr)
 {   
     repartition(El_Table,NodeTable,timeprops_ptr->iter);
@@ -573,7 +573,7 @@ void repartition2(HashTable* El_Table, HashTable* NodeTable,
  *  collection of elements.
  *
  */
-void repartition2(ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr)
+void repartition2(ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr)
 {
     
     int myid, numprocs;
@@ -632,7 +632,7 @@ void repartition2(ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* 
     
     return;
 }*/
-int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable, TimeProps* timeprops_ptr,
+int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend)
 {
     
@@ -2310,7 +2310,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, HashTabl
 
 //bob
 
-void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, HashTable* NodeTable,
+void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable,
                                      TimeProps* timeprops_ptr, double *NewProcDoubleKeyBoundaries)
 {
     
@@ -2864,7 +2864,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     return;
 }
 
-void IncorporateNewElements(ElementsHashTable* El_Table, HashTable* NodeTable, int myid, int num_recv, ElemPack *recv_array,
+void IncorporateNewElements(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int num_recv, ElemPack *recv_array,
                             TimeProps* timeprops_ptr)
 {
     int ielem;

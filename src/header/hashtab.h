@@ -74,7 +74,7 @@ struct HashEntry
 typedef HashEntry* HashEntryPtr;
 
 //! Hashtables store pointers to each Element or Node (of which HashTable is a friend class), these pointers can be accessed by giving the hashtable the "key" of the element number you want to "lookup."  The keys are ordered sequentially by a space filling curve that ensures that the pointers to elements (or nodes) that are located close to each other in physical space will usually be located close to each other in memory, which speeds up access time.  Each key is a single number that spans several unsigned variables (elements of an array).
-class HashTable
+class HashTableBase
 {
     
     //friend int hash(unsigned* keyi);
@@ -99,77 +99,31 @@ protected:
     HashEntryPtr searchBucket(HashEntryPtr p, const SFC_Key& key);
 
 public:
-    HashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
-    virtual ~HashTable();
+    HashTableBase(double *doublekeyrangein, int size, double XR[], double YR[]);
+    virtual ~HashTableBase();
 
     int hash(const SFC_Key& key) const;
     void add(const SFC_Key& key, void* value);
-    void* lookup(const SFC_Key& key);
+    virtual void* lookup(const SFC_Key& key);
     virtual void remove(const SFC_Key& key);
     void print_out(int);
-    int get_no_of_buckets();
-//    void   get_element_stiffness(HashTable*);
-    HashEntryPtr* getbucketptr();
+    int get_no_of_buckets(){return NBUCKETS;}
+//    void   get_element_stiffness(Hreturn bucket;ashTable*);
+    HashEntryPtr* getbucketptr(){return bucket;}
     void* get_value();
 
-    double* get_Xrange();
-    double* get_Yrange();
-    double* get_doublekeyrange();
-    double get_invdxrange();
-    double get_invdyrange();
-    int get_nbuckets();
-    int get_no_of_entries();
+    double* get_Xrange(){return Xrange;}
+    double* get_Yrange(){return Yrange;}
+    double* get_doublekeyrange(){return doublekeyrange;}
+    double get_invdxrange(){return invdxrange;}
+    double get_invdyrange(){return invdyrange;}
+    int get_no_of_entries(){return ENTRIES;}
 
     void print0();
 };
 
-inline double* HashTable::get_doublekeyrange()
-{
-    return doublekeyrange;
-}
 
-inline HashEntryPtr* HashTable::getbucketptr()
-{
-    return bucket;
-}
-
-inline int HashTable::get_no_of_buckets()
-{
-    return NBUCKETS;
-}
-
-inline double HashTable::get_invdxrange()
-{
-    return invdxrange;
-}
-
-inline double HashTable::get_invdyrange()
-{
-    return invdyrange;
-}
-
-inline double* HashTable::get_Xrange()
-{
-    return Xrange;
-}
-
-inline double* HashTable::get_Yrange()
-{
-    return Yrange;
-}
-
-
-inline int HashTable::get_nbuckets()
-{
-    return NBUCKETS;
-}
-
-inline int HashTable::get_no_of_entries()
-{
-    return ENTRIES;
-}
-
-inline int HashTable::hash(const SFC_Key& key) const
+inline int HashTableBase::hash(const SFC_Key& key) const
 {
     //Keith made this change 20061109; and made hash an inline function
     /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
@@ -185,14 +139,22 @@ inline int HashTable::hash(const SFC_Key& key) const
     return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
 #endif
 }
+
+class NodeHashTable: public HashTableBase
+{
+public:
+    NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
+        :HashTableBase(doublekeyrangein, size, XR, YR){}
+    virtual ~NodeHashTable(){}
+};
 //! Hashtables for Elements
-class ElementsHashTable: public HashTable
+class ElementsHashTable: public HashTableBase
 {
     
     //friend int hash(unsigned* keyi);
     friend class Element;
 protected:
-    HashTable* NodeTable;
+    NodeHashTable* NodeTable;
 
     vector<uint64_t> ukeyElements;
     vector<Element*> elements;
@@ -201,7 +163,7 @@ protected:
     vector<uint64_t> ukeyLocalElements;
     vector<Element*> localElements;
 public:
-    ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], HashTable* nodeTable);
+    ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable);
     virtual ~ElementsHashTable();
 
     Element** getElements()
@@ -237,7 +199,6 @@ public:
     //! check that neighboring elements and nodes pointers are correct
     int checkPointersToNeighbours(const char *prefix);
         
-    //@TODO don't delete elements with same keys
     //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
     virtual Element* generateAddElement(const SFC_Key& key);
 
@@ -248,17 +209,19 @@ public:
     //! constructor that creates a son element from its father during refinement
     virtual Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
-                HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+                NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
     //! constructor that creates a father element from its four sons during unrefinement
-    virtual Element* generateAddElement(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
+    virtual Element* generateAddElement(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
-    virtual Element* generateAddElement(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
+    virtual Element* generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid);
     
-    
+    //!should not be used
     virtual void remove(const SFC_Key& key){assert(0);}
     void removeElement(Element* elm);
+    
+    virtual void* lookup(const SFC_Key& key);
     
     //here goes element content storage probably should be separate class at the end
     

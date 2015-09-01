@@ -23,12 +23,12 @@
 #define TARGETPROC -1
 //#define FORDEBUG
 
-void refinewrapper(ElementsHashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
+void refinewrapper(ElementsHashTable*HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
                    Element *EmTemp);
 
-extern void refine(Element*, ElementsHashTable*, HashTable*, MatProps* matprops_ptr);
+extern void refine(Element*, ElementsHashTable*, NodeHashTable*, MatProps* matprops_ptr);
 
-extern void depchk(Element*, ElementsHashTable*, HashTable*, int*, ElemPtrList*);
+extern void depchk(Element*, ElementsHashTable*, NodeHashTable*, int*, ElemPtrList*);
 
 //void update_neighbor_info(HashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, int myid, int numprocs,
 //                          HashTable* HT_Node_Ptr, int h_count);
@@ -36,7 +36,7 @@ extern void depchk(Element*, ElementsHashTable*, HashTable*, int*, ElemPtrList*)
 
 //extern void data_com(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, int numprocs, int h_count);
 
-extern void htflush(HashTable*, HashTable*, int);
+extern void htflush(NodeHashTable*, NodeHashTable*, int);
 
 //extern void test_h_refine(HashTable* HT_Elem_Ptr, int myid, int h_count);
 
@@ -49,7 +49,7 @@ extern void htflush(HashTable*, HashTable*, int);
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
-void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, double target, MatProps* matprops_ptr,
+void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_count, double target, MatProps* matprops_ptr,
              FluxProps *fluxprops, //doesn't need fluxprops
              TimeProps* timeprops_ptr, int num_buffer_layer)
 /*-------------
@@ -347,7 +347,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count
 
 #ifdef DISABLED
 //Keith wrote this because the code block was repeated so many times
-void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr,
+void refinewrapper(NodeHashTable*HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, MatProps* matprops_ptr,
         Element **refined, int *count, Element *EmTemp)
 {   
 
@@ -388,7 +388,7 @@ void refinewrapper(HashTable*HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matpr
 }
 #endif
 //Keith wrote this because the code block was repeated so many times
-void refinewrapper(ElementsHashTable* HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
+void refinewrapper(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
                    Element *EmTemp)
 {
     
@@ -417,7 +417,7 @@ void refinewrapper(ElementsHashTable* HT_Elem_Ptr, HashTable*HT_Node_Ptr, MatPro
     return;
 }
 
-void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
+void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
                      PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer)
 {
     
@@ -1352,7 +1352,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int
 }
 /***********************************************************************/
 
-void H_adapt_to_level(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
+void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
                       FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel)
 {
     if(refinelevel > REFINE_LEVEL)

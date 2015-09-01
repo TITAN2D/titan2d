@@ -41,24 +41,24 @@ template<typename T> class tivector;
 //! The Element class is a data structure designed to hold all the information need for an h (cell edge length) p (polynomial order) adaptive finite element.  Titan doesn't use p adaptation because it is a finite difference/volume code, hence many of the members are legacy from afeapi (adaptive finite element application programmers interface) which serves as the core of titan.  There is a seperate Discontinuous Galerkin Method (finite elements + finite volumes) version of titan and the polynomial information is not legacy there.  However in this version of Titan elements function simply as finite volume cells.
 
 class Element {
-    friend class HashTable;
+    friend class NodeHashTable;
     friend class ElementsHashTable;
     friend class tivector<Element>;
 #if 0
-    friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
+    friend void AssertMeshErrorFree(NodeHashTable *El_Table, NodeHashTable* NodeTable, int numprocs, int myid, double loc);
 
-    friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
+    friend void ElemBackgroundCheck(NodeHashTable* El_Table, NodeHashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
-    friend void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
+    friend void ElemBackgroundCheck2(NodeHashTable* El_Table, NodeHashTable* NodeTable, void *EmDebug, FILE *fp);
 
-    friend void NodeBackgroundCheck(HashTable *El_Table, HashTable* NodeTable, const SFC_Key& nodedbkey, FILE *fp);
+    friend void NodeBackgroundCheck(NodeHashTable *El_Table, NodeHashTable* NodeTable, const SFC_Key& nodedbkey, FILE *fp);
 
-    friend void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
+    friend void delete_oldsons(NodeHashTable* El_Table, NodeHashTable* NodeTable, int myid, void *EmFather);
 
-    friend void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int numprocs, int myid,
+    friend void refine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable, int numprocs, int myid,
             void* RefinedList, TimeProps* timeprops_ptr);
 
-    friend void unrefine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int myid, void* NewFatherList);
+    friend void unrefine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable, int myid, void* NewFatherList);
     //friend void unrefine_neigh_update(HashTable* El_Table, int myid, 
     //int NumNewFathers, Element** NewFatherList);
     //friend void unrefine_neigh_update(HashTable* El_Table, int myid);
@@ -69,22 +69,22 @@ class Element {
      int myid, int NumOtherProcUpdate, 
      Element **OtherProcUpdate);
      */
-    friend void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, int myid,
+    friend void unrefine_interp_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable, int nump, int myid,
             void* OtherProcUpdate);
 
-    friend void BSFC_combine_elements(int side, Element *EmTemp, HashTable *HT_Elem_Ptr, HashTable *HT_Node_Ptr,
+    friend void BSFC_combine_elements(int side, Element *EmTemp, NodeHashTable *HT_Elem_Ptr, NodeHashTable *HT_Node_Ptr,
             int destination_proc);
 
     //friend void Pack_element(Element* sendel, ElemPack** elemptr, HashTable* HT_Node_Ptr, int destination_proc);
-    friend void Pack_element(void *sendel, ElemPack* elem, HashTable* HT_Node_Ptr, int destination_proc);
+    friend void Pack_element(void *sendel, ElemPack* elem, NodeHashTable* HT_Node_Ptr, int destination_proc);
 
-    friend void destroy_element(void *r_element, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int target_pro,
+    friend void destroy_element(void *r_element, NodeHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int target_pro,
             ELinkPtr* EL_head);
 
-    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid,
+    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid,
             double* e_error);
 
-    friend void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error);
+    friend void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_Ptr, int myid, double* e_error);
 #endif
 public:
 protected:
@@ -111,7 +111,7 @@ protected:
     //! constructor that creates a son element from its father during refinement
     Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
-            HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+            NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in)
     {
         init(nodekeys, neigh, n_pro, b, gen, elm_loc_in,
@@ -121,13 +121,13 @@ protected:
     }
 
     //! constructor that creates a father element from its four sons during unrefinement
-    Element(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr)
+    Element(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr)
     {
         init(sons, NodeTable, El_Table, matprops_ptr);
     }
 
     //! constructor that creates/restores a saved element during restart
-    Element(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid)
+    Element(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
     {
         init(fp, NodeTable, matprops_ptr, myid);
     }
@@ -175,15 +175,16 @@ public:
     //! constructor that creates a son element from its father during refinement
     void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
-            HashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+            NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
 
     //! constructor that creates a father element from its four sons during unrefinement
-    void init(Element *sons[], HashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
+    void init(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
-    void init(FILE* fp, HashTable* NodeTable, MatProps* matprops_ptr, int myid);
+    void init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid);
 
+protected:
     //! destructor that does nothing except delete boundary condition pointer
     virtual ~Element();
 public:
@@ -211,7 +212,7 @@ public:
     }
 
     //! legacy afeapi function prototype, this function does not exist in the finite difference/volume version of Titan
-    void get_stiffness(HashTable*, HashTable*, double*, double*, Element*);
+    void get_stiffness(NodeHashTable*, NodeHashTable*, double*, double*, Element*);
 
     //! returns the address of the first of 8 (nodes 0-7) node keys in an array, the node keys are used to access the nodes through the node hashtable
 
@@ -242,10 +243,10 @@ public:
     }
 
     //!update neighbors pointers from hash table
-    void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
+    void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, NodeHashTable*);
 
     //!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
-    int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, HashTable*);
+    int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, NodeHashTable*);
 
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
 
@@ -473,7 +474,7 @@ public:
     double* get_el_err();
 
     //! this function is afeapi legacy it is not called anywhere in the finite difference/volume version of titan
-    void get_nelb_icon(HashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon);
+    void get_nelb_icon(NodeHashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon);
 
 
 
@@ -592,7 +593,7 @@ public:
     void dx(int idim, double value){dx_[idim]=value;}
 
     //! this function computes which side of the element is facing the positive x direction
-    void find_positive_x_side(HashTable*);
+    void find_positive_x_side(NodeHashTable*);
 
     //! this function returns which side of the element is facing the positive x direction
 
@@ -606,18 +607,18 @@ public:
 
 
     //! this function computes the x and y derivatives of the state variables
-    void get_slopes(ElementsHashTable* El_Table, HashTable* NodeTable, double gamma);
+    void get_slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double gamma);
 
 
 
     //! this function calculates the lengths of the element in the (global) x and y directions
-    void calculate_dx(HashTable* NodeTable);
+    void calculate_dx(NodeHashTable* NodeTable);
 
     //! this function assigns the element's coordinates to be its bubble node's coordinates
-    void insert_coord(HashTable* NodeTable);
+    void insert_coord(NodeHashTable* NodeTable);
 
     //! this function, based on the dir flag, chooses between calling xdirflux and ydirflux, which respectively, calculate either the x or y direction analytical cell center fluxes (or the fluxes at the the boundary if 2nd order flux option is checked on the gui). Keith wrote this.
-    void zdirflux(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
+    void zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
             double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element* EmNeigh, double dt);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) x direction fluxes. Keith wrote this
@@ -629,7 +630,7 @@ public:
             double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function (indirectly) calculates the fluxes that will be used to perform the finite volume corrector step and stores them in element edge nodes, indirectly because it calls other functions to calculate the analytical fluxes and then calls another function to compute the riemann fluxes from the analytical fluxes. Talk to me (Keith) before you modify this, as I am fairly certain that it is now completely bug free and parts of it can be slightly confusing.
-    void calc_edge_states(ElementsHashTable* El_Table, HashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
+    void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
             int* order_flag, double *outflow);
 
     //! this function calculates the maximum x and y direction wavespeeds which are the eigenvalues of the flux jacobian
@@ -707,7 +708,7 @@ public:
     void curvature(int idim, double value) {curvature_[idim]=value;}
 
     //! this function is called in element_weight.C, it is used in computing the load balancing weight
-    void calc_flux_balance(HashTable *NodeTable);
+    void calc_flux_balance(NodeHashTable *NodeTable);
 
     //! this function calculates topographic data, it calls GIS commands to compute elevation, slopes, and curvatures from the GIS map and scales them appropriately 
     void calc_topo_data(MatProps *matprops_ptr);
@@ -719,7 +720,7 @@ public:
     void calc_gravity_vector(MatProps *matprops_ptr);
 
     //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
-    int find_brothers(ElementsHashTable* El_Table, HashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
+    int find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
             void* NewFatherList, void* OtherProcUpdate);
     /*
      //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
@@ -730,7 +731,7 @@ public:
      */
 
     //! this function is defined in unrefine.C, it is also called in that file and no where else, it prevents refinement when one or more of the brothers does not belong to this processor
-    int check_unrefinement(HashTable *El_Table, double target);
+    int check_unrefinement(ElementsHashTable *El_Table, double target);
 
     //! this function updates this elements neighbor info when one of its neighbors has been unrefined
     //void change_neigh_info(unsigned *fth_key, unsigned *ng_key, int neworder, int ng_gen, int fth_proc);
@@ -772,7 +773,7 @@ public:
     
 
     //! this function calculates the extrusion (out of the ground) fluxes for this elements
-    void calc_flux(HashTable *NodeTable, FluxProps *fluxprops, TimeProps *timeprops);
+    void calc_flux(NodeHashTable *NodeTable, FluxProps *fluxprops, TimeProps *timeprops);
 
     //! this function returns 2 if this element contains pileheight>=contour_height and has a neighbor who contains pileheight<contour_height.  It returns 1 if this element contains pileheight<contour_height and has a neighbor who contains pileheight>=contour_height.  It returns 0 otherwise. The intended use if if(EmTemp->if_pile_boundary(ElemTable,contour_height)) but I (Keith) added the distinction bewteen 1 and 2 to allow future developers to distinguish between the inside and outside of a pileheight contour line, as this functionality could be useful in the future.
     int if_pile_boundary(ElementsHashTable *ElemTable, double contour_height);
@@ -784,7 +785,7 @@ public:
     int if_first_buffer_boundary(ElementsHashTable *ElemTable, double contour_height);
 
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the boundary of the buffer that is one element wider than the current buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be in the next buffer boundary
-    int if_next_buffer_boundary(ElementsHashTable *ElemTable, HashTable *NodeTable, double contour_height);
+    int if_next_buffer_boundary(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_height);
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
 
@@ -1091,7 +1092,7 @@ inline void Element::put_height(double pile_height) {
 /* agreed, but keeping it outside class body makes class definition cleaner and easier to read
  */
 
-inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable) {
+inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
     int i;
     if (El_Table != NULL) {
         for (i = 0; i < 8; i++) {
@@ -1106,7 +1107,7 @@ inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTa
     return;
 }
 
-inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, HashTable* NodeTable) {
+inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
     int i;
     int count = 0;
     if (El_Table != NULL) {

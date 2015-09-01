@@ -22,7 +22,7 @@
 #include "../header/hpfem.h"
 #include "../header/refined_neighbor_info.h"
 
-void update_neighbor_interprocessor(HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, refined_neighbor* refined_start,
+void update_neighbor_interprocessor(NodeHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, refined_neighbor* refined_start,
                                     int myid, int numprocs)
 {
     int SIDE_SONS[4][2] =

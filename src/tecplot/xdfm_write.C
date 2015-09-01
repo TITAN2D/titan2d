@@ -36,11 +36,11 @@ using namespace std;
 #include <hd5calls.h>
 
 //just an innocent declaration. defined at end of the file
-double interpolate_elv(HashTable *, HashTable *, Element *, int);
+double interpolate_elv(ElementsHashTable *, NodeHashTable *, Element *, int);
 void xdmf_fopen(char *);
 void xdmf_fclose(ofstream &);
 
-int write_xdmf_two_phases(ElementsHashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode)
 {
     //if Need to have generic form, do vector of vectors
@@ -208,7 +208,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, HashTable *NodeTable, Tim
     
     return 0;
 }
-int write_xdmf_single_phase(ElementsHashTable *El_Table, HashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
+int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode)
 {
     int i, j, k;
@@ -445,7 +445,7 @@ void xdmf_fclose(ofstream & xmlf)
  * interpolate_elv is exactly the same code that is
  * being used in meshplotter(...), in tecplot.C
  */
-double interpolate_elv(HashTable *El_Table, HashTable *NodeTable, Element *EmTemp, int j)
+double interpolate_elv(ElementsHashTable *El_Table, NodeHashTable *NodeTable, Element *EmTemp, int j)
 {
     double elev;
     int neighside, mynode;

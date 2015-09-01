@@ -23,7 +23,7 @@
 
 extern void fhsfc2d_(double, unsigned, unsigned);
 extern void hsfc2d(unsigned*, unsigned*, unsigned*);
-extern void create_new_node(int, int, int, HashTable*, Node*[], SFC_Key[], int, int*, int, int, MatProps*);
+extern void create_new_node(int, int, int, NodeHashTable*, Node*[], SFC_Key[], int, int*, int, int, MatProps*);
 
 //()---new node numbering
 
@@ -45,7 +45,7 @@ extern void create_new_node(int, int, int, HashTable*, Node*[], SFC_Key[], int, 
 //only 4 one step because of the info FLAG!!!
 //if the new node is on INTERFACE flag will be -1
 
-void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, MatProps* matprops_ptr)
+void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops_ptr)
 {
     //printf("refining element %u %u \n",*(EmTemp->pass_key()), *(EmTemp->pass_key()+1));
     int which;
@@ -979,7 +979,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_
     return;
 }
 
-void create_new_node(int which, int Node1, int Node2, HashTable* HT_Node_Ptr, Node* NodeTemp[],
+void create_new_node(int which, int Node1, int Node2, NodeHashTable* HT_Node_Ptr, Node* NodeTemp[],
                      SFC_Key NewNodeKey[], int info, int* RefNe, int boundary, int order,
                      MatProps* matprops_ptr)
 {

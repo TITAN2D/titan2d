@@ -17,7 +17,7 @@ void grass_sites_header_output(TimeProps* timeprops)
     return;
 }
 
-void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, MatProps* matprops,
+void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid, MatProps* matprops,
                              TimeProps* timeprops)
 {
     int ielembucket;

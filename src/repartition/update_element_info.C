@@ -31,12 +31,12 @@
 
 #include "../header/hpfem.h"
 
-void same_proc(Element *r_element, HashTable* HT_Elem_Ptr, int target_proc, int side);
-void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int side, ELinkPtr* EL_head);
+void same_proc(Element *r_element, NodeHashTable* HT_Elem_Ptr, int target_proc, int side);
+void diff_proc(Element* r_element, NodeHashTable* HT_Elem_Ptr, int new_proc, int side, ELinkPtr* EL_head);
 
 
 
-void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid);
+void check_neighbor_info(Element* newelement, ElementsHashTable* HT_Elem_Ptr, int myid);
 
 /*! destroy_element() is a friend function of the Element and Node classes that does the following
  *
@@ -83,7 +83,7 @@ void destroy_element(void *r_element_in, HashTable* HT_Elem_Ptr, HashTable* HT_N
  * instances a new element, calls construct_el() to transfer data from ElemPack to the new element, and inserts the new
  * element into the Hashtable. Don't call this if s_flag is 0 (original repartitioning scheme)
  */
-void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid, double* e_error)
+void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid, double* e_error)
 {
     
     Element* newelement = HT_Elem_Ptr->generateAddElement(sfc_key_from_oldkey(elem2->key));
@@ -97,7 +97,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
 }
 
 // bsfc repartitioning scheme
-void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, int myid)
+void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid)
 {
     SFC_Key key;
     SET_NEWKEY(key,elem2->key);
@@ -135,7 +135,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* 
     return;
 }
 
-void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int side)
+void same_proc(Element* r_element, NodeHashTable* HT_Elem_Ptr, int target_proc, int side)
 {
     Element* Neighbor;
     Neighbor = (Element*) HT_Elem_Ptr->lookup(r_element->neighbor(side));
@@ -149,7 +149,7 @@ void same_proc(Element* r_element, HashTable* HT_Elem_Ptr, int target_proc, int 
                             
 }
 
-void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int side, ELinkPtr* EL_head)
+void diff_proc(Element* r_element, NodeHashTable* HT_Elem_Ptr, int new_proc, int side, ELinkPtr* EL_head)
 {
     
     //create a linked list
@@ -170,7 +170,7 @@ void diff_proc(Element* r_element, HashTable* HT_Elem_Ptr, int new_proc, int sid
     }
 }
 
-void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, int myid, double* e_error)
+void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_Ptr, int myid, double* e_error)
 {
     Node* node;
     int i, j;
@@ -319,7 +319,7 @@ void construct_el(Element* newelement, ElemPack* elem2, HashTable* HT_Node_Ptr, 
     return;
 }
 
-void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
+void check_neighbor_info(Element* newelement, ElementsHashTable* HT_Elem_Ptr, int myid)
 {
     Element* neighbor;
     int which;
@@ -338,7 +338,7 @@ void check_neighbor_info(Element* newelement, HashTable* HT_Elem_Ptr, int myid)
 }
 
 //for the 3rd party involved in updating
-void diff_proc1_2(int counter, NeighborPack packed_neighbor_info[], HashTable* HT_Elem_Ptr)
+void diff_proc1_2(int counter, NeighborPack packed_neighbor_info[], NodeHashTable* HT_Elem_Ptr)
 {
     
     Element* element;

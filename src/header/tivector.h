@@ -29,7 +29,7 @@ public:
     tivector(){
         size_=0;
         size_old_=0;
-        reserved_size_=10;
+        reserved_size_=20;
         reserved_size_old_=reserved_size_;
         
         array_=new T[reserved_size_];

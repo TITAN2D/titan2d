@@ -20,7 +20,7 @@
 //#define DEBUGSAVEHEADER
 #define NUM_CHAR_IN_SAVE_HEADER 16384 //equiv to 4096 integers of space available for save header
 
-int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
+int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
             TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int *adaptflag_ptr, int *order_flag_ptr,
             StatProps* statprops_ptr, DischargePlanes* discharge_ptr, OutLine* outline_ptr)
 /* need to handle StatProps and DISCHARGE (should be able to reload the outline from the outline file, not yet programmed in final form)
@@ -468,7 +468,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
     Yrange[1] = temp8.d;
     
     //recreate the node hashtable
-    *NodeTable = new HashTable(doublekeyrange, NODE_TABLE_SIZE, Xrange, Yrange);
+    *NodeTable = new NodeHashTable(doublekeyrange, NODE_TABLE_SIZE, Xrange, Yrange);
     
     //the number of ELEMENTS in table 
     for(itemp = 0; itemp < 4; itemp++)
@@ -602,7 +602,7 @@ int loadrun(int myid, int numprocs, HashTable** NodeTable, ElementsHashTable** E
 /*************************************************************************/
 /*************************************************************************/
 
-void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
+void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTable** ElemTable, MatProps* matprops_ptr,
              TimeProps* timeprops_ptr, MapNames *mapnames_ptr, int adaptflag, int order_flag, StatProps *statprops_ptr,
              DischargePlanes *discharge_ptr, OutLine* outline_ptr, int *savefileflag)
 {
@@ -1079,7 +1079,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
 #endif
     
     //get node table size;
-    temp4.i = (*NodeTable)->get_nbuckets();
+    temp4.i = (*NodeTable)->get_no_of_buckets();
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
 #ifdef DEBUGSAVEHEADER
@@ -1158,7 +1158,7 @@ void saverun(HashTable** NodeTable, int myid, int numprocs, ElementsHashTable** 
 #endif
     
     //get elem table size;
-    temp4.i = (*ElemTable)->get_nbuckets();
+    temp4.i = (*ElemTable)->get_no_of_buckets();
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
 #ifdef DEBUGSAVEHEADER

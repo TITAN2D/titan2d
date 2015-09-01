@@ -1,7 +1,7 @@
 #include "../header/hpfem.h"
 
 // for BSFC repartitioning scheme
-void Pack_element(void *sendel_in, ElemPack* elem, HashTable* HT_Node_Ptr, int destination_proc)
+void Pack_element(void *sendel_in, ElemPack* elem, NodeHashTable* HT_Node_Ptr, int destination_proc)
 {
     int j, i = 0;
     Element *sendel = (Element *) sendel_in;

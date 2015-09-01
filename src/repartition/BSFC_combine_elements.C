@@ -25,7 +25,7 @@
 // routine figures out how to "bunch" together elements that cannot be put on different processors because of
 // a constrained node 
 // if destination_proc > -1 , update the element proc, otherwise combine the elements together
-void BSFC_combine_elements(int side, Element *EmTemp, ElementsHashTable *HT_Elem_Ptr, HashTable *HT_Node_Ptr,
+void BSFC_combine_elements(int side, Element *EmTemp, ElementsHashTable *HT_Elem_Ptr, NodeHashTable *HT_Node_Ptr,
                            int destination_proc)
 {
     int myid;

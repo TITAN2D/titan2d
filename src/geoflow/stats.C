@@ -26,7 +26,7 @@
  titan), it will then be moved to ../header/geoflow.h */
 #define STAT_VOL_FRAC 0.95
 
-void calc_stats(ElementType elementType, ElementsHashTable* El_Table, HashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
+void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
                 StatProps* statprops, DischargePlanes* discharge, double d_time)
 {
     int i, iproc;

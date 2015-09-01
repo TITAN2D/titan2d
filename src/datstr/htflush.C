@@ -21,7 +21,7 @@
 
 #include "../header/hpfem.h"
 
-void htflush(HashTable* ht_elem_ptr, HashTable* ht_node_ptr, int option)
+void htflush(ElementsHashTable* ht_elem_ptr, NodeHashTable* ht_node_ptr, int option)
 {
     
     int i, j, k;
