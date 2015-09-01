@@ -229,10 +229,8 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
         node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem2->node_key[i]));
         if(!node)
         {
-            node = new Node(sfc_key_from_oldkey(elem2->node_key[i]), elem2->n_coord[i], elem2->n_info[i], elem2->n_order[i],
+            node = HT_Node_Ptr->createAddNode(sfc_key_from_oldkey(elem2->node_key[i]), elem2->n_coord[i], elem2->n_info[i], elem2->n_order[i],
                             elem2->node_elevation[i], i);
-            
-            HT_Node_Ptr->add(sfc_key_from_oldkey(elem2->node_key[i]), node);
         }
         else
         {
@@ -255,10 +253,8 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
     node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem2->key));
     if(!node)
     {
-        node = new Node(sfc_key_from_oldkey(elem2->key), elem2->n_coord[8], elem2->n_info[8], elem2->n_order[8], elem2->node_elevation[8],
+        node = HT_Node_Ptr->createAddNode(sfc_key_from_oldkey(elem2->key), elem2->n_coord[8], elem2->n_info[8], elem2->n_order[8], elem2->node_elevation[8],
                         8);
-        
-        HT_Node_Ptr->add(sfc_key_from_oldkey(elem2->key), node);
     }
     else if(newelement->refined_flag() != 0) // only update if this is from an active element
         node->set_parameters(elem2->n_info[8], elem2->n_order[8]);

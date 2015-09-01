@@ -365,15 +365,13 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
         assert(NdTemp);
         if(NdTemp->order() > nodeorder[8])
             nodeorder[8] = NdTemp->order();
-        NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 7);
-        delete NdTemp;
+        NodeTable->removeNode(NdTemp);
         
         //delete son to son edge nodes
         inode = (ison + 1) % 4 + 4;
         NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
         assert(NdTemp);
-        NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 8);
-        delete NdTemp;
+        NodeTable->removeNode(NdTemp);
         
         //check 2 other edge nodes per son and delete if necessary
         //the first
@@ -389,8 +387,7 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
             {
                 if(NdTemp->order() > nodeorder[inode])
                     nodeorder[inode] = NdTemp->order();
-                NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 9);
-                delete NdTemp;
+                NodeTable->removeNode(NdTemp);
             }
         }
         else if(EmFather->neigh_proc(ineigh) == myid)
@@ -415,8 +412,7 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
                 if(NdTemp->order() > nodeorder[inode])
                     nodeorder[inode] = NdTemp->order();
                 
-                NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 10);
-                delete NdTemp;
+                NodeTable->removeNode(NdTemp);
             }
             
             NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
@@ -848,8 +844,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                                 {
                                     if(NdTemp->order() > nodeorder)
                                         nodeorder = NdTemp->order();
-                                    NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 12);
-                                    delete NdTemp;
+                                    NodeTable->removeNode(NdTemp);
                                 }
                                 NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(ineighmod4 + 4));
                                 NdTemp->order(nodeorder);

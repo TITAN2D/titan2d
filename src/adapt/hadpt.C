@@ -1320,8 +1320,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
 
             if(NdTemp->get_num_assoc_elem()==0)
             {   
-                HT_Node_Ptr->remove(NdTemp->pass_key(), 0,stdout,myid,23);
-                delete NdTemp;
+                HT_Node_Ptr->removeNode(NdTemp);
             }
         }
     }

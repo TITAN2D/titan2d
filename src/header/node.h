@@ -29,55 +29,47 @@ class FluxProps;
 
 class Node
 {
-    
-    /*friend class Element;
-
-    friend void correct(ElementType elementType,HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr,
-                        FluxProps *fluxprops, TimeProps *timeprops, void *EmTemp, double *forceint, double *forcebed,
-                        double *eroded, double *deposited);
-
-    friend void AssertMeshErrorFree(HashTable *El_Table, HashTable* NodeTable, int numprocs, int myid, double loc);
-
-    friend void ElemBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
-
-    friend void ElemBackgroundCheck2(HashTable* El_Table, HashTable* NodeTable, void *EmDebug, FILE *fp);
-
-    friend void NodeBackgroundCheck(HashTable* El_Table, HashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
-
-    friend void delete_oldsons(HashTable* El_Table, HashTable* NodeTable, int myid, void *EmFather);
-
-    friend void refine_neigh_update(HashTable* El_Table, HashTable* NodeTable, int numprocs, int myid,
-                                    void* RefinedList, TimeProps* timeprops_ptr);
-
-    friend void unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable, int nump, int myid,
-                                             void* OtherProcUpdate);
-
-    //friend void Pack_element(Element* sendel, ElemPack** elemptr, HashTable* HT_Node_Ptr, int);
-    
-    friend void Pack_element(void *sendel, ElemPack* elem, HashTable* HT_Node_Ptr, int);
-
-    friend void destroy_element(void *r_element, HashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr);
-
-    friend void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, HashTable* HT_Node_Ptr, double* e_error);*/
-
-public:
+    friend class NodeHashTable;
+protected:
+    //nodes constructors should not be called directly but by NodeHashTable::createAddNode methods
     //! this is the constructor that creates a node when the initial grid is read in
-    Node(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
+    Node(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
+    {
+        init(keyi, coordi, matprops_ptr);
+    }
+        //! this is the constructor that creates bubble and edge nodes for son Elements when the father Element is refined
+    Node(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr)/*for refined*/
+    {
+        init(keyi, coordi, inf, ord, matprops_ptr);
+    }
 
-    //! this is the constructor that creates bubble and edge nodes for son Elements when the father Element is refined
-    Node(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);/*for refined*/
+
     
     //! this is the node constructor that is called in construct_el() in update_element_info.C
-    Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
+    Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
+    {
+        init(keyi, coordi, inf, ord, elev, yada);
+    }
+  
+    //! this is the constructor that recreates/restores a node that was saved in a restart file.
+    Node(FILE* fp, MatProps* matprops_ptr) //for restart
+    {
+        init(fp, matprops_ptr);
+    }
+    public:  
+    ~Node();
+public:
+    void init(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
+
+    //! this is the constructor that creates bubble and edge nodes for son Elements when the father Element is refined
+    void init(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);/*for refined*/
+    
+    //! this is the node constructor that is called in construct_el() in update_element_info.C
+    void init(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
 
     //! this is the constructor that recreates/restores a node that was saved in a restart file.
-    Node(FILE* fp, MatProps* matprops_ptr); //for restart
-         
-    //! constructor that creates a node without setting any of its values
-    Node();
-
-    ~Node();
-
+    void init(FILE* fp, MatProps* matprops_ptr); //for restart
+    
     //! this function writes all of one Node's data necessary for restart to a file in a single fwrite statement
     void save_node(FILE* fp); //for restart
 

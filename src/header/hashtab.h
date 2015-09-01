@@ -39,6 +39,7 @@ using namespace std;
 #include "tivector.h"
 
 class Element;
+class Node;
 class BC;
 class MatProps;
 
@@ -146,6 +147,15 @@ public:
     NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
         :HashTableBase(doublekeyrangein, size, XR, YR){}
     virtual ~NodeHashTable(){}
+    
+    
+    Node* createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
+    Node* createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);
+    Node* createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
+    Node* createAddNode(FILE* fp, MatProps* matprops_ptr);
+    
+    virtual void remove(const SFC_Key& key){assert(0);}
+    void removeNode(Node* node);
 };
 //! Hashtables for Elements
 class ElementsHashTable: public HashTableBase

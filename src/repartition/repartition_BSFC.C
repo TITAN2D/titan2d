@@ -2048,8 +2048,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
             
             if(NdTemp->num_assoc_elem() == 0)
             {
-                NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 4);
-                delete NdTemp;
+                NodeTable->removeNode(NdTemp);
             }
         }	  //while(NodeTable_entry_ptr)
     }	  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
@@ -2649,8 +2648,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
                 
                 if(NdTemp->num_assoc_elem() == 0)
                 {
-                    NodeTable->remove(NdTemp->key());//, 0, stdout, myid, 6);
-                    delete NdTemp;
+                    NodeTable->removeNode(NdTemp);
                 }
             }  //while(NodeTable_entry_ptr)
         }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++

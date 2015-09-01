@@ -31,12 +31,7 @@
 #include <mpi.h>
 #include <assert.h>
 
-Node::Node()
-{
-    printf("creating a node without setting its values\n");
-}
-
-Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
+void Node::init(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
 {
     int i;
     id(0); /* keith added this so save_node wouldn't write an uninitialized
@@ -87,7 +82,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
      */
 }
 
-Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matprops_ptr)  //for refined
+void Node::init(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matprops_ptr)  //for refined
 {
     int i;
     id(0); /* keith added this so save_node wouldn't write an uninitialized
@@ -135,7 +130,7 @@ Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matp
     return;
 }
 
-Node::Node(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
+void Node::init(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
 {
     int i;
     id(0); /* keith added this so save_node wouldn't write an uninitialized
@@ -270,7 +265,7 @@ void Node::save_node(FILE* fp)
     return;
 }
 
-Node::Node(FILE* fp, MatProps* matprops_ptr)
+void Node::init(FILE* fp, MatProps* matprops_ptr)
 {      
     FourBytes temp4;
     EightBytes temp8;

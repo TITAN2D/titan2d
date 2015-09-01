@@ -1017,10 +1017,7 @@ void create_new_node(int which, int Node1, int Node2, NodeHashTable* HT_Node_Ptr
     if(!p)
 
     {
-        NewNode = new Node(key, NewNodeCoord, info, order, matprops_ptr);
-        
-        HT_Node_Ptr->add(key, NewNode);
-        
+        NewNode = HT_Node_Ptr->createAddNode(key, NewNodeCoord, info, order, matprops_ptr);
         p = NewNode;
         
     }

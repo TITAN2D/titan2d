@@ -24,6 +24,7 @@
 #include "../header/boundary.h"
 #include "../header/hashtab.h"
 #include "../header/element2.h"
+#include "../header/node.h"
 /*#undef SEEK_SET
 #undef SEEK_END
 #undef SEEK_CUR*/
@@ -308,6 +309,40 @@ void HashTableBase::print0()
  return (igazee);
  }
  */
+Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
+{
+    Node* node = new Node(keyi, coordi, matprops_ptr);
+    add(keyi, node);
+    return node;
+}
+Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr)
+{
+    Node* node = new Node(keyi, coordi, inf, ord, matprops_ptr);
+    add(keyi, node);
+    return node;
+}
+Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
+{
+    Node* node = new Node(keyi, coordi, inf, ord, elev, yada);
+    add(keyi, node);
+    return node;
+}
+
+Node* NodeHashTable::createAddNode(FILE* fp, MatProps* matprops_ptr) //for restart
+{
+    Node* node = new Node(fp, matprops_ptr);
+    add(node->key(), node);
+    return node;
+}
+void NodeHashTable::removeNode(Node* node)
+{
+    HashTableBase::remove(node->key());
+    delete node;
+}
+
+
+
+
 
 ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable) :
         HashTableBase(doublekeyrangein, size, XR, YR)
@@ -541,7 +576,7 @@ Element* ElementsHashTable::generateAddElement(FILE* fp, NodeHashTable* NodeTabl
 void ElementsHashTable::removeElement(Element* elm)
 {
     HashTableBase::remove(elm->key());
-    //delete elm;
+    delete elm;
 }
 
 void* ElementsHashTable::lookup(const SFC_Key &key)

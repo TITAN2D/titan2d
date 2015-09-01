@@ -135,8 +135,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
         
         for(j = 0; j < 2; j++)
             coord[j] = coord[j] / matprops_ptr->LENGTH_SCALE;
-        NodeP = new Node(sfc_key_from_oldkey(key), coord, matprops_ptr);
-        (*NodeTable)->add(sfc_key_from_oldkey(key), NodeP);
+        NodeP = (*NodeTable)->createAddNode(sfc_key_from_oldkey(key), coord, matprops_ptr);
     }
     (*NodeTable)->print0();
     //done reading in node data
