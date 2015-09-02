@@ -31,6 +31,21 @@
 #include <mpi.h>
 #include <assert.h>
 
+void Node::init()
+{
+    id(0);
+    order(0);
+    connection_id(-1);
+    info(INIT);
+    
+    for(int i = 0; i < DIMENSION; i++)
+        coord(i,0.0);
+    
+    set_key(sfc_key_null);
+    zero_flux();
+    elevation(0.0);
+}
+
 void Node::init(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
 {
     int i;

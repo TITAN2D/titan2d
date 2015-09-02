@@ -300,15 +300,10 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
     Node* NdTemp;
     
     // initialize the node flags
-    for(i = 0; i < no_of_node_buckets; i++)
+    for(i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
     {
-        entryp = *(HT_Node_Ptr->getbucketptr() + i);
-        while (entryp)
-        {
-            NdTemp = (Node*) (entryp->value);
-            NdTemp->id(0);
-            entryp = entryp->next;
-        }
+        if(HT_Node_Ptr->status_[i]>=0)
+            HT_Node_Ptr->elenode_[i].id(0);
     }
     
     for(i = 0; i < no_of_elm_buckets; i++)
@@ -337,19 +332,12 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
     }
     
     // delete the nodes that aren't used
-    for(i = 0; i < no_of_node_buckets; i++)
+    for(int i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
     {
-        entryp = *(HT_Node_Ptr->getbucketptr() + i);
-        while (entryp)
+        if(HT_Node_Ptr->status_[i]>=0 && HT_Node_Ptr->elenode_[i].id() == 0)
         {
-            NdTemp = (Node*) (entryp->value);
-            entryp = entryp->next;
-            if(NdTemp->id() == 0)
-            {
-                HT_Node_Ptr->removeNode(NdTemp);
-            }
+            HT_Node_Ptr->remove(HT_Node_Ptr->elenode_[i].key());
         }
     }
-    
     return;
 }

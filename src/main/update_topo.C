@@ -55,17 +55,10 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
         int ibucket;
         HashEntry *entryp;
         //visit every bucket
-        for(ibucket = 0; ibucket < num_buckets; ibucket++)
+        for(int i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
         {
-            entryp = *(HT_Node_Ptr->getbucketptr() + ibucket);
-            //visit every node in this bucket
-            while (entryp)
-            {
-                Node* NdTemp = (Node*) entryp->value;
-                assert(NdTemp);
-                NdTemp->elevation(matprops);
-                entryp = entryp->next;
-            }
+            if(HT_Node_Ptr->status_[i]>=0)
+                HT_Node_Ptr->elenode_[i].elevation(matprops);
         }
         
         /* update the elements */

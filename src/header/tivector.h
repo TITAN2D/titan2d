@@ -12,7 +12,11 @@
 #include <assert.h>
 
 typedef int tisize_t;
-typedef int tipos_t;
+typedef int ti_ndx_t;
+
+constexpr ti_ndx_t ti_ndx_unknown=-1;
+constexpr ti_ndx_t ti_ndx_doesnt_exist=-2;
+inline bool ti_ndx_not_negative(const ti_ndx_t &ndx){return (ndx>=0);}
 
 template<typename T>
 class tivector
@@ -29,7 +33,7 @@ public:
     tivector(){
         size_=0;
         size_old_=0;
-        reserved_size_=20;
+        reserved_size_=10240;
         reserved_size_old_=reserved_size_;
         
         array_=new T[reserved_size_];
@@ -41,7 +45,7 @@ public:
         if(array_old_!=nullptr)delete [] array_old_;
     }
     const tisize_t& size() const {return size_;}
-protected:
+public:
     void swap_arrays(){
         tisize_t tmp_size_=size_;
         tisize_t tmp_reserved_size_=reserved_size_;
@@ -56,7 +60,7 @@ protected:
         reserved_size_old_=tmp_reserved_size_;
     }
 public:
-    void resize(size_t new_size)
+    void resize(size_t new_size,bool movecontent=true)
     {
         if(new_size>reserved_size_){
             //move to array_old_
@@ -69,11 +73,12 @@ public:
             array_=new T[reserved_size_];
             //for(tisize_t i=0;i<size_old_;++i)
             //    array_[i]=array_old_[i];
-            memcpy(array_, array_old_, sizeof(T)*size_old_);
+            if(movecontent)
+                memcpy(array_, array_old_, sizeof(T)*size_old_);
         }
         size_=new_size;
     }
-    void insert(tipos_t pos){
+    void insert(ti_ndx_t pos){
         assert(pos<=size_);
         swap_arrays();
         //reallocate array_ if needed
@@ -93,7 +98,7 @@ public:
         //    array_[i]=array_old_[i-1];
         memcpy(array_+pos+1, array_old_+pos, sizeof(T)*(size_old_-pos));
     }
-    void remove(tipos_t pos){
+    void remove(ti_ndx_t pos){
         assert(pos<size_);
         swap_arrays();
         //reallocate array_ if needed
@@ -114,15 +119,48 @@ public:
         //    array_[i]=array_old_[i-1];
         memcpy(array_+pos, array_old_+pos+1, sizeof(T)*(size_-pos));
     }
-    tipos_t push_back()
+    ti_ndx_t push_back()
     {
         resize(size_+1);
         return size_-1;
     }
     
+    /*void equate_reserved_size()
+    {
+        if(reserved_size_old_<reserved_size_){
+            reserved_size_old_=reserved_size_;
+            delete [] array_old_;
+            array_old_=new T[reserved_size_old_];
+            size_old_=0;
+        }
+    }*/
+    void reorder(ti_ndx_t *new_order, tisize_t new_size)
+    {
+        swap_arrays();
+        if(new_size>reserved_size_){
+            //move to array_old_
+            delete [] array_;
+            //allocate new
+            reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
+            array_=new T[reserved_size_];
+        }
+        size_=new_size;
+        
+        for(ti_ndx_t i=0;i<new_size;i++)
+        {
+            array_[i]=array_old_[new_order[i]];
+        }
+    }
+    void set(const T& value)
+    {
+        for(ti_ndx_t i=0;i<size_;i++)
+        {
+            array_[i]=value;
+        }
+    }
     
-    T& operator[](tipos_t i){ return *(array_ + i);}
-    const T& operator[](tipos_t i) const { return *(array_ + i);}
+    T& operator[](ti_ndx_t i){ return *(array_ + i);}
+    const T& operator[](ti_ndx_t i) const { return *(array_ + i);}
 };
 
 #endif	/* TIVECTOR_H */

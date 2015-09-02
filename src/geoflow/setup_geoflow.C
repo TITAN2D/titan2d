@@ -27,20 +27,15 @@ void setup_geoflow(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int my
     
     int i;
     int num_buckets = El_Table->get_no_of_buckets();
-    int num_node_buckets = NodeTable->get_no_of_buckets();
     /* zero out the fluxes for all of the nodes */
-    HashEntryPtr* buck = NodeTable->getbucketptr();
-    for(i = 0; i < num_node_buckets; i++)
-        if(*(buck + i))
-        {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
-                Node* Curr_Node = (Node*) (currentPtr->value);
-                Curr_Node->zero_flux();
-                currentPtr = currentPtr->next;
-            }
-        }
+    HashEntryPtr* buck;
+    
+    for(i = 0; i < NodeTable->elenode_.size(); i++)
+    {
+        if(NodeTable->status_[i]>=0)
+            NodeTable->elenode_[i].zero_flux();
+    }
+
     
     /* put the coord for the center node in the element */
     buck = El_Table->getbucketptr();

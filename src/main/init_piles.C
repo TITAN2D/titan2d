@@ -25,7 +25,7 @@
 
 int get_elem_elev(NodeHashTable *HT_Node_Ptr, MatProps *matprops, Element *EmTemp, double &elevation);
 
-void print_grid(NodeHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops)
+void print_grid(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops)
 {
     
     FILE *fp = fopen("gridplot00.txt", "w");
@@ -170,6 +170,7 @@ void cxxTitanSinglePhase::init_piles()
     move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
     
     //update temporary arrays of elements/nodes pointers
+    HT_Node_Ptr->flush();
     HT_Elem_Ptr->updateElements();
     HT_Elem_Ptr->updateLocalElements();
     HT_Elem_Ptr->updatePointersToNeighbours();

@@ -34,7 +34,7 @@ void htflush(ElementsHashTable* ht_elem_ptr, NodeHashTable* ht_node_ptr, int opt
     int* dofP;
     double* sol;
     int e_buckets = ht_elem_ptr->get_no_of_buckets();
-    int n_buckets = ht_node_ptr->get_no_of_buckets();
+    //int n_buckets = ht_node_ptr->get_no_of_buckets();
     
     switch (option)
     {
@@ -50,7 +50,7 @@ void htflush(ElementsHashTable* ht_elem_ptr, NodeHashTable* ht_node_ptr, int opt
                 }
             }
             break;
-        case 2:
+        /*case 2:
             for(i = 0; i < n_buckets; i++)
             {
                 entryp = *(ht_node_ptr->getbucketptr() + i);
@@ -61,7 +61,7 @@ void htflush(ElementsHashTable* ht_elem_ptr, NodeHashTable* ht_node_ptr, int opt
                                         
                     entryp = entryp->next;
                 }
-            }
+            }*/
             /*for(i = 0; i < e_buckets; i++)
             {
                 entryp = *(ht_elem_ptr->getbucketptr() + i);

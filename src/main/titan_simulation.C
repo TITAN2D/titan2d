@@ -406,11 +406,13 @@ void cxxTitanSinglePhase::run()
     }
     else
     {
+    	HT_Node_Ptr->flush();
         //update temporary arrays of elements/nodes pointers
         HT_Elem_Ptr->updateElements();
         HT_Elem_Ptr->updateLocalElements();
         HT_Elem_Ptr->updatePointersToNeighbours();
     }
+    
 
     /* for debug only, to check if exactly what's loaded will be saved again
      by doing a diff on the files.
@@ -532,6 +534,8 @@ void cxxTitanSinglePhase::run()
             move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
 
             //update temporary arrays of elements/nodes pointers
+            HT_Node_Ptr->flush();
+            
             HT_Elem_Ptr->updateElements();
             HT_Elem_Ptr->updateLocalElements();
             HT_Elem_Ptr->updatePointersToNeighbours();

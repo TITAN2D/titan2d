@@ -30,8 +30,18 @@ class FluxProps;
 class Node
 {
     friend class NodeHashTable;
+    friend class tivector<Node>;
+    
 protected:
+    
+    
     //nodes constructors should not be called directly but by NodeHashTable::createAddNode methods
+    
+    Node()
+    {
+        init();
+    }
+    
     //! this is the constructor that creates a node when the initial grid is read in
     Node(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
     {
@@ -59,6 +69,8 @@ protected:
     public:  
     ~Node();
 public:
+    void init();
+    
     void init(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
 
     //! this is the constructor that creates bubble and edge nodes for son Elements when the father Element is refined

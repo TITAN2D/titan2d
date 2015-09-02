@@ -38,6 +38,9 @@ using namespace std;
 #include "sfc.h"
 #include "tivector.h"
 
+
+#define HASHTABLE_LOOKUP_LINSEARCH 8
+
 class Element;
 class Node;
 class BC;
@@ -48,6 +51,7 @@ struct HashEntry
     SFC_Key key;  //key: object key word
     uint64_t ukey; //ukey: single 64 bit key
     void* value;   //value: poiter to record
+    ti_ndx_t ndx; //index of record
     HashEntry* pre;
     HashEntry* next;    //pre, next: objects with same entry will be stored in a two-way link
     
@@ -56,6 +60,7 @@ struct HashEntry
         int i;
         key=keyi;
         ukey = get_ukey_from_sfc_key(key);
+        ndx=ti_ndx_unknown;
         value = NULL;
         pre = NULL;
         next = NULL;
@@ -108,11 +113,12 @@ public:
     virtual void* lookup(const SFC_Key& key);
     virtual void remove(const SFC_Key& key);
     void print_out(int);
-    int get_no_of_buckets(){return NBUCKETS;}
+    
 //    void   get_element_stiffness(Hreturn bucket;ashTable*);
     HashEntryPtr* getbucketptr(){return bucket;}
     void* get_value();
 
+    int get_no_of_buckets(){return NBUCKETS;}
     double* get_Xrange(){return Xrange;}
     double* get_Yrange(){return Yrange;}
     double* get_doublekeyrange(){return doublekeyrange;}
@@ -121,6 +127,9 @@ public:
     int get_no_of_entries(){return ENTRIES;}
 
     void print0();
+    
+    
+    tivector<Element> keys_;
 };
 
 
@@ -141,11 +150,145 @@ inline int HashTableBase::hash(const SFC_Key& key) const
 #endif
 }
 
-class NodeHashTable: public HashTableBase
+class HashEntryLine
 {
 public:
-    NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
-        :HashTableBase(doublekeyrangein, size, XR, YR){}
+    vector<SFC_Key> key; //!<key: object key word
+    vector<ti_ndx_t> ndx; //index of record
+    
+    //! find position of m_key in key
+    ti_ndx_t lookup_local_ndx(const SFC_Key& m_key)
+    {
+        int size = key.size();
+
+        SFC_Key *keyArr = &(key[0]);
+        int i;
+
+        if(size == 0)
+            return ti_ndx_doesnt_exist;
+        if(m_key < keyArr[0])
+            return ti_ndx_doesnt_exist;
+        if(m_key > keyArr[size - 1])
+            return ti_ndx_doesnt_exist;
+
+        if(size < HASHTABLE_LOOKUP_LINSEARCH)
+        {
+            for(i = 0; i < size; i++)
+            {
+                if(m_key == keyArr[i])
+                {
+                    return i;
+                }
+            }
+        }
+        else
+        {
+            int i0, i1, i2;
+            i0 = 0;
+            i1 = size / 2;
+            i2 = size - 1;
+            while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH)
+            {
+                if(m_key > keyArr[i1])
+                {
+                    i0 = i1 + 1;
+                    i1 = (i0 + i2) / 2;
+                }
+                else
+                {
+                    i2 = i1;
+                    i1 = (i0 + i2) / 2;
+                }
+            }
+            for(i = i0; i <= i2; i++)
+            {
+                if(m_key == keyArr[i])
+                {
+                    return i;
+                }
+            }
+        }
+        return ti_ndx_doesnt_exist;
+    }
+    
+};
+
+enum ContentStatus {CS_Permanent=0,CS_Removed=-1,CS_Added=1};
+
+template<typename T>
+class HashTable
+{
+public:
+    double doublekeyrange[2];
+    double hashconstant;
+    double Xrange[2];
+    double Yrange[2];
+    double invdxrange;
+    double invdyrange;
+    
+    int NBUCKETS;
+    int ENTRIES;
+    
+    vector<HashEntryLine> bucket;
+    
+    tivector<SFC_Key> key_;
+    tivector<ContentStatus> status_;
+    tivector<T> elenode_;
+   
+public:
+    HashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
+    virtual ~HashTable(){}
+    
+    int hash(const SFC_Key& key) const
+    {
+        //Keith made this change 20061109; and made hash an inline function
+        /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
+         return (((int) ((key[0]*doublekeyrange[1]+key[1])/
+         (doublekeyrange[0]*doublekeyrange[1]+doublekeyrange[1])*
+         NBUCKETS*2+0.5) )%NBUCKETS);
+         */
+    #if USE_ARRAY_SFC_KEY
+        return (((int) ((key.key[0] * doublekeyrange[1] + key.key[1]) * hashconstant + 0.5)) % NBUCKETS);
+    #else
+        unsigned oldkey[KEYLENGTH];
+        SET_OLDKEY(oldkey,key);
+        return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
+    #endif
+    }
+    
+    ti_ndx_t lookup_ndx(const SFC_Key& key);
+    T* lookup(const SFC_Key& key);
+    
+    ti_ndx_t add_ndx(const SFC_Key& key);
+    T* add(const SFC_Key& key);
+    
+    void remove(const SFC_Key& key);
+    
+    
+    //plain getters and setters
+    int get_no_of_buckets() const {return NBUCKETS;}
+    double* get_Xrange() {return Xrange;}
+    double* get_Yrange() {return Yrange;}
+    double* get_doublekeyrange() {return doublekeyrange;}
+    double get_invdxrange() const {return invdxrange;}
+    double get_invdyrange() const {return invdyrange;}
+    int get_no_of_entries() const {return ENTRIES;}
+
+    void print0() const {}
+    
+    void print_out(int) const {}
+    
+    void flush();//actually delete, removed nodes and rearrange added (sort accorting to keys)
+};
+template class HashTable<Node>;
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+class NodeHashTable: public HashTable<Node>
+{
+public:
+    NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
     virtual ~NodeHashTable(){}
     
     
@@ -154,9 +297,9 @@ public:
     Node* createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
     Node* createAddNode(FILE* fp, MatProps* matprops_ptr);
     
-    virtual void remove(const SFC_Key& key){assert(0);}
     void removeNode(Node* node);
 };
+////////////////////////////////////////////////////////////////////////////////
 //! Hashtables for Elements
 class ElementsHashTable: public HashTableBase
 {

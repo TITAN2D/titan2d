@@ -432,7 +432,6 @@ void AssertMeshErrorFree(ElementsHashTable *El_Table, NodeHashTable* NodeTable, 
     Element *EmTemp;
     Element *EmNeigh[2];
     HashEntryPtr *El_Table_bucket0, El_Table_entry_ptr;
-    HashEntryPtr *NodeTable_bucket0, NodeTable_entry_ptr;
     
     int ielembucket, iside, inode, ineigh, ineighp4, ineighme, i;
     int inodebucket, El_Table_num_buck, NodeTable_num_buck;
@@ -441,21 +440,12 @@ void AssertMeshErrorFree(ElementsHashTable *El_Table, NodeHashTable* NodeTable, 
     assert(numprocs >= 1);
     assert(myid < numprocs);
     
-    NodeTable_num_buck = NodeTable->get_no_of_buckets();
-    NodeTable_bucket0 = NodeTable->getbucketptr();
-    for(inodebucket = 0; inodebucket < NodeTable_num_buck; inodebucket++)
+    
+    for(int i = 0; i < NodeTable->elenode_.size(); i++)
     {
-        NodeTable_entry_ptr = *(NodeTable_bucket0 + inodebucket);
-        
-        while (NodeTable_entry_ptr)
-        {
-            
-            NdTemp = (Node*) (NodeTable_entry_ptr->value);
-            NodeTable_entry_ptr = NodeTable_entry_ptr->next;
-            assert(NdTemp);
-            NdTemp->num_assoc_elem(0);
-        }      //while(NodeTable_entry_ptr)
-    }      //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
+        if(NodeTable->status_[i]>=0)
+            NodeTable->elenode_[i].num_assoc_elem(0);
+    }
     
     //check the element information including missing neighbors
     El_Table_num_buck = El_Table->get_no_of_buckets();
@@ -808,69 +798,65 @@ void AssertMeshErrorFree(ElementsHashTable *El_Table, NodeHashTable* NodeTable, 
     //many elements each node belongs to.  This won't catch extra
     //elements with their own extra nodes but the element check for
     //missing neighbors should catch those.
-    for(inodebucket = 0; inodebucket < NodeTable_num_buck; inodebucket++)
+    for(int i = 0; i < NodeTable->elenode_.size(); i++)
     {
-        NodeTable_entry_ptr = *(NodeTable_bucket0 + inodebucket);
-        
-        while (NodeTable_entry_ptr)
-        {
-            NdTemp = (Node*) (NodeTable_entry_ptr->value);
-            NodeTable_entry_ptr = NodeTable_entry_ptr->next;
-            assert(NdTemp);
-            
-            //check to see if node is of an allowed type
-            assert((NdTemp->info() == CORNER) || (NdTemp->info() == SIDE) || (NdTemp->info() == S_S_CON)
-                   || (NdTemp->info() == BUBBLE) || (NdTemp->info() == S_C_CON));
-            
-            /*
-             if(!(NdTemp->num_assoc_elem>=1)){
-             NodeBackgroundCheck(El_Table,NodeTable,NdTemp->key,fp);
-             fclose(fp);
-             assert(0);
-             }
-             */
+        NdTemp = &(NodeTable->elenode_[i]);
+        if(NodeTable->status_[i]<0)continue;
 
-            if(NdTemp->info() == CORNER)
-                if(!(NdTemp->num_assoc_elem() <= 4))
-                {
-                    NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
-                    fclose(fp);
-                    assert(0);
-                }
-            
-            if(NdTemp->info() == SIDE)
-                if(!(NdTemp->num_assoc_elem() <= 2))
-                {
-                    NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
-                    fclose(fp);
-                    assert(0);
-                }
-            
-            if(NdTemp->info() == S_S_CON)
-                if(!(NdTemp->num_assoc_elem() <= 2))
-                {
-                    NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
-                    fclose(fp);
-                    assert(0);
-                }
-            
-            if(NdTemp->info() == BUBBLE)
-                if(!(NdTemp->num_assoc_elem() <= 1))
-                {
-                    NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
-                    fclose(fp);
-                    assert(0);
-                }
-            
-            if(NdTemp->info() == S_C_CON)
-                if(!(NdTemp->num_assoc_elem() <= 3))
-                {
-                    NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
-                    fclose(fp);
-                    assert(0);
-                }
-            
-        }  //while(NodeTable_entry_ptr)
+        assert(NdTemp);
+
+        //check to see if node is of an allowed type
+        assert((NdTemp->info() == CORNER) || (NdTemp->info() == SIDE) || (NdTemp->info() == S_S_CON)
+               || (NdTemp->info() == BUBBLE) || (NdTemp->info() == S_C_CON));
+
+        /*
+         if(!(NdTemp->num_assoc_elem>=1)){
+         NodeBackgroundCheck(El_Table,NodeTable,NdTemp->key,fp);
+         fclose(fp);
+         assert(0);
+         }
+         */
+
+        if(NdTemp->info() == CORNER)
+            if(!(NdTemp->num_assoc_elem() <= 4))
+            {
+                NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
+                fclose(fp);
+                assert(0);
+            }
+
+        if(NdTemp->info() == SIDE)
+            if(!(NdTemp->num_assoc_elem() <= 2))
+            {
+                NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
+                fclose(fp);
+                assert(0);
+            }
+
+        if(NdTemp->info() == S_S_CON)
+            if(!(NdTemp->num_assoc_elem() <= 2))
+            {
+                NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
+                fclose(fp);
+                assert(0);
+            }
+
+        if(NdTemp->info() == BUBBLE)
+            if(!(NdTemp->num_assoc_elem() <= 1))
+            {
+                NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
+                fclose(fp);
+                assert(0);
+            }
+
+        if(NdTemp->info() == S_C_CON)
+            if(!(NdTemp->num_assoc_elem() <= 3))
+            {
+                NodeBackgroundCheck(El_Table, NodeTable, NdTemp->key(), fp);
+                fclose(fp);
+                assert(0);
+            }
+
     }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++)
 #endif
     

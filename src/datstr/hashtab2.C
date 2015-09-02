@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+
 #include "../header/boundary.h"
 #include "../header/hashtab.h"
 #include "../header/element2.h"
@@ -36,7 +37,7 @@
 #define IScale  ((unsigned)((MaxBits <= 32) ? ~(0u) : (0xffffffff << (MaxBits - 32))))
 
 ElementsHashTable *elementsHashTable;
-
+#include <algorithm>
 
 HashTableBase::HashTableBase(double *doublekeyrangein, int size, double XR[], double YR[])
 {
@@ -158,7 +159,6 @@ HashEntryPtr HashTableBase::addElement(int entry, const SFC_Key& key)
     return p;
 }
 
-#define HASHTABLE_LOOKUP_LINSEARCH 8
 void*
 HashTableBase::lookup(const SFC_Key &key)
 {
@@ -309,37 +309,286 @@ void HashTableBase::print0()
  return (igazee);
  }
  */
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double YR[])
+{
+    int i;
+
+    NBUCKETS = size;
+    ENTRIES = 0;
+    
+    for(i = 0; i < KEYLENGTH; i++)
+        doublekeyrange[i] = doublekeyrangein[i];
+    
+    hashconstant = 8.0 * NBUCKETS / (doublekeyrange[0] * doublekeyrange[1] + doublekeyrange[1]);
+    
+    bucket.resize(NBUCKETS);
+
+    
+    for(i = 0; i < 2; i++)
+    {
+        Xrange[i] = XR[i];
+        Yrange[i] = YR[i];
+    }
+    
+    invdxrange = 1.0 / (Xrange[1] - Xrange[0]);
+    invdyrange = 1.0 / (Yrange[1] - Yrange[0]);
+    
+}
+template <typename T>
+ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)
+{
+    int entry = hash(key);
+    int size = bucket[entry].key.size();
+    
+    SFC_Key *keyArr = &(bucket[entry].key[0]);
+    int i;
+    
+    if(size == 0)
+        return ti_ndx_doesnt_exist;
+    if(key < keyArr[0])
+        return ti_ndx_doesnt_exist;
+    if(key > keyArr[size - 1])
+        return ti_ndx_doesnt_exist;
+    
+    if(size < HASHTABLE_LOOKUP_LINSEARCH)
+    {
+        for(i = 0; i < size; i++)
+        {
+            if(key == keyArr[i])
+            {
+                return bucket[entry].ndx[i];
+            }
+        }
+    }
+    else
+    {
+        int i0, i1, i2;
+        i0 = 0;
+        i1 = size / 2;
+        i2 = size - 1;
+        while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH)
+        {
+            if(key > keyArr[i1])
+            {
+                i0 = i1 + 1;
+                i1 = (i0 + i2) / 2;
+            }
+            else
+            {
+                i2 = i1;
+                i1 = (i0 + i2) / 2;
+            }
+        }
+        for(i = i0; i <= i2; i++)
+        {
+            if(key == keyArr[i])
+            {
+                return bucket[entry].ndx[i];
+            }
+        }
+    }
+    return ti_ndx_doesnt_exist;
+}
+template <typename T>
+T* HashTable<T>::lookup(const SFC_Key& key)
+{
+    ti_ndx_t ndx=lookup_ndx(key);
+    if(status_[ndx]==CS_Removed)
+    {
+        assert(0);
+        return nullptr;
+    }
+    if(ti_ndx_not_negative(ndx))
+        return &(elenode_[ndx]);
+    else
+        return nullptr;
+}
+template <typename T>
+ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& key)
+{
+    ti_ndx_t ndx=lookup_ndx(key);
+    if(ti_ndx_not_negative(ndx))
+        return ndx;
+    
+    int entry = hash(key);
+    int entry_size = bucket[entry].key.size();
+
+    //get space
+    ndx=key_.push_back();
+    elenode_.push_back();
+    status_.push_back();
+    
+    //set values
+    key_[ndx]=key;
+    status_[ndx]=CS_Added;
+
+    //place to hash table
+    if(entry_size>0)
+    {
+        //this place is already occupied
+        //find proper place to insert it
+        int i;
+        SFC_Key *keyArr = &(bucket[entry].key[0]);
+        for(i=0;i<entry_size&&key>keyArr[i];++i){}
+
+        bucket[entry].key.insert(bucket[entry].key.begin() + i, key);
+        bucket[entry].ndx.insert(bucket[entry].ndx.begin() + i, ndx);
+    }
+    else
+    {
+        //will be first member of the bucket entry
+        bucket[entry].key.push_back(key);
+        bucket[entry].ndx.push_back(ndx);
+    }
+    ENTRIES+=1;
+    return ndx;
+}
+template <typename T>
+T* HashTable<T>::add(const SFC_Key& key)
+{
+    ti_ndx_t ndx=add_ndx(key);
+    return &(elenode_[ndx]);
+}
+template <typename T>
+void HashTable<T>::remove(const SFC_Key& key)
+{
+    int entry = hash(key);
+    int entry_size = bucket[entry].key.size();
+    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(key);
+    if(ti_ndx_not_negative(bucket_entry_ndx))
+    {
+        //set status
+        status_[bucket[entry].ndx[bucket_entry_ndx]]=CS_Removed;
+        //delete        
+        bucket[entry].key.erase(bucket[entry].key.begin() + bucket_entry_ndx);
+        bucket[entry].ndx.erase(bucket[entry].ndx.begin() + bucket_entry_ndx);
+    }
+    ENTRIES-=1;
+}
+template <typename T>
+void HashTable<T>::flush()
+{
+    int size_old=key_.size();
+    static vector<ti_ndx_t> ndx_map;
+    static vector<ti_ndx_t> ndx_map_old;
+    static vector<SFC_Key> key_map;
+    ndx_map.resize(size_old);
+    key_map.resize(size_old);
+    ndx_map_old.resize(size_old);
+    
+    //key_.equate_reserved_size();
+    //status_.equate_reserved_size();
+    
+    int j=0;
+    for(int i=0;i<size_old;++i)
+    {
+        if(status_[i]<0)continue;
+        key_map[j]=key_map[i];
+        ndx_map[j]=i;
+        ++j;
+    }
+    int size=j;
+    ndx_map.resize(size);
+    key_map.resize(size);
+    
+    sort(ndx_map.begin(), ndx_map.end(),
+        [&](const int& a, const int& b) {
+            return (key_map[a] < key_map[b]);
+        }
+    );
+    for(int i=0;i<size_old;++i)
+    {
+        ndx_map_old[i]=ti_ndx_doesnt_exist;
+    }
+    for(int i=0;i<size;++i)
+    {
+        ndx_map_old[ndx_map[i]]=i;
+    }
+    
+    //reoder content
+    key_.reorder(&(ndx_map[0]), size);
+    elenode_.reorder(&(ndx_map[0]), size);
+    
+    status_.resize(size,false);
+    status_.set(CS_Permanent);
+    //update baskets
+    
+    
+    for(int entry=0;entry<bucket.size();++entry)
+    {
+        for(int i=0;i<bucket[entry].ndx.size();++i)
+        {
+            assert(ndx_map_old[bucket[entry].ndx[i]]!=ti_ndx_doesnt_exist);
+            bucket[entry].ndx[i]=ndx_map_old[bucket[entry].ndx[i]];
+        }
+        
+    }
+    
+}
+////////////////////////////////////////////////////////////////////////////////
+NodeHashTable::NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
+    :HashTable<Node>(doublekeyrangein, size, XR, YR)
+{
+    int i;
+
+    NBUCKETS = size;
+    ENTRIES = 0;
+    
+    for(i = 0; i < KEYLENGTH; i++)
+        doublekeyrange[i] = doublekeyrangein[i];
+    
+    hashconstant = 8.0 * NBUCKETS / (doublekeyrange[0] * doublekeyrange[1] + doublekeyrange[1]);
+    
+    bucket.resize(NBUCKETS);
+
+    
+    for(i = 0; i < 2; i++)
+    {
+        Xrange[i] = XR[i];
+        Yrange[i] = YR[i];
+    }
+    
+    invdxrange = 1.0 / (Xrange[1] - Xrange[0]);
+    invdyrange = 1.0 / (Yrange[1] - Yrange[0]);
+    
+}
+
+
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
 {
-    Node* node = new Node(keyi, coordi, matprops_ptr);
-    add(keyi, node);
+    Node* node = add(keyi);
+    node->init(keyi, coordi, matprops_ptr);
     return node;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr)
 {
-    Node* node = new Node(keyi, coordi, inf, ord, matprops_ptr);
-    add(keyi, node);
+    Node* node = add(keyi);
+    node->init(keyi, coordi, inf, ord, matprops_ptr);
     return node;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
 {
-    Node* node = new Node(keyi, coordi, inf, ord, elev, yada);
-    add(keyi, node);
+    Node* node = add(keyi);
+    node->init(keyi, coordi, inf, ord, elev, yada);
     return node;
 }
 
 Node* NodeHashTable::createAddNode(FILE* fp, MatProps* matprops_ptr) //for restart
 {
-    Node* node = new Node(fp, matprops_ptr);
-    add(node->key(), node);
-    return node;
+    //unimplemented
+    assert(0);
+    return nullptr;
+    //Node* node = add(keyi);
+    //node->init(node->key(), node);
+    //return node;
 }
 void NodeHashTable::removeNode(Node* node)
 {
-    HashTableBase::remove(node->key());
-    delete node;
+    remove(node->key());
+    //delete node;
 }
-
 
 
 

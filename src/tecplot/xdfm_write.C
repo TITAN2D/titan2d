@@ -246,23 +246,17 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     Node *NodeTemp = NULL;
     HashEntry *entryptr;
     // reset connection-ids
-    int buckets = NodeTable->get_no_of_buckets();
-    for(i = 0; i < buckets; i++)
+    for(i = 0; i < NodeTable->elenode_.size(); i++)
     {
-        entryptr = *(NodeTable->getbucketptr() + i);
-        while (entryptr)
-        {
-            NodeTemp = (Node *) entryptr->value;
-            NodeTemp->connection_id(-1);
-            entryptr = entryptr->next;
-        }
+        if(NodeTable->status_[i]>=0)
+            NodeTable->elenode_[i].connection_id(-1);
     }
     
     /* Add connection information to each node */
     int num_elem = 0;
     int num_node = 0;
     int id = 0;
-    buckets = El_Table->get_no_of_buckets();
+    int buckets = El_Table->get_no_of_buckets();
     for(i = 0; i < buckets; i++)
     {
         entryptr = *(El_Table->getbucketptr() + i);

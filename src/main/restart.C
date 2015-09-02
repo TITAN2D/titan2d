@@ -1040,21 +1040,16 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
     
     int ibucket;
     int no_of_elm_buckets = (*ElemTable)->get_no_of_buckets();
-    int no_of_node_buckets = (*NodeTable)->get_no_of_buckets();
     HashEntryPtr entryp;
     Element* EmTemp;
     Node* NdTemp;
     
     //count the number of NODES to save
     temp4.i = 0;
-    for(ibucket = 0; ibucket < no_of_node_buckets; ibucket++)
+    for(int i = 0; i < (*NodeTable)->elenode_.size(); i++)
     {
-        entryp = *((*NodeTable)->getbucketptr() + ibucket);
-        while (entryp)
-        {
+        if((*NodeTable)->status_[i]>=0)
             temp4.i++;
-            entryp = entryp->next;
-        }
     }
     for(itemp = 0; itemp < 4; itemp++)
         header[Itemp++] = temp4.c[itemp];
@@ -1226,18 +1221,15 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
     //what remains to be done is loop through the nodes and then the 
     //elements calling the "save" member functions for each one that
     //should be written
-    for(ibucket = 0; ibucket < no_of_node_buckets; ibucket++)
+    for(int i = 0; i < (*NodeTable)->elenode_.size(); i++)
     {
-        entryp = *((*NodeTable)->getbucketptr() + ibucket);
-        while (entryp)
+        if((*NodeTable)->status_[i]>=0)
         {
-            NdTemp = (Node*) (entryp->value);
-            
+            NdTemp=&((*NodeTable)->elenode_[i]);
             NdTemp->save_node(fp);
 #ifdef DEBUGSAVESPLIT
             NdTemp->save_node(fp2);
 #endif
-            entryp = entryp->next;
         }
     }
 #ifdef DEBUGSAVESPLIT

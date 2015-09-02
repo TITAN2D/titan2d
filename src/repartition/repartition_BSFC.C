@@ -1969,25 +1969,15 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
     //we won't have to do this in H_adapt() now which also saves 
     //computation
     int NodeTable_num_buck = NodeTable->get_no_of_buckets();
-    HashEntryPtr *NodeTable_bucket0 = NodeTable->getbucketptr();
-    HashEntryPtr NodeTable_entry_ptr;
     int inodebucket, inode;
     Node *NdTemp;
     
     //zero the number of elems each node is associated with
-    for(inodebucket = 0; inodebucket < NodeTable_num_buck; inodebucket++)
+    for(int i = 0; i < NodeTable->elenode_.size(); i++)
     {
-        NodeTable_entry_ptr = *(NodeTable_bucket0 + inodebucket);
-        
-        while (NodeTable_entry_ptr)
-        {
-            
-            NdTemp = (Node*) (NodeTable_entry_ptr->value);
-            NodeTable_entry_ptr = NodeTable_entry_ptr->next;
-            assert(NdTemp);
-            NdTemp->num_assoc_elem(0);
-        }  //while(NodeTable_entry_ptr)
-    }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
+        if(NodeTable->status_[i]>=0)
+            NodeTable->elenode_[i].num_assoc_elem(0);
+    }
     
     //checkelemnode(El_Table, NodeTable, myid, fpdb2, 20.0);
     
@@ -2035,23 +2025,13 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
     }	  //for(ibuck=0; ibuck<num_buck; ibuck++)
     
     //if a node is not associated with any elements delete it
-    for(inodebucket = 0; inodebucket < NodeTable_num_buck; inodebucket++)
+    for(int i = 0; i < NodeTable->elenode_.size(); i++)
     {
-        NodeTable_entry_ptr = *(NodeTable_bucket0 + inodebucket);
-        
-        while (NodeTable_entry_ptr)
+        if(NodeTable->status_[i]>=0 && NodeTable->elenode_[i].num_assoc_elem() == 0)
         {
-            
-            NdTemp = (Node*) (NodeTable_entry_ptr->value);
-            NodeTable_entry_ptr = NodeTable_entry_ptr->next;
-            assert(NdTemp);
-            
-            if(NdTemp->num_assoc_elem() == 0)
-            {
-                NodeTable->removeNode(NdTemp);
-            }
-        }	  //while(NodeTable_entry_ptr)
-    }	  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
+            NodeTable->remove(NodeTable->elenode_[i].key());
+        }
+    }
     
 #ifdef DEBUG_REPART2
     if(timeprops_ptr->iter == DEBUG_ITER)
@@ -2323,8 +2303,6 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     double doublekeyrange1 = *(El_Table->get_doublekeyrange() + 1);
     double doublekey;
     int NodeTable_num_buck = NodeTable->get_no_of_buckets();
-    HashEntryPtr *NodeTable_bucket0 = NodeTable->getbucketptr();
-    HashEntryPtr NodeTable_entry_ptr;
     Node *NdTemp;
     int IfSentRecvd;
     MPI_Status status;
@@ -2597,19 +2575,11 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
         //delete the extra nodes associated with the second-send elements
         
         //zero the number of elems each node is associated with
-        for(inodebucket = 0; inodebucket < NodeTable_num_buck; inodebucket++)
+        for(int i = 0; i < NodeTable->elenode_.size(); i++)
         {
-            NodeTable_entry_ptr = *(NodeTable_bucket0 + inodebucket);
-            
-            while (NodeTable_entry_ptr)
-            {
-                
-                NdTemp = (Node*) (NodeTable_entry_ptr->value);
-                NodeTable_entry_ptr = NodeTable_entry_ptr->next;
-                assert(NdTemp);
-                NdTemp->num_assoc_elem(0);
-            }  //while(NodeTable_entry_ptr)
-        }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
+            if(NodeTable->status_[i]>=0)
+                NodeTable->elenode_[i].num_assoc_elem(0);
+        }
         
         //loop through elements to see which nodes are associated with them
         for(ibuck = 0; ibuck < num_buck; ibuck++)
@@ -2635,23 +2605,13 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
         }  //for(ibuck=0; ibuck<num_buck; ibuck++)
         
         //if a node is not associated with any elements delete it
-        for(inodebucket = 0; inodebucket < NodeTable_num_buck; inodebucket++)
+        for(int i = 0; i < NodeTable->elenode_.size(); i++)
         {
-            NodeTable_entry_ptr = *(NodeTable_bucket0 + inodebucket);
-            
-            while (NodeTable_entry_ptr)
+            if(NodeTable->status_[i]>=0 && NodeTable->elenode_[i].num_assoc_elem() == 0)
             {
-                
-                NdTemp = (Node*) (NodeTable_entry_ptr->value);
-                NodeTable_entry_ptr = NodeTable_entry_ptr->next;
-                assert(NdTemp);
-                
-                if(NdTemp->num_assoc_elem() == 0)
-                {
-                    NodeTable->removeNode(NdTemp);
-                }
-            }  //while(NodeTable_entry_ptr)
-        }  //for(inodebucket=0; inodebucket<NodeTable_num_buck; inodebucket++
+                NodeTable->remove(NodeTable->elenode_[i].key());
+            }
+        }
     }  //if(NotMyElem.get_num_elem()>0)
     
     // ***************************************************************
