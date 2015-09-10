@@ -45,109 +45,6 @@ class BC;
 class MatProps;
 
 
-struct HashEntry
-{
-    SFC_Key key;  //key: object key word
-    uint64_t ukey; //ukey: single 64 bit key
-    void* value;   //value: poiter to record
-    ti_ndx_t ndx; //index of record
-    HashEntry* pre;
-    HashEntry* next;    //pre, next: objects with same entry will be stored in a two-way link
-    
-    HashEntry(const SFC_Key& keyi)
-    {
-        int i;
-        key=keyi;
-        ukey = get_ukey_from_sfc_key(key);
-        ndx=ti_ndx_unknown;
-        value = NULL;
-        pre = NULL;
-        next = NULL;
-    }
-
-    ~HashEntry()
-    {         //keep the follower when deleting an object
-        if(next)
-            next->pre = pre;
-        if(pre)
-            pre->next = next;
-        
-    }
-    
-};
-
-typedef HashEntry* HashEntryPtr;
-
-//! Hashtables store pointers to each Element or Node (of which HashTable is a friend class), these pointers can be accessed by giving the hashtable the "key" of the element number you want to "lookup."  The keys are ordered sequentially by a space filling curve that ensures that the pointers to elements (or nodes) that are located close to each other in physical space will usually be located close to each other in memory, which speeds up access time.  Each key is a single number that spans several unsigned variables (elements of an array).
-class HashTableBase
-{
-    
-    //friend int hash(unsigned* keyi);
-    friend class Element;
-public:
-    double doublekeyrange[2];
-    double hashconstant;
-    double Xrange[2];
-    double Yrange[2];
-    double invdxrange;
-    double invdyrange;
-
-    HashEntryPtr* bucket;
-    int NBUCKETS;
-    int ENTRIES;
-
-    vector<uint64_t> *ukeyBucket;
-    vector<HashEntry*> *hashEntryBucket;
-
-    HashEntryPtr addElement(int entry, const SFC_Key& key);
-    HashEntryPtr searchBucket(HashEntryPtr p, const SFC_Key& key);
-
-public:
-    HashTableBase(double *doublekeyrangein, int size, double XR[], double YR[]);
-    virtual ~HashTableBase();
-
-    int hash(const SFC_Key& key) const;
-    void add(const SFC_Key& key, void* value);
-    virtual void* lookup(const SFC_Key& key);
-    virtual void remove(const SFC_Key& key);
-    void print_out(int);
-    
-//    void   get_element_stiffness(Hreturn bucket;ashTable*);
-    HashEntryPtr* getbucketptr(){return bucket;}
-    void* get_value();
-
-    int get_no_of_buckets(){return NBUCKETS;}
-    double* get_Xrange(){return Xrange;}
-    double* get_Yrange(){return Yrange;}
-    double* get_doublekeyrange(){return doublekeyrange;}
-    double get_invdxrange(){return invdxrange;}
-    double get_invdyrange(){return invdyrange;}
-    int get_no_of_entries(){return ENTRIES;}
-
-    void print0();
-    
-    
-    tivector<Element> keys_;
-};
-
-
-inline int HashTableBase::hash(const SFC_Key& key) const
-{
-    //Keith made this change 20061109; and made hash an inline function
-    /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
-     return (((int) ((key[0]*doublekeyrange[1]+key[1])/
-     (doublekeyrange[0]*doublekeyrange[1]+doublekeyrange[1])*
-     NBUCKETS*2+0.5) )%NBUCKETS);
-     */
-#if USE_ARRAY_SFC_KEY
-    return (((int) ((key.key[0] * doublekeyrange[1] + key.key[1]) * hashconstant + 0.5)) % NBUCKETS);
-#else
-    unsigned oldkey[KEYLENGTH];
-    SET_OLDKEY(oldkey,key);
-    return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
-#endif
-}
-
 class HashEntryLine
 {
 public:
@@ -290,7 +187,7 @@ class NodeHashTable: public HashTable<Node>
 {
 public:
     NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
-    virtual ~NodeHashTable(){}
+    virtual ~NodeHashTable();
     
     
     Node* createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
@@ -302,6 +199,8 @@ public:
 
     Node& node(const ti_ndx_t ndx){return elenode_[ndx];}
 };
+extern NodeHashTable *nodeHashTable;
+
 ////////////////////////////////////////////////////////////////////////////////
 //! Hashtables for Elements
 class ElementsHashTable: public HashTable<Element>

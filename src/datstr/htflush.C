@@ -28,7 +28,6 @@ void htflush(ElementsHashTable* ht_elem_ptr, NodeHashTable* ht_node_ptr, int opt
     Element* EmTemp;
     Node* NdTemp;
     unsigned KeyTemp[KEYLENGTH];
-    HashEntryPtr entryp;
     unsigned* keyP;
     void* p;
     int* dofP;

@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
     sfc_key_null=0;
     sfc_key_zero=0;
     elementsHashTable=nullptr;
+    nodeHashTable=nullptr;
     
     if(argc > 0)
     {

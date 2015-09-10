@@ -29,7 +29,6 @@ void slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* mat
     //-------------------and   --------------------------
     
     /* mdj 2007-02 */
-    HashEntryPtr currentPtr;
     Element* Curr_El;
     int Nelms = El_Table->getNumberOfLocalElements();
     //if this element does not belong on this processor don't involve!!!

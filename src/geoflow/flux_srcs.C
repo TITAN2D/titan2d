@@ -45,7 +45,6 @@ void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, Ma
          }
          */
         // mdj 2007-04
-        HashEntry *entryptr;
         Element *EmTemp;
 #pragma omp parallel for private(entryptr,EmTemp)
         //@ElementsBucketDoubleLoop
@@ -64,7 +63,6 @@ void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, Ma
     {
         
         // mdj 2007-04
-        HashEntry *entryptr;
         Element *EmTemp;
 #pragma omp parallel for private(entryptr,EmTemp)
         //@ElementsBucketDoubleLoop
