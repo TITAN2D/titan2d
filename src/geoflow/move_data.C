@@ -351,6 +351,7 @@ void delete_ghost_elms(ElementsHashTable* El_Table, int myid)
             { //this is a GHOST element
                 EmTemp->void_bcptr();
                 El_Table->removeElement(EmTemp);
+                --ielm;
                 delete_counter++;
             }
         } //while(currentPtr)

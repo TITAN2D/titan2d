@@ -41,7 +41,7 @@ void Node::init()
     for(int i = 0; i < DIMENSION; i++)
         coord(i,0.0);
     
-    set_key(sfc_key_null);
+    //set_key(sfc_key_null);
     zero_flux();
     elevation(0.0);
 }

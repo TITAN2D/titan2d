@@ -67,6 +67,15 @@ HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double 
     invdxrange = 1.0 / (Xrange[1] - Xrange[0]);
     invdyrange = 1.0 / (Yrange[1] - Yrange[0]);
     
+    //Keith made this change 20061109; and made hash an inline function
+        /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
+         return (((int) ((key[0]*doublekeyrange[1]+key[1])/
+         (doublekeyrange[0]*doublekeyrange[1]+doublekeyrange[1])*
+         NBUCKETS*2+0.5) )%NBUCKETS);
+         
+        unsigned oldkey[KEYLENGTH];
+        SET_OLDKEY(oldkey,key);
+        return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);*/    
 }
 template <typename T>
 ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)

@@ -16,6 +16,9 @@
 #ifndef ELEMENT_INLINE_H
 #define	ELEMENT_INLINE_H
 
+#include "hashtab.h"
+
+
 
 
 
@@ -23,11 +26,11 @@
 //getters and setters
 
 inline const SFC_Key& Element::key() const {
-    return key_;
+    return nodeHashTable->key_[ndx_];
 }
 
 inline void Element::set_key(const SFC_Key& new_key) {
-    key_ = new_key;
+    nodeHashTable->key_[ndx_]=new_key;
 }
 
 //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position

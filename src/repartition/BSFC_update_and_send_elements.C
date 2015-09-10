@@ -248,6 +248,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                     Pack_element(EmTemp, (send_elm_array + counter_send_proc[myprocess]), HT_Node_Ptr, myprocess);
                     counter_send_proc[myprocess] += 1;
                     HT_Elem_Ptr->removeElement(EmTemp);
+                    ielm--;
                 }
             }
         }

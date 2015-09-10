@@ -298,6 +298,7 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
                     //deleting the refined father elements but not ghost element so don't need to call move_data() again
                     EmTemp->void_bcptr();
                     HT_Elem_Ptr->removeElement(EmTemp);
+                    --ielm;
                     break;
                 case -NOTRECADAPTED:
                 case -NEWFATHER:
@@ -1160,6 +1161,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
             {   
                 EmTemp->void_bcptr();
                 HT_Elem_Ptr->removeElement(EmTemp);
+                --ielm;
             }
         }
     }
@@ -1220,6 +1222,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                     //deleting the refined father elements but ghost element so don't need to call move_data() again before AssertMeshErrorFree
                     EmTemp->void_bcptr();
                     HT_Elem_Ptr->removeElement(EmTemp);
+                    --ielm;
                     break;
                 case -NOTRECADAPTED:
                 case -NEWFATHER:
@@ -1369,6 +1372,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
                     {
                         EmTemp->void_bcptr();
                         El_Table->removeElement(EmTemp);
+                        --ielm;
                     }
                 }
             }
@@ -1391,6 +1395,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
                     {
                         EmTemp->void_bcptr();
                         El_Table->removeElement(EmTemp);
+                        --ielm;
                     }
                 }
             }
