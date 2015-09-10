@@ -194,25 +194,23 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
     double global_dt[3], dt[3] =
     { 0.0, 0.0, HUGE_VAL };
     
-    HashEntryPtr* elem_bucket_zero = El_Table->getbucketptr();
-    HashEntryPtr entryp;
-    int num_elem_buckets = El_Table->get_no_of_buckets();
     Element *EmTemp;
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
     //beginning of section that SHOULD ____NOT___ be openmp'd
     double maxinflux = 0.0;
     if((maxinflux = fluxprops_ptr->MaxInfluxNow(matprops_ptr, timeprops_ptr) * (matprops_ptr->epsilon)) > 0.0)
     {
         double mindx = -1.0;
-        ;
         
-        for(ibuck = 0; ibuck < num_elem_buckets; ibuck++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-            entryp = *(elem_bucket_zero + ibuck);
-            while (entryp)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) (entryp->value);
-                entryp = entryp->next;
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
                 if((EmTemp->adapted_flag() > 0) || (EmTemp->adapted_flag() < 0))
                 {
@@ -243,13 +241,12 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
     //for single PHASE
     double VxVy[2];
 
-    for(ibuck = 0; ibuck < num_elem_buckets; ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(elem_bucket_zero + ibuck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if((EmTemp->adapted_flag() > 0) || ((EmTemp->adapted_flag() < 0) && (ghost_flag == 1)))
             {

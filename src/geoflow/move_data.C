@@ -70,22 +70,21 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
      }
      else if(myid==2)
      ElemBackgroundCheck(El_Table,NodeTable,elemdebugkey2a,stdout);
-     */
+     */    
 
     int num_elem_on_proc = 0, num_neighbors = 0;
     /* count how many elements we should send and receive from other procs */
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    HashEntryPtr entryp;
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     int ifprint, numprocsrint = 0; //for debug
             
-    for(ibuck = 0; ibuck < El_Table->get_no_of_buckets(); ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(buck + ibuck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if((EmTemp->refined_flag() == 0) && (EmTemp->adapted_flag() > 0))
             {
@@ -174,14 +173,12 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     } //for(iproc=0;iproc<numprocs;iproc++)
     
     /* put (GHOST) elements to be moved in the proper arrays */
-    for(ibuck = 0; ibuck < El_Table->get_no_of_buckets(); ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(buck + ibuck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if((EmTemp->refined_flag() == 0) && (EmTemp->adapted_flag() > 0))
             {
@@ -334,18 +331,18 @@ void delete_ghost_elms(ElementsHashTable* El_Table, int myid)
 {
     int ibuck;
     int delete_counter = 0;
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    HashEntryPtr entryp;
     Element *EmTemp;
-    for(ibuck = 0; ibuck < El_Table->get_no_of_buckets(); ibuck++)
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(buck + ibuck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            assert(EmTemp);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if((EmTemp->refined_flag() == GHOST)	      //||
             //((EmTemp->get_adapted_flag()<0)&&

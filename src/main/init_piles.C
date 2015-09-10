@@ -30,17 +30,16 @@ void print_grid(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatP
     
     FILE *fp = fopen("gridplot00.txt", "w");
     
-    int num_buckets = HT_Elem_Ptr->get_no_of_buckets();
-    for(int ibucket = 0; ibucket < num_buckets; ibucket++)
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        HashEntry *entryp = *(HT_Elem_Ptr->getbucketptr() + ibucket);
-        
-        //check every element in bucket
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            Element *EmTemp = (Element*) entryp->value;
-            assert(EmTemp);
+            Element *EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if(EmTemp->adapted_flag() > 0)
             {
@@ -50,7 +49,6 @@ void print_grid(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatP
                 fprintf(fp, "%20.14g %20.14g %20.14g\n", (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
                         (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE, elevation);
             }
-            entryp = entryp->next;
         }
     }
     
@@ -76,7 +74,10 @@ void cxxTitanSinglePhase::init_piles()
     PileProps* pileprops_ptr=get_pileprops();
 
     unsigned nodes[9][KEYLENGTH], *node_key;
-    int num_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
     
 
     PileProps::PileType pile_type= pileprops_ptr->get_default_piletype();
@@ -102,16 +103,12 @@ void cxxTitanSinglePhase::init_piles()
     {
         printf("It seems this type of piles have hardcoded coordinates\n");
         assert(0);
-        for(int ibucket = 0; ibucket < num_buckets; ibucket++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-
-            HashEntry *entryp = *(HT_Elem_Ptr->getbucketptr() + ibucket);
-
-            //check every element in bucket
-            while (entryp)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                Element *EmTemp = (Element*) entryp->value;
-                assert(EmTemp);
+                Element *EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
                 if(EmTemp->adapted_flag() > 0)
                 {
@@ -163,7 +160,6 @@ void cxxTitanSinglePhase::init_piles()
                     EmTemp->put_height(pile_height);
 
                 }
-                entryp = entryp->next;
             }
         }
     } //end "#if defined PARABALOID || defined CYLINDER"
@@ -184,39 +180,34 @@ void cxxTitanSinglePhase::init_piles()
     for(i=0;i<DIMENSION;i++)
         epsilon[i]=matprops_ptr->epsilon;
     
-    HashEntryPtr* buck = HT_Elem_Ptr->getbucketptr();
-    for(int ibucket = 0; ibucket < HT_Elem_Ptr->get_no_of_buckets(); ibucket++)
-        if(*(buck + ibucket))
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + ibucket);
-            while (currentPtr)
-            {
-                
-                Element* Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->adapted_flag() > 0)
-                { //if this is a refined element don't involve!!!
-                    double dvol = Curr_El->dx(0) * Curr_El->dx(1) * Curr_El->state_vars(0);
-                    realvolume += dvol;
-                    Curr_El->set_kactxy(epsilon);
+            Element* Curr_El  = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(Curr_El->adapted_flag() > 0)
+            { //if this is a refined element don't involve!!!
+                double dvol = Curr_El->dx(0) * Curr_El->dx(1) * Curr_El->state_vars(0);
+                realvolume += dvol;
+                Curr_El->set_kactxy(epsilon);
 
-                    Curr_El->calc_stop_crit(matprops_ptr);
-                    if(Curr_El->stoppedflags() == 2)
-                        depositedvol += dvol;
-                    
-                    double resolution = 0, xslope = 0, yslope = 0;
-                    Get_max_resolution(&resolution);
-                    Get_slope(resolution, Curr_El->coord(0) * matprops_ptr->LENGTH_SCALE,
-                              Curr_El->coord(1) * matprops_ptr->LENGTH_SCALE, xslope, yslope);
-                    double slope = sqrt(xslope * xslope + yslope * yslope);
-                    
-                    forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)
-                            * tan(matprops_ptr->bedfrict[Curr_El->material()]);
-                    
-                }
-                currentPtr = currentPtr->next;
+                Curr_El->calc_stop_crit(matprops_ptr);
+                if(Curr_El->stoppedflags() == 2)
+                    depositedvol += dvol;
+
+                double resolution = 0, xslope = 0, yslope = 0;
+                Get_max_resolution(&resolution);
+                Get_slope(resolution, Curr_El->coord(0) * matprops_ptr->LENGTH_SCALE,
+                          Curr_El->coord(1) * matprops_ptr->LENGTH_SCALE, xslope, yslope);
+                double slope = sqrt(xslope * xslope + yslope * yslope);
+
+                forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)
+                        * tan(matprops_ptr->bedfrict[Curr_El->material()]);
+
             }
         }
+    }
     
     double tempin[3], tempout[3];
     tempin[0] = realvolume;

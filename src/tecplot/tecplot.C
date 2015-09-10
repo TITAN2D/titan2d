@@ -87,9 +87,6 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     
     Element *EmTemp, *EmArray[4];
-    HashEntry *entryp;
-    
-    int e_buckets = El_Table->get_no_of_buckets();
     
     /*There are 2 ways to draw triangles
      1) as a separate ZONE of triangles 
@@ -120,18 +117,21 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
         printf("at tecplotter 1.0\n");
         fflush(stdout);
     }
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
     //count the number of BUBBLE nodes, and tecplot quads and tecplot 
     //triangles I need to draw
     int num_tec_node = 0, num_tec_tri = 0, num_tec_quad = 0;
-    for(i_buck = 0; i_buck < e_buckets; i_buck++)
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(El_Table->getbucketptr() + i_buck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmArray[0] = EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            EmArray[0] = EmTemp;
             if((EmTemp->adapted_flag() != TOBEDELETED) && (abs(EmTemp->adapted_flag()) <= BUFFER))
             {
                 num_tec_node++;
@@ -205,14 +205,12 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     //believe the missing BUBBLE node problem has been solved, it 
     //doesn't seem to be a problem anymore
     
-    for(i_buck = 0; i_buck < e_buckets; i_buck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(El_Table->getbucketptr() + i_buck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if((EmTemp->adapted_flag() != TOBEDELETED) && (abs(EmTemp->adapted_flag()) <= BUFFER))
                 num_missing_bubble_node += print_bubble_node(elementType, fp, NodeTable, matprops, EmTemp);
         }  //while(entryp)
@@ -220,14 +218,13 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     
     //print the tecplot element connectivity data
     int tec_nodes_in_tec_quad[4];
-    for(i_buck = 0; i_buck < e_buckets; i_buck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(El_Table->getbucketptr() + i_buck);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmArray[0] = EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            EmArray[0] = EmTemp;
             if((EmTemp->adapted_flag() > TOBEDELETED) && (EmTemp->adapted_flag() <= BUFFER))
             {
                 gen = EmTemp->generation();
@@ -624,9 +621,11 @@ void viz_output(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     int i, k;
     int element_counter = 0;
     Element *EmTemp;
-    HashEntry *entryp;
     char filename[18] = "viz_outputxxx.out";
-    int e_buckets = El_Table->get_no_of_buckets();
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
     FILE *fp;
     
@@ -656,17 +655,14 @@ void viz_output(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     double velocity_scale = sqrt(matprops->LENGTH_SCALE * (matprops->GRAVITY_SCALE)); // scaling factor for the velocities
             
     // actual data output
-    for(i = 0; i < e_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(El_Table->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
                 element_counter++;
-            
-            entryp = entryp->next;
         }
     }
     //information below will probably be changed later
@@ -688,13 +684,12 @@ void viz_output(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     fprintf(fp, "number_of_processors int[1] %d \n", numprocs);
     
     //output field data
-    for(i = 0; i < e_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(El_Table->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
             {
                 double height = EmTemp->state_vars(0);
@@ -740,8 +735,6 @@ void viz_output(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
                     }
                 }
             }
-            entryp = entryp->next;
-            
         }
     }
     
@@ -772,8 +765,11 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
     int element_counter = 0;
     Element *EmTemp;
     Node *NodeTemp;
-    HashEntry *entryp;
     char filename[256];
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
     if(myid == TARGETPROCB)
     {
@@ -785,7 +781,6 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
     sprintf(filename, "mshpl%02d%08d.tec", myid, timeprops->iter);
     
     int order;
-    int e_buckets = El_Table->get_no_of_buckets();
     
     double momentum_scale = matprops->HEIGHT_SCALE * sqrt(matprops->LENGTH_SCALE * (matprops->GRAVITY_SCALE)); // scaling factor for the momentums
             
@@ -819,19 +814,16 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    for(i = 0; i < e_buckets; i++)
+    
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(El_Table->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
                 element_counter++;
-            entryp = entryp->next;
-            
         }
     }
     
@@ -854,15 +846,12 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    for(i = 0; i < elements; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(El_Table->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
             {
                 order = 1;
@@ -980,9 +969,6 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
                     
                 }
             }
-            
-            entryp = entryp->next;
-            
         }
     }
     
@@ -1041,7 +1027,6 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
     int element_counter = 0;
     Element *EmTemp;
     Node *NodeTemp;
-    HashEntry *entryp;
     SFC_Key *nodes;
     char filename[20];            //="vizplotxxxxxxxx.plt";
     sprintf(filename, "vizplot%08d.plt", timeprops->iter);
@@ -1055,7 +1040,6 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
      filename[8] = (which % 10000000)/1000000 + 48;
      filename[7] = (which % 100000000)/10000000 + 48; */
     int order;
-    int e_buckets = El_Table->get_no_of_buckets();
     double momentum_scale = sqrt(matprops->LENGTH_SCALE * (matprops->GRAVITY_SCALE)); // scaling factor for the momentums
             
     FILE *fp;
@@ -1074,19 +1058,18 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
         fp = fopen(filename, "a+");
     }
     
-    for(i = 0; i < e_buckets; i++)
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(El_Table->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
                 element_counter++;
-            entryp = entryp->next;
-            
         }
     }
     
@@ -1096,17 +1079,12 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
     //outData<<"ZONE N="<<element_counter*4<<", E="<<element_counter<<", F=FEPOINT, ET=QUADRILATERAL"<<'\n';
     fprintf(fp, "ZONE N=%d, E=%d, F=FEPOINT, ET=QUADRILATERAL\n", element_counter * 4, element_counter);
     
-    int elements = El_Table->get_no_of_buckets();
-    
-    for(i = 0; i < elements; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        
-        entryp = *(El_Table->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element *) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
             {
                 order = 1;
@@ -1144,9 +1122,6 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
                     
                 }
             }
-            
-            entryp = entryp->next;
-            
         }
     }
     

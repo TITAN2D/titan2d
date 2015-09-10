@@ -90,10 +90,9 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
     //{ 2114123639, 2004318068 };
     Element* Curr_El = nullptr;//(Element*) HT_Elem_Ptr->lookup(elemdebugkey2a);
     int k, i, j;
-    HashEntryPtr entryp;
     Element* EmTemp;
     
-    ElemPtrList RefinedList, TempList;
+    ElemPtrList RefinedList(HT_Elem_Ptr), TempList(HT_Elem_Ptr);
     int count = 0;
     int ifg; //--
     int refine_flag;
@@ -112,36 +111,31 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
     // determine which elements to refine and flag them for refinement
     double geo_target = element_weight(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs);
     
-    int hash_size = HT_Elem_Ptr->get_no_of_buckets();
     int debug_ref_flag = 0;
     
-    for(i = 0; i < hash_size; i++)
-    { //-- every process begin to scan their own hashtable
-    
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element*) (entryp->value);
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() >= NEWSON)
                 EmTemp->set_adapted_flag(NOTRECADAPTED);
-            
-            entryp = entryp->next;
         }
     }
     
     move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
     
-    for(i = 0; i < hash_size; i++)
-    { //-- every process begin to scan their own hashtable
-    
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element*) (entryp->value);
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             //-- this requirement is used to exclude the new elements
             if(((EmTemp->adapted_flag() > 0) && (EmTemp->adapted_flag() < NEWSON)) && (EmTemp->generation()
                     < REFINE_LEVEL)
@@ -155,7 +149,6 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                 debug_ref_flag++;
             }
-            entryp = entryp->next;
         }
     }
     
@@ -178,13 +171,12 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
         move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
         
         //refine where necessary before placing the innermost buffer layer
-        for(i = 0; i < hash_size; i++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if((EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, GEOFLOW_TINY) == 1) || (EmTemp
                         ->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD1)
                                                                                           == 1)
@@ -194,7 +186,6 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
                     refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                     debug_ref_flag++;
                 }
-                entryp = entryp->next;
             }
         }
         
@@ -203,20 +194,18 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
         move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
         
         //mark the elements in the innermost buffer layer as the BUFFER layer
-        for(i = 0; i < hash_size; i++)
-        { //-- every process begin to scan their own hashtable
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if((EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) || (EmTemp
                         ->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD1)
                                                                                          > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD2) > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD) > 0))
                     EmTemp->set_adapted_flag(BUFFER);
-                entryp = entryp->next;
             }
         }
         
@@ -228,19 +217,17 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
             move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
             
             //refine where necessary before placing the next buffer layer
-            for(i = 0; i < hash_size; i++)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
             {
-                entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                while (entryp)
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    assert(EmTemp);
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                     if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD) == 1)
                     {
                         refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                         debug_ref_flag++;
                     }
-                    entryp = entryp->next;
                 }
             }
             
@@ -259,19 +246,14 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
             
             //mark the elements just outside the buffer layer as the NEWBUFFER layer
             TempList.trashlist();
-            for(i = 0; i < hash_size; i++)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
             {
-                entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                while (entryp)
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    assert(EmTemp);
-                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,
-                    REFINE_THRESHOLD)
-                       > 0)
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD)> 0)
                         TempList.add(EmTemp);
-                    
-                    entryp = entryp->next;
                 }
             }
             
@@ -291,13 +273,12 @@ void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_c
     
     htflush(HT_Elem_Ptr, HT_Node_Ptr, 2);
     
-    for(i = 0; i < hash_size; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             switch (EmTemp->adapted_flag())
             {
@@ -422,10 +403,9 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
 {
     
     int k, i, j;
-    HashEntryPtr entryp;
     Element* EmTemp;
     
-    ElemPtrList RefinedList, TempList;
+    ElemPtrList RefinedList(HT_Elem_Ptr), TempList(HT_Elem_Ptr);
     int count = 0;
     int myid;
     int numprocs;
@@ -553,8 +533,11 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
     //printf("myid=%d init_H_adapt 3\n",myid);
     //AssertMeshErrorFree(HT_Elem_Ptr,HT_Node_Ptr,numprocs,myid,0.0);
     //MPI_Barrier(MPI_COMM_WORLD); //-- every process arrive here
-    int hash_size = HT_Elem_Ptr->get_no_of_buckets();
     int debug_ref_flag = 0;
+    
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
     
     int intswap;
     int icounter = 0;
@@ -562,30 +545,24 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
     do
     {
         mincentergen = REFINE_LEVEL;
-        for(i = 0; i < hash_size; i++)
-        {  //-- every process begin to scan their own hashtable
-        
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if(EmTemp->adapted_flag() >= NEWSON)
                     EmTemp->set_adapted_flag(NOTRECADAPTED);
-                entryp = entryp->next;
             }
         }
         
         TempList.trashlist();
-        for(i = 0; i < hash_size; i++)
-        {  //-- every process begin to scan their own hashtable
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
                 if(EmTemp->adapted_flag() > 0)
                 {
@@ -623,8 +600,6 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                             break;
                         }
                 }
-                
-                entryp = entryp->next;
             }
         }
         
@@ -677,13 +652,12 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                 
                 //refine where necessary and store the next buffer layer in TempList
                 TempList.trashlist();
-                for(i = 0; i < hash_size; i++)
+                //@ElementsBucketDoubleLoop
+                for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
                 {
-                    entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                    while (entryp)
+                    for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                     {
-                        EmTemp = (Element*) (entryp->value);
-                        assert(EmTemp);
+                        EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                         if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,
                         REFINE_THRESHOLD)
                            == 1)
@@ -703,7 +677,6 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                             }
                             debug_ref_flag++;
                         }
-                        entryp = entryp->next;
                     }
                 }
                 
@@ -772,19 +745,14 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
          */
 
         minboundarygen = REFINE_LEVEL;
-        for(i = 0; i < hash_size; i++)
-        { //-- every process begin to scan their own hashtable
-        
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if(EmTemp->adapted_flag() >= NEWSON)
                     EmTemp->set_adapted_flag(NOTRECADAPTED);
-                
-                entryp = entryp->next;
             }
         }
         
@@ -802,15 +770,13 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
         //if(myid==0) printf("initial_H_adapt %d\n",2); fflush(stdout)
         if(timeprops_ptr->iter == 0)
             //mark the piles so we can refine their boundaries
-            for(i = 0; i < hash_size; i++)
-            {    //-- every process begin to scan their own hashtable
-                entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                while (entryp)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+            {
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    assert(EmTemp);
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                     pileprops_ptr->set_element_height_to_elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr);
-                    entryp = entryp->next;
                 }
             }
         
@@ -849,14 +815,12 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
          ElemBackgroundCheck(HT_Elem_Ptr,HT_Node_Ptr,checkthisneighbor,stdout);
          */
 
-        for(i = 0; i < hash_size; i++)
-        {    //-- every process begin to scan their own hashtable
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 //-- this requirement is used to exclude the new elements
                 if(((EmTemp->adapted_flag() > 0) && (EmTemp->adapted_flag() < NEWSON)) && (EmTemp->generation()
                         < REFINE_LEVEL))
@@ -871,7 +835,6 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                         debug_ref_flag++;
                     }
                 }
-                entryp = entryp->next;
             }
         }
         //printf("myid=%d Initial_H_adapt() after first if_pile_boundary()\n",myid);
@@ -896,15 +859,13 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
         //if(myid==0) printf("initial_H_adapt %d\n",6); fflush(stdout)
         if(timeprops_ptr->iter == 0)
             //mark the piles so we can refine their boundaries
-            for(i = 0; i < hash_size; i++)
-            {    //-- every process begin to scan their own hashtable
-                entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                while (entryp)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+            {
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    assert(EmTemp);
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                     pileprops_ptr->set_element_height_to_elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr);
-                    entryp = entryp->next;
                 }
             }
         
@@ -923,14 +884,12 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
          ElemBackgroundCheck(HT_Elem_Ptr,HT_Node_Ptr,checkthisneighbor,stdout);
          */
 
-        for(i = 0; i < hash_size; i++)
-        {    //-- every process begin to scan their own hashtable
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 //-- this requirement is used to exclude the new elements
                 if(EmTemp->adapted_flag() > 0)
                     if(((EmTemp->if_pile_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) ||
@@ -943,8 +902,6 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                         if(minboundarygen > EmTemp->generation())
                             minboundarygen = EmTemp->generation();
                     }
-                
-                entryp = entryp->next;
             }
         }
         //printf("myid=%d Initial_H_adapt() after second if_pile_boundary()\n",myid);
@@ -967,18 +924,14 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                 
                 //refine where necessary and store the next buffer layer in TempList
                 TempList.trashlist();
-                for(i = 0; i < hash_size; i++)
+                //@ElementsBucketDoubleLoop
+                for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
                 {
-                    entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                    while (entryp)
+                    for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                     {
-                        EmTemp = (Element*) (entryp->value);
-                        assert(EmTemp);
-                        if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,
-                        REFINE_THRESHOLD)
-                           == 1)
+                        EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                        if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD)== 1)
                         {
-                            
                             if(EmTemp->generation() < REFINE_LEVEL)
                                 refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                             if(EmTemp->adapted_flag() == OLDFATHER)
@@ -994,7 +947,6 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                             
                             debug_ref_flag++;
                         }
-                        entryp = entryp->next;
                     }
                 }
                 
@@ -1047,19 +999,14 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
     //if(myid==0) printf("initial_H_adapt %d\n",15); fflush(stdout)
     //printf("icounter=%d\n",icounter);
     //unmark the newsons and buffer layer elements
-    for(i = 0; i < hash_size; i++)
-    { //-- every process begin to scan their own hashtable
-    
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element*) (entryp->value);
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() >= NEWSON)
                 EmTemp->set_adapted_flag(NOTRECADAPTED);
-            
-            entryp = entryp->next;
         }
     }
     
@@ -1073,13 +1020,12 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
         move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
         
         //refine where necessary before placing the innermost buffer layer
-        for(i = 0; i < hash_size; i++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if((EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, GEOFLOW_TINY) == 1) || (EmTemp
                         ->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD1)
                                                                                           == 1)
@@ -1089,7 +1035,6 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                     refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                     debug_ref_flag++;
                 }
-                entryp = entryp->next;
             }
         }
         
@@ -1109,20 +1054,18 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
          */
 
         //mark the elements in the innermost buffer layer as the BUFFER layer
-        for(i = 0; i < hash_size; i++)
-        {    //-- every process begin to scan their own hashtable
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-            while (entryp)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) (entryp->value);
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if((EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, GEOFLOW_TINY) > 0) || (EmTemp
                         ->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD1)
                                                                                          > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD2) > 0)
                    || (EmTemp->if_first_buffer_boundary(HT_Elem_Ptr, REFINE_THRESHOLD) > 0))
                     EmTemp->set_adapted_flag(BUFFER);
-                entryp = entryp->next;
             }
         }
         
@@ -1134,21 +1077,17 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
             move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
             
             //refine where necessary before placing the next buffer layer
-            for(i = 0; i < hash_size; i++)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
             {
-                entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                while (entryp)
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    assert(EmTemp);
-                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,
-                    REFINE_THRESHOLD)
-                       == 1)
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD)== 1)
                     {
                         refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                         debug_ref_flag++;
                     }
-                    entryp = entryp->next;
                 }
             }
             
@@ -1169,18 +1108,14 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
             //the elements just outside the buffer layer will be the next
             //buffer layer, store them in TempList
             TempList.trashlist();
-            for(i = 0; i < hash_size; i++)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
             {
-                entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-                while (entryp)
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    assert(EmTemp);
-                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,
-                    REFINE_THRESHOLD)
-                       > 0)
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD)> 0)
                         TempList.add(EmTemp);
-                    entryp = entryp->next;
                 }
             }
             
@@ -1247,13 +1182,12 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
     int inode;
 #endif
     
-    for(i = 0; i < hash_size; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             switch (EmTemp->adapted_flag())
             {
@@ -1363,59 +1297,50 @@ void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
     
     int minrefinelevel;
     Element* EmTemp;
-    ElemPtrList RefinedList(2048);
+    ElemPtrList RefinedList(El_Table, 2048);
     int i, generation;
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    HashEntryPtr currentPtr;
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
     htflush(El_Table, NodeTable, 1);
     
     do
     {
         
-        for(i = 0; i < num_buck; i++)
-            if(*(buck + i))
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                
-                currentPtr = *(buck + i);
-                while (currentPtr)
-                {
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                     
-                    EmTemp = (Element*) (currentPtr->value);
-                    currentPtr = currentPtr->next;
-                    assert(EmTemp);
-                    
-                    if(EmTemp->adapted_flag() >= NOTRECADAPTED)
-                        EmTemp->set_adapted_flag(NOTRECADAPTED);
-                    
-                }
+                if(EmTemp->adapted_flag() >= NOTRECADAPTED)
+                    EmTemp->set_adapted_flag(NOTRECADAPTED);
+
             }
+        }
         
         minrefinelevel = refinelevel;
         RefinedList.trashlist();
-        for(i = 0; i < num_buck; i++)
-            if(*(buck + i))
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        {
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
-                currentPtr = *(buck + i);
-                while (currentPtr)
+                generation = EmTemp->generation();
+
+                if((EmTemp->adapted_flag() == NOTRECADAPTED) && (generation < refinelevel))
                 {
-                    
-                    EmTemp = (Element*) (currentPtr->value);
-                    currentPtr = currentPtr->next;
-                    assert(EmTemp);
-                    
-                    generation = EmTemp->generation();
-                    
-                    if((EmTemp->adapted_flag() == NOTRECADAPTED) && (generation < refinelevel))
-                    {
-                        refinewrapper(El_Table, NodeTable, matprops_ptr, &RefinedList, EmTemp);
-                        if(generation < minrefinelevel)
-                            minrefinelevel = generation;
-                    }
+                    refinewrapper(El_Table, NodeTable, matprops_ptr, &RefinedList, EmTemp);
+                    if(generation < minrefinelevel)
+                        minrefinelevel = generation;
                 }
             }
+        }
         
         refine_neigh_update(El_Table, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);
         
@@ -1428,55 +1353,47 @@ void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
     {
         if(pileprops_ptr->numpiles > 0)
         {
-            for(i = 0; i < num_buck; i++)
-                if(*(buck + i))
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+            {
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    currentPtr = *(buck + i);
-                    while (currentPtr)
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                        
+                    if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                     {
-                        
-                        EmTemp = (Element*) (currentPtr->value);
-                        currentPtr = currentPtr->next;
-                        assert(EmTemp);
-                        
-                        if(EmTemp->adapted_flag() >= NOTRECADAPTED)
-                        {
-                            EmTemp->set_adapted_flag(NOTRECADAPTED);
-                            pileprops_ptr->set_element_height_to_elliptical_pile_height(NodeTable, EmTemp, matprops_ptr);
-                        }
-                        else
-                        {
-                            EmTemp->void_bcptr();
-                            El_Table->removeElement(EmTemp);
-                        }
+                        EmTemp->set_adapted_flag(NOTRECADAPTED);
+                        pileprops_ptr->set_element_height_to_elliptical_pile_height(NodeTable, EmTemp, matprops_ptr);
+                    }
+                    else
+                    {
+                        EmTemp->void_bcptr();
+                        El_Table->removeElement(EmTemp);
                     }
                 }
+            }
         }
         else
         {
-            for(i = 0; i < num_buck; i++)
-                if(*(buck + i))
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+            {
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    currentPtr = *(buck + i);
-                    while (currentPtr)
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                        
+                    if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                     {
-                        
-                        EmTemp = (Element*) (currentPtr->value);
-                        currentPtr = currentPtr->next;
-                        assert(EmTemp);
-                        
-                        if(EmTemp->adapted_flag() >= NOTRECADAPTED)
-                        {
-                            EmTemp->set_adapted_flag(NOTRECADAPTED);
-                            EmTemp->put_height(0.0);
-                        }
-                        else
-                        {
-                            EmTemp->void_bcptr();
-                            El_Table->removeElement(EmTemp);
-                        }
+                        EmTemp->set_adapted_flag(NOTRECADAPTED);
+                        EmTemp->put_height(0.0);
+                    }
+                    else
+                    {
+                        EmTemp->void_bcptr();
+                        El_Table->removeElement(EmTemp);
                     }
                 }
+            }
         }
     }
     
@@ -1486,14 +1403,12 @@ void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
         repartition2(El_Table, NodeTable, timeprops_ptr);
     
     move_data(numprocs, myid, El_Table, NodeTable, timeprops_ptr);
-    for(i = 0; i << num_buck; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        currentPtr = *(El_Table->getbucketptr() + i);
-        while (currentPtr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (currentPtr->value);
-            currentPtr = currentPtr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if((EmTemp->adapted_flag() > TOBEDELETED) && (EmTemp->adapted_flag() <= BUFFER))
                 EmTemp->calc_wet_dry_orient(El_Table);

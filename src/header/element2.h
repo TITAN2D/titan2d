@@ -391,7 +391,8 @@ public:
     }
 
     void delete_bcptr() {
-        delete bcptr_;
+        if(bcptr_!=nullptr)
+            delete bcptr_;
         void_bcptr();
     }
 
@@ -855,8 +856,14 @@ public:
     void elementType(const ElementType& new_element_type) {
         elementType_ = new_element_type;
     }
+    //index in storage
+    ti_ndx_t ndx() const {return ndx_;}
+    void ndx(ti_ndx_t new_ndx) {ndx_ = new_ndx;}
 
 protected:
+    //index in storage
+    ti_ndx_t ndx_;
+    
     //! Element type
     ElementType elementType_;
     //! myprocess is id of the process(or) that owns this element
@@ -1157,18 +1164,20 @@ public:
 
     //! this constructor allocates space for an array of the default initial size (1024 Element pointers), the size_increment equal the initial size
 
-    ElemPtrList() {
+    ElemPtrList(ElementsHashTable *m_elemTable) {
         init(1024);
+        elemTable=m_elemTable;
         return;
     }
     ;
 
     //! this constructor allocates space for user specified initial-size, the size_increment equals the initial size.
 
-    ElemPtrList(int initial_size) {
+    ElemPtrList(ElementsHashTable *m_elemTable, int initial_size) {
         if (initial_size == 0)
             initial_size = 1024;
         init(initial_size);
+        elemTable=m_elemTable;
         return;
     }
     ;
@@ -1209,9 +1218,9 @@ private:
     void init(int initial_size) {
         list_space = size_increment = initial_size;
         num_elem = inewstart = 0;
-        list = (Element **) malloc(list_space * sizeof (Element*));
+        list = (ti_ndx_t *) malloc(list_space * sizeof (ti_ndx_t));
         for (int i = 0; i < list_space; i++)
-            list[i] = NULL;
+            list[i] = ti_ndx_doesnt_exist;
     }
     ;
 
@@ -1228,56 +1237,10 @@ private:
     int inewstart;
 
     //! the "array" holding the list of element pointers, space is allocated by the constructor, increased automatically whenever needed, and freed automatically by the destructor
-    Element** list;
+    ti_ndx_t *list;
+    ElementsHashTable *elemTable;
 };
 
-inline Element* ElemPtrList::get(int i) {
-    return (((i >= 0) && (i < num_elem)) ? list[i] : NULL);
-}
-;
-
-inline const SFC_Key& ElemPtrList::get_key(int i) const {
-    //assert((i < 0) || (i > num_elem-1));
-    if ((i < 0) || (i > num_elem - 1))return sfc_key_null;
-    else return list[i]->key();
-}
-;
-
-inline int ElemPtrList::get_inewstart() {
-    return inewstart;
-}
-;
-
-inline void ElemPtrList::set_inewstart(int inewstart_in) {
-    inewstart = inewstart_in;
-    return;
-}
-;
-
-inline int ElemPtrList::get_num_elem() {
-    return num_elem;
-}
-;
-
-inline void ElemPtrList::trashlist() {
-    for (int i = 0; i < num_elem; i++)
-        list[i] = NULL;
-    num_elem = inewstart = 0;
-    return;
-}
-;
-
-inline void ElemPtrList::add(Element* EmTemp) {
-    if (num_elem == list_space - 1) {
-        list_space += size_increment;
-        list = (Element **) realloc(list, list_space * sizeof (Element *));
-    }
-
-    list[num_elem] = EmTemp;
-    num_elem++;
-    return;
-}
-;
 
 #endif
 

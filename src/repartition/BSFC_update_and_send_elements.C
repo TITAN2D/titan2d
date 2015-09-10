@@ -28,22 +28,24 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, NodeHashTab
 void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                                    int time_step)
 {
-    int i, j, k, no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
-    HashEntryPtr entryp;
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
+    
+    int i, j, k;
     Element* EmTemp;
     
     j = 0;
-    for(i = 0; i < no_of_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->refined_flag())
             {
                 EmTemp->set_new_old(-1);
             }
-            entryp = entryp->next;
         }
     }
     // now figure out what processors need to have neighbor info updated 
@@ -51,12 +53,12 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
     int* send_info = new int[numprocs * 2]; // number of {neigh_info, elements} for each proc
     for(i = 0; i < 2 * numprocs; i++)
         send_info[i] = 0;
-    for(i = 0; i < no_of_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!EmTemp->refined_flag())
             {
                 if(myid != EmTemp->myprocess())
@@ -71,7 +73,6 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                     
                 }
             }
-            entryp = entryp->next;
         }
     }
     
@@ -131,12 +132,12 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
     for(i = 1; i < numprocs; i++)
         counter_send_proc[i] = counter_send_proc[i - 1] + send_info[2 * (i - 1)];
     // pack neighbor information to send out
-    for(i = 0; i < no_of_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!EmTemp->refined_flag())
             {
                 if(myid != EmTemp->myprocess())
@@ -158,7 +159,6 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                         }
                 }
             }
-            entryp = entryp->next;
         }
     }
     // send out neighbor information
@@ -172,12 +172,12 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
             counter += send_info[2 * i];
         }
     // update neighbor information on this processor
-    for(i = 0; i < no_of_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!EmTemp->refined_flag())
                 if(myid != EmTemp->myprocess())
                 { // this element will get moved to a new processor
@@ -193,7 +193,6 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
                         }
                     }
                 }
-            entryp = entryp->next;
         }
     }
     
@@ -234,13 +233,12 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
     counter_send_proc[0] = 0;
     for(i = 1; i < numprocs; i++)
         counter_send_proc[i] = counter_send_proc[i - 1] + send_info[2 * i - 1];
-    for(i = 0; i < no_of_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!EmTemp->refined_flag())
             {
                 if(myid != EmTemp->myprocess())
@@ -293,30 +291,33 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
 void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid)
 {
     int i, j;
-    HashEntryPtr entryp;
     Element* EmTemp, *son;
-    int no_of_elm_buckets = HT_Elem_Ptr->get_no_of_buckets();
     int no_of_node_buckets = HT_Node_Ptr->get_no_of_buckets();
     Node* NdTemp;
     
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
+    
     // initialize the node flags
+    //@NodesSingleLoop
     for(i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
     {
         if(HT_Node_Ptr->status_[i]>=0)
             HT_Node_Ptr->elenode_[i].id(0);
     }
     
-    for(i = 0; i < no_of_elm_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
-            entryp = entryp->next;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->refined_flag() != 0)
             {  // not an active element
                 EmTemp->void_bcptr();  // don't remove bc's
                 HT_Elem_Ptr->removeElement(EmTemp);
+                ielm--;
             }
             else
             {  //active element on this processor -- flag all nodes as being used

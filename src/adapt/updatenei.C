@@ -35,43 +35,40 @@ void ElemBackgroundCheck(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
 {
     Element* EmDebug = (Element*) El_Table->lookup(debugkey);
     Element* EmTemp;
-    ElemPtrList EmDebugNeigh(128);
-    ElemPtrList EmDebugFather(16);
+    ElemPtrList EmDebugNeigh(El_Table, 128);
+    ElemPtrList EmDebugFather(El_Table, 16);
     Node* NdTemp;
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
     int iFather, ison, ineigh, inode;
     int uniqueneigh = 8;
     
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(int i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
-                EmTemp = (Element*) (currentPtr->value);
-                currentPtr = currentPtr->next;
-                assert(EmTemp);
-                
-                for(ison = 0; ison < 4; ison++)
-                    if(EmTemp->son(ison)==debugkey)
-                    {
-                        EmDebugFather.add(EmTemp);
-                        break;
-                    }
-                
-                for(ineigh = 0; ineigh < 8; ineigh++)
-                    if(EmTemp->neighbor(ineigh)==debugkey)
-                    {
-                        EmDebugNeigh.add(EmTemp);
-                        break;
-                    }
-                
-            }
+            for(ison = 0; ison < 4; ison++)
+                if(EmTemp->son(ison)==debugkey)
+                {
+                    EmDebugFather.add(EmTemp);
+                    break;
+                }
+
+            for(ineigh = 0; ineigh < 8; ineigh++)
+                if(EmTemp->neighbor(ineigh)==debugkey)
+                {
+                    EmDebugNeigh.add(EmTemp);
+                    break;
+                }
+
         }
+    }
     
     if(EmDebug)
     {
@@ -185,43 +182,40 @@ void ElemBackgroundCheck2(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     
     Element *EmDebug = (Element *) EmDebug_in;
     Element* EmTemp;
-    ElemPtrList EmDebugNeigh(128);
-    ElemPtrList EmDebugFather(16);
+    ElemPtrList EmDebugNeigh(El_Table, 128);
+    ElemPtrList EmDebugFather(El_Table, 16);
     Node* NdTemp;
     
     int iFather, ison, ineigh, inode;
     int uniqueneigh = 8;
     
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(int i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
-                EmTemp = (Element*) (currentPtr->value);
-                currentPtr = currentPtr->next;
-                assert(EmTemp);
-                
-                for(ison = 0; ison < 4; ison++)
-                    if(EmTemp->son(ison)==EmDebug->key())
-                    {
-                        EmDebugFather.add(EmTemp);
-                        break;
-                    }
-                
-                for(ineigh = 0; ineigh < 8; ineigh++)
-                    if(EmTemp->neighbor(ineigh)==EmDebug->key())
-                    {
-                        EmDebugNeigh.add(EmTemp);
-                        break;
-                    }
-                
-            }
+            for(ison = 0; ison < 4; ison++)
+                if(EmTemp->son(ison)==EmDebug->key())
+                {
+                    EmDebugFather.add(EmTemp);
+                    break;
+                }
+
+            for(ineigh = 0; ineigh < 8; ineigh++)
+                if(EmTemp->neighbor(ineigh)==EmDebug->key())
+                {
+                    EmDebugNeigh.add(EmTemp);
+                    break;
+                }
+
         }
+    }
     
     if(EmDebug)
     {
@@ -324,36 +318,33 @@ void NodeBackgroundCheck(ElementsHashTable *El_Table, NodeHashTable* NodeTable, 
 {
     Node* NdDebug = (Node*) NodeTable->lookup(nodedbkey);
     Element* EmTemp;
-    ElemPtrList ElemList(4);
+    ElemPtrList ElemList(El_Table, 4);
     
     int inode;
     
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(int i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
-                
-                EmTemp = (Element*) (currentPtr->value);
-                currentPtr = currentPtr->next;
-                assert(EmTemp);
-                
-                for(inode = 0; inode < 8; inode++)
-                    if(EmTemp->node_key(inode)==nodedbkey)
-                    {
-                        ElemList.add(EmTemp);
-                        break;
-                    }
-                
-                if(EmTemp->key()==nodedbkey)
+        EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+
+            for(inode = 0; inode < 8; inode++)
+                if(EmTemp->node_key(inode)==nodedbkey)
+                {
                     ElemList.add(EmTemp);
-                
-            }
+                    break;
+                }
+
+            if(EmTemp->key()==nodedbkey)
+                ElemList.add(EmTemp);
+
         }
+    }
     
     if(NdDebug || ElemList.get_num_elem())
         fprintf(fp, "========================================\n");
@@ -431,10 +422,9 @@ void AssertMeshErrorFree(ElementsHashTable *El_Table, NodeHashTable* NodeTable, 
     Node *NdTemp;
     Element *EmTemp;
     Element *EmNeigh[2];
-    HashEntryPtr *El_Table_bucket0, El_Table_entry_ptr;
     
-    int ielembucket, iside, inode, ineigh, ineighp4, ineighme, i;
-    int inodebucket, El_Table_num_buck, NodeTable_num_buck;
+    int iside, inode, ineigh, ineighp4, ineighme, i;
+    int inodebucket, NodeTable_num_buck;
     
     assert(myid >= 0);
     assert(numprocs >= 1);
@@ -448,18 +438,16 @@ void AssertMeshErrorFree(ElementsHashTable *El_Table, NodeHashTable* NodeTable, 
     }
     
     //check the element information including missing neighbors
-    El_Table_num_buck = El_Table->get_no_of_buckets();
-    El_Table_bucket0 = El_Table->getbucketptr();
-    for(ielembucket = 0; ielembucket < El_Table_num_buck; ielembucket++)
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        El_Table_entry_ptr = *(El_Table_bucket0 + ielembucket);
-        
-        while (El_Table_entry_ptr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element*) (El_Table_entry_ptr->value);
-            El_Table_entry_ptr = El_Table_entry_ptr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             assert(EmTemp->generation()>=MIN_GENERATION);
             assert(EmTemp->generation() <= REFINE_LEVEL);
             
@@ -2088,10 +2076,6 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
         CDeAllocI1(num_recv);
     }		  //if(nump>1)
     
-    Element *EmTemp;
-    HashEntryPtr* bucketzero = El_Table->getbucketptr();
-    //int ibucketdebugneigh = El_Table->hash(ElemDebugNeighKey);
-    HashEntryPtr entryp;
     
     /*
      if(timeprops_ptr->iter==2389) {

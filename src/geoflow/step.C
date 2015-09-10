@@ -275,8 +275,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                          adaptflag);
     
     int i;
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    HashEntryPtr currentPtr;
     Element* Curr_El;
     double VxVy[2];
     
@@ -447,7 +445,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
     double deposited = 0.0, elemdeposited;
     double realvolume = 0.0;
     
-    buck = El_Table->getbucketptr();
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
@@ -572,58 +569,59 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
     double min_height = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT;
     register double temp;
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(Curr_El->adapted_flag() > 0)
             {
-                Element* Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->adapted_flag() > 0)
+                double dx = Curr_El->dx(0);
+                double dy = Curr_El->dx(1);
+
+                if(Curr_El->state_vars(0) > max_height)
                 {
-                    double dx = Curr_El->dx(0);
-                    double dy = Curr_El->dx(1);
-                    
-                    if(Curr_El->state_vars(0) > max_height)
-                    {
-                        max_height = Curr_El->state_vars(0);
-                        imax = i;
-                    }
-                    
-                    // rule out non physical fast moving thin layers
-                    if(Curr_El->state_vars(0) > min_height)
-                    {
-                        if(elementType == ElementType::TwoPhases)
-                        {
-                            temp = sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3));
-                            v_ave += temp * dx * dy;
-                            temp /= Curr_El->state_vars(1);
-                        }
-                        if(elementType == ElementType::SinglePhase)
-                        {
-                            temp = sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2));
-                            v_ave += temp * dx * dy;
-                            temp /= Curr_El->state_vars(0);
-                        }
-
-                        
-                        double dvol = Curr_El->state_vars(0) * dx * dy;
-                        g_ave += Curr_El->gravity(2) * dvol;
-                        volume2 += dvol;
-                        
-                        if(temp > v_max)
-                            v_max = temp;
-                    }
-                    
-                    /* dxg = c_dmax1(dx, dxg);
-                     dyg = c_dmax1(dy, dyg);*/
-
-                    volume += Curr_El->state_vars(0) * dx * dy;
+                    max_height = Curr_El->state_vars(0);
+                    imax = i;
                 }
-                currentPtr = currentPtr->next;
+
+                // rule out non physical fast moving thin layers
+                if(Curr_El->state_vars(0) > min_height)
+                {
+                    if(elementType == ElementType::TwoPhases)
+                    {
+                        temp = sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3));
+                        v_ave += temp * dx * dy;
+                        temp /= Curr_El->state_vars(1);
+                    }
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        temp = sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2));
+                        v_ave += temp * dx * dy;
+                        temp /= Curr_El->state_vars(0);
+                    }
+
+
+                    double dvol = Curr_El->state_vars(0) * dx * dy;
+                    g_ave += Curr_El->gravity(2) * dvol;
+                    volume2 += dvol;
+
+                    if(temp > v_max)
+                        v_max = temp;
+                }
+
+                /* dxg = c_dmax1(dx, dxg);
+                 dyg = c_dmax1(dy, dyg);*/
+
+                volume += Curr_El->state_vars(0) * dx * dy;
             }
         }
+    }
     
     double gl_volume = 0, gl_volume2 = 0, gl_max_height;
     double send[5], receive[5] =
@@ -698,40 +696,40 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
     double min_height = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT;
     int i;
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr entryp = *(buck + i);
-            while (entryp)
-            {
+            Element* EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
-                Element* EmTemp = (Element*) (entryp->value);
-                if(EmTemp->adapted_flag() > 0)
+            if(EmTemp->adapted_flag() > 0)
+            {
+
+                //eliminate fast moving very thin pile from consideration
+                if(EmTemp->state_vars(0) >= min_height)
                 {
-                    
-                    //eliminate fast moving very thin pile from consideration
-                    if(EmTemp->state_vars(0) >= min_height)
+                    if(elementType == ElementType::TwoPhases)
                     {
-                        if(elementType == ElementType::TwoPhases)
-                        {
-                            mom2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3));
-                        }
-                        if(elementType == ElementType::SinglePhase)
-                        {
-                            mom2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2));
-                        }
-                        /* mom2 is not a mistake... only need to take the root of 
-                         the maximum value */
-                        if(mom2 > max_mom)
-                            max_mom = mom2;
+                        mom2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3));
                     }
-                    
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        mom2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2));
+                    }
+                    /* mom2 is not a mistake... only need to take the root of 
+                     the maximum value */
+                    if(mom2 > max_mom)
+                        max_mom = mom2;
                 }
-                entryp = entryp->next;
+
             }
         }
+    }
     
     max_mom = sqrt(max_mom);
     
@@ -802,48 +800,47 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
         int rank;
     } send, receive;
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
-        {
-            
-            HashEntryPtr entryp = *(buck + i);
-            while (entryp)
-            {
-                
-                Element* EmTemp = (Element*) (entryp->value);
-                if(EmTemp->adapted_flag() > 0)
-                {
-                    
-                    //eliminate fast moving very thin pile from consideration
-                    if(EmTemp->state_vars(0) >= min_height)
-                    {
-                        if(elementType == ElementType::TwoPhases)
-                        {
-                            velocity2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3))
-                                / (EmTemp->state_vars(1) * EmTemp->state_vars(1));
-                        }
-                        if(elementType == ElementType::SinglePhase)
-                        {
-                            velocity2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2))
-                                / (EmTemp->state_vars(0) * EmTemp->state_vars(0));
-                        }
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
 
-                        
-                        if(velocity2 > v_max)
-                        {
-                            /* velocity2 is not a mistake... only need to take the root of 
-                             the maximum value */
-                            v_max = velocity2;
-                            
-                            xy_v_max[0] = EmTemp->coord(0);
-                            xy_v_max[1] = EmTemp->coord(1);
-                        }
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        {
+            Element* EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(EmTemp->adapted_flag() > 0)
+            {
+
+                //eliminate fast moving very thin pile from consideration
+                if(EmTemp->state_vars(0) >= min_height)
+                {
+                    if(elementType == ElementType::TwoPhases)
+                    {
+                        velocity2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3))
+                            / (EmTemp->state_vars(1) * EmTemp->state_vars(1));
+                    }
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        velocity2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2))
+                            / (EmTemp->state_vars(0) * EmTemp->state_vars(0));
+                    }
+
+
+                    if(velocity2 > v_max)
+                    {
+                        /* velocity2 is not a mistake... only need to take the root of 
+                         the maximum value */
+                        v_max = velocity2;
+
+                        xy_v_max[0] = EmTemp->coord(0);
+                        xy_v_max[1] = EmTemp->coord(1);
                     }
                 }
-                entryp = entryp->next;
             }
         }
+    }
     
     v_max = sqrt(v_max);
     

@@ -32,8 +32,9 @@
 void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, MatProps *matprops, FluxProps *fluxprops,
                       TimeProps *timeprops)
 {
-    
-    int buckets = ElemTable->get_no_of_buckets();
+    int no_of_buckets = ElemTable->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=ElemTable->bucket;
+    tivector<Element> &elenode_=ElemTable->elenode_;
     
     if(fluxprops->MaxInfluxNow(matprops, timeprops) > 0.0)
     {
@@ -47,19 +48,15 @@ void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, Ma
         HashEntry *entryptr;
         Element *EmTemp;
 #pragma omp parallel for private(entryptr,EmTemp)
-        for(int ibuck = 0; ibuck < buckets; ibuck++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-            entryptr = *(ElemTable->getbucketptr() + ibuck);
-            
-            while (entryptr)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) entryptr->value;
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if(EmTemp->adapted_flag() > 0)
                     //if this element doesn't belong on this processor don't involve
                     EmTemp->calc_flux(NodeTable, fluxprops, timeprops);
-                
-                entryptr = entryptr->next;
             }
         }
     }
@@ -70,19 +67,15 @@ void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, Ma
         HashEntry *entryptr;
         Element *EmTemp;
 #pragma omp parallel for private(entryptr,EmTemp)
-        for(int ibuck = 0; ibuck < buckets; ibuck++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-            entryptr = *(ElemTable->getbucketptr() + ibuck);
-            
-            while (entryptr)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = (Element*) entryptr->value;
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 if(EmTemp->adapted_flag() > 0)
                     //if this element doesn't belong on this processor don't involve
                     EmTemp->zero_influx();
-                
-                entryptr = entryptr->next;
             }
         }
     }

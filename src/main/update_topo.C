@@ -28,6 +28,11 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
     
     char gis_update_map[100] = "\0";
     char yada[256];
+    
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
+    
     if(myid == 0)
     {
         sprintf(yada, "%s/%s", WORKDIR, "updatetopo.txt");
@@ -52,9 +57,8 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
         
         /* update the nodes */
         int num_buckets = HT_Node_Ptr->get_no_of_buckets();
-        int ibucket;
-        HashEntry *entryp;
         //visit every bucket
+        //@NodesSingleLoop
         for(int i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
         {
             if(HT_Node_Ptr->status_[i]>=0)
@@ -62,18 +66,12 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
         }
         
         /* update the elements */
-        num_buckets = HT_Elem_Ptr->get_no_of_buckets();
-        
-        //visit every bucket
-        for(ibucket = 0; ibucket < num_buckets; ibucket++)
+        //@ElementsBucketDoubleLoop
+        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
-            entryp = *(HT_Elem_Ptr->getbucketptr() + ibucket);
-            
-            //visit every element in this bucket
-            while (entryp)
+            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                Element *EmTemp = (Element*) entryp->value;
-                assert(EmTemp);
+                Element *EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
                 
                 if(EmTemp->adapted_flag() > 0)
                 {
@@ -86,7 +84,6 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
                     EmTemp->calc_gravity_vector(matprops);
                     EmTemp->calc_d_gravity(HT_Elem_Ptr);
                 }
-                entryp = entryp->next;
             }
         }	  //closes: for(int ibucket=0; ibucket<num_buckets; ibucket++)
         double tock = MPI_Wtime() - tick;

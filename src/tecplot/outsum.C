@@ -145,64 +145,63 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
     
     double VxVy[2];
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr entryp = *(buck + i);
-            while (entryp)
+            Element* EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(EmTemp->adapted_flag() > 0)
             {
-                
-                Element* EmTemp = (Element*) (entryp->value);
-                if(EmTemp->adapted_flag() > 0)
+                double height=EmTemp->state_vars(0);
+                EmTemp->eval_velocity(0.0, 0.0, VxVy);
+                velocity2 = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+
+                //get v and h at center of mass
+                masscenterdist2 = (EmTemp->coord(0) - xy_cen[0]) * (EmTemp->coord(0) - xy_cen[0])
+                        + (EmTemp->coord(1) - xy_cen[1]) * (EmTemp->coord(1) - xy_cen[1]);
+                if(masscenterdist2 < masscentermindist2)
                 {
-                    double height=EmTemp->state_vars(0);
-                    EmTemp->eval_velocity(0.0, 0.0, VxVy);
-                    velocity2 = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
-                    
-                    //get v and h at center of mass
-                    masscenterdist2 = (EmTemp->coord(0) - xy_cen[0]) * (EmTemp->coord(0) - xy_cen[0])
-                            + (EmTemp->coord(1) - xy_cen[1]) * (EmTemp->coord(1) - xy_cen[1]);
-                    if(masscenterdist2 < masscentermindist2)
+                    masscentermindist2 = masscenterdist2;
+                    vh_cen[0] = velocity2;
+                    vh_cen[1] = height;
+                    xycen[0] = EmTemp->coord(0);
+                    xycen[1] = EmTemp->coord(1);
+                }
+
+                //eliminate fast moving very thin pile from consideration
+                if(height >= vmax_min_height)
+                {
+
+                    if(velocity2 > vmax)
                     {
-                        masscentermindist2 = masscenterdist2;
-                        vh_cen[0] = velocity2;
-                        vh_cen[1] = height;
-                        xycen[0] = EmTemp->coord(0);
-                        xycen[1] = EmTemp->coord(1);
-                    }
-                    
-                    //eliminate fast moving very thin pile from consideration
-                    if(height >= vmax_min_height)
-                    {
-                        
-                        if(velocity2 > vmax)
-                        {
-                            /* velocity2 is not a mistake... only need to take the root of 
-                             the maximum value */
-                            vmax = velocity2;
-                            
-                            xyh_vmax[0] = EmTemp->coord(0);
-                            xyh_vmax[1] = EmTemp->coord(1);
-                            xyh_vmax[2] = height;
-                        }
-                    }
-                    
-                    if(height > hmax)
-                    {
-                        
-                        hmax = height;
-                        
-                        xyv_hmax[0] = EmTemp->coord(0);
-                        xyv_hmax[1] = EmTemp->coord(1);
-                        xyv_hmax[2] = velocity2;
-                        
+                        /* velocity2 is not a mistake... only need to take the root of 
+                         the maximum value */
+                        vmax = velocity2;
+
+                        xyh_vmax[0] = EmTemp->coord(0);
+                        xyh_vmax[1] = EmTemp->coord(1);
+                        xyh_vmax[2] = height;
                     }
                 }
-                entryp = entryp->next;
+
+                if(height > hmax)
+                {
+
+                    hmax = height;
+
+                    xyv_hmax[0] = EmTemp->coord(0);
+                    xyv_hmax[1] = EmTemp->coord(1);
+                    xyv_hmax[2] = velocity2;
+
+                }
             }
         }
+    }
     
     vh_cen[0] = sqrt(vh_cen[0]);
     vmax = sqrt(vmax);

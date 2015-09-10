@@ -846,8 +846,9 @@ void Element::get_nelb_icon(NodeHashTable* NodeTable, ElementsHashTable* HT_Elem
 
 Element::~Element()
 {
-    if(bcptr())
-        delete_bcptr();
+    //@TODO bcptr deletion
+    //if(bcptr())
+    //    delete_bcptr();
     /*  if(key[0] == (unsigned) 2501998986) {
      int mmmyid;
      MPI_Comm_rank(MPI_COMM_WORLD, &mmmyid);
@@ -4724,4 +4725,51 @@ void ElemPtrList::trashlist()
     num_elem=inewstart=0;
     return;
 };
+
+
+
 #endif
+//@todo ElemPtrList should be inlined
+
+Element* ElemPtrList::get(int i) {
+    return (((i >= 0) && (i < num_elem)) ? &(elemTable->elenode_[list[i]]) : NULL);
+}
+
+const SFC_Key& ElemPtrList::get_key(int i) const {
+    //assert((i < 0) || (i > num_elem-1));
+    if ((i < 0) || (i > num_elem - 1))return sfc_key_null;
+    else return ((elemTable->elenode_[list[i]]).key());
+}
+
+int ElemPtrList::get_inewstart() {
+    return inewstart;
+}
+
+void ElemPtrList::set_inewstart(int inewstart_in) {
+    inewstart = inewstart_in;
+    return;
+}
+
+int ElemPtrList::get_num_elem() {
+    return num_elem;
+}
+
+void ElemPtrList::trashlist() {
+    for (int i = 0; i < num_elem; i++)
+        list[i] = ti_ndx_doesnt_exist;
+    num_elem = inewstart = 0;
+    return;
+}
+
+
+void ElemPtrList::add(Element* EmTemp) {
+    if (num_elem == list_space - 1) {
+        list_space += size_increment;
+        list = (ti_ndx_t*) realloc(list, list_space * sizeof (ti_ndx_t));
+    }
+
+    list[num_elem] = EmTemp->ndx();
+    num_elem++;
+    return;
+}
+

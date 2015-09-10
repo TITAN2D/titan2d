@@ -36,7 +36,7 @@ void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTab
     int i, j, k;
     Element* element;
     Element* Neigh;
-    ElemPtrList TempList(384);
+    ElemPtrList TempList(El_Table, 384);
     int myid;
     
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);

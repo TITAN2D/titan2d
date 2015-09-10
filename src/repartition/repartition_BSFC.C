@@ -97,14 +97,15 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int
     /* get application data (number of objects, ids, weights, and coords */
     int elm_counter = 0;  //used to keep count how many active elements are on this processor
     int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
-    HashEntryPtr entryp;
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
     Element* EmTemp;
+    //@ElementsBucketDoubleLoop
     for(i = 0; i < no_of_buckets; i++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(j = 0; j < bucket[i].ndx.size(); j++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[i].ndx[j]]);
             if(!EmTemp->refined_flag())
             {
                 if(EmTemp->state_vars(0) > GEOFLOW_TINY)
@@ -120,18 +121,17 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int
                 EmTemp->set_new_old(BSFC_NEW);
                 elm_counter++;
             }
-            entryp = entryp->next;
         }
     }
     //printf("there are %d active elements on proc %d\n",elm_counter,myid);
     //elements that share constrained nodes are grouped into 1 objects (since they cannot be separated onto different processors)  
     num_local_objects = 0;
+    //@ElementsBucketDoubleLoop
     for(i = 0; i < no_of_buckets; i++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[i].ndx[j]]);
             if(!EmTemp->refined_flag() && EmTemp->new_old() == BSFC_NEW)
             {
                 //check for constrained nodes on the vertex nodes
@@ -150,19 +150,18 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int
                 
                 num_local_objects++;
             }
-            entryp = entryp->next;
         }
     }
     
     sfc_vert_ptr = (BSFC_VERTEX_PTR) malloc(num_local_objects * sizeof(BSFC_VERTEX));
     // fill up the sfc_vert_ptr array which stores all the necessary info about the load-balancing objects
     j = 0;
+    //@ElementsBucketDoubleLoop
     for(i = 0; i < no_of_buckets; i++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[i].ndx[j]]);
             if(!EmTemp->refined_flag() && EmTemp->new_old() > 0)
             {
                 sfc_vert_ptr[j].lb_weight = EmTemp->lb_weight();
@@ -170,7 +169,6 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int
                 
                 j++;
             }
-            entryp = entryp->next;
         }
     }
     assert(j == num_local_objects);
@@ -635,10 +633,10 @@ void repartition2(ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimePro
 int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend)
 {
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    HashEntryPtr currentPtr;
     int ibuck, ielem, ikey, iproc, ineigh, ierr;
     Element *EmTemp;
     unsigned nullkey[2] =
@@ -721,16 +719,12 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
 #endif
     
     int num_elem = 0;
-    for(ibuck = 0; ibuck < num_buck; ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        currentPtr = *(buck + ibuck);
-        
-        while (currentPtr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            EmTemp = (Element*) (currentPtr->value);
-            currentPtr = currentPtr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
@@ -759,6 +753,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
                 //delete the non active elements
                 EmTemp->void_bcptr();
                 El_Table->removeElement(EmTemp);
+                ielm--;
             }
         } //while(currentPtr)
     } //for(ibuck=0; ibuck<num_buck; ibuck++)
@@ -791,15 +786,12 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
     //store pointers to all the active elements in an array and store
     //double precision versions of the elements' keys in an array
     ielem = 0;
-    for(ibuck = 0; ibuck < num_buck; ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        currentPtr = *(buck + ibuck);
-        
-        while (currentPtr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (currentPtr->value);
-            currentPtr = currentPtr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if(EmTemp->adapted_flag() >= NOTRECADAPTED)
             {
@@ -1982,15 +1974,13 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
     //checkelemnode(El_Table, NodeTable, myid, fpdb2, 20.0);
     
     //loop through elements to see which nodes are associated with them
-    for(ibuck = 0; ibuck < num_buck; ibuck++)
-    {
-        currentPtr = *(buck + ibuck);
         
-        while (currentPtr)
+    //@ElementsBucketDoubleLoop
+    for(int i = 0; i < no_of_buckets; i++)
+    {
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
-            EmTemp = (Element*) (currentPtr->value);
-            currentPtr = currentPtr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[i].ndx[j]]);
             NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
             assert(NdTemp);
             NdTemp->num_assoc_elem(NdTemp->num_assoc_elem() + 1);
@@ -2292,10 +2282,10 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
 void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable,
                                      TimeProps* timeprops_ptr, double *NewProcDoubleKeyBoundaries)
 {
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    HashEntryPtr currentPtr;
     int ibuck, ielem, ikey, iproc, ineigh, ierr, inodebucket, inode;
     Element *EmTemp;
     unsigned nullkey[2] =
@@ -2346,7 +2336,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     // 1) which elements I "own" but should not
     // 2) which processors these elements should actually belong to
     // **************************************************************
-    ElemPtrList NotMyElem(256);  //will deallocate self with destructor
+    ElemPtrList NotMyElem(El_Table,256);  //will deallocate self with destructor
     int *NumToSecondSend = CAllocI1(numprocs);
     int *NumToSecondRecv = CAllocI1(numprocs);
     
@@ -2355,16 +2345,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     
     //figure out which elements I shouldn't own and how many elements I
     //should send to each of the other processors.
-    for(ibuck = 0; ibuck < num_buck; ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int i = 0; i < no_of_buckets; i++)
     {
-        currentPtr = *(buck + ibuck);
-        
-        while (currentPtr)
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
-            
-            EmTemp = (Element*) (currentPtr->value);
-            currentPtr = currentPtr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[i].ndx[j]]);
             
 #ifdef DEBUG_REPART2C
             if((timeprops_ptr->iter == DEBUG_ITER) && (EmTemp->adapted_flag() <= -NOTRECADAPTED)
@@ -2582,15 +2568,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
         }
         
         //loop through elements to see which nodes are associated with them
-        for(ibuck = 0; ibuck < num_buck; ibuck++)
+        //@ElementsBucketDoubleLoop
+        for(int i = 0; i < no_of_buckets; i++)
         {
-            currentPtr = *(buck + ibuck);
-            
-            while (currentPtr)
+            for(int j = 0; j < bucket[i].ndx.size(); j++)
             {
-                EmTemp = (Element*) (currentPtr->value);
-                currentPtr = currentPtr->next;
-                assert(EmTemp);
+                EmTemp = &(elenode_[bucket[i].ndx[j]]);
                 NdTemp = (Node*) NodeTable->lookup(EmTemp->key());
                 assert(NdTemp);
                 NdTemp->num_assoc_elem(NdTemp->num_assoc_elem() + 1);
@@ -2711,16 +2694,12 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     
     //Now scan the hashtable
     int num_elem = 0;
-    for(ibuck = 0; ibuck < num_buck; ibuck++)
+    //@ElementsBucketDoubleLoop
+    for(int i = 0; i < no_of_buckets; i++)
     {
-        currentPtr = *(buck + ibuck);
-        
-        while (currentPtr)
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
-            
-            EmTemp = (Element*) (currentPtr->value);
-            currentPtr = currentPtr->next;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[i].ndx[j]]);
             assert(EmTemp->adapted_flag()>=NOTRECADAPTED);
             num_elem++;
             EmTemp->set_myprocess(myid);

@@ -58,14 +58,16 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     /* scan HashTable and store coordinates and variables in vectors */
     Element *EmTemp = NULL;
     Node *NodeTemp = NULL;
-    HashEntry *entryptr;
-    int buckets = El_Table->get_no_of_buckets();
-    for(i = 0; i < buckets; i++)
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryptr = *(El_Table->getbucketptr() + i);
-        while (entryptr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element *) entryptr->value;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!(EmTemp->refined_flag()))
             {
                 pheight.push_back(EmTemp->state_vars(0) * matprops_ptr->HEIGHT_SCALE);
@@ -93,7 +95,6 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
                     num_nodes++;
                 }
             }
-            entryptr = entryptr->next;
         }
     }
     
@@ -244,8 +245,8 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     
     Element *EmTemp = NULL;
     Node *NodeTemp = NULL;
-    HashEntry *entryptr;
     // reset connection-ids
+    //@NodesSingleLoop
     for(i = 0; i < NodeTable->elenode_.size(); i++)
     {
         if(NodeTable->status_[i]>=0)
@@ -256,13 +257,17 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     int num_elem = 0;
     int num_node = 0;
     int id = 0;
-    int buckets = El_Table->get_no_of_buckets();
-    for(i = 0; i < buckets; i++)
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryptr = *(El_Table->getbucketptr() + i);
-        while (entryptr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element *) entryptr->value;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!EmTemp->refined_flag())
             {
                 num_elem++;
@@ -276,7 +281,6 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
                     }
                 }
             }
-            entryptr = entryptr->next;
         }
     }
     
@@ -291,12 +295,12 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     
     /* scan HashTable and store coordinates and variables in vectors */
     int ielm = 0;
-    for(i = 0; i < buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryptr = *(El_Table->getbucketptr() + i);
-        while (entryptr)
+        for(int jelm = 0; jelm < bucket[ibuck].ndx.size(); jelm++)
         {
-            EmTemp = (Element *) entryptr->value;
+            EmTemp = &(elenode_[bucket[ibuck].ndx[jelm]]);
             if(!(EmTemp->refined_flag()))
             {
                 pheight[ielm] = EmTemp->state_vars(0) * matprops_ptr->HEIGHT_SCALE;
@@ -324,7 +328,6 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
                 }
                 ielm++;
             }
-            entryptr = entryptr->next;
         }
     }
     

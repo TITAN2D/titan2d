@@ -139,7 +139,14 @@ public:
     //! get connection id 
     int connection_id() const {return connection_id_;}
     
+    //index in storage
+    ti_ndx_t ndx() const {return ndx_;}
+    void ndx(ti_ndx_t new_ndx) {ndx_ = new_ndx;}
+
 protected:
+    //index in storage
+    ti_ndx_t ndx_;
+    
     //! used in delete_unused_nodes_and_elements() function 
     int id_;
 

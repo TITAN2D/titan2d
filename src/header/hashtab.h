@@ -46,6 +46,7 @@ class Node;
 class BC;
 class MatProps;
 
+
 struct HashEntry
 {
     SFC_Key key;  //key: object key word
@@ -85,8 +86,7 @@ class HashTableBase
     
     //friend int hash(unsigned* keyi);
     friend class Element;
-
-protected:
+public:
     double doublekeyrange[2];
     double hashconstant;
     double Xrange[2];
@@ -234,9 +234,9 @@ public:
     tivector<SFC_Key> key_;
     tivector<ContentStatus> status_;
     tivector<T> elenode_;
-   
+    
 public:
-    HashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
+    HashTable(double *doublekeyrangein, int size, double XR[], double YR[],tisize_t reserved_size);
     virtual ~HashTable(){}
     
     int hash(const SFC_Key& key) const
@@ -281,10 +281,13 @@ public:
     void flush();//actually delete, removed nodes and rearrange added (sort accorting to keys)
 };
 template class HashTable<Node>;
-
+template class HashTable<Element>;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+constexpr tisize_t elem_reserved_size=1000000;
+constexpr tisize_t node_reserved_size=elem_reserved_size*9;
+
 class NodeHashTable: public HashTable<Node>
 {
 public:
@@ -298,10 +301,12 @@ public:
     Node* createAddNode(FILE* fp, MatProps* matprops_ptr);
     
     void removeNode(Node* node);
+
+    Node& node(const ti_ndx_t ndx){return elenode_[ndx];}
 };
 ////////////////////////////////////////////////////////////////////////////////
 //! Hashtables for Elements
-class ElementsHashTable: public HashTableBase
+class ElementsHashTable: public HashTable<Element>
 {
     
     //friend int hash(unsigned* keyi);
@@ -309,11 +314,11 @@ class ElementsHashTable: public HashTableBase
 protected:
     NodeHashTable* NodeTable;
 
-    vector<uint64_t> ukeyElements;
+    vector<SFC_Key> ukeyElements;
     vector<Element*> elements;
 
     int NlocalElements;
-    vector<uint64_t> ukeyLocalElements;
+    vector<SFC_Key> ukeyLocalElements;
     vector<Element*> localElements;
 public:
     ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable);
@@ -324,11 +329,6 @@ public:
         return &(elements[0]);
     }
     
-    /*	virtual void add(unsigned* key, void* value);
-     virtual void remove(unsigned* key);
-     virtual void remove(unsigned* key, int whatflag);  //for debugging
-     virtual void remove(unsigned* key, int whatflag, FILE *fp, int myid, int where);  //for debugging
-     */
     void updateElements();
     //!debug function check that all allEntries are up to date, return number of mismatch
     int ckeckElementsPointers(const char *prefix);
@@ -371,15 +371,12 @@ public:
     virtual Element* generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid);
     
     //!should not be used
-    virtual void remove(const SFC_Key& key){assert(0);}
     void removeElement(Element* elm);
     
-    virtual void* lookup(const SFC_Key& key);
-    
+
+    //Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
     //here goes element content storage probably should be separate class at the end
     
-    tivector<Element> elements_;
-
 };
 
 extern ElementsHashTable *elementsHashTable;

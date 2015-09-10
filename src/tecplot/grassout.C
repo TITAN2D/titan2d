@@ -20,8 +20,9 @@ void grass_sites_header_output(TimeProps* timeprops)
 void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid, MatProps* matprops,
                              TimeProps* timeprops)
 {
-    int ielembucket;
-    int numelembucket = HT_Elem_Ptr->get_no_of_buckets();
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
     
     double velocity_scale = sqrt(matprops->LENGTH_SCALE * (matprops->GRAVITY_SCALE));
     double momentum_scale = matprops->HEIGHT_SCALE * velocity_scale; // scaling factor for the momentums
@@ -37,16 +38,12 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     /***************************************************************/
 
     //check every bucket for elements
-    for(ielembucket = 0; ielembucket < numelembucket; ielembucket++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        HashEntry *entryp = *(HT_Elem_Ptr->getbucketptr() + ielembucket);
-        
-        //check every element in a bucket
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            Element *EmTemp = (Element*) entryp->value;
-            assert(EmTemp);
+            Element *EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             //if the current element is an active one on this processor
             if(EmTemp->adapted_flag() > 0)
@@ -70,8 +67,6 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
                         NodeTemp->elevation() * (matprops->LENGTH_SCALE), //elevation
                         pile_height, vx, vy, x_mom, y_mom);
             }
-            
-            entryp = entryp->next;
         }
     }
     

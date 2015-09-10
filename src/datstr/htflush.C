@@ -39,14 +39,11 @@ void htflush(ElementsHashTable* ht_elem_ptr, NodeHashTable* ht_node_ptr, int opt
     switch (option)
     {
         case 1:
-            for(i = 0; i < e_buckets; i++)
+            for(i = 0; i < ht_elem_ptr->elenode_.size(); i++)
             {
-                entryp = *(ht_elem_ptr->getbucketptr() + i);
-                while (entryp)
+                if(ht_elem_ptr->status_[i]>=0)
                 {
-                    EmTemp = (Element*) (entryp->value);
-                    EmTemp->set_new_old(OLD);
-                    entryp = entryp->next;
+                    ht_elem_ptr->elenode_[i].set_new_old(OLD);
                 }
             }
             break;

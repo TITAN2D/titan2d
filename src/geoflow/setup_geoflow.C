@@ -24,12 +24,13 @@
 void setup_geoflow(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
                    TimeProps *timeprops_ptr)
 {
-    
     int i;
-    int num_buckets = El_Table->get_no_of_buckets();
-    /* zero out the fluxes for all of the nodes */
-    HashEntryPtr* buck;
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
     
+    /* zero out the fluxes for all of the nodes */
+    //@NodesSingleLoop
     for(i = 0; i < NodeTable->elenode_.size(); i++)
     {
         if(NodeTable->status_[i]>=0)
@@ -38,48 +39,39 @@ void setup_geoflow(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int my
 
     
     /* put the coord for the center node in the element */
-    buck = El_Table->getbucketptr();
-    for(i = 0; i < num_buckets; i++)
-        if(*(buck + i))
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            Element *Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            int refined = Curr_El->refined_flag();
+            if(Curr_El->adapted_flag() > 0) //if this is a refined element don't involve!!!
             {
-                Element* Curr_El = (Element*) (currentPtr->value);
-                int refined = Curr_El->refined_flag();
-                if(Curr_El->adapted_flag() > 0) //if this is a refined element don't involve!!!
-                {
-                    Curr_El->find_positive_x_side(NodeTable);
-                    Curr_El->calculate_dx(NodeTable);
-                    Curr_El->calc_topo_data(matprops_ptr);
-                    Curr_El->calc_gravity_vector(matprops_ptr);
-                }
-                
-                currentPtr = currentPtr->next;
+                Curr_El->find_positive_x_side(NodeTable);
+                Curr_El->calculate_dx(NodeTable);
+                Curr_El->calc_topo_data(matprops_ptr);
+                Curr_El->calc_gravity_vector(matprops_ptr);
             }
         }
+    }
     
     /* transfer ghost elements to proper processors */
     move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
     
     /* calculate d_gravity array for each element */
-    buck = El_Table->getbucketptr();
-    for(i = 0; i < num_buckets; i++)
-        if(*(buck + i))
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            Element *Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            int refined = Curr_El->refined_flag();
+            if(Curr_El->adapted_flag() > 0) //if this is a refined element don't involve!!!
             {
-                Element* Curr_El = (Element*) (currentPtr->value);
-                int refined = Curr_El->refined_flag();
-                if(Curr_El->adapted_flag() > 0) //if this is a refined element don't involve!!!
-                {
-                    Curr_El->calc_d_gravity(El_Table);
-                }
-                
-                currentPtr = currentPtr->next;
+                Curr_El->calc_d_gravity(El_Table);
             }
         }
-    
+    }
     return;
 }

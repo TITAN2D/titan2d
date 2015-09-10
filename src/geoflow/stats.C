@@ -77,26 +77,24 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
     /* need to allocate space to store nonzero pile heights and
      volumes, to do that we first have to count the number of
      nonzero elements */
-
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
     int num_nonzero_elem = 0, *all_num_nonzero_elem;
-    for(i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
-                
-                Element* Curr_El = (Element*) (currentPtr->value);
-                if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
-                    if(Curr_El->state_vars(0) > GEOFLOW_TINY)
-                        num_nonzero_elem++;
-                
-                currentPtr = currentPtr->next;
-            }
+            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
+                if(Curr_El->state_vars(0) > GEOFLOW_TINY)
+                    num_nonzero_elem++;
         }
+    }
     /******************************************************************/
     /*** the rewrite involves a sort which increases the cost/time  ***/
     /*** significantly and does not appear to provide a significant ***/
@@ -318,186 +316,181 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
     //for SINGLE PHASE
     double VxVy[2];
 
-    for(i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
             {
-                
-                Element* Curr_El = (Element*) (currentPtr->value);
-                assert(Curr_El!=NULL);
-                if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
-                {
-                    //calculate volume passing through "discharge planes"
-                    Node** nodesPtr = Curr_El->getNodesPtrs();
-                    double nodescoord[9][2];
-                    Node* node;
-                    
-                    for(int inode = 0; inode < 8; inode++)
-                    {
-                        node = nodesPtr[inode];				//(Node*) NodeTable->lookup(nodes + 2 * inode);
-                        /*if ((timeprops->iter == 291) && (inode == 8)) {
-                         printf("coord=(%g,%g) node=%u  ", coord[0], coord[1], node);
-                         fflush(stdout);
-                         }*/
-                        nodescoord[inode][0] = node->coord(0);
-                        nodescoord[inode][1] = node->coord(1);
-                        /*if ((timeprops->iter == 291) && (inode >= 8)) {
-                         printf("inode=%d node=%u", inode, node);
-                         fflush(stdout);
-                         }*/
-                    }
-                    nodescoord[8][0] = Curr_El->coord(0);
-                    nodescoord[8][1] = Curr_El->coord(0);
-                    
-                    discharge->update(nodescoord, Curr_El->hVx(), Curr_El->hVy(), d_time);
-                    
-                    // rule out non physical fast moving thin layers
-                    //if(Curr_El->state_vars(0) >= cutoffheight){
-                    
-                    if(Curr_El->state_vars(0) > min_height)
-                    {
-                        
-                        if(Curr_El->state_vars(0) > max_height)
-                            max_height = Curr_El->state_vars(0);
-                        
-                        if(Curr_El->state_vars(0) >= statprops->hxyminmax)
-                        {
-                            if(Curr_El->coord(0) < xyminmax[0]) //xmin
-                                xyminmax[0] = Curr_El->coord(0);
-                            if(-Curr_El->coord(0) < xyminmax[1]) //negative xmax
-                                xyminmax[1] = -Curr_El->coord(0);
-                            if(Curr_El->coord(1) < xyminmax[2]) //ymin
-                                xyminmax[2] = Curr_El->coord(1);
-                            if(-Curr_El->coord(1) < xyminmax[3]) //negative ymax
-                                xyminmax[3] = -Curr_El->coord(1);
-                        }
-                        
-                        //to test if pileheight of depth testpointheight
-                        //has reached the testpoint
-                        testpointdist2 = (Curr_El->coord(0) - testpointx) * (Curr_El->coord(0) - testpointx)
-                                + (Curr_El->coord(1) - testpointy) * (Curr_El->coord(1) - testpointy);
-                        double junktest = 0;
-                        if(testpointdist2 > 0)
-                            junktest = testpointdist2;
-                        if(testpointmindist2 > 0)
-                            junktest = testpointmindist2;
-                        if(testpointdist2 < testpointmindist2)
-                        {
-                            testpointmindist2 = testpointdist2;
-                            testpointreach = ((Curr_El->state_vars(0) >= testpointheight) ? 1 : 0);
-                        }
-                        
-                        dA = Curr_El->dx(0) * Curr_El->dx(1);
-                        area += dA;
-                        dVol = Curr_El->state_vars(0) * dA;
-                        testvolume += dVol;
-                        xC += Curr_El->coord(0) * dVol;
-                        yC += Curr_El->coord(1) * dVol;
-                        
-                        xVar += Curr_El->coord(0) * Curr_El->coord(0) * dVol;
-                        yVar += Curr_El->coord(1) * Curr_El->coord(1) * dVol;
-                        piler2 += (Curr_El->coord(0) * Curr_El->coord(0) + Curr_El->coord(1) * Curr_El->coord(1)) * dVol;
-                        rC += sqrt((Curr_El->coord(0) - xCen) * (Curr_El->coord(0) - xCen) + (Curr_El->coord(1) - yCen) * (Curr_El->coord(1) - yCen)) * dVol;
-                        
+                //calculate volume passing through "discharge planes"
+                Node** nodesPtr = Curr_El->getNodesPtrs();
+                double nodescoord[9][2];
+                Node* node;
 
+                for(int inode = 0; inode < 8; inode++)
+                {
+                    node = nodesPtr[inode];				//(Node*) NodeTable->lookup(nodes + 2 * inode);
+                    /*if ((timeprops->iter == 291) && (inode == 8)) {
+                     printf("coord=(%g,%g) node=%u  ", coord[0], coord[1], node);
+                     fflush(stdout);
+                     }*/
+                    nodescoord[inode][0] = node->coord(0);
+                    nodescoord[inode][1] = node->coord(1);
+                    /*if ((timeprops->iter == 291) && (inode >= 8)) {
+                     printf("inode=%d node=%u", inode, node);
+                     fflush(stdout);
+                     }*/
+                }
+                nodescoord[8][0] = Curr_El->coord(0);
+                nodescoord[8][1] = Curr_El->coord(0);
+
+                discharge->update(nodescoord, Curr_El->hVx(), Curr_El->hVy(), d_time);
+
+                // rule out non physical fast moving thin layers
+                //if(Curr_El->state_vars(0) >= cutoffheight){
+
+                if(Curr_El->state_vars(0) > min_height)
+                {
+
+                    if(Curr_El->state_vars(0) > max_height)
+                        max_height = Curr_El->state_vars(0);
+
+                    if(Curr_El->state_vars(0) >= statprops->hxyminmax)
+                    {
+                        if(Curr_El->coord(0) < xyminmax[0]) //xmin
+                            xyminmax[0] = Curr_El->coord(0);
+                        if(-Curr_El->coord(0) < xyminmax[1]) //negative xmax
+                            xyminmax[1] = -Curr_El->coord(0);
+                        if(Curr_El->coord(1) < xyminmax[2]) //ymin
+                            xyminmax[2] = Curr_El->coord(1);
+                        if(-Curr_El->coord(1) < xyminmax[3]) //negative ymax
+                            xyminmax[3] = -Curr_El->coord(1);
+                    }
+
+                    //to test if pileheight of depth testpointheight
+                    //has reached the testpoint
+                    testpointdist2 = (Curr_El->coord(0) - testpointx) * (Curr_El->coord(0) - testpointx)
+                            + (Curr_El->coord(1) - testpointy) * (Curr_El->coord(1) - testpointy);
+                    double junktest = 0;
+                    if(testpointdist2 > 0)
+                        junktest = testpointdist2;
+                    if(testpointmindist2 > 0)
+                        junktest = testpointmindist2;
+                    if(testpointdist2 < testpointmindist2)
+                    {
+                        testpointmindist2 = testpointdist2;
+                        testpointreach = ((Curr_El->state_vars(0) >= testpointheight) ? 1 : 0);
+                    }
+
+                    dA = Curr_El->dx(0) * Curr_El->dx(1);
+                    area += dA;
+                    dVol = Curr_El->state_vars(0) * dA;
+                    testvolume += dVol;
+                    xC += Curr_El->coord(0) * dVol;
+                    yC += Curr_El->coord(1) * dVol;
+
+                    xVar += Curr_El->coord(0) * Curr_El->coord(0) * dVol;
+                    yVar += Curr_El->coord(1) * Curr_El->coord(1) * dVol;
+                    piler2 += (Curr_El->coord(0) * Curr_El->coord(0) + Curr_El->coord(1) * Curr_El->coord(1)) * dVol;
+                    rC += sqrt((Curr_El->coord(0) - xCen) * (Curr_El->coord(0) - xCen) + (Curr_El->coord(1) - yCen) * (Curr_El->coord(1) - yCen)) * dVol;
+
+
+                    if(elementType == ElementType::TwoPhases)
+                    {
+                        v_ave += sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3)) * dA;
+                        Curr_El->eval_velocity(0.0, 0.0, Vsolid);
+
+                        if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((Curr_El->state_vars(0) <= 0.0) || (0.0 <= Curr_El->state_vars(0))))
+                           || (!((Curr_El->state_vars(1) <= 0.0) || (0.0 <= Curr_El->state_vars(1))))
+                           || (!((Curr_El->state_vars(2) <= 0.0) || (0.0 <= Curr_El->state_vars(2))))
+                           || (!((Curr_El->state_vars(3) <= 0.0) || (0.0 <= Curr_El->state_vars(3))))
+                           || (!((Curr_El->state_vars(4) <= 0.0) || (0.0 <= Curr_El->state_vars(4))))
+                           || (!((Curr_El->state_vars(5) <= 0.0) || (0.0 <= Curr_El->state_vars(5)))))
+                        {
+                            //v_ave is NaN
+                            cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
+                            printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
+                                   Curr_El->prev_state_vars(0), Curr_El->prev_state_vars(1),
+                                   Curr_El->prev_state_vars(2), Curr_El->prev_state_vars(3),
+                                   Curr_El->prev_state_vars(4), Curr_El->prev_state_vars(5));
+                            printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1),
+                                   Curr_El->state_vars(2), Curr_El->state_vars(3), Curr_El->state_vars(4), Curr_El->state_vars(5));
+                            printf("prev {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
+                                   Curr_El->prev_state_vars(2) / (Curr_El->prev_state_vars(1)),
+                                   Curr_El->prev_state_vars(3) / (Curr_El->prev_state_vars(1)),
+                                   Curr_El->prev_state_vars(4) / (Curr_El->prev_state_vars(0)),
+                                   Curr_El->prev_state_vars(5) / (Curr_El->prev_state_vars(0)));
+                            printf("this {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
+                                   Curr_El->state_vars(2) / Curr_El->state_vars(1), Curr_El->state_vars(3) / Curr_El->state_vars(1),
+                                   Curr_El->state_vars(4) / Curr_El->state_vars(0), Curr_El->state_vars(5) / Curr_El->state_vars(0));
+                            ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
+                            exit(1);
+                        }
+
+                        temp = sqrt(Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1]);
+                        if(temp > v_max)
+                            v_max = temp;
+                        vx_ave += Curr_El->state_vars(2) * dA;
+                        vy_ave += Curr_El->state_vars(3) * dA;
+                    }
+                    if(elementType == ElementType::SinglePhase)
+                    {
+                        v_ave += sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2)) * dA;
+                        Curr_El->eval_velocity(0.0, 0.0, VxVy);
+
+                        if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((Curr_El->state_vars(0) <= 0.0) || (0.0 <= Curr_El->state_vars(0))))
+                           || (!((Curr_El->state_vars(1) <= 0.0) || (0.0 <= Curr_El->state_vars(1))))
+                           || (!((Curr_El->state_vars(2) <= 0.0) || (0.0 <= Curr_El->state_vars(2)))))
+                        {
+                            //v_ave is NaN
+
+                            cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
+                            printf("prevu={%12.6g,%12.6g,%12.6g}\n", Curr_El->prev_state_vars(0),
+                                   Curr_El->prev_state_vars(1), Curr_El->prev_state_vars(2));
+                            printf("    u={%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1), Curr_El->state_vars(2));
+                            printf("prev {hVx/h,hVy/h}={%12.6g,%12.6g}\n",
+                                   Curr_El->prev_state_vars(1) / Curr_El->prev_state_vars(0),
+                                   Curr_El->prev_state_vars(2) / Curr_El->prev_state_vars(0));
+                            printf("this {hVx/h,hVy/h}={%12.6g,%12.6g}\n", Curr_El->state_vars(1) / Curr_El->state_vars(0),
+                                   Curr_El->state_vars(2) / Curr_El->state_vars(0));
+                            printf("     { Vx  , Vy  }={%12.6g,%12.6g}\n", VxVy[0], VxVy[1]);
+                            ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
+                            assert(0);
+                        }
+
+                        temp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
+                        if(temp > v_max)
+                            v_max = temp;
+                        vx_ave += Curr_El->state_vars(1) * dA;
+                        vy_ave += Curr_El->state_vars(2) * dA;
+                    }
+
+                    //these are garbage, Bin Yu wanted them when he was trying to come up
+                    //with a global stopping criteria (to stop the calculation, not the pile)
+                    //volume averaged slope in the direction of velocity
+                    //a negative number means the flow is headed uphill
+                    double resolution = 0, xslope = 0, yslope = 0;
+                    Get_max_resolution(&resolution);
+                    Get_slope(resolution, Curr_El->coord(0) * matprops->LENGTH_SCALE,
+                              Curr_El->coord(1) * matprops->LENGTH_SCALE, xslope, yslope);
+                    if(temp > GEOFLOW_TINY)
+                    {
                         if(elementType == ElementType::TwoPhases)
                         {
-                            v_ave += sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3)) * dA;
-                            Curr_El->eval_velocity(0.0, 0.0, Vsolid);
-
-                            if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((Curr_El->state_vars(0) <= 0.0) || (0.0 <= Curr_El->state_vars(0))))
-                               || (!((Curr_El->state_vars(1) <= 0.0) || (0.0 <= Curr_El->state_vars(1))))
-                               || (!((Curr_El->state_vars(2) <= 0.0) || (0.0 <= Curr_El->state_vars(2))))
-                               || (!((Curr_El->state_vars(3) <= 0.0) || (0.0 <= Curr_El->state_vars(3))))
-                               || (!((Curr_El->state_vars(4) <= 0.0) || (0.0 <= Curr_El->state_vars(4))))
-                               || (!((Curr_El->state_vars(5) <= 0.0) || (0.0 <= Curr_El->state_vars(5)))))
-                            {
-                                //v_ave is NaN
-                                cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
-                                printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                                       Curr_El->prev_state_vars(0), Curr_El->prev_state_vars(1),
-                                       Curr_El->prev_state_vars(2), Curr_El->prev_state_vars(3),
-                                       Curr_El->prev_state_vars(4), Curr_El->prev_state_vars(5));
-                                printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1),
-                                       Curr_El->state_vars(2), Curr_El->state_vars(3), Curr_El->state_vars(4), Curr_El->state_vars(5));
-                                printf("prev {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                                       Curr_El->prev_state_vars(2) / (Curr_El->prev_state_vars(1)),
-                                       Curr_El->prev_state_vars(3) / (Curr_El->prev_state_vars(1)),
-                                       Curr_El->prev_state_vars(4) / (Curr_El->prev_state_vars(0)),
-                                       Curr_El->prev_state_vars(5) / (Curr_El->prev_state_vars(0)));
-                                printf("this {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                                       Curr_El->state_vars(2) / Curr_El->state_vars(1), Curr_El->state_vars(3) / Curr_El->state_vars(1),
-                                       Curr_El->state_vars(4) / Curr_El->state_vars(0), Curr_El->state_vars(5) / Curr_El->state_vars(0));
-                                ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
-                                exit(1);
-                            }
-
-                            temp = sqrt(Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1]);
-                            if(temp > v_max)
-                                v_max = temp;
-                            vx_ave += Curr_El->state_vars(2) * dA;
-                            vy_ave += Curr_El->state_vars(3) * dA;
+                            slope_ave += -(Curr_El->state_vars(2) * xslope + Curr_El->state_vars(3) * yslope) * dA / temp;
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
-                            v_ave += sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2)) * dA;
-                            Curr_El->eval_velocity(0.0, 0.0, VxVy);
-
-                            if((!((v_ave <= 0.0) || (0.0 <= v_ave))) || (!((Curr_El->state_vars(0) <= 0.0) || (0.0 <= Curr_El->state_vars(0))))
-                               || (!((Curr_El->state_vars(1) <= 0.0) || (0.0 <= Curr_El->state_vars(1))))
-                               || (!((Curr_El->state_vars(2) <= 0.0) || (0.0 <= Curr_El->state_vars(2)))))
-                            {
-                                //v_ave is NaN
-
-                                cout<<"calc_stats(): NaN detected in element={"<<Curr_El->key()<<"} at iter="<<timeprops->iter<<"\n";
-                                printf("prevu={%12.6g,%12.6g,%12.6g}\n", Curr_El->prev_state_vars(0),
-                                       Curr_El->prev_state_vars(1), Curr_El->prev_state_vars(2));
-                                printf("    u={%12.6g,%12.6g,%12.6g}\n", Curr_El->state_vars(0), Curr_El->state_vars(1), Curr_El->state_vars(2));
-                                printf("prev {hVx/h,hVy/h}={%12.6g,%12.6g}\n",
-                                       Curr_El->prev_state_vars(1) / Curr_El->prev_state_vars(0),
-                                       Curr_El->prev_state_vars(2) / Curr_El->prev_state_vars(0));
-                                printf("this {hVx/h,hVy/h}={%12.6g,%12.6g}\n", Curr_El->state_vars(1) / Curr_El->state_vars(0),
-                                       Curr_El->state_vars(2) / Curr_El->state_vars(0));
-                                printf("     { Vx  , Vy  }={%12.6g,%12.6g}\n", VxVy[0], VxVy[1]);
-                                ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
-                                assert(0);
-                            }
-
-                            temp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
-                            if(temp > v_max)
-                                v_max = temp;
-                            vx_ave += Curr_El->state_vars(1) * dA;
-                            vy_ave += Curr_El->state_vars(2) * dA;
+                            slope_ave += -(Curr_El->state_vars(1) * xslope + Curr_El->state_vars(2) * yslope) * dA / temp;
                         }
-                        
-                        //these are garbage, Bin Yu wanted them when he was trying to come up
-                        //with a global stopping criteria (to stop the calculation, not the pile)
-                        //volume averaged slope in the direction of velocity
-                        //a negative number means the flow is headed uphill
-                        double resolution = 0, xslope = 0, yslope = 0;
-                        Get_max_resolution(&resolution);
-                        Get_slope(resolution, Curr_El->coord(0) * matprops->LENGTH_SCALE,
-                                  Curr_El->coord(1) * matprops->LENGTH_SCALE, xslope, yslope);
-                        if(temp > GEOFLOW_TINY)
-                        {
-                            if(elementType == ElementType::TwoPhases)
-                            {
-                                slope_ave += -(Curr_El->state_vars(2) * xslope + Curr_El->state_vars(3) * yslope) * dA / temp;
-                            }
-                            if(elementType == ElementType::SinglePhase)
-                            {
-                                slope_ave += -(Curr_El->state_vars(1) * xslope + Curr_El->state_vars(2) * yslope) * dA / temp;
-                            }
-                            slopevolume += dVol;
-                        }
+                        slopevolume += dVol;
                     }
                 }
-                currentPtr = currentPtr->next;
             }
         }
+    }
     
     MPI_Reduce(xyminmax, statprops->xyminmax, 4, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     if(myid == 0)
@@ -646,78 +639,75 @@ void out_final_stats(TimeProps* timeprops, StatProps* statprops)
 
 void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr)
 {
-
-    int num_buck = El_Table->get_no_of_buckets();
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(int i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+
+            if((Curr_El->refined_flag() == 0) && !((Curr_El->adapted_flag() == NOTRECADAPTED)
+                    || (Curr_El->adapted_flag() == NEWFATHER) || (Curr_El->adapted_flag() == NEWSON)
+                    || (Curr_El->adapted_flag() == BUFFER)))
             {
+                cout<<"FUBAR 1 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
+                cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
 
-                Element* Curr_El = (Element*) (currentPtr->value);
-                currentPtr = currentPtr->next;
+                assert(0);
+            }
 
-                if((Curr_El->refined_flag() == 0) && !((Curr_El->adapted_flag() == NOTRECADAPTED)
-                        || (Curr_El->adapted_flag() == NEWFATHER) || (Curr_El->adapted_flag() == NEWSON)
-                        || (Curr_El->adapted_flag() == BUFFER)))
-                {
-                    cout<<"FUBAR 1 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
+            if((Curr_El->refined_flag() != 0) && ((Curr_El->adapted_flag() == NOTRECADAPTED)
+                    || (Curr_El->adapted_flag() == NEWFATHER) || (Curr_El->adapted_flag() == NEWSON)
+                    || (Curr_El->adapted_flag() == BUFFER)))
+            {
+                cout<<"FUBAR 2 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
+                cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
+                assert(0);
+            }
 
-                    assert(0);
-                }
+            if((Curr_El->refined_flag() == GHOST) && !((Curr_El->adapted_flag() <= -NOTRECADAPTED)
+                    && (Curr_El->adapted_flag() >= -BUFFER)))
+            {
+                cout<<"FUBAR 3 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
+                cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
+                assert(0);
+            }
 
-                if((Curr_El->refined_flag() != 0) && ((Curr_El->adapted_flag() == NOTRECADAPTED)
-                        || (Curr_El->adapted_flag() == NEWFATHER) || (Curr_El->adapted_flag() == NEWSON)
-                        || (Curr_El->adapted_flag() == BUFFER)))
-                {
-                    cout<<"FUBAR 2 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
-                    assert(0);
-                }
+            if((Curr_El->refined_flag() != GHOST) && ((Curr_El->adapted_flag() <= -NOTRECADAPTED)
+                    && (Curr_El->adapted_flag() >= -BUFFER)))
+            {
+                cout<<"FUBAR 4 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
+                cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
+                assert(0);
+            }
 
-                if((Curr_El->refined_flag() == GHOST) && !((Curr_El->adapted_flag() <= -NOTRECADAPTED)
-                        && (Curr_El->adapted_flag() >= -BUFFER)))
-                {
-                    cout<<"FUBAR 3 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
-                    assert(0);
-                }
+            if((Curr_El->refined_flag() > 0) && !((Curr_El->adapted_flag() == TOBEDELETED)
+                    || (Curr_El->adapted_flag() == OLDFATHER) || (Curr_El->adapted_flag() == OLDSON)))
+            {
+                cout<<"FUBAR 5 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
+                cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
+                assert(0);
+            }
 
-                if((Curr_El->refined_flag() != GHOST) && ((Curr_El->adapted_flag() <= -NOTRECADAPTED)
-                        && (Curr_El->adapted_flag() >= -BUFFER)))
-                {
-                    cout<<"FUBAR 4 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
-                    assert(0);
-                }
-
-                if((Curr_El->refined_flag() > 0) && !((Curr_El->adapted_flag() == TOBEDELETED)
-                        || (Curr_El->adapted_flag() == OLDFATHER) || (Curr_El->adapted_flag() == OLDSON)))
-                {
-                    cout<<"FUBAR 5 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
-                    assert(0);
-                }
-
-                if(!(Curr_El->refined_flag() > 0) && ((Curr_El->adapted_flag() == TOBEDELETED)
-                        || (Curr_El->adapted_flag() == OLDFATHER) || (Curr_El->adapted_flag() == OLDSON)))
-                {
-                    cout<<"FUBAR 6 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
-                    cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
-                    cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
-                    assert(0);
-                }
+            if(!(Curr_El->refined_flag() > 0) && ((Curr_El->adapted_flag() == TOBEDELETED)
+                    || (Curr_El->adapted_flag() == OLDFATHER) || (Curr_El->adapted_flag() == OLDSON)))
+            {
+                cout<<"FUBAR 6 in InsanityCheck()\nnump="<<nump<<" myid="<<myid<<" iter="<<timeprops_ptr->iter;
+                cout<<" time="<<timeprops_ptr->timesec()<<"[sec]\nElement={"<<Curr_El->key();
+                cout<<"} myprocess="<<Curr_El->myprocess()<<" refined="<<Curr_El->refined_flag()<<" adapted="<<Curr_El->adapted_flag()<<"\n";
+                assert(0);
             }
         }
+    }
 
     return;
 }

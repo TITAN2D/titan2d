@@ -45,37 +45,37 @@ double element_weight(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int
     //-------------------go through all the elements of the subdomain and  
     //-------------------find the edge states
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
-                Element* Curr_El = (Element*) (currentPtr->value);
-                if((Curr_El->adapted_flag() > 0)  //&&
-                //((*(Curr_El->get_state_vars()+0)>GEOFLOW_TINY)||
-                //(Curr_El->get_adapted_flag()==BUFFER))
-                )
-                { //Keith added this
-                  //if this element doesn't belong on this processor don't involve!!! 
-                    Curr_El->calc_flux_balance(NodeTable);
-                    //sub_weight[0] += *(Curr_El->get_el_error())+1.;
-                    if(Curr_El->state_vars(0) > GEOFLOW_TINY)
-                    {
-                        sub_weight[1] += 1;
-                        sub_weight[0] += Curr_El->el_error(0);
-                    }
-                    else if(Curr_El->adapted_flag() == BUFFER)
-                    {
-                        sub_weight[1] += 0.1;
-                        sub_weight[0] += Curr_El->el_error(0) * 0.1;
-                    }
+            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if((Curr_El->adapted_flag() > 0)  //&&
+            //((*(Curr_El->get_state_vars()+0)>GEOFLOW_TINY)||
+            //(Curr_El->get_adapted_flag()==BUFFER))
+            )
+            { //Keith added this
+              //if this element doesn't belong on this processor don't involve!!! 
+                Curr_El->calc_flux_balance(NodeTable);
+                //sub_weight[0] += *(Curr_El->get_el_error())+1.;
+                if(Curr_El->state_vars(0) > GEOFLOW_TINY)
+                {
+                    sub_weight[1] += 1;
+                    sub_weight[0] += Curr_El->el_error(0);
                 }
-                
-                currentPtr = currentPtr->next;
+                else if(Curr_El->adapted_flag() == BUFFER)
+                {
+                    sub_weight[1] += 0.1;
+                    sub_weight[0] += Curr_El->el_error(0) * 0.1;
+                }
             }
         }
+    }
     
     double global_weight[2];
     i = MPI_Allreduce(sub_weight, global_weight, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

@@ -290,41 +290,38 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     Element *EmTemp;
     Node *NdTemp;
     int inode;
-    int num_buck = (*ElemTable)->get_no_of_buckets();
-    HashEntryPtr* buck = (*ElemTable)->getbucketptr();
-    for(int i = 0; i < num_buck; i++)
-        if(*(buck + i))
+    int no_of_buckets = (*ElemTable)->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=(*ElemTable)->bucket;
+    tivector<Element> &elenode_=(*ElemTable)->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+
+            EmTemp->set_myprocess(myid);
+
+            NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->key());
+            assert(NdTemp);
+            NdTemp->info(BUBBLE);
+
+            for(inode = 0; inode < 4; inode++)
             {
-                
-                EmTemp = (Element*) (currentPtr->value);
-                currentPtr = currentPtr->next;
-                assert(EmTemp);
-                
-                EmTemp->set_myprocess(myid);
-                
-                NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->key());
+                NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
                 assert(NdTemp);
-                NdTemp->info(BUBBLE);
-                
-                for(inode = 0; inode < 4; inode++)
-                {
-                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
-                    assert(NdTemp);
-                    NdTemp->info(CORNER);
-                }
-                
-                for(inode = 4; inode < 8; inode++)
-                {
-                    NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
-                    assert(NdTemp);
-                    NdTemp->info(SIDE);
-                }
+                NdTemp->info(CORNER);
+            }
+
+            for(inode = 4; inode < 8; inode++)
+            {
+                NdTemp = (Node*) (*NodeTable)->lookup(EmTemp->node_key(inode));
+                assert(NdTemp);
+                NdTemp->info(SIDE);
             }
         }
+    }
     
 #ifdef MAX_DEPTH_MAP
     outline_ptr->init(dx, REFINE_LEVEL - Quad9P->generation(), xminmax, yminmax);

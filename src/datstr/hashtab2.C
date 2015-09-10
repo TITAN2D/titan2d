@@ -23,9 +23,8 @@
 #include <assert.h>
 
 #include "../header/boundary.h"
-#include "../header/hashtab.h"
-#include "../header/element2.h"
-#include "../header/node.h"
+#include "../header/elenode.hpp"
+
 /*#undef SEEK_SET
 #undef SEEK_END
 #undef SEEK_CUR*/
@@ -311,7 +310,8 @@ void HashTableBase::print0()
  */
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double YR[])
+HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double YR[],tisize_t reserved_size)
+: key_(reserved_size),status_(reserved_size),elenode_(reserved_size)
 {
     int i;
 
@@ -395,11 +395,11 @@ template <typename T>
 T* HashTable<T>::lookup(const SFC_Key& key)
 {
     ti_ndx_t ndx=lookup_ndx(key);
-    if(status_[ndx]==CS_Removed)
+    /*if(status_[ndx]==CS_Removed)
     {
         assert(0);
         return nullptr;
-    }
+    }*/
     if(ti_ndx_not_negative(ndx))
         return &(elenode_[ndx]);
     else
@@ -443,6 +443,8 @@ ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& key)
         bucket[entry].ndx.push_back(ndx);
     }
     ENTRIES+=1;
+
+    elenode_[ndx].ndx(ndx);
     return ndx;
 }
 template <typename T>
@@ -470,6 +472,7 @@ void HashTable<T>::remove(const SFC_Key& key)
 template <typename T>
 void HashTable<T>::flush()
 {
+    return;
     int size_old=key_.size();
     static vector<ti_ndx_t> ndx_map;
     static vector<ti_ndx_t> ndx_map_old;
@@ -510,6 +513,10 @@ void HashTable<T>::flush()
     //reoder content
     key_.reorder(&(ndx_map[0]), size);
     elenode_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<size;++i)
+    {
+        elenode_[i].ndx(i);
+    }
     
     status_.resize(size,false);
     status_.set(CS_Permanent);
@@ -523,13 +530,11 @@ void HashTable<T>::flush()
             assert(ndx_map_old[bucket[entry].ndx[i]]!=ti_ndx_doesnt_exist);
             bucket[entry].ndx[i]=ndx_map_old[bucket[entry].ndx[i]];
         }
-        
     }
-    
 }
 ////////////////////////////////////////////////////////////////////////////////
 NodeHashTable::NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
-    :HashTable<Node>(doublekeyrangein, size, XR, YR)
+    :HashTable<Node>(doublekeyrangein, size, XR, YR,node_reserved_size)
 {
     int i;
 
@@ -577,7 +582,7 @@ Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf,
 
 Node* NodeHashTable::createAddNode(FILE* fp, MatProps* matprops_ptr) //for restart
 {
-    //unimplemented
+    //not implemented
     assert(0);
     return nullptr;
     //Node* node = add(keyi);
@@ -592,9 +597,9 @@ void NodeHashTable::removeNode(Node* node)
 
 
 
-
-ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable) :
-        HashTableBase(doublekeyrangein, size, XR, YR)
+////////////////////////////////////////////////////////////////////////////////
+ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable)
+        :HashTable<Element>(doublekeyrangein, size, XR, YR,elem_reserved_size)
 {
     NlocalElements = 0;
     NodeTable = nodeTable;
@@ -611,20 +616,33 @@ void ElementsHashTable::updateLocalElements()
     
     ukeyLocalElements.resize(ENTRIES);
     localElements.resize(ENTRIES);
-    for(int i = 0; i < NBUCKETS; i++)
+#ifdef HASH_PRESERVE_ORDER
+    for(int i = 0; i < elenode_.size(); i++)
     {
-        int NEntriesInBucket = ukeyBucket[i].size();
-        for(int j = 0; j < NEntriesInBucket; j++)
+        if(status_[i]>=0)
         {
-            Element* Curr_El = (Element*) hashEntryBucket[i][j]->value;
-            if(Curr_El->adapted_flag() > 0)
-            { //if this element does not belong on this processor don't involve!!!
-                ukeyLocalElements[count] = ukeyBucket[i][j];
-                localElements[count] = (Element*) hashEntryBucket[i][j]->value;
+            if(elenode_[i].adapted_flag() > 0)
+            {//if this element does not belong on this processor don't involve!!!
+                ukeyLocalElements[count] = key_[i];
+                localElements[count] = &(elenode_[i]);
                 count++;
             }
         }
     }
+#else
+    for(int i = 0; i < bucket.size(); i++)
+    {
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
+        {
+            if(elenode_[bucket[i].ndx[j]].adapted_flag() > 0)
+            {//if this element does not belong on this processor don't involve!!!
+                ukeyLocalElements[count] = bucket[i].key[j];
+                localElements[count] = &(elenode_[bucket[i].ndx[j]]);
+                count++;
+            }
+        }
+    }
+#endif
     NlocalElements = count;
     ukeyLocalElements.resize(NlocalElements);
     localElements.resize(NlocalElements);
@@ -632,20 +650,35 @@ void ElementsHashTable::updateLocalElements()
 int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
 {
     int count = 0, NEntriesInBucket, mismatch = 0;
-    for(int i = 0; i < NBUCKETS; i++)
+#ifdef HASH_PRESERVE_ORDER
+    for(int i = 0; i < elenode_.size(); i++)
     {
-        NEntriesInBucket = ukeyBucket[i].size();
-        for(int j = 0; j < NEntriesInBucket; j++)
+        if(status_[i]>=0)
         {
-            Element* Curr_El = (Element*) hashEntryBucket[i][j]->value;
-            if(Curr_El->adapted_flag() > 0)
-            { //if this element does not belong on this processor don't involve!!!
-                if(ukeyLocalElements[count] != ukeyBucket[i][j] || localElements[count] != hashEntryBucket[i][j]->value)
+            if(elenode_[i].adapted_flag() > 0)
+            {//if this element does not belong on this processor don't involve!!!
+                if(ukeyLocalElements[count] != key_[i] || localElements[count] != &(elenode_[i]))
+                    mismatch++;
+                localElements[count] = &(elenode_[i]);
+                count++;
+            }
+                
+        }
+    }
+#else
+    for(int i = 0; i < bucket.size(); i++)
+    {
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
+        {
+            if(elenode_[bucket[i].ndx[j]].adapted_flag() > 0)
+            {//if this element does not belong on this processor don't involve!!!
+                if(ukeyLocalElements[count] != bucket[i].key[j] || localElements[count] != &(elenode_[bucket[i].ndx[j]]))
                     mismatch++;
                 count++;
             }
         }
     }
+#endif
     if(mismatch > 0)
     {
         printf("%s WARNING: AllEntriesPointersLocal are out-dated. %d values pointers/keys do not match.\n", prefix,
@@ -658,16 +691,28 @@ void ElementsHashTable::updateElements()
     int count = 0, NEntriesInBucket;
     ukeyElements.resize(ENTRIES);
     elements.resize(ENTRIES);
-    for(int i = 0; i < NBUCKETS; i++)
+    
+#ifdef HASH_PRESERVE_ORDER
+    for(int i = 0; i < elenode_.size(); i++)
     {
-        NEntriesInBucket = ukeyBucket[i].size();
-        for(int j = 0; j < NEntriesInBucket; j++)
+        if(status_[i]>=0)
         {
-            ukeyElements[count] = ukeyBucket[i][j];
-            elements[count] = (Element*) hashEntryBucket[i][j]->value;
+            ukeyLocalElements[count] = key_[i];
+            localElements[count] = &(elenode_[i]);
             count++;
         }
     }
+#else
+    for(int i = 0; i < bucket.size(); i++)
+    {
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
+        {
+            ukeyElements[count] = bucket[i].key[j];
+            elements[count] = &(elenode_[bucket[i].ndx[j]]);
+            count++;
+        }
+    }
+#endif
 }
 int ElementsHashTable::ckeckElementsPointers(const char *prefix)
 {
@@ -677,16 +722,27 @@ int ElementsHashTable::ckeckElementsPointers(const char *prefix)
         printf("%s WARNING: AllEntriesPointers are out-dated, number of entries do not match.\n", prefix);
         return ukeyElements.size();
     }
-    for(int i = 0; i < NBUCKETS; i++)
+#ifdef HASH_PRESERVE_ORDER
+    for(int i = 0; i < elenode_.size(); i++)
     {
-        NEntriesInBucket = ukeyBucket[i].size();
-        for(j = 0; j < NEntriesInBucket; j++)
+        if(status_[i]>=0)
         {
-            if(ukeyElements[count] != ukeyBucket[i][j] || elements[count] != hashEntryBucket[i][j]->value)
+            if(ukeyElements[count] != key_[i] || elements[count] != &(elenode_[i]))
                 mismatch++;
             count++;
         }
     }
+#else
+    for(int i = 0; i < bucket.size(); i++)
+    {
+        for(int j = 0; j < bucket[i].ndx.size(); j++)
+        {
+            if(ukeyElements[count] != bucket[i].key[j] || elements[count] != &(elenode_[bucket[i].ndx[j]]))
+                mismatch++;
+            count++;
+        }
+    }
+#endif
     if(mismatch > 0)
     {
         printf("%s WARNING: AllEntriesPointers are out-dated. %d values pointers/keys do not match.\n", prefix,
@@ -696,21 +752,13 @@ int ElementsHashTable::ckeckElementsPointers(const char *prefix)
 }
 void ElementsHashTable::updatePointersToNeighbours()
 {
-    int i;
-    HashEntryPtr currentPtr;
-    Element* Curr_El;
-    for(i = 0; i < NBUCKETS; i++)
+    for(int i = 0; i < elenode_.size(); i++)
     {
-        if(*(bucket + i))
+        if(status_[i]>=0)
         {
-            
-            currentPtr = *(bucket + i);
-            while (currentPtr)
+            if(elenode_[i].adapted_flag() > 0)
             {
-                Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
-                    Curr_El->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
-                currentPtr = currentPtr->next;
+                elenode_[i].update_neighbors_nodes_and_elements_pointers(this, NodeTable);
             }
         }
     }
@@ -718,237 +766,65 @@ void ElementsHashTable::updatePointersToNeighbours()
 }
 int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
 {
-    int i;
     int count = 0;
-    HashEntryPtr currentPtr;
-    Element* Curr_El;
-    for(i = 0; i < NBUCKETS; i++)
+    
+    for(int i = 0; i < elenode_.size(); i++)
     {
-        if(*(bucket + i))
+        if(status_[i]>=0)
         {
-            
-            currentPtr = *(bucket + i);
-            while (currentPtr)
-            {
-                Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
-                    count += Curr_El->check_neighbors_nodes_and_elements_pointers(this, NodeTable);
-                currentPtr = currentPtr->next;
-            }
+            if(elenode_[i].adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
+                count += elenode_[i].check_neighbors_nodes_and_elements_pointers(this, NodeTable);
         }
     }
+    
     if(count > 0)
         printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n", prefix, count);
-    /*int i;
-     int pointersUpToDate = El_Table->isSortedBucketsUpToDate();
-     int nodesPointersUpToDate = NodeTable->isSortedBucketsUpToDate();
-     int NElements = El_Table->getNumberOfSortedBuckets();
-     int Nnodes = NodeTable->getNumberOfSortedBuckets();
-     Element** ElArr = (Element**) El_Table->getSortedBuckets();
-
-     if (pointersUpToDate == 0 || nodesPointersUpToDate==0) {
-     for (i = 0; i < NElements; i++) {
-     ElArr[i]->update_neighbors_pointers(El_Table, NodeTable);
-     }
-     }*/
     return count;
 }
 
 Element* ElementsHashTable::generateAddElement(const SFC_Key& key)
 {
-    Element* elm=new Element(key);
-    add(key, elm);
+    Element* elm=add(key);
+    elm->init(key);
     return elm;
-    
-    /*tipos_t pos=elements_.push_back();
-    elements_[pos].init(key);
-    add(key, elements_.array_+pos);
-    return elements_.array_+pos;*/
 }
     
 Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
                                             int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
-    Element* elm=new Element(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
-    add(elm->key(), elm);
-    return elm;
-    
-    /*tipos_t pos=elements_.push_back();
-    elements_[pos].init(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
-    add(elements_[pos].key(), elements_.array_+pos);
-    return elements_.array_+pos;*/
-    
+    Element* elm=add(nodekeys[8]); //--using bubble key to represent the element
+    elm->init(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
+    return elm;    
 }
 Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
                  ElementsHashTable *El_Table, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
-    Element* elm=new Element(nodekeys, neigh, n_pro, b, gen,
-                                  elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
-                                  El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
-                                  Awetfather, drypoint_in);
-    add(elm->key(), elm);
-    return elm;
     
-    /*tipos_t pos=elements_.push_back();
-    elements_[pos].init(nodekeys, neigh, n_pro, b, gen,
+    Element* elm=add(nodekeys[8]); //--using bubble key to represent the element
+    elm->init(nodekeys, neigh, n_pro, b, gen,
                                   elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
-    add(elements_[pos].key(), elements_.array_+pos);
-    return elements_.array_+pos;*/
+    return elm;
 }
 Element* ElementsHashTable::generateAddElement(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
-    Element* elm=new Element(sons, NodeTable, El_Table, matprops_ptr);
-    add(elm->key(), elm);
+    Element* elm=add(sons[2]->node_key(0));
+    elm->init(sons, NodeTable, El_Table, matprops_ptr);
     return elm;
-    
-    /*tipos_t pos=elements_.push_back();
-    elements_[pos].init(sons, NodeTable, El_Table, matprops_ptr);
-    add(elements_[pos].key(), elements_.array_+pos);
-    return elements_.array_+pos;*/
 }
 Element* ElementsHashTable::generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
-    Element* elm=new Element(fp, NodeTable, matprops_ptr, myid);
-    add(elm->key(), elm);
-    return elm;
-    
-    /*tipos_t pos=elements_.push_back();
-    elements_[pos].init(fp, NodeTable, matprops_ptr, myid);
-    add(elements_[pos].key(), elements_.array_+pos);
-    return elements_.array_+pos;*/
+    //not implemented
+    assert(0);
+    return nullptr;
 }
 
 void ElementsHashTable::removeElement(Element* elm)
 {
-    HashTableBase::remove(elm->key());
-    delete elm;
+    remove(elm->key());
+    //delete elm;
 }
 
-void* ElementsHashTable::lookup(const SFC_Key &key)
-{
-    int entry = hash(key);
-    
-    uint64_t ukey = get_ukey_from_sfc_key(key);
-    int size = ukeyBucket[entry].size();
-    uint64_t *ukeyArr = &(ukeyBucket[entry][0]);
-    int i;
-    
-    if(size == 0)
-        return NULL;
-    if(ukey < ukeyArr[0])
-        return NULL;
-    if(ukey > ukeyArr[size - 1])
-        return NULL;
-    
-    if(size < HASHTABLE_LOOKUP_LINSEARCH)
-    {
-        for(i = 0; i < size; i++)
-        {
-            if(ukey == ukeyArr[i])
-            {
-                return hashEntryBucket[entry][i]->value;
-            }
-        }
-    }
-    else
-    {
-        int i0, i1, i2;
-        i0 = 0;
-        i1 = size / 2;
-        i2 = size - 1;
-        while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH)
-        {
-            if(ukey > ukeyArr[i1])
-            {
-                i0 = i1 + 1;
-                i1 = (i0 + i2) / 2;
-            }
-            else
-            {
-                i2 = i1;
-                i1 = (i0 + i2) / 2;
-            }
-        }
-        for(i = i0; i <= i2; i++)
-        {
-            if(ukey == ukeyArr[i])
-            {
-                return hashEntryBucket[entry][i]->value;
-            }
-        }
-    }
-    return NULL;
-}
-
-/*void ElementsHashTable::add(unsigned* key, void* value) {
- int i;
- HashTable::add(key, value);
- Element* Curr_El;
- Curr_El = (Element*) value;
- //if (Curr_El->get_adapted_flag() > 0)  //if this element does not belong on this processor don't involve!!!
- //assuming neigbours keys are already good
- Curr_El->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
- for(i=0;i<8;i++){
- if(Curr_El->getNeighborPtr(i)!=NULL)
- Curr_El->getNeighborPtr(i)->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
- }
- }
-
- void ElementsHashTable::remove(unsigned* key) {
- int i;
- unsigned* neighbors;
-
- Element* Curr_El,*neighborElement[8];
-
- Curr_El=(Element*)lookup(key);
- neighbors=Curr_El->get_neighbors();
-
- for(i=0;i<8;i++){
- neighborElement[i]=(Element*)lookup(neighbors+i*KEYLENGTH);
- }
- HashTable::remove(key);
- for(i=0;i<8;i++){
- if(neighborElement[i]!=NULL)
- neighborElement[i]->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
- }
- }
- // for debugging...
- void ElementsHashTable::remove(unsigned* key, int whatflag) {
- int i;
- unsigned* neighbors;
-
- Element* Curr_El,*neighborElement[8];
- Curr_El=(Element*)lookup(key);
- neighbors=Curr_El->get_neighbors();
-
- for(i=0;i<8;i++){
- neighborElement[i]=(Element*)lookup(neighbors+i*KEYLENGTH);
- }
- HashTable::remove(key,whatflag);
- for(i=0;i<8;i++){
- if(neighborElement[i]!=NULL)
- neighborElement[i]->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
- }
- }
- void ElementsHashTable::remove(unsigned* key, int whatflag, FILE *fp, int myid, int where){
- int i;
- unsigned* neighbors;
-
- Element* Curr_El,*neighborElement[8];
- Curr_El=(Element*)lookup(key);
-
- neighbors=Curr_El->get_neighbors();
-
- for(i=0;i<8;i++){
- neighborElement[i]=(Element*)lookup(neighbors+i*KEYLENGTH);
- }
- HashTable::remove(key,whatflag, fp, myid, where);
- for(i=0;i<8;i++){
- if(neighborElement[i]!=NULL)
- neighborElement[i]->update_neighbors_nodes_and_elements_pointers(this, NodeTable);
- }
- }*/

@@ -425,10 +425,9 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
     /*  if( myid !=0 )
      MPI_Recv(&done, 1, MPI_INT, myid-1, TECTAG, MPI_COMM_WORLD, &status); */
 
-    int ibucket;
-    HashEntryPtr entryp;
     Element* EmTemp;
     Node* NdTemp;
+    
     
     double doublekeyrange[2];
     double Xrange[2], Yrange[2];
@@ -576,19 +575,19 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
      */
 
     //calc_d_gravity
-    int no_of_elm_buckets = (*ElemTable)->get_no_of_buckets();
-    for(ibucket = 0; ibucket < no_of_elm_buckets; ibucket++)
+    int no_of_buckets = (*ElemTable)->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=(*ElemTable)->bucket;
+    tivector<Element> &elenode_=(*ElemTable)->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *((*ElemTable)->getbucketptr() + ibucket);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if(EmTemp->adapted_flag() > 0)
                 EmTemp->calc_d_gravity(*ElemTable);
-            
-            entryp = entryp->next;
         }
     }
     
@@ -1039,8 +1038,6 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
     //node and element HASHTABLES
     
     int ibucket;
-    int no_of_elm_buckets = (*ElemTable)->get_no_of_buckets();
-    HashEntryPtr entryp;
     Element* EmTemp;
     Node* NdTemp;
     
@@ -1112,13 +1109,16 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
     
     //count the number of ELEMENTS to save
     temp4.i = 0;
-    for(ibucket = 0; ibucket < no_of_elm_buckets; ibucket++)
+    int no_of_buckets = (*ElemTable)->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=(*ElemTable)->bucket;
+    tivector<Element> &elenode_=(*ElemTable)->elenode_;
+    
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *((*ElemTable)->getbucketptr() + ibucket);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->myprocess() == myid)
             {
                 if(EmTemp->adapted_flag() > 0)
@@ -1126,7 +1126,6 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
                     temp4.i++;
                 }
             }
-            entryp = entryp->next;
         }
     }
     for(itemp = 0; itemp < 4; itemp++)
@@ -1236,13 +1235,12 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
     fflush(fp2); fclose(fp2); fp2=fopen(file4,"wb");
 #endif
     
-    for(ibucket = 0; ibucket < no_of_elm_buckets; ibucket++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *((*ElemTable)->getbucketptr() + ibucket);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) entryp->value;
-            assert(EmTemp);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             
             if(EmTemp->myprocess() == myid)
             {
@@ -1254,7 +1252,6 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
 #endif
                 }
             }
-            entryp = entryp->next;
         }
     }
     

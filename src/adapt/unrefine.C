@@ -65,61 +65,59 @@ void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double targ
     
     int i, j, k;
     Element* Curr_El;
-    ElemPtrList NewFatherList, OtherProcUpdate;
+    ElemPtrList NewFatherList(El_Table), OtherProcUpdate(El_Table);
     
     //-------------------go through all the elements of the subdomain------------------------
-    HashEntryPtr* buck = El_Table->getbucketptr();
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
-            {
-                Curr_El = (Element*) currentPtr->value;
-                currentPtr = currentPtr->next;
-                if(Curr_El->adapted_flag() == NEWFATHER)
-                    Curr_El->set_adapted_flag(NOTRECADAPTED);
-            }
+            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(Curr_El->adapted_flag() == NEWFATHER)
+                Curr_El->set_adapted_flag(NOTRECADAPTED);
         }
+    }
     
     // start unrefinement
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            if(i == 6)
-                j = 1;
-            while (currentPtr)
-            {
-                Curr_El = (Element*) currentPtr->value;
-                //  need to get currentPtr->next now since currentPtr might get deleted!
-                currentPtr = currentPtr->next;
-                if(Curr_El->adapted_flag() == NOTRECADAPTED)
-                {	//if this is a refined element don't involve!!!
-                
-                    // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
-                    if((Curr_El->generation() > MIN_GENERATION) && (Curr_El->which_son() == 0))
+            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(Curr_El->adapted_flag() == NOTRECADAPTED)
+            {	//if this is a refined element don't involve!!!
+
+                // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
+                if((Curr_El->generation() > MIN_GENERATION) && (Curr_El->which_son() == 0))
+                {
+                    //check to see if currentPtr might get deleted and if it might, find next ptr that won't
+                    //@TODO why it happens only in one bucket?
+                    if(ielm+1<bucket[ibuck].ndx.size())
                     {
-                        //check to see if currentPtr might get deleted and if it might, find next ptr that won't
-                        if(currentPtr != NULL)
+                        int newnext = 0;
+                        int ielm2=ielm+1;
+                        while (newnext == 0 && ielm2<bucket[ibuck].ndx.size())
                         {
-                            int newnext = 0;
-                            while (newnext == 0 && currentPtr != NULL)
-                            {
-                                Element* nextelm = (Element*) currentPtr->value;
-                                if(nextelm->which_son() == 0)
-                                    newnext = 1;
-                                else
-                                    currentPtr = currentPtr->next;
-                            }
+                            Element* nextelm = &(elenode_[bucket[ibuck].ndx[ielm2]]);
+                            if(nextelm->which_son() == 0)
+                                newnext = 1;
+                            else
+                                ++ielm2;
                         }
-                        Curr_El->find_brothers(El_Table, NodeTable, target, myid, matprops_ptr, &NewFatherList,
-                                               &OtherProcUpdate);
-                        
                     }
+                    Curr_El->find_brothers(El_Table, NodeTable, target, myid, matprops_ptr, &NewFatherList,
+                                           &OtherProcUpdate);
+
                 }
             }
         }
+    }
     
     int iproc;
     time_t tic, toc;
@@ -203,13 +201,12 @@ void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double targ
      */
     move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
     
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        HashEntryPtr currentPtr = *(buck + i);
-        while (currentPtr)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            Curr_El = (Element*) currentPtr->value;
-            currentPtr = currentPtr->next;
+            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(Curr_El->adapted_flag() > TOBEDELETED)
                 Curr_El->calc_wet_dry_orient(El_Table);
         }

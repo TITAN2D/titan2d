@@ -28,7 +28,6 @@ void slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* mat
     //-------------------go through all the elements of the subdomain------------------------
     //-------------------and   --------------------------
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
     /* mdj 2007-02 */
     HashEntryPtr currentPtr;
     Element* Curr_El;

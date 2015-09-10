@@ -28,17 +28,20 @@
 void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                               BSFC_VERTEX_PTR sfc_vert_ptr)
 {
-    int i, j, k, no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
-    HashEntryPtr entryp;
+    int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
+    
+    int i, j, k;
     Element* EmTemp;
     
     j = 0;
-    for(i = 0; i < no_of_buckets; i++)
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        entryp = *(HT_Elem_Ptr->getbucketptr() + i);
-        while (entryp)
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = (Element*) (entryp->value);
+            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!EmTemp->refined_flag())
             {
                 if(EmTemp->key() == (unsigned) 74470341)
@@ -70,7 +73,6 @@ void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem
                     j++;
                 }
             }
-            entryp = entryp->next;
         }
     }
     

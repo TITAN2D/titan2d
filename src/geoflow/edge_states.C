@@ -40,37 +40,37 @@ void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
     //-------------------go through all the elements of the subdomain and  
     //-------------------find the edge states
     
-    HashEntryPtr* buck = El_Table->getbucketptr();
     double localoutflow;
     *outflow = 0.0;
     /* mdj 2007-04 */
     double localoutflow_sum = 0.0;
-    HashEntryPtr currentPtr;
     Element* Curr_El;
+    
+    int no_of_buckets = El_Table->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=El_Table->bucket;
+    tivector<Element> &elenode_=El_Table->elenode_;
+    //@ElementsBucketDoubleLoop
 #pragma omp parallel for private(currentPtr,Curr_El) reduction(+:localoutflow_sum)
-    for(i = 0; i < El_Table->get_no_of_buckets(); i++)
-        if(*(buck + i))
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            HashEntryPtr currentPtr = *(buck + i);
-            while (currentPtr)
+            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(Curr_El->adapted_flag() > 0)
             {
-                Curr_El = (Element*) (currentPtr->value);
-                if(Curr_El->adapted_flag() > 0)
-                {
-                    //if this element doesn't belong on this processor don't involve
-                    double pheight = Curr_El->state_vars(0);
-                    Curr_El->calc_edge_states(El_Table, NodeTable, matprops_ptr, myid, timeprops_ptr->dtime, order_flag,
-                                              &localoutflow);
+                //if this element doesn't belong on this processor don't involve
+                double pheight = Curr_El->state_vars(0);
+                Curr_El->calc_edge_states(El_Table, NodeTable, matprops_ptr, myid, timeprops_ptr->dtime, order_flag,
+                                          &localoutflow);
 //(mdj)		*outflow+=localoutflow;
-                    localoutflow_sum += localoutflow;
-                    double pheight2 = Curr_El->state_vars(0);
-                    if(pheight != pheight2)
-                        printf("prolbem of changing height here,,,.....\n");
+                localoutflow_sum += localoutflow;
+                double pheight2 = Curr_El->state_vars(0);
+                if(pheight != pheight2)
+                    printf("prolbem of changing height here,,,.....\n");
 //(mdj) unused		el_counter++;
-                }
-                currentPtr = currentPtr->next;
             }
         }
+    }
     *outflow = localoutflow_sum;
     return;
 }
