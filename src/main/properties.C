@@ -252,8 +252,7 @@ void PileProps::set_element_height_to_elliptical_pile_height(NodeHashTable* HT_N
     double xmom, ymom;
     pileheight=get_elliptical_pile_height(HT_Node_Ptr, m_EmTemp, matprops, &xmom,&ymom);
 
-    ElementSinglePhase* EmTemp=(ElementSinglePhase*)m_EmTemp;
-    EmTemp->put_height_mom(pileheight, xmom, ymom);
+    m_EmTemp->put_height_mom(pileheight, xmom, ymom);
 }
 double PileProps::get_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom,
                                          double* m_ymom)
@@ -411,7 +410,6 @@ void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(NodeHashTa
     double xmom, ymom;
     pileheight=get_elliptical_pile_height(HT_Node_Ptr, m_EmTemp, matprops, &xmom,&ymom);
 
-    ElementTwoPhases* EmTemp=(ElementTwoPhases*)m_EmTemp;
     int ipile;
     double vfract = 0.;
     for(ipile = 0; ipile < numpiles; ipile++)
@@ -419,6 +417,6 @@ void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(NodeHashTa
         if(vol_fract[ipile] > vfract)
         vfract = vol_fract[ipile];
     }
-    EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
+    m_EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
 }
 

@@ -20,10 +20,7 @@
 #include <math.h>
 #include <assert.h>
 #include "boundary.h"
-#include "hashtab.h"
-#include "node.h"
 #include "struct.h"
-#include "sfc.h"
 
 #include <fstream>
 #include <iostream>
@@ -193,54 +190,36 @@ public:
 
     //! returns address of element (same as bubble node, node 8 out of 0->8) hashtable key
 
-    const SFC_Key& key() const {
-        return key_;
-    }
+    const SFC_Key& key() const;
 
-    void set_key(const SFC_Key& new_key) {
-        key_ = new_key;
-    }
+    void set_key(const SFC_Key& new_key);
 
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
 
-    int material() const {
-        return material_;
-    }
+    int material() const;
 
-    void set_material(int m) {
-        material_ = m;
-    }
+    void set_material(int m);
 
     //! legacy afeapi function prototype, this function does not exist in the finite difference/volume version of Titan
     void get_stiffness(NodeHashTable*, NodeHashTable*, double*, double*, Element*);
 
     //! returns the address of the first of 8 (nodes 0-7) node keys in an array, the node keys are used to access the nodes through the node hashtable
 
-    const SFC_Key& node_key(const int i) const {
-        return node_key_[i];
-    }
+    const SFC_Key& node_key(const int i) const;
 
-    void set_node_key(const int i, const SFC_Key& new_key) {
-        node_key_[i] = new_key;
-    }
+    void set_node_key(const int i, const SFC_Key& new_key);
 
     //! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
 
-    Node** getNodesPtrs() {
-        return &(node_keyPtr[0]);
-    }
+    Node** getNodesPtrs();
 
     //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
 
-    Node* getNodePtr(int i) {
-        return node_keyPtr[i];
-    }
+    Node* getNodePtr(int i);
 
     //! returns the pointers to the i-th of 8 (elements 0-7) elements , careful pointers can be outdated
 
-    Element* getNeighborPtr(int i) {
-        return neighborPtr[i];
-    }
+    Element* getNeighborPtr(int i);
 
     //!update neighbors pointers from hash table
     void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, NodeHashTable*);
@@ -250,91 +229,59 @@ public:
 
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
 
-    int ndof() const {
-        return ndof_;
-    }
+    int ndof() const;
 
-    void set_ndof(const int new_ndof) {
-        ndof_ = new_ndof;
-    }
+    void set_ndof(const int new_ndof);
 
-    int no_of_eqns() const {
-        return no_of_eqns_;
-    }
+    int no_of_eqns() const;
 
-    void set_no_of_eqns(const int new_no_of_eqns) {
-        no_of_eqns_ = new_no_of_eqns;
-    }
+    void set_no_of_eqns(const int new_no_of_eqns);
 
 
 
     //! returns this elements generation, that is how many times it's been refined -8<=generation<=+3, negative means courser than original mesh
 
-    int generation() const {
-        return generation_;
-    }
+    int generation() const;
     //! set the generation (number of times it's been refined -8<=gen<=+3) of this "element"/cell
 
-    void generation(const int g) {
-        generation_ = g;
-    }
+    void generation(const int g);
 
     //! this function returns the keys of an element's 4 brothers (an element is considered to be it's own brother) this is used during unrefinement to combine 4 brothers into their father element
 
-    const SFC_Key& brother(const int i) const {
-        return brothers_[i];
-    }
+    const SFC_Key& brother(const int i) const;
 
-    void set_brother(const int i, const SFC_Key& new_key) {
-        brothers_[i] = new_key;
-    }
+    void set_brother(const int i, const SFC_Key& new_key);
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
     void set_brothers(const SFC_Key*);
 
     //! returns the processors for the i-th neighbours of this element
 
-    const int& neigh_proc(const int i) const {
-        return neigh_proc_[i];
-    }
+    const int& neigh_proc(const int i) const;
     //! this function stores the processor id "proc" of neighbor "i" in the 8 element array of neighbor processors, use this function instead of putassoc.
 
-    void set_neigh_proc(const int i, const int& proc) {
-        neigh_proc_[i] = proc;
-    }
+    void set_neigh_proc(const int i, const int& proc);
 
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
 
-    int order(const int i) const {
-        return order_[i];
-    }
+    int order(const int i) const;
     //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
 
-    void set_order(const int i, const int ord) {
-        order_[i] = ord;
-    }
+    void set_order(const int i, const int ord);
 
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
     const SFC_Key& father() const;
     //!only used in unrefinement
 
-    const SFC_Key& father_by_ref() const {
-        return father_;
-    }
+    const SFC_Key& father_by_ref() const;
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
 
-    void set_father(const SFC_Key &fatherin) {
-        father_ = fatherin;
-    }
+    void set_father(const SFC_Key &fatherin);
 
     //! return the element keys of this element's 4 sons, used during refinement
 
-    const SFC_Key& son(const int i) const {
-        return son_[i];
-    }
+    const SFC_Key& son(const int i) const;
 
-    void set_son(const int i, const SFC_Key& new_key) {
-        son_[i] = new_key;
-    }
+    void set_son(const int i, const SFC_Key& new_key);
     //! store the keys for the four son "elements" in the father element, used temporarily during refinement
     void set_sons(const SFC_Key*);
 
@@ -343,59 +290,35 @@ public:
 
     //! return the element's solution
 
-    double el_solution(int i) const {
-        return el_solution_[i];
-    }
+    double el_solution(int i) const;
 
-    void set_el_solution(int i, double m_el_solution) {
-        el_solution_[i] = m_el_solution;
-    }
+    void set_el_solution(int i, double m_el_solution);
 
     //! returns the element's error
 
-    double el_error(int i) const {
-        return el_error_[i];
-    }
+    double el_error(int i) const;
 
-    void set_el_error(int i, double m_el_error) {
-        el_error_[i] = m_el_error;
-    }
-
+    void set_el_error(int i, double m_el_error);
 
 
 
     //! returns the key for this element's 8 neighbors
 
-    const SFC_Key& neighbor(const int i) const {
-        return neighbors_[i];
-    }
+    const SFC_Key& neighbor(const int i) const;
     //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
 
-    void set_neighbor(const int i, const SFC_Key &new_key) {
-        neighbors_[i] = new_key;
-    }
+    void set_neighbor(const int i, const SFC_Key &new_key);
 
     //! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
 
-    BC* bcptr() {
-        return bcptr_;
-    }
+    BC* bcptr();
 
-    void bcptr(BC* new_bcptr) {
-        bcptr_ = new_bcptr;
-    }
+    void bcptr(BC* new_bcptr);
     //! this function sets the pointer to an element's boundary conditions to NULL
 
-    void void_bcptr() {
-        bcptr_ = nullptr;
-    }
+    void void_bcptr();
 
-    void delete_bcptr() {
-        if(bcptr_!=nullptr)
-            delete bcptr_;
-        void_bcptr();
-    }
-
+    void delete_bcptr();
     //! compare the FindNeigh key against the keys of this element's 8 neighbors to determine which if any neighbor FindNeigh is
     int which_neighbor(const SFC_Key &FindNeigh);
 
@@ -409,62 +332,42 @@ public:
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag().  refined can be permanently set to GHOST (defined in constant.h) or zero or temporarily set to 1 (with in the refinement and unrefinement routines), Keith believes it's not being unset (set from 1 to 0) when it should be after the refinement is done.  Keith believes the problem is located within H_adapt() or a function called from within it, recurse down.
     //get_refined_flag
 
-    int refined_flag() const {
-        return refined_;
-    }
+    int refined_flag() const;
     //! set this element's refined flag to i, can set it to normal (hasn't just been refined and isn't a ghost cell), "temporarily" set to "refined" (has just been refined so don't refine again), or say that it's a GHOST cell, see constant.h, (which means you don't update it, instead you get new values from the processor that owns it and you don't refine it.) refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). 
     //put_refined_flag
 
-    void set_refined_flag(const int i) {
-        refined_ = i;
-    }
+    void set_refined_flag(const int i);
 
     //! magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell.  This allowed Keith to implement one time only immunity to unrefinement for recently refined (NEWSON) elements, which allowed him to protect a refined layer of buffer cells around piles.  Keith has partially replaced refined, get_refined_flag() and put_refined_flag() with adapted, get_adapted_flag() and put_adapted_flag(), but has left the if statements in the code responsible for refinement and unrefinement untouched because he encountered a bug, that he narrowed to within H_adapt() or a function called from within H_adapt(), recurse down, but has not pinpointed.  Keith believes the bug is related to the refined flag being inappropriately set to 1, or not unset to zero when it should be.
 
-    int adapted_flag() const {
-        return adapted_;
-    }
+    int adapted_flag() const;
     //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. These values are defined in constant.h.  The NEWSON value has allowed Keith to provide one time only immunity from unrefinement to recently refined elements, after which the "adapted" flag is resent to NOTRECADAPTED.
 
-    void set_adapted_flag(const int new_adapted_status) {
-        adapted_ = new_adapted_status;
-    }
+    void set_adapted_flag(const int new_adapted_status);
 
     //! this function returns an the generation of i-th this element's neighbors
 
-    int neigh_gen(const int i) const {
-        return neigh_gen_[i];
-    }
+    int neigh_gen(const int i) const;
     //! this function sets the ith neighbor's generation to "gen"
 
-    void get_neigh_gen(const int i, const int gen) {
-        neigh_gen_[i] = gen;
-    }
+    void get_neigh_gen(const int i, const int gen);
 
     //! returns the which_son flag, which tells the portion of the father element that this element is physically located in
 
-    int which_son() const {
-        return which_son_;
-    }
+    int which_son() const;
     //! this function sets the which_son flag when a father element is refined into its 4 sons, the which_son flag tells the portion of the father element that this element is physically located in
 
-    void set_which_son(const int i) {
-        which_son_ = i;
-    }
+    void set_which_son(const int i);
 
     //! this function calculates the which_son flag for the original (or restored in case of a restart) element.  It also calculates which son of the grandfather element the father is durring unrefinement.
     void calc_which_son();
 
     //! this function returns the vlaue of the new_old flag which is used during mesh adaptation and repartitioning
 
-    int new_old() const {
-        return new_old_;
-    }
+    int new_old() const;
     //! this function sets the new or old flag, it is initialized in htflush.C and reset during repartitioning (repartition_BSFC.C and BSFC_update_and_send_elements.C)
 
-    void set_new_old(const int i) {
-        new_old_ = i;
-    }
+    void set_new_old(const int i);
 
 
 
@@ -481,54 +384,36 @@ public:
 
     //! this function returns the Load Balancing weight of an element which is used in repartitioning
 
-    double lb_weight() const {
-        return lb_weight_;
-    }
+    double lb_weight() const;
     //! this function stores an element's load balancing weight, which is used during repartitioning
 
-    void set_lb_weight(double dd_in) {
-        lb_weight_ = dd_in;
-    }
+    void set_lb_weight(double dd_in);
 
 
     //! this function returns the load balancing key, which is used during repartitioning
 
-    const SFC_Key& lb_key() const {
-        return lb_key_;
-    }
+    const SFC_Key& lb_key() const;
     //! this function sets the load balancing key, which is used during repartitioning
 
-    void set_lb_key(const SFC_Key& new_key) {
-        lb_key_ = new_key;
-    }
+    void set_lb_key(const SFC_Key& new_key);
 
     //! this function copies the elmenent key to the load balancing key
 
-    void copy_key_to_lb_key() {
-        set_lb_key(key());
-    }
+    void copy_key_to_lb_key();
 
 
     //! this function returns the process(or) id of an element, it says which processor owns the element
 
-    int myprocess() const {
-        return myprocess_;
-    }
+    int myprocess() const;
     //! this function sets the process(or) id of an element, it says which processor owns the element.
 
-    void set_myprocess(const int in_proc) {
-        myprocess_ = in_proc;
-    }
+    void set_myprocess(const int in_proc);
 
     //! this function returns the opposite_brother_flag, I (Keith) am not entirely sure what this flag is for, but I know that it is used in repartioning, see BSFC_combine_elements, I think it says if an element has an opposite brother, that is, can it be combined with it's brothers to form their father
 
-    int opposite_brother_flag() const {
-        return opposite_brother_flag_;
-    }
+    int opposite_brother_flag() const;
 
-    void set_opposite_brother_flag(int new_opposite_brother_flag) {
-        opposite_brother_flag_ = new_opposite_brother_flag;
-    }
+    void set_opposite_brother_flag(int new_opposite_brother_flag);
 
     //! this function computes searches for an element's brother, i.e. the brother (son of the same father) that is located diagonally from it, to get the brother information requires that atleast one of this element's neighboring brothers is on this process in order to get information onthe brother that is not a neighbor
     void find_opposite_brother(ElementsHashTable*);
@@ -545,66 +430,56 @@ public:
     void put_height(double pile_height);
 
     //! this function returns the vector of state variables
-    double state_vars(int idim) const {return state_vars_[idim];}
-    void state_vars(int idim, double value) {state_vars_[idim]=value;}
+    double state_vars(int idim) const ;
+    void state_vars(int idim, double value);
     
     //!statevars by name
-    double h() const {return state_vars(0);}
+    double h() const;
     //!hVx for single phase or hVx_sol for two phases
-    double hVx() const {
-        if(elementType() == ElementType::TwoPhases)return state_vars(2);
-        else return state_vars(1);
-    }
+    double hVx() const;
     //!hVy for single phase or hVy_sol for two phases 
-    double hVy() const {
-        if(elementType() == ElementType::TwoPhases)return state_vars(3);
-        else return state_vars(2);
-    }
-    double h2() const {return state_vars(1);}
+    double hVy() const;
+    double h2() const;
 
     //! this function returns the vector of x and y derivatives of state variables, all the x derivatives come first as a group followed by the y derivatives as a group
-    double d_state_vars(int idim) const {return d_state_vars_[idim];}
-    void d_state_vars(int idim, double value) {d_state_vars_[idim]=value;}
+    double d_state_vars(int idim) const;
+    void d_state_vars(int idim, double value);
     
     //d_state_vars by name dh/dx, dhVx/dx, dhVy/dx, dh/dy, dhVx/dy, dhVy/dyd
-    double dh_dx() const {return d_state_vars(0);}
-    double dh_dy() const {return d_state_vars(NUM_STATE_VARS);}
-    double dhVx_dx() const {return d_state_vars(1);}
-    double dhVx_dy() const {return d_state_vars(NUM_STATE_VARS+1);}
-    double dhVy_dx() const {return d_state_vars(2);}
-    double dhVy_dy() const {return d_state_vars(NUM_STATE_VARS+2);}
+    double dh_dx() const;
+    double dh_dy() const;
+    double dhVx_dx() const;
+    double dhVx_dy() const;
+    double dhVy_dx() const;
+    double dhVy_dy() const;
     
-    double dh_dx_liq() const {return d_state_vars(1);}
-    double dh_dy_liq() const {return d_state_vars(NUM_STATE_VARS+1);}
-    double dhVx_dx_sol() const {return d_state_vars(2);}
-    double dhVx_dy_sol() const {return d_state_vars(NUM_STATE_VARS+2);}
-    double dhVy_dx_sol() const {return d_state_vars(3);}
-    double dhVy_dy_sol() const {return d_state_vars(NUM_STATE_VARS+3);}
+    double dh_dx_liq() const;
+    double dh_dy_liq() const;
+    double dhVx_dx_sol() const;
+    double dhVx_dy_sol() const;
+    double dhVy_dx_sol() const;
+    double dhVy_dy_sol() const;
     
     
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
-    double prev_state_vars(int idim) const {return prev_state_vars_[idim];}
-    void prev_state_vars(int idim, double value) {prev_state_vars_[idim]=value;}
+    double prev_state_vars(int idim) const;
+    void prev_state_vars(int idim, double value);
     
     //! updates prev_states variables to current states, for first order-calculations
-    void update_prev_state_vars(){for (int i = 0; i < NUM_STATE_VARS; i++)prev_state_vars(i, state_vars(i));}
+    void update_prev_state_vars();
 
     //! this function returns the length of an element in the x and y directions
-    double dx(int idim) const {return dx_[idim];}
-    void dx(int idim, double value){dx_[idim]=value;}
+    double dx(int idim) const;
+    void dx(int idim, double value);
 
     //! this function computes which side of the element is facing the positive x direction
     void find_positive_x_side(NodeHashTable*);
 
     //! this function returns which side of the element is facing the positive x direction
 
-    int positive_x_side() const {
-        return positive_x_side_;
-    }
+    int positive_x_side() const;
 
-    void set_positive_x_side(const int new_positive_x_side) {
-        positive_x_side_ = new_positive_x_side;
-    }
+    void set_positive_x_side(const int new_positive_x_side);
 
 
     //! this function computes the x and y derivatives of the state variables
@@ -635,9 +510,9 @@ public:
             int* order_flag, double *outflow);
 
     //! this function calculates the maximum x and y direction wavespeeds which are the eigenvalues of the flux jacobian
-    double eigenvxymax(int idim) const {return eigenvxymax_[idim];}
-    double& eigenvxymax_ref(int idim) {return eigenvxymax_[idim];}
-    void eigenvxymax(int idim,double value) {eigenvxymax_[idim]=value;}
+    double eigenvxymax(int idim) const;
+    double& eigenvxymax_ref(int idim);
+    void eigenvxymax(int idim,double value);
 
     //! this function performs the corrector update, in the predictor (finite difference) corrector (finite volume) timestepping that titan uses.  Actually this function passes values to a short fortran subroutine named "correct_" that performs the calculations.  The "correct_" fortran subroutine should be torn out and the guts rewritten in C++ here.  That may make it into this release if there is time, otherwise expect it in the next release
     /*void correct(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops_ptr,
@@ -648,25 +523,21 @@ public:
 
     //! this function returns the already computed shortspeed
 
-    double shortspeed() {
-        return shortspeed_;
-    }
+    double shortspeed();
     //! this function assigns the value passed in to shortspeed
 
-    void set_shortspeed(double shortspeedin) {
-        shortspeed_ = shortspeedin;
-    }
+    void set_shortspeed(double shortspeedin);
 
     //! this function computes the velocity, either V=hV/h or shortspeed in the direction of hV/h, if the pile is short, that is h is less than the defined (nondimensional) value of GEOFLOW_SHORT, see geoflow.h, it chooses the speed to be min(|hV/h|,shortspeed) if h is greater than GEOFLOW_SHORT it chooses hV/h regardless of which one is smaller.
     double* eval_velocity(double xoffset, double yoffset, double Vel[]);
 
     //! this function returns the already calculated value(s) of k active passive, which comes from using th Coulomb friction model of granular flows (this is problem specific to titan and thus does not appear in the standard afeapi code)
-    double& kactxy_ref(const int idim){return kactxy_[idim];}
-    double kactxy(const int idim) const {return kactxy_[idim];}
+    double& kactxy_ref(const int idim);
+    double kactxy(const int idim) const;
     
-    void kactxy(const int idim, double value) {kactxy_[idim]=value;}
+    void kactxy(const int idim, double value);
     //! interface to change value of earth-pressure coefficients
-    void set_kactxy(double kap[DIMENSION]) {for (int i = 0; i < DIMENSION; i++)kactxy_[i] = kap[i];}
+    void set_kactxy(double kap[DIMENSION]);
     
 
 
@@ -678,35 +549,29 @@ public:
 
     //! this function returns the precomputed elevation
 
-    double& elevation_ref() {
-        return elevation_;
-    };
+    double& elevation_ref();
 
-    double elevation() const {
-        return elevation_;
-    };
+    double elevation() const;
 
-    void set_elevation(double new_elevation) {
-        elevation_ = new_elevation;
-    };
+    void set_elevation(double new_elevation);
     
     //! this function returns the x and y slopes of the terrain elevation
-    double zeta(int idim) const {return zeta_[idim];}
-    double& zeta_ref(int idim) {return zeta_[idim];}
-    void zeta(int idim, double value) {zeta_[idim]=value;}
+    double zeta(int idim) const;
+    double& zeta_ref(int idim);
+    void zeta(int idim, double value);
     
     //! returns the already computed gravity vector in local coordinates, the local z direction is normal to the terrain surface and the projection of the local x and y components into the horizontal plane are aligned with global x (UTM E) and y (UTM N) directions.
-    double gravity(int idim) const {return gravity_[idim];}
-    void gravity(int idim, double value) {gravity_[idim]=value;}
+    double gravity(int idim) const;
+    void gravity(int idim, double value);
 
     //! this function returns the precomputed derivatives of the z component of gravity, this is a purely terrain geometry dependant derivative, that is little diffent than curvature
-    double d_gravity(int idim) const {return d_gravity_[idim];}
-    void d_gravity(int idim, double value) {d_gravity_[idim]=value;}
+    double d_gravity(int idim) const;
+    void d_gravity(int idim, double value);
 
     //! this function returns the precomputed local terrain curvature.  Curvature itself is the inverse of radius of curvature.  The exact value of curvature  is the spatial second derivative of the normal coordinate of the surface along directions tangent to the surface at that point (local x and y).  However I believe that Laercio Namikawa implemented it approximately, i.e. as the global x and y second derivatives of terrain elevation. 
-    double curvature(int idim) const {return curvature_[idim];}
-    double& curvature_ref(int idim) {return curvature_[idim];}
-    void curvature(int idim, double value) {curvature_[idim]=value;}
+    double curvature(int idim) const;
+    double& curvature_ref(int idim);
+    void curvature(int idim, double value);
 
     //! this function is called in element_weight.C, it is used in computing the load balancing weight
     void calc_flux_balance(NodeHashTable *NodeTable);
@@ -738,15 +603,15 @@ public:
     //void change_neigh_info(unsigned *fth_key, unsigned *ng_key, int neworder, int ng_gen, int fth_proc);
 
     //! this function returns the elm_loc variable, which is used in unrefinement beyond the initial coarse grid
-    int elm_loc(int idim) const {return elm_loc_[idim];}
+    int elm_loc(int idim) const;
     //! this function sets the elm_loc variable, which is used in unrefinement beyond the initial coarse grid
-    void set_elm_loc(const int idim, const int int_in){elm_loc_[idim] = int_in;}
+    void set_elm_loc(const int idim, const int int_in);
     //void put_elm_loc(int* int_in){for(i=0;i<DIMENSION;i++)elm_loc[i] = int_in[i];}
     
 
     //! this function returns the precomputed and scaled coordinates of this element (which would be the same as its bubble node's coordinates)
-    double coord(int idim) const {return coord_[idim];}
-    void set_coord(int idim, double new_crd){coord_[idim]=new_crd;}
+    double coord(int idim) const;
+    void set_coord(int idim, double new_crd);
     
 
     //! this function stores the coordinates of this element (which would be the same as its bubble node's coordinates)
@@ -757,20 +622,16 @@ public:
     
     //! this function returns the value of "stoppedflags"
 
-    int stoppedflags() {
-        return stoppedflags_;
-    }
+    int stoppedflags();
     //! this function is used to assign a value to stopped flags, for when you don't want to compute the criteria to decide whether it's stopped or not, useful during developement
 
-    void set_stoppedflags(int stoppedflagsin) {
-        stoppedflags_ = stoppedflagsin;
-    }
+    void set_stoppedflags(int stoppedflagsin);
 
     //! this function returns the stored value of the extrusion (out of the ground) fluxes in this element
-    double Influx(int idim) const {return Influx_[idim];}
-    void Influx(int idim, double value) {Influx_[idim]=value;}
+    double Influx(int idim) const;
+    void Influx(int idim, double value);
     //! this function zeros the extrusion (out of the ground) fluxes in this element
-    void zero_influx(){for (int i = 0; i < NUM_STATE_VARS; i++)Influx(i, 0.0);}
+    void zero_influx();
     
 
     //! this function calculates the extrusion (out of the ground) fluxes for this elements
@@ -790,45 +651,45 @@ public:
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
 
-    int ithelem() {return ithelem_;}
+    int ithelem();
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
 
-    void set_ithelem(int i) {ithelem_ = i;}
+    void set_ithelem(int i);
 
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, thus the effective bed friction angle holds either the value of the actual bed friction angle if it should not be stopped or the value of the internal friction angle if it should not be stopped
-    double& effect_bedfrict_ref() {return effect_bedfrict_;}
-    double* effect_bedfrict_ptr() {return &effect_bedfrict_;}
-    double effect_bedfrict() {return effect_bedfrict_;}
-    void set_effect_bedfrict(double new_effect_bedfrict) {effect_bedfrict_ = new_effect_bedfrict;}
+    double& effect_bedfrict_ref();
+    double* effect_bedfrict_ptr();
+    double effect_bedfrict();
+    void set_effect_bedfrict(double new_effect_bedfrict);
 
-    double effect_tanbedfrict() {return effect_tanbedfrict_;}
-    void set_effect_tanbedfrict(double new_effect_tanbedfrict) {effect_tanbedfrict_ = new_effect_tanbedfrict;}
+    double effect_tanbedfrict();
+    void set_effect_tanbedfrict(double new_effect_tanbedfrict);
 
     //! one option for what to do when you know the flow should be stopped is to reset the bed friction angle to take on the value of the internal friction angle, if the effective bed friction angle equals the internal friction angle effect_kactxy takes on the value 1, k active/passive comes from using a Coulomb friction model for granular flows
-    double effect_kactxy(int idim) const {return effect_kactxy_[idim];}
-    void effect_kactxy(int idim, double value) {effect_kactxy_[idim]=value;}
+    double effect_kactxy(int idim) const;
+    void effect_kactxy(int idim, double value);
     
     //! this inline member function returns the stored value of Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-    double Awet() const {return Awet_;}
+    double Awet() const;
     //! this inline member function assigns a value to Awet, Awet is the fraction of an element's area that is wet (has material), 0.0<=Awet<=1.0, where there is no flow (pileheight < GEOFLOW_TINY) Awet=0, in the interior of the Flow Awet=1.0, at the boundary of the flow, elements will be PARTIALLY WET (i.e. where the element SHOULD be separated into a dry part and wet part), Awet is the fraction that should be wet, Awet is updated during the corrector part of the (finite difference)predictor-(finite volume)corrector update.  Fluxes are adjusted to acount for how wet/dry an edge of an element is. Keith wrote this may 2007
-    void set_Awet(double Awet_in) {Awet_ = Awet_in;}
+    void set_Awet(double Awet_in);
 
     //! this inline member function returns the stored value of Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-    double Swet() const {return Swet_;}
+    double Swet() const;
     //! this inline member function assigns a value to Swet.  Swet is the fraction of the element's partially wet sides that are wet (i.e. have material).  Where there is no flow (pileheight < GEOFLOW_TINY), Swet=0.  In the interior of a flow, Swet=1.0.  At the flow boundary, elements will be PARTIALLY WET, 0.0<=Swet<=1.0.  Due to symmetry, any element can only have 0 or 2 partially wet sides, each of which (for normalized elements) will have the same fraction that is wet, Swet.  Swet for each partially wet cell is updated every time-step when calc_wet_dry_orient() is called in step.C.  Fluxes are adjusted to account for how wet/dry an edge of an element is.  Keith wrote this function may 2007
-    void set_Swet(double Swet_in) {Swet_ = Swet_in;}
+    void set_Swet(double Swet_in);
 
     //! this inline member function returns the value of iwetnode.  iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-    int iwetnode() const {return iwetnode_;}
+    int iwetnode() const;
     //! this inline member function sets the value of iwetnode. iwetnode is an integer that defines which of an element's 9 nodes is its "wettest" node (wet elements are those containing material).  In the interior of a flow, iwetnode=8 (the center node), indicating a fully wet element.  Outside of a flow (where an element and all it's neighbors have pileheight < GEOFLOW_TINY), iwetnode is also 8.  Along a flow boundary, partially wet elements with 1,2, or 3 wet sides can have an iwetnode other than 8.   iwetnode is used to determine which side of the dryline in a partially wet element has material.  Keith wrote this function may 2007
-    void set_iwetnode(int iwetnode_in) {iwetnode_ = iwetnode_in;}
+    void set_iwetnode(int iwetnode_in);
 
     //! this inline member function returns the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007
-    double drypoint(int idim) const {return drypoint_[idim];}
+    double drypoint(int idim) const;
     //! this inline member function sets the values of the array "drypoint".  drypoint[0] is the local x-coordinate, and drypoint[1] the local y-coordinate of its namesake, which is used to specify the position of the flow-front (or dryline) inside a given element.  The position of the dryline along with iwetnode is used to determine Awet, i.e. which fraction of a partially wet element is wet (contains material).  Keith wrote this function may 2007  
-    void drypoint(int idim, double value) {drypoint_[idim]=value;}
+    void drypoint(int idim, double value);
     
 
     //! the element member function calc_wet_dry_orient() determines the orientation of the dryline and which side of it is wet, the wet fraction (Swet) of a partially wet edge, the location of the drypoint, it does NOT calculate the wet area (Awet)... these quantities are used in the adjustment of fluxes in partially wet elements. calc_wet_dry_orient() is not coded for generic element orientation, i.e. the positive_x_side must be side 1.  Keith wrote this may 2007
@@ -845,20 +706,14 @@ public:
 
     //! sgn of double
 
-    double sgn(double a) {
-        return (a < 0.0 ? -1.0 : 1.0);
-    }
+    double sgn(double a);
 
-    const ElementType& elementType() const {
-        return elementType_;
-    }
+    const ElementType& elementType() const;
 
-    void elementType(const ElementType& new_element_type) {
-        elementType_ = new_element_type;
-    }
+    void elementType(const ElementType& new_element_type);
     //index in storage
-    ti_ndx_t ndx() const {return ndx_;}
-    void ndx(ti_ndx_t new_ndx) {ndx_ = new_ndx;}
+    ti_ndx_t ndx() const;
+    void ndx(ti_ndx_t new_ndx);
 
 protected:
     //index in storage
@@ -1022,139 +877,7 @@ protected:
     double Swet_;
 };
 
-class ElementSinglePhase : public Element {
-public:
 
-    ElementSinglePhase() : Element() {
-    }
-
-    ~ElementSinglePhase() {
-    }
-};
-
-class ElementTwoPhases : public Element {
-public:
-
-    ElementTwoPhases() : Element() {
-    }
-
-    ~ElementTwoPhases() {
-    }
-};
-
-inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom) {
-    prev_state_vars(0, pile_height);
-    state_vars(0, pile_height);
-    prev_state_vars(1, pile_height * volf);
-    state_vars(1, pile_height * volf);
-    prev_state_vars(2, xmom);
-    state_vars(2, xmom);
-    prev_state_vars(3, ymom);
-    state_vars(3, ymom);
-    if (pile_height > GEOFLOW_TINY) {
-        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / (pile_height * volf));
-        set_Awet(1.0);
-    } else {
-        set_shortspeed(0.0);
-        set_Awet(0.0);
-    }
-    return;
-};
-
-inline void Element::put_height_mom(double pile_height, double xmom, double ymom) {
-    prev_state_vars(0, pile_height);
-    state_vars(0, pile_height);
-    prev_state_vars(1, xmom);
-    state_vars(1, xmom);
-    prev_state_vars(2, ymom);
-    state_vars(2, ymom);
-    if (pile_height > GEOFLOW_TINY) {
-        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
-        set_Awet(1.0);
-    } else {
-        set_shortspeed(0.0);
-        set_Awet(0.0);
-    }
-
-    return;
-};
-
-inline void Element::put_height(double pile_height) {
-    if (elementType() == ElementType::TwoPhases) {
-        put_height_mom(pile_height, 1., 0., 0.);
-    }
-    if (elementType() == ElementType::SinglePhase) {
-        put_height_mom(pile_height, 0.0, 0.0);
-    }
-    return;
-};
-
-//above this line Keith made inline 20061128
-/* REALLY? member functions defined in class body are 
- * automatically inlined by the complier. When they are
- * not, "inline" keyword is not going to help the cause.
- * This was a huge waste of time
- */
-
-/* agreed, but keeping it outside class body makes class definition cleaner and easier to read
- */
-
-inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
-    int i;
-    if (El_Table != NULL) {
-        for (i = 0; i < 8; i++) {
-            neighborPtr[i] = (Element*) El_Table->lookup(neighbor(i));
-        }
-    }
-    if (NodeTable != NULL) {
-        for (i = 0; i < 8; i++) {
-            node_keyPtr[i] = (Node*) NodeTable->lookup(node_key(i));
-        }
-    }
-    return;
-}
-
-inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
-    int i;
-    int count = 0;
-    if (El_Table != NULL) {
-        for (i = 0; i < 8; i++) {
-            if (neighborPtr[i] != (Element*) El_Table->lookup(neighbor(i)))
-                count++;
-        }
-    }
-    if (NodeTable != NULL) {
-        for (i = 0; i < 8; i++) {
-            if (node_keyPtr[i] != (Node*) NodeTable->lookup(node_key(i)))
-                count++;
-        }
-    }
-    return count;
-}
-
-inline void Element::set_sons(const SFC_Key* s) {
-    for (int i = 0; i < 4; i++)
-        set_son(i, s[i]);
-
-    set_refined_flag(1);
-    set_adapted_flag(OLDFATHER);
-}
-
-inline void Element::set_brothers(const SFC_Key* s) {
-    for (int i = 0; i < 4; i++)
-        set_brother(i, s[i]);
-}
-
-inline void Element::putel_sq(double solsq, double errsq) {
-    set_el_solution(0, solsq);
-    set_el_error(0, errsq);
-}
-
-/*************************************************************************/
-/*************************************************************************/
-/*************************************************************************/
-/*************************************************************************/
-/*************************************************************************/
 /*************************************************************************/
 
 //! The ElemPtrList class is basically just a "smart array" of pointers to Elements, by smart I mean it keeps track of its size and number of Elements in the list and expands/reallocates itself whenever you add an element ptr to the list when you've run out of space, it also keeps a record of the index of the first "new" element pointer you've added in the current series, which is useful for the intended purpose... ElemList was designed for use in refinement and unrefinement to replace fixed sized arrays (length=297200) of pointers to Elements.  The reason for this upgrade was it was causing valgrind to issue all kinds of warnings about the "client switching stacks" and "invalid write/read of size blah blah blah" because the stacksize was too large.  My 20061121 rewrite of hadapt.C and unrefine.C to make them "fast" caused this problem because I added a second (large) fixed sized array to both of them so I could reduce the number of hashtable scans by only revisiting the "new" additions to the array of pointers of Elements. --Keith wrote this on 20061124, i.e. the day after Thanksgiving, and I'm very thankful for having the inspiration to figure out the cause of valgrid warning

@@ -21,7 +21,7 @@
 
 #ifndef NODE_C
 #define NODE_C
-#include "../header/node.h"
+#include "../header/elenode.hpp"
 #include "../gisapi/GisApi.h"
 #include "../header/properties.h"
 

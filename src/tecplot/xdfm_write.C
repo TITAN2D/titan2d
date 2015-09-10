@@ -29,9 +29,7 @@ using namespace std;
 #include <hdf5.h>
 #include <mpi.h>
 
-#include <hashtab.h>
-#include <element2.h>
-#include <node.h>
+#include "../header/elenode.hpp"
 #include <GisApi.h>
 #include <hd5calls.h>
 

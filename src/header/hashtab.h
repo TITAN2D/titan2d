@@ -35,8 +35,6 @@ using namespace std;
 
 
 #include "constant.h"
-#include "sfc.h"
-#include "tivector.h"
 
 
 #define HASHTABLE_LOOKUP_LINSEARCH 8
@@ -374,7 +372,7 @@ public:
     void removeElement(Element* elm);
     
 
-    //Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
+    Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
     //here goes element content storage probably should be separate class at the end
     
 };

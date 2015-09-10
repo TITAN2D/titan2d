@@ -40,9 +40,7 @@ using namespace std;
 #include <assert.h>
 
 #include "properties.h"
-#include "node.h"
-#include "element2.h"
-#include "hashtab.h"
+#include "elenode.hpp"
 #include "recv.h"
 #include "extfun.h"
 #include "geoflow.h"

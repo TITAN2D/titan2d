@@ -11,9 +11,14 @@
 //this header should be use instead of node.h element.h hashtab.h
 
 
+#include "sfc.h"
+#include "tivector.h"
+
 #include "node.h"
 #include "element2.h"
 #include "hashtab.h"
+#include "node_inline.h"
+#include "element_inline.h"
 
 #endif	/* ELENODE_HPP */
 
