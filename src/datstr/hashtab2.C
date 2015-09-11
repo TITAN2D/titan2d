@@ -214,13 +214,9 @@ void HashTable<T>::remove(const SFC_Key& keyi)
     ENTRIES-=1;
 }
 template <typename T>
-void HashTable<T>::flush()
+void HashTable<T>::flushTable()
 {
-    return;
     int size_old=key_.size();
-    static vector<ti_ndx_t> ndx_map;
-    static vector<ti_ndx_t> ndx_map_old;
-    static vector<SFC_Key> key_map;
     ndx_map.resize(size_old);
     key_map.resize(size_old);
     ndx_map_old.resize(size_old);
@@ -342,7 +338,26 @@ void NodeHashTable::removeNode(Node* node)
     remove(node->key());
     //delete node;
 }
-
+void NodeHashTable::flushNodeTable()
+{
+    flushTable();
+    
+    int size=ndx_map.size();
+    
+    id_.reorder(&(ndx_map[0]), size);
+    num_assoc_elem_.reorder(&(ndx_map[0]), size);
+    info_.reorder(&(ndx_map[0]), size);
+    order_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;i++)
+        coord_[i].reorder(&(ndx_map[0]), size);
+    elevation_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<NUM_STATE_VARS;i++)
+    {
+        flux_[i].reorder(&(ndx_map[0]), size);
+        refinementflux_[i].reorder(&(ndx_map[0]), size);
+    }
+    connection_id_.reorder(&(ndx_map[0]), size);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -638,3 +653,59 @@ void ElementsHashTable::removeElement(Element* elm)
     //delete elm;
 }
 
+void ElementsHashTable::flushElemTable()
+{
+    //return;
+    flushTable();
+    int size=ndx_map.size();
+    
+    generation_.reorder(&(ndx_map[0]), size);
+    opposite_brother_flag_.reorder(&(ndx_map[0]), size);
+    material_.reorder(&(ndx_map[0]), size); /*! ! ! THE MAT. FLAG ! ! !*/
+    lb_weight_.reorder(&(ndx_map[0]), size);
+    lb_key_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)node_keyPtr[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neighborPtr[i].reorder(&(ndx_map[0]), size);
+    father_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<5;++i)order_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
+    bcptr_.reorder(&(ndx_map[0]), size);
+    ndof_.reorder(&(ndx_map[0]), size);
+    no_of_eqns_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<EQUATIONS;++i)el_error_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<EQUATIONS;++i)el_solution_[i].reorder(&(ndx_map[0]), size);
+    refined_.reorder(&(ndx_map[0]), size);
+    adapted_.reorder(&(ndx_map[0]), size);
+    which_son_.reorder(&(ndx_map[0]), size);
+    new_old_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<4;++i)brothers_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)coord_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)elm_loc_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reorder(&(ndx_map[0]), size);
+    shortspeed_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)dx_[i].reorder(&(ndx_map[0]), size);
+    positive_x_side_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)kactxy_[i].reorder(&(ndx_map[0]), size);
+    elevation_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)zeta_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)curvature_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<3;++i)gravity_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<DIMENSION;++i)d_gravity_[i].reorder(&(ndx_map[0]), size);
+    stoppedflags_.reorder(&(ndx_map[0]), size);
+    effect_bedfrict_.reorder(&(ndx_map[0]), size);
+    effect_tanbedfrict_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<2;++i)effect_kactxy_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reorder(&(ndx_map[0]), size);
+    ithelem_.reorder(&(ndx_map[0]), size);
+    iwetnode_.reorder(&(ndx_map[0]), size);
+    Awet_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<2;++i)drypoint_[i].reorder(&(ndx_map[0]), size);
+    Swet_.reorder(&(ndx_map[0]), size);
+}

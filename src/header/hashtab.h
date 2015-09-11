@@ -148,6 +148,7 @@ public:
         unsigned oldkey[KEYLENGTH];
         SET_OLDKEY(oldkey,keyi);
         return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
+        //return (((int) (keyi * hashconstant + 0.5)) % NBUCKETS);
     #endif
     }
     
@@ -173,9 +174,13 @@ public:
     
     void print_out(int) const {}
     
-    void flush();//actually delete, removed nodes and rearrange added (sort accorting to keys)
-
     tisize_t size() const{return elenode_.size();}
+protected:
+    void flushTable();//actually delete, removed nodes and rearrange added (sort according to keys)
+    //!temporary arrays used in flush()
+    vector<ti_ndx_t> ndx_map;
+    vector<ti_ndx_t> ndx_map_old;
+    vector<SFC_Key> key_map;
 };
 template class HashTable<Node>;
 template class HashTable<Element>;
@@ -199,6 +204,7 @@ public:
     void removeNode(Node* node);
 
     Node& node(const ti_ndx_t ndx){return elenode_[ndx];}
+    void flushNodeTable();
 private:
      Node* addNode(const SFC_Key& keyi);
 public: 
@@ -303,6 +309,8 @@ public:
     
     //!should not be used
     void removeElement(Element* elm);
+    
+    void flushElemTable();
     
 
     Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}

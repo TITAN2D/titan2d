@@ -99,7 +99,8 @@ void adapt_fluxsrc_region(ElementsHashTable *ElemTable, NodeHashTable *NodeTable
 
 
         //update temporary arrays of elements/nodes pointers
-        NodeTable->flush();
+        NodeTable->flushNodeTable();
+        ElemTable->flushElemTable();
         ElemTable->updateElements();
         ElemTable->updateLocalElements();
         ElemTable->updatePointersToNeighbours();

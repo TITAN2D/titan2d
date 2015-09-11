@@ -166,7 +166,8 @@ void cxxTitanSinglePhase::init_piles()
     move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
     
     //update temporary arrays of elements/nodes pointers
-    HT_Node_Ptr->flush();
+    HT_Node_Ptr->flushNodeTable();
+    HT_Elem_Ptr->flushElemTable();
     HT_Elem_Ptr->updateElements();
     HT_Elem_Ptr->updateLocalElements();
     HT_Elem_Ptr->updatePointersToNeighbours();
