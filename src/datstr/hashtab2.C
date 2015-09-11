@@ -195,27 +195,6 @@ T* HashTable<T>::add(const SFC_Key& keyi)
     ti_ndx_t ndx=add_ndx(keyi);
     return &(elenode_[ndx]);
 }
-template <typename T>
-void HashTable<T>::check()
-{
-    for(int entry=0;entry<bucket.size();++entry)
-    {
-        for(int bucket_entry_ndx=0;bucket_entry_ndx<bucket[entry].ndx.size();++bucket_entry_ndx)
-        {
-            if(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()!=key_[bucket[entry].ndx[bucket_entry_ndx]])
-            {
-            	cout<<elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()<<"\n";
-            	cout<<bucket[entry].key[bucket_entry_ndx]<<"\n";
-            	cout<<bucket[entry].ndx[bucket_entry_ndx]<<"\n";
-                cout<<elenode_[bucket[entry].ndx[bucket_entry_ndx]].ndx()<<"\n";
-            	cout<<key_[bucket[entry].ndx[bucket_entry_ndx]]<<"\n";
-            	T* t=&(elenode_[bucket[entry].ndx[bucket_entry_ndx]]);
-            	cout<<t->key()<<"\n";
-            	assert(0);
-            }
-        }
-    }
-}
 
 template <typename T>
 void HashTable<T>::remove(const SFC_Key& keyi)
@@ -308,56 +287,42 @@ NodeHashTable::~NodeHashTable()
     nodeHashTable=nullptr;
 }
 
+Node* NodeHashTable::addNode(const SFC_Key& keyi)
+{
+    Node* node = add(keyi);
+    
+    id_.push_back();
+    num_assoc_elem_.push_back();
+    info_.push_back();
+    order_.push_back();
+    for(int i=0;i<DIMENSION;i++)
+        coord_[i].push_back();
+    elevation_.push_back();
+    for(int i=0;i<NUM_STATE_VARS;i++)
+    {
+        flux_[i].push_back();
+        refinementflux_[i].push_back();
+    }
+    connection_id_.push_back();
+    return node;
+}
 
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
 {
-    Node* node = add(keyi);
+    Node* node = addNode(keyi);
     node->init(keyi, coordi, matprops_ptr);
-    
-    int entry = hash(keyi);
-    int entry_size = bucket[entry].key.size();
-    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
-    
-    assert(node->key()==keyi);
-    assert(elenode_[node->ndx()].key()==keyi);
-    assert(bucket[entry].key[bucket_entry_ndx]==keyi);
-    assert(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()==keyi);
-    assert(key_[node->ndx()]==keyi);
-    
     return node;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr)
 {
-    Node* node = add(keyi);
+    Node* node = addNode(keyi);
     node->init(keyi, coordi, inf, ord, matprops_ptr);
-    
-    int entry = hash(keyi);
-    int entry_size = bucket[entry].key.size();
-    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
-    
-    assert(node->key()==keyi);
-    assert(elenode_[node->ndx()].key()==keyi);
-    assert(bucket[entry].key[bucket_entry_ndx]==keyi);
-    assert(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()==keyi);
-    assert(key_[node->ndx()]==keyi);
-    
     return node;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
 {
-    Node* node = add(keyi);
+    Node* node = addNode(keyi);
     node->init(keyi, coordi, inf, ord, elev, yada);
-    
-    int entry = hash(keyi);
-    int entry_size = bucket[entry].key.size();
-    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
-    
-    assert(node->key()==keyi);
-    assert(elenode_[node->ndx()].key()==keyi);
-    assert(bucket[entry].key[bucket_entry_ndx]==keyi);
-    assert(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()==keyi);
-    assert(key_[node->ndx()]==keyi);
-    
     return node;
 }
 
@@ -571,10 +536,65 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
         printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n", prefix, count);
     return count;
 }
-
-Element* ElementsHashTable::generateAddElement(const SFC_Key& keyi)
+Element* ElementsHashTable::addElement(const SFC_Key& keyi)
 {
     Element* elm=add(keyi);
+    
+    generation_.push_back();
+    opposite_brother_flag_.push_back();
+    material_.push_back(); /*! ! ! THE MAT. FLAG ! ! !*/
+    lb_weight_.push_back();
+    lb_key_.push_back();
+    for(int i=0;i<8;++i)node_key_[i].push_back();
+    for(int i=0;i<8;++i)node_keyPtr[i].push_back();
+    for(int i=0;i<8;++i)neighbors_[i].push_back();
+    for(int i=0;i<8;++i)neighborPtr[i].push_back();
+    father_.push_back();
+    for(int i=0;i<4;++i)son_[i].push_back();
+    for(int i=0;i<8;++i)neigh_proc_[i].push_back();
+    for(int i=0;i<5;++i)order_[i].push_back();
+    for(int i=0;i<8;++i)neigh_gen_[i].push_back();
+    bcptr_.push_back();
+    ndof_.push_back();
+    no_of_eqns_.push_back();
+    for(int i=0;i<EQUATIONS;++i)el_error_[i].push_back();
+    for(int i=0;i<EQUATIONS;++i)el_solution_[i].push_back();
+    refined_.push_back();
+    adapted_.push_back();
+    which_son_.push_back();
+    new_old_.push_back();
+    for(int i=0;i<4;++i)brothers_[i].push_back();
+    for(int i=0;i<DIMENSION;++i)coord_[i].push_back();
+    for(int i=0;i<DIMENSION;++i)elm_loc_[i].push_back();
+    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].push_back();
+    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].push_back();
+    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].push_back();
+    shortspeed_.push_back();
+    for(int i=0;i<DIMENSION;++i)dx_[i].push_back();
+    positive_x_side_.push_back();
+    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].push_back();
+    for(int i=0;i<DIMENSION;++i)kactxy_[i].push_back();
+    elevation_.push_back();
+    for(int i=0;i<DIMENSION;++i)zeta_[i].push_back();
+    for(int i=0;i<DIMENSION;++i)curvature_[i].push_back();
+    for(int i=0;i<3;++i)gravity_[i].push_back();
+    for(int i=0;i<DIMENSION;++i)d_gravity_[i].push_back();
+    stoppedflags_.push_back();
+    effect_bedfrict_.push_back();
+    effect_tanbedfrict_.push_back();
+    for(int i=0;i<2;++i)effect_kactxy_[i].push_back();
+    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].push_back();
+    ithelem_.push_back();
+    iwetnode_.push_back();
+    Awet_.push_back();
+    for(int i=0;i<2;++i)drypoint_[i].push_back();
+    Swet_.push_back();
+    
+    return elm;
+}
+Element* ElementsHashTable::generateAddElement(const SFC_Key& keyi)
+{
+    Element* elm=addElement(keyi);
     elm->init(keyi);
     return elm;
 }
@@ -582,7 +602,7 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key& keyi)
 Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
                                             int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
-    Element* elm=add(nodekeys[8]); //--using bubble key to represent the element
+    Element* elm=addElement(nodekeys[8]); //--using bubble key to represent the element
     elm->init(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
     return elm;    
 }
@@ -592,7 +612,7 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SF
                  double Awetfather, double *drypoint_in)
 {
     
-    Element* elm=add(nodekeys[8]); //--using bubble key to represent the element
+    Element* elm=addElement(nodekeys[8]); //--using bubble key to represent the element
     elm->init(nodekeys, neigh, n_pro, b, gen,
                                   elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
@@ -601,7 +621,7 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SF
 }
 Element* ElementsHashTable::generateAddElement(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
-    Element* elm=add(sons[2]->node_key(0));
+    Element* elm=addElement(sons[2]->node_key(0));
     elm->init(sons, NodeTable, El_Table, matprops_ptr);
     return elm;
 }

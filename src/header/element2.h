@@ -209,10 +209,6 @@ public:
 
     void set_node_key(const int i, const SFC_Key& new_key);
 
-    //! returns the pointers to the first of 8 (nodes 0-7) nodes, careful pointers can be outdated
-
-    Node** getNodesPtrs();
-
     //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
 
     Node* getNodePtr(int i);
@@ -720,42 +716,42 @@ protected:
     ti_ndx_t ndx_;
     
     //! Element type
-    ElementType elementType_;
+    //ElementType elementType_;
     //! myprocess is id of the process(or) that owns this element
-    int myprocess_;
+    //int myprocess_;
 
     //! generation is how many times this element has been refined, currently -8<=generation<=3, a negative generation number means it has been unrefined beyond the orignal coarse mesh, a positive generation number means it has been refined (is smaller than the original element size)
-    int generation_;
+    //int generation_;
 
     //! opposite_brother_flag indicate if we have the correct key for the non-neighbor brother (0:= don't have info, 1:= have info)
-    int opposite_brother_flag_;
+    //int opposite_brother_flag_;
 
     //! the material flag indicates which material should be used to set this element's bed friction, this is for when a GIS material map, specifying different materials in different spatial regions of the map, the GIS material map is a non standard grass map format that Laercio Namikawa developed, it's stored in the "cats" folder under a grass mapset directory
-    int material_; /*! ! ! THE MAT. FLAG ! ! !*/
+    //int material_; /*! ! ! THE MAT. FLAG ! ! !*/
 
     //! this is the load-balancing weight
-    double lb_weight_;
+    //double lb_weight_;
 
     //! this is the key for load-balancing, if there is no constrained node, it is the element key, otherwise it is a construct of the element "bunch", keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key lb_key_;
+    //SFC_Key lb_key_;
 
     //! this is the element key, which has the same value as the key of the element's bubble node, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     //SFC_Key key_;
 
     //! this array holds the first 8 (0->7) of this element's nodes' keys, the n9th (8 out of 0->8) node is the bubble node it's key is not stored separately since it has the same key as the element, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key node_key_[8];
+    //SFC_Key node_key_[8];
 
     //!same as node_key but pointers, can be out-dated
     Node* node_keyPtr[8];
 
     //! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    SFC_Key neighbors_[8];
+    //SFC_Key neighbors_[8];
 
     //!same as neighbor but pointers, can be out-dated
     Element* neighborPtr[8];
-
+#if 0
     //! the key of the father it is assigned in the refine() and unrefine_elements() functions
-    SFC_Key father_;
+    /*SFC_Key father_;
 
     //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     SFC_Key son_[4];
@@ -874,7 +870,8 @@ protected:
     double drypoint_[2];
 
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
-    double Swet_;
+    double Swet_;*/
+#endif
 };
 
 

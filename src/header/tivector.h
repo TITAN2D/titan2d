@@ -20,6 +20,12 @@ inline bool ti_ndx_not_negative(const ti_ndx_t &ndx){return (ndx>=0);}
 
 //#define LOW_MEMORY
 
+class tivector_interface
+{
+public:
+    
+};
+
 #ifdef LOW_MEMORY
 //low memory footprint implementation
 //used to save memory and identify deallocated pointers usage

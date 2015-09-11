@@ -130,7 +130,7 @@ public:
 protected:
     //index in storage
     ti_ndx_t ndx_;
-    
+   /* 
     //! used in delete_unused_nodes_and_elements() function 
     int id_;
 
@@ -160,7 +160,7 @@ protected:
     double refinementflux_[MAX_NUM_STATE_VARS];
 
     //! node number for connection data -- varies with adaptation
-    int connection_id_;
+    int connection_id_;*/
 };
 
 

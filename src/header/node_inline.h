@@ -43,8 +43,8 @@ inline Node::Node(FILE* fp, MatProps* matprops_ptr) //for restart
     init(fp, matprops_ptr);
 }
 
-inline int Node::info() const {return info_;}
-inline void Node::info(int in){info_ = in;}
+inline int Node::info() const {return nodeHashTable->info_[ndx_];}
+inline void Node::info(int in){nodeHashTable->info_[ndx_] = in;}
 
 inline const SFC_Key& Node::key() const
 {
@@ -55,36 +55,36 @@ inline void Node::set_key(const SFC_Key& new_key)
     nodeHashTable->key_[ndx_]=new_key;
 }
 
-inline double Node::coord(int idim) const {return coord_[idim];}
-inline void Node::coord(int idim, double new_crd){coord_[idim]=new_crd;}   
+inline double Node::coord(int idim) const {return nodeHashTable->coord_[idim][ndx_];}
+inline void Node::coord(int idim, double new_crd){nodeHashTable->coord_[idim][ndx_]=new_crd;}   
 
-inline int Node::order(){return order_;}
-inline void Node::order(int i){order_ = i;}
+inline int Node::order(){return nodeHashTable->order_[ndx_];}
+inline void Node::order(int i){nodeHashTable->order_[ndx_] = i;}
 
 inline void Node::set_parameters(int inf, int ord){info(inf);order(ord);}
 
-inline int Node::id() const {return id_;}
-inline void Node::id(int id_in){id_ = id_in;}
+inline int Node::id() const {return nodeHashTable->id_[ndx_];}
+inline void Node::id(int id_in){nodeHashTable->id_[ndx_] = id_in;}
 
 
-inline double Node::flux(int idim) const {return flux_[idim];}
-inline void Node::flux(int idim, double value){flux_[idim]=value;}
+inline double Node::flux(int idim) const {return nodeHashTable->flux_[idim][ndx_];}
+inline void Node::flux(int idim, double value){nodeHashTable->flux_[idim][ndx_]=value;}
 
 inline void Node::zero_flux(){for(int i = 0; i < NUM_STATE_VARS; i++){flux(i,0.0);refinementflux(i, 0.0);}}
 
-inline double Node::refinementflux(int idim) const {return refinementflux_[idim];}
-inline void Node::refinementflux(int idim, double value){refinementflux_[idim]=value;}
+inline double Node::refinementflux(int idim) const {return nodeHashTable->refinementflux_[idim][ndx_];}
+inline void Node::refinementflux(int idim, double value){nodeHashTable->refinementflux_[idim][ndx_]=value;}
 
-inline double Node::elevation() const {return elevation_;}
-inline double & Node::elevation_ref() {return elevation_;}
+inline double Node::elevation() const {return nodeHashTable->elevation_[ndx_];}
+inline double & Node::elevation_ref() {return nodeHashTable->elevation_[ndx_];}
 
-inline void Node::elevation(double new_elevation){elevation_=new_elevation;}
+inline void Node::elevation(double new_elevation){nodeHashTable->elevation_[ndx_]=new_elevation;}
 
-inline void Node::num_assoc_elem(int numin){num_assoc_elem_ = numin;}
-inline int Node::num_assoc_elem() const {return num_assoc_elem_;}
+inline void Node::num_assoc_elem(int numin){nodeHashTable->num_assoc_elem_ [ndx_]= numin;}
+inline int Node::num_assoc_elem() const {return nodeHashTable->num_assoc_elem_[ndx_];}
 
-inline void Node::connection_id(int id){connection_id_ = id;}
-inline int Node::connection_id() const {return connection_id_;}
+inline void Node::connection_id(int id){nodeHashTable->connection_id_[ndx_] = id;}
+inline int Node::connection_id() const {return nodeHashTable->connection_id_[ndx_];}
 
 inline ti_ndx_t Node::ndx() const {return ndx_;}
 inline void Node::ndx(ti_ndx_t new_ndx) {ndx_ = new_ndx;}

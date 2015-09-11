@@ -2019,7 +2019,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
     {
         if(NodeTable->status_[i]>=0 && NodeTable->elenode_[i].num_assoc_elem() == 0)
         {
-            NodeTable->remove(NodeTable->elenode_[i].key());
+            NodeTable->removeNode(&(NodeTable->elenode_[i]));
         }
     }
     
@@ -2592,7 +2592,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
         {
             if(NodeTable->status_[i]>=0 && NodeTable->elenode_[i].num_assoc_elem() == 0)
             {
-                NodeTable->remove(NodeTable->elenode_[i].key());
+                NodeTable->removeNode(&(NodeTable->elenode_[i]));
             }
         }
     }  //if(NotMyElem.get_num_elem()>0)

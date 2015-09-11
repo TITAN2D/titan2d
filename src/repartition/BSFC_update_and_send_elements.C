@@ -338,7 +338,7 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
     {
         if(HT_Node_Ptr->status_[i]>=0 && HT_Node_Ptr->node(i).id() == 0)
         {
-            HT_Node_Ptr->remove(HT_Node_Ptr->node(i).key());
+            HT_Node_Ptr->removeNode(&(HT_Node_Ptr->node(i)));
         }
     }
     return;
