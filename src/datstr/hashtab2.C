@@ -555,6 +555,7 @@ Element* ElementsHashTable::addElement(const SFC_Key& keyi)
 {
     Element* elm=add(keyi);
     
+    myprocess_.push_back();
     generation_.push_back();
     opposite_brother_flag_.push_back();
     material_.push_back(); /*! ! ! THE MAT. FLAG ! ! !*/
@@ -658,7 +659,7 @@ void ElementsHashTable::flushElemTable()
     //return;
     flushTable();
     int size=ndx_map.size();
-    
+    myprocess_.reorder(&(ndx_map[0]), size);
     generation_.reorder(&(ndx_map[0]), size);
     opposite_brother_flag_.reorder(&(ndx_map[0]), size);
     material_.reorder(&(ndx_map[0]), size); /*! ! ! THE MAT. FLAG ! ! !*/
