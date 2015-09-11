@@ -912,21 +912,21 @@ void Element::get_slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
             break;
     }
     /* x direction */
-    Element *ep = neighborPtr[xp]; //(Element*) (El_Table->lookup(&neighbor(xp)[0]));
-    Element *em = neighborPtr[xm]; //(Element*) (El_Table->lookup(&neighbor(xm)[0]));
+    Element *ep = getNeighborPtr(xp); //(Element*) (El_Table->lookup(&neighbor(xp)[0]));
+    Element *em = getNeighborPtr(xm); //(Element*) (El_Table->lookup(&neighbor(xm)[0]));
     Element *ep2 = NULL;
     Element *em2 = NULL;
     //check if element has 2 neighbors on either side
-    Node* ndtemp = node_keyPtr[xp + 4]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+    Node* ndtemp = getNodePtr(xp + 4); //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
     if(ndtemp->info() == S_C_CON)
     {
-        ep2 = neighborPtr[xp + 4]; //(Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
+        ep2 = getNeighborPtr(xp + 4); //(Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
         assert(neigh_proc(xp + 4) >= 0 && ep2);
     }
-    ndtemp = node_keyPtr[xm + 4]; //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
+    ndtemp = getNodePtr(xm + 4); //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
     if(ndtemp->info() == S_C_CON)
     {
-        em2 = neighborPtr[xm + 4]; //(Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
+        em2 = getNeighborPtr(xm + 4); //(Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
         assert(neigh_proc(xm + 4) >= 0 && em2);
     }
     
@@ -948,21 +948,21 @@ void Element::get_slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
     }
     
     /* y direction */
-    ep = neighborPtr[yp];		//(Element*) (El_Table->lookup(&neighbor(yp)[0]));
-    em = neighborPtr[ym];		//(Element*) (El_Table->lookup(&neighbor(ym)[0]));
+    ep = getNeighborPtr(yp);		//(Element*) (El_Table->lookup(&neighbor(yp)[0]));
+    em = getNeighborPtr(ym);		//(Element*) (El_Table->lookup(&neighbor(ym)[0]));
     ep2 = NULL;
     em2 = NULL;
     //check if element has 2 neighbors on either side
-    ndtemp = node_keyPtr[yp + 4];		//(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
+    ndtemp = getNodePtr(yp + 4);		//(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
     if(ndtemp->info() == S_C_CON)
     {
-        ep2 = neighborPtr[yp + 4];		//(Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
+        ep2 = getNeighborPtr(yp + 4);		//(Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
         assert(neigh_proc(yp + 4) >= 0 && ep2);
     }
-    ndtemp = node_keyPtr[ym + 4];		//(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
+    ndtemp = getNodePtr(ym + 4);		//(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
     if(ndtemp->info() == S_C_CON)
     {
-        em2 = neighborPtr[ym + 4];		//(Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
+        em2 = getNeighborPtr(ym + 4);		//(Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
         if(!(neigh_proc(ym + 4) >= 0 && em2))
         {
             printf("ym=%d neigh_proc[ym+4]=%d em2=%p\n", ym, neigh_proc(ym + 4), em2);
@@ -2546,11 +2546,11 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
         zp = (positive_x_side() + side) % 4;
         zm = (zp + 2) % 4;
         
-        np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+        np = getNodePtr(zp + 4); //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
         
         if(neigh_proc(zp) == -1)
         {
-            nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
+            nm = getNodePtr(zm + 4); //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
             *outflow += (nm->flux(0)) * dx(!side);
             
             //outflow boundary conditions
@@ -2562,8 +2562,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
         }
         else if(neigh_proc(zp) != myid)
         {
-            np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
-            elm1 = neighborPtr[zp]; //(Element*) El_Table->lookup(&neighbor(zp)[0]);
+            np = getNodePtr(zp + 4); //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+            elm1 = getNeighborPtr(zp); //(Element*) El_Table->lookup(&neighbor(zp)[0]);
             assert(elm1);
             
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
@@ -2574,7 +2574,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             riemannflux(elm1->elementType(),hrfv, hrfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->refinementflux(i,flux[i]);
             
-            elm2 = neighborPtr[zp + 4]; //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
+            elm2 = getNeighborPtr(zp + 4); //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
             assert(elm2);
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
             elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv2, hrfv2, this, dt);
@@ -2583,7 +2583,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             if(neigh_proc(zp + 4) == myid)
             {
                 zm2 = elm2->which_neighbor(key()) % 4;
-                nm2 = elm2->node_keyPtr[zm2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
+                nm2 = elm2->getNodePtr(zm2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
                 
                 riemannflux(elm2->elementType(),hfv, hfv2, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm2->flux(i,flux[i]);
@@ -2611,8 +2611,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
         else
         {
             
-            np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
-            elm1 = neighborPtr[zp]; //(Element*) El_Table->lookup(&neighbor(zp)[0]);
+            np = getNodePtr(zp + 4); //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+            elm1 = getNeighborPtr(zp); //(Element*) El_Table->lookup(&neighbor(zp)[0]);
             assert(elm1);
             
             zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
@@ -2665,9 +2665,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 
                 zelmpos = elm1->which_neighbor(key());
                 assert(zelmpos > -1);
-                nm1 = elm1->node_keyPtr[zelmpos % 4 + 4]; //(Node*) NodeTable->lookup(&elm1->node_key[zelmpos % 4 + 4][0]);
+                nm1 = elm1->getNodePtr(zelmpos % 4 + 4); //(Node*) NodeTable->lookup(&elm1->node_key[zelmpos % 4 + 4][0]);
                 
-                elm2 = elm1->neighborPtr[(zelmpos + 4) % 8]; //(Element*) El_Table->lookup(&elm1->neighbor[(zelmpos + 4) % 8][0]);
+                elm2 = elm1->getNeighborPtr((zelmpos + 4) % 8); //(Element*) El_Table->lookup(&elm1->neighbor[(zelmpos + 4) % 8][0]);
                 assert(elm2);
                 
                 elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, elm2, dt);
@@ -2676,7 +2676,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 if(elm1->neigh_proc((zelmpos + 4) % 8) == myid)
                 {
                     zp2 = elm2->which_neighbor(elm1->key()) % 4;
-                    np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
+                    np2 = elm2->getNodePtr(zp2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     riemannflux(elm2->elementType(),hfv2, hfv1, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)np2->flux(i,flux[i]);
                     riemannflux(elm2->elementType(),hrfv2, hrfv1,flux);
@@ -2727,9 +2727,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 nm2 = NULL;
                 
                 zelmpos = elm1->which_neighbor(key()) % 4;
-                nm1 = elm1->node_keyPtr[zelmpos + 4]; //(Node*) NodeTable->lookup(&elm1->node_key[zelmpos + 4][0]);
+                nm1 = elm1->getNodePtr(zelmpos + 4); //(Node*) NodeTable->lookup(&elm1->node_key[zelmpos + 4][0]);
                 
-                elm2 = neighborPtr[zp + 4]; //(Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
+                elm2 = getNeighborPtr(zp + 4); //(Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
                 assert(elm2);
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
@@ -2738,7 +2738,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 if(neigh_proc(zp + 4) == myid)
                 {
                     zelmpos_2 = elm2->which_neighbor(key()) % 4;
-                    nm2 = elm2->node_keyPtr[zelmpos_2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
+                    nm2 = elm2->getNodePtr(zelmpos_2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
                     riemannflux(elm2->elementType(),hfv, hfv2, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)nm2->flux(i,flux[i]);
                     riemannflux(elm2->elementType(),hrfv, hrfv2, flux);
@@ -2779,8 +2779,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             
             if(neigh_proc(zm) == -1)
             {
-                np = node_keyPtr[zp + 4]; //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
-                nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
+                np = getNodePtr(zp + 4); //(Node*) NodeTable->lookup(&node_key[zp + 4][0]);
+                nm = getNodePtr(zm + 4); //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
                 *outflow -= (np->flux(0)) * dx(!side);
                 //outflow boundary conditions
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -2841,8 +2841,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
 
                  */
 
-                nm = node_keyPtr[zm + 4]; //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
-                elm1 = neighborPtr[zm]; //(Element*) El_Table->lookup(&neighbor(zm)[0]);
+                nm = getNodePtr(zm + 4); //(Node*) NodeTable->lookup(&node_key[zm + 4][0]);
+                elm1 = getNeighborPtr(zm); //(Element*) El_Table->lookup(&neighbor(zm)[0]);
                 assert(elm1);
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm1, dt);
@@ -2852,7 +2852,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 riemannflux(elm1->elementType(),hrfv1, hrfv, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm->refinementflux(i,flux[i]);
                 
-                elm2 = neighborPtr[zm + 4]; //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
+                elm2 = getNeighborPtr(zm + 4); //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
                 assert(elm2);
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm2, dt);
@@ -2862,7 +2862,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 if(neigh_proc(zm + 4) == myid)
                 {
                     zp2 = elm2->which_neighbor(key()) % 4;
-                    np2 = elm2->node_keyPtr[zp2 + 4]; //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
+                    np2 = elm2->getNodePtr(zp2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     
                     riemannflux(elm2->elementType(),hfv2, hfv, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)np2->flux(i,flux[i]);

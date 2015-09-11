@@ -714,42 +714,42 @@ public:
 protected:
     //index in storage
     ti_ndx_t ndx_;
-    
+#if 0
     //! Element type
     //ElementType elementType_;
     //! myprocess is id of the process(or) that owns this element
-    //int myprocess_;
+    int myprocess_;
 
     //! generation is how many times this element has been refined, currently -8<=generation<=3, a negative generation number means it has been unrefined beyond the orignal coarse mesh, a positive generation number means it has been refined (is smaller than the original element size)
-    //int generation_;
+    int generation_;
 
     //! opposite_brother_flag indicate if we have the correct key for the non-neighbor brother (0:= don't have info, 1:= have info)
-    //int opposite_brother_flag_;
+    int opposite_brother_flag_;
 
     //! the material flag indicates which material should be used to set this element's bed friction, this is for when a GIS material map, specifying different materials in different spatial regions of the map, the GIS material map is a non standard grass map format that Laercio Namikawa developed, it's stored in the "cats" folder under a grass mapset directory
-    //int material_; /*! ! ! THE MAT. FLAG ! ! !*/
+    int material_; /*! ! ! THE MAT. FLAG ! ! !*/
 
     //! this is the load-balancing weight
-    //double lb_weight_;
+    double lb_weight_;
 
     //! this is the key for load-balancing, if there is no constrained node, it is the element key, otherwise it is a construct of the element "bunch", keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    //SFC_Key lb_key_;
+    SFC_Key lb_key_;
 
     //! this is the element key, which has the same value as the key of the element's bubble node, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     //SFC_Key key_;
 
     //! this array holds the first 8 (0->7) of this element's nodes' keys, the n9th (8 out of 0->8) node is the bubble node it's key is not stored separately since it has the same key as the element, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
-    //SFC_Key node_key_[8];
+    SFC_Key node_key_[8];
 
     //!same as node_key but pointers, can be out-dated
-    Node* node_keyPtr[8];
+    Node* node_keyPtr_[8];
 
     //! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     //SFC_Key neighbors_[8];
 
     //!same as neighbor but pointers, can be out-dated
-    Element* neighborPtr[8];
-#if 0
+    Element* neighborPtr_[8];
+
     //! the key of the father it is assigned in the refine() and unrefine_elements() functions
     /*SFC_Key father_;
 

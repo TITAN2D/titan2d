@@ -58,13 +58,13 @@ inline void Element::set_node_key(const int i, const SFC_Key& new_key) {
 
 //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
 inline Node* Element::getNodePtr(int i) {
-    return node_keyPtr[i];
+    return elementsHashTable->node_keyPtr_[i][ndx_];
 }
 
 //! returns the pointers to the i-th of 8 (elements 0-7) elements , careful pointers can be outdated
 
 inline Element* Element::getNeighborPtr(int i) {
-    return neighborPtr[i];
+    return elementsHashTable->neighborPtr_[i][ndx_];
 }
 
 //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
@@ -585,12 +585,12 @@ inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTa
     int i;
     if (El_Table != NULL) {
         for (i = 0; i < 8; i++) {
-            neighborPtr[i] = (Element*) El_Table->lookup(neighbor(i));
+            elementsHashTable->neighborPtr_[i][ndx_] = (Element*) El_Table->lookup(neighbor(i));
         }
     }
     if (NodeTable != NULL) {
         for (i = 0; i < 8; i++) {
-            node_keyPtr[i] = (Node*) NodeTable->lookup(node_key(i));
+            elementsHashTable->node_keyPtr_[i][ndx_] = (Node*) NodeTable->lookup(node_key(i));
         }
     }
     return;
@@ -601,13 +601,13 @@ inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTabl
     int count = 0;
     if (El_Table != NULL) {
         for (i = 0; i < 8; i++) {
-            if (neighborPtr[i] != (Element*) El_Table->lookup(neighbor(i)))
+            if (elementsHashTable->neighborPtr_[i][ndx_] != (Element*) El_Table->lookup(neighbor(i)))
                 count++;
         }
     }
     if (NodeTable != NULL) {
         for (i = 0; i < 8; i++) {
-            if (node_keyPtr[i] != (Node*) NodeTable->lookup(node_key(i)))
+            if (elementsHashTable->node_keyPtr_[i][ndx_] != (Node*) NodeTable->lookup(node_key(i)))
                 count++;
         }
     }

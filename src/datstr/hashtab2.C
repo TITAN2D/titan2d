@@ -562,9 +562,9 @@ Element* ElementsHashTable::addElement(const SFC_Key& keyi)
     lb_weight_.push_back();
     lb_key_.push_back();
     for(int i=0;i<8;++i)node_key_[i].push_back();
-    for(int i=0;i<8;++i)node_keyPtr[i].push_back();
+    for(int i=0;i<8;++i)node_keyPtr_[i].push_back();
     for(int i=0;i<8;++i)neighbors_[i].push_back();
-    for(int i=0;i<8;++i)neighborPtr[i].push_back();
+    for(int i=0;i<8;++i)neighborPtr_[i].push_back();
     father_.push_back();
     for(int i=0;i<4;++i)son_[i].push_back();
     for(int i=0;i<8;++i)neigh_proc_[i].push_back();
@@ -666,9 +666,9 @@ void ElementsHashTable::flushElemTable()
     lb_weight_.reorder(&(ndx_map[0]), size);
     lb_key_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)node_keyPtr[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)node_keyPtr_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)neighborPtr[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
     father_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);

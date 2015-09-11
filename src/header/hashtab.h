@@ -347,13 +347,13 @@ public:
     tivector<SFC_Key> node_key_[8];
 
     //!same as node_key but pointers, can be out-dated
-    tivector<Node*> node_keyPtr[8];
+    tivector<Node*> node_keyPtr_[8];
 
     //! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     tivector<SFC_Key> neighbors_[8];
 
     //!same as neighbor but pointers, can be out-dated
-    tivector<Element*> neighborPtr[8];
+    tivector<Element*> neighborPtr_[8];
 
     //! the key of the father it is assigned in the refine() and unrefine_elements() functions
     tivector<SFC_Key> father_;
