@@ -164,7 +164,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     int interflag;
     
     freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
-           
+
     *ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, XRange, YRange, *NodeTable);
     for(int ielem = 0; ielem < Elem_Num; ielem++)
     {
@@ -258,6 +258,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
         
         if(!bcf)
             bcptr = NULL; //--this element is not on the bound
+
         Quad9P = (*ElemTable)->generateAddElement(nodes, neigh, neighbor_proc, bcptr, material, elm_loc, pile_height, myid,
                                                sfc_key_from_oldkey(opposite_brother));
         Quad9P->find_positive_x_side(*NodeTable);

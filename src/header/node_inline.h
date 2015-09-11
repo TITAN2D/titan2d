@@ -46,23 +46,14 @@ inline Node::Node(FILE* fp, MatProps* matprops_ptr) //for restart
 inline int Node::info() const {return info_;}
 inline void Node::info(int in){info_ = in;}
 
-/*inline const SFC_Key& Node::key() const 
+inline const SFC_Key& Node::key() const
 {
     return nodeHashTable->key_[ndx_];
 }
 inline void Node::set_key(const SFC_Key& new_key)
 {
     nodeHashTable->key_[ndx_]=new_key;
-}*/
-inline const SFC_Key& Node::key() const 
-{
-    return key_;
 }
-inline void Node::set_key(const SFC_Key& new_key)
-{
-    key_=new_key;
-}
-
 
 inline double Node::coord(int idim) const {return coord_[idim];}
 inline void Node::coord(int idim, double new_crd){coord_[idim]=new_crd;}   

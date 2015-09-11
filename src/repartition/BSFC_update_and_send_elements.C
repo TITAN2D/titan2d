@@ -302,10 +302,10 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
     
     // initialize the node flags
     //@NodesSingleLoop
-    for(i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
+    for(i = 0; i < HT_Node_Ptr->size(); i++)
     {
         if(HT_Node_Ptr->status_[i]>=0)
-            HT_Node_Ptr->elenode_[i].id(0);
+            HT_Node_Ptr->node(i).id(0);
     }
     
     //@ElementsBucketDoubleLoop
@@ -334,11 +334,11 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
     }
     
     // delete the nodes that aren't used
-    for(int i = 0; i < HT_Node_Ptr->elenode_.size(); i++)
+    for(int i = 0; i < HT_Node_Ptr->size(); i++)
     {
-        if(HT_Node_Ptr->status_[i]>=0 && HT_Node_Ptr->elenode_[i].id() == 0)
+        if(HT_Node_Ptr->status_[i]>=0 && HT_Node_Ptr->node(i).id() == 0)
         {
-            HT_Node_Ptr->remove(HT_Node_Ptr->elenode_[i].key());
+            HT_Node_Ptr->remove(HT_Node_Ptr->node(i).key());
         }
     }
     return;

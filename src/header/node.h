@@ -50,7 +50,7 @@ protected:
     //! this is the constructor that recreates/restores a node that was saved in a restart file.
     Node(FILE* fp, MatProps* matprops_ptr); //for restart
     
-public:  
+protected:  
     ~Node();
 public:
     void init();
@@ -148,7 +148,7 @@ protected:
     double coord_[DIMENSION];
 
     //! this is the node key, a key is a single number that is 2 unsigned variables long and is used to access the pointer to a Node or Element through the HashTable
-    SFC_Key key_;
+    //SFC_Key key_;
 
     //! this elevation should currently be the GIS elevation at the finest "scale"
     double elevation_;

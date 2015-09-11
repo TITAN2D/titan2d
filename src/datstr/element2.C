@@ -53,19 +53,19 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         set_son(i, sfc_key_zero);
     }
     set_lb_key(sfc_key_zero);
-    
+
     set_lb_weight(1.0);
     set_new_old(OLD);
     generation(0); //--first generation 
     set_material(mat);
     for(i = 0; i < EQUATIONS; i++)
         set_el_error(i, 0.0);
-    
+
     set_key(nodekeys[8]); //--using bubble key to represent the element
     
     for(i = 0; i < 8; i++)
         set_node_key(i, nodekeys[i]);
-    
+
     for(i = 0; i < 4; i++)
     {
         set_neigh_proc(i, n_pro[i]);
@@ -82,13 +82,13 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     }
     
     bcptr(b);
-    
+
     for(i = 0; i < 5; i++)
         set_order(i, POWER);   //--used in initial uniform mesh
                 
     for(i = 0; i < 8; i++)
         get_neigh_gen(i, 0);
-    
+
     set_no_of_eqns(EQUATIONS);
     
     int help = 0;
@@ -99,7 +99,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     
     set_refined_flag(0);
     
-    
+
     set_myprocess(myid);
     set_elm_loc(0, elm_loc_in[0]);
     set_elm_loc(1, elm_loc_in[1]);
@@ -128,7 +128,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
             break;
     }
     set_opposite_brother_flag(1);
-    
+
     set_new_old(OLD);
     if(elementType() == ElementType::SinglePhase)
     {
@@ -153,13 +153,13 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         state_vars(5, 0);
     }
     set_shortspeed(0.0);
-    
+
     set_iwetnode(8);
     drypoint(0, 0.0);
     drypoint(1, 0.0);
     set_Awet((pile_height > GEOFLOW_TINY) ? 1.0 : 0.0);
     set_Swet(Awet());
-    
+
 
     if(elementType() == ElementType::TwoPhases)
     {

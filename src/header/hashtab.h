@@ -134,7 +134,7 @@ public:
     HashTable(double *doublekeyrangein, int size, double XR[], double YR[],tisize_t reserved_size);
     virtual ~HashTable(){}
     
-    int hash(const SFC_Key& key) const
+    int hash(const SFC_Key& keyi) const
     {
         //Keith made this change 20061109; and made hash an inline function
         /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
@@ -146,18 +146,20 @@ public:
         return (((int) ((key.key[0] * doublekeyrange[1] + key.key[1]) * hashconstant + 0.5)) % NBUCKETS);
     #else
         unsigned oldkey[KEYLENGTH];
-        SET_OLDKEY(oldkey,key);
+        SET_OLDKEY(oldkey,keyi);
         return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
     #endif
     }
     
-    ti_ndx_t lookup_ndx(const SFC_Key& key);
-    T* lookup(const SFC_Key& key);
+    ti_ndx_t lookup_ndx(const SFC_Key& keyi);
+    T* lookup(const SFC_Key& keyi);
     
-    ti_ndx_t add_ndx(const SFC_Key& key);
-    T* add(const SFC_Key& key);
+    ti_ndx_t add_ndx(const SFC_Key& keyi);
+    T* add(const SFC_Key& keyi);
     
-    void remove(const SFC_Key& key);
+    void remove(const SFC_Key& keyi);
+    
+    void check();
     
     
     //plain getters and setters
@@ -174,6 +176,8 @@ public:
     void print_out(int) const {}
     
     void flush();//actually delete, removed nodes and rearrange added (sort accorting to keys)
+
+    tisize_t size() const{return elenode_.size();}
 };
 template class HashTable<Node>;
 template class HashTable<Element>;
@@ -250,7 +254,7 @@ public:
     int checkPointersToNeighbours(const char *prefix);
         
     //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
-    virtual Element* generateAddElement(const SFC_Key& key);
+    virtual Element* generateAddElement(const SFC_Key& keyi);
 
     //! constructor that creates an original element when funky is read in
     virtual Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,

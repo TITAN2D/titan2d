@@ -359,6 +359,8 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
         
         //delete son's bubble nodes
         NdTemp = (Node *) NodeTable->lookup(EmFather->son(ison));
+        if(EmFather->son(ison)==65175920631581991ull)
+        		printf("lookup something");
         assert(NdTemp);
         if(NdTemp->order() > nodeorder[8])
             nodeorder[8] = NdTemp->order();

@@ -78,9 +78,9 @@ HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double 
         return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);*/    
 }
 template <typename T>
-ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)
+ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& keyi)
 {
-    int entry = hash(key);
+    int entry = hash(keyi);
     int size = bucket[entry].key.size();
     
     SFC_Key *keyArr = &(bucket[entry].key[0]);
@@ -88,16 +88,16 @@ ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)
     
     if(size == 0)
         return ti_ndx_doesnt_exist;
-    if(key < keyArr[0])
+    if(keyi < keyArr[0])
         return ti_ndx_doesnt_exist;
-    if(key > keyArr[size - 1])
+    if(keyi > keyArr[size - 1])
         return ti_ndx_doesnt_exist;
     
     if(size < HASHTABLE_LOOKUP_LINSEARCH)
     {
         for(i = 0; i < size; i++)
         {
-            if(key == keyArr[i])
+            if(keyi == keyArr[i])
             {
                 return bucket[entry].ndx[i];
             }
@@ -111,7 +111,7 @@ ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)
         i2 = size - 1;
         while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH)
         {
-            if(key > keyArr[i1])
+            if(keyi > keyArr[i1])
             {
                 i0 = i1 + 1;
                 i1 = (i0 + i2) / 2;
@@ -124,7 +124,7 @@ ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)
         }
         for(i = i0; i <= i2; i++)
         {
-            if(key == keyArr[i])
+            if(keyi == keyArr[i])
             {
                 return bucket[entry].ndx[i];
             }
@@ -133,9 +133,9 @@ ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& key)
     return ti_ndx_doesnt_exist;
 }
 template <typename T>
-T* HashTable<T>::lookup(const SFC_Key& key)
+T* HashTable<T>::lookup(const SFC_Key& keyi)
 {
-    ti_ndx_t ndx=lookup_ndx(key);
+    ti_ndx_t ndx=lookup_ndx(keyi);
     /*if(status_[ndx]==CS_Removed)
     {
         assert(0);
@@ -147,13 +147,13 @@ T* HashTable<T>::lookup(const SFC_Key& key)
         return nullptr;
 }
 template <typename T>
-ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& key)
+ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& keyi)
 {
-    ti_ndx_t ndx=lookup_ndx(key);
+    ti_ndx_t ndx=lookup_ndx(keyi);
     if(ti_ndx_not_negative(ndx))
         return ndx;
     
-    int entry = hash(key);
+    int entry = hash(keyi);
     int entry_size = bucket[entry].key.size();
 
     //get space
@@ -162,7 +162,7 @@ ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& key)
     status_.push_back();
     
     //set values
-    key_[ndx]=key;
+    key_[ndx]=keyi;
     status_[ndx]=CS_Added;
 
     //place to hash table
@@ -172,34 +172,58 @@ ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& key)
         //find proper place to insert it
         int i;
         SFC_Key *keyArr = &(bucket[entry].key[0]);
-        for(i=0;i<entry_size&&key>keyArr[i];++i){}
+        for(i=0;i<entry_size&&keyi>keyArr[i];++i){}
 
-        bucket[entry].key.insert(bucket[entry].key.begin() + i, key);
+        bucket[entry].key.insert(bucket[entry].key.begin() + i, keyi);
         bucket[entry].ndx.insert(bucket[entry].ndx.begin() + i, ndx);
     }
     else
     {
         //will be first member of the bucket entry
-        bucket[entry].key.push_back(key);
+        bucket[entry].key.push_back(keyi);
         bucket[entry].ndx.push_back(ndx);
     }
     ENTRIES+=1;
 
     elenode_[ndx].ndx(ndx);
+    elenode_[ndx].set_key(keyi);
     return ndx;
 }
 template <typename T>
-T* HashTable<T>::add(const SFC_Key& key)
+T* HashTable<T>::add(const SFC_Key& keyi)
 {
-    ti_ndx_t ndx=add_ndx(key);
+    ti_ndx_t ndx=add_ndx(keyi);
     return &(elenode_[ndx]);
 }
 template <typename T>
-void HashTable<T>::remove(const SFC_Key& key)
+void HashTable<T>::check()
 {
-    int entry = hash(key);
+    for(int entry=0;entry<bucket.size();++entry)
+    {
+        for(int bucket_entry_ndx=0;bucket_entry_ndx<bucket[entry].ndx.size();++bucket_entry_ndx)
+        {
+            if(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()!=key_[bucket[entry].ndx[bucket_entry_ndx]])
+            {
+            	cout<<elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()<<"\n";
+            	cout<<bucket[entry].key[bucket_entry_ndx]<<"\n";
+            	cout<<bucket[entry].ndx[bucket_entry_ndx]<<"\n";
+                cout<<elenode_[bucket[entry].ndx[bucket_entry_ndx]].ndx()<<"\n";
+            	cout<<key_[bucket[entry].ndx[bucket_entry_ndx]]<<"\n";
+            	T* t=&(elenode_[bucket[entry].ndx[bucket_entry_ndx]]);
+            	cout<<t->key()<<"\n";
+            	assert(0);
+            }
+        }
+    }
+}
+
+template <typename T>
+void HashTable<T>::remove(const SFC_Key& keyi)
+{
+    int entry = hash(keyi);
     int entry_size = bucket[entry].key.size();
-    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(key);
+    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
+    
     if(ti_ndx_not_negative(bucket_entry_ndx))
     {
         //set status
@@ -289,18 +313,51 @@ Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, MatProps
 {
     Node* node = add(keyi);
     node->init(keyi, coordi, matprops_ptr);
+    
+    int entry = hash(keyi);
+    int entry_size = bucket[entry].key.size();
+    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
+    
+    assert(node->key()==keyi);
+    assert(elenode_[node->ndx()].key()==keyi);
+    assert(bucket[entry].key[bucket_entry_ndx]==keyi);
+    assert(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()==keyi);
+    assert(key_[node->ndx()]==keyi);
+    
     return node;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr)
 {
     Node* node = add(keyi);
     node->init(keyi, coordi, inf, ord, matprops_ptr);
+    
+    int entry = hash(keyi);
+    int entry_size = bucket[entry].key.size();
+    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
+    
+    assert(node->key()==keyi);
+    assert(elenode_[node->ndx()].key()==keyi);
+    assert(bucket[entry].key[bucket_entry_ndx]==keyi);
+    assert(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()==keyi);
+    assert(key_[node->ndx()]==keyi);
+    
     return node;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
 {
     Node* node = add(keyi);
     node->init(keyi, coordi, inf, ord, elev, yada);
+    
+    int entry = hash(keyi);
+    int entry_size = bucket[entry].key.size();
+    ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
+    
+    assert(node->key()==keyi);
+    assert(elenode_[node->ndx()].key()==keyi);
+    assert(bucket[entry].key[bucket_entry_ndx]==keyi);
+    assert(elenode_[bucket[entry].ndx[bucket_entry_ndx]].key()==keyi);
+    assert(key_[node->ndx()]==keyi);
+    
     return node;
 }
 
@@ -315,6 +372,8 @@ Node* NodeHashTable::createAddNode(FILE* fp, MatProps* matprops_ptr) //for resta
 }
 void NodeHashTable::removeNode(Node* node)
 {
+	if(node->key()==65175920631581991ull)
+		printf("delete something");
     remove(node->key());
     //delete node;
 }
@@ -506,10 +565,10 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
     return count;
 }
 
-Element* ElementsHashTable::generateAddElement(const SFC_Key& key)
+Element* ElementsHashTable::generateAddElement(const SFC_Key& keyi)
 {
-    Element* elm=add(key);
-    elm->init(key);
+    Element* elm=add(keyi);
+    elm->init(keyi);
     return elm;
 }
     
