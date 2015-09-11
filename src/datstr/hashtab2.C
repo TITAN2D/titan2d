@@ -387,6 +387,13 @@ ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double 
     NlocalElements = 0;
     NodeTable = nodeTable;
     elementsHashTable=this;
+    
+    if(NUM_STATE_VARS == 3)
+        elementType_=ElementType::SinglePhase;
+    else if(NUM_STATE_VARS == 6)
+        elementType_=ElementType::TwoPhases;
+    else
+        elementType_=ElementType::UnknownElementType;
 }
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table

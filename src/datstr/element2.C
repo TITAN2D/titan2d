@@ -33,10 +33,6 @@
 void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
                  int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
-    if(NUM_STATE_VARS==3)elementType(ElementType::SinglePhase);
-    else if(NUM_STATE_VARS==6)elementType(ElementType::TwoPhases);
-    else elementType(ElementType::UnknownElementType);
-
     int ikey;
     int i, j;
     set_adapted_flag(NOTRECADAPTED);
@@ -211,13 +207,6 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
                  ElementsHashTable *El_Table, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
-    if(NUM_STATE_VARS == 3)
-        elementType(ElementType::SinglePhase);
-    else if(NUM_STATE_VARS == 6)
-        elementType(ElementType::TwoPhases);
-    else
-        elementType(ElementType::UnknownElementType);
-
     int i;
     int ikey;
             
@@ -343,14 +332,6 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
  *****************************************/
 void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
-    if(NUM_STATE_VARS == 3)
-        elementType(ElementType::SinglePhase);
-    else if(NUM_STATE_VARS == 6)
-        elementType(ElementType::TwoPhases);
-    else
-        elementType(ElementType::UnknownElementType);
-
-            
     set_adapted_flag(NEWFATHER);
     
     for(int i = 0; i < NUM_STATE_VARS; i++)

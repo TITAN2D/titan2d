@@ -506,11 +506,11 @@ inline double Element::sgn(double a) {
 }
 
 inline const ElementType& Element::elementType() const {
-    return elementType_;
+    return elementsHashTable->elementType_;
 }
 
 inline void Element::elementType(const ElementType& new_element_type) {
-    elementType_ = new_element_type;
+    elementsHashTable->elementType_ = new_element_type;
 }
 
 //index in storage

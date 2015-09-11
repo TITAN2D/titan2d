@@ -276,8 +276,11 @@ public:
     
 
     Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
+    
     //here goes element content storage probably should be separate class at the end
     
+    //! Element type
+    ElementType elementType_;
 };
 
 extern ElementsHashTable *elementsHashTable;

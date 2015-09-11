@@ -92,7 +92,7 @@ protected:
      *
      */
     Element() {
-        init();
+        //init();
     }
     Element(const SFC_Key& key) {
         init(key);
