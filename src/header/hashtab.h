@@ -35,6 +35,7 @@ using namespace std;
 
 
 #include "constant.h"
+#include "tivector.h"
 
 
 #define HASHTABLE_LOOKUP_LINSEARCH 8
@@ -145,10 +146,10 @@ public:
     #if USE_ARRAY_SFC_KEY
         return (((int) ((key.key[0] * doublekeyrange[1] + key.key[1]) * hashconstant + 0.5)) % NBUCKETS);
     #else
-        unsigned oldkey[KEYLENGTH];
-        SET_OLDKEY(oldkey,keyi);
-        return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
-        //return (((int) (keyi * hashconstant + 0.5)) % NBUCKETS);
+        //unsigned oldkey[KEYLENGTH];
+        //SET_OLDKEY(oldkey,keyi);
+        //return (((int) ((oldkey[0] * doublekeyrange[1] + oldkey[1]) * hashconstant + 0.5)) % NBUCKETS);
+        return (((int) (keyi * hashconstant + 0.5)) % NBUCKETS);
     #endif
     }
     
@@ -251,24 +252,12 @@ class ElementsHashTable: public HashTable<Element>
 protected:
     NodeHashTable* NodeTable;
 
-    vector<SFC_Key> ukeyElements;
-    vector<Element*> elements;
-
     int NlocalElements;
     vector<SFC_Key> ukeyLocalElements;
     vector<Element*> localElements;
 public:
     ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable);
     ~ElementsHashTable();
-
-    Element** getElements()
-    {
-        return &(elements[0]);
-    }
-    
-    void updateElements();
-    //!debug function check that all allEntries are up to date, return number of mismatch
-    int ckeckElementsPointers(const char *prefix);
 
     int getNumberOfLocalElements()
     {
@@ -314,6 +303,7 @@ public:
     
 
     Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
+    Element* elemPtr(const ti_ndx_t ndx){return elenode_.array_+ndx;}
 private:
      Element* addElement(const SFC_Key& keyi);
 public:

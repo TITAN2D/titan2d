@@ -84,12 +84,13 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
     
     int num_nonzero_elem = 0, *all_num_nonzero_elem;
     
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    //@ElementsBucketSingleLoop
+    //for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        for(int ielm = 0; ielm < El_Table->size(); ielm++)
         {
-            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(El_Table->status_[ielm]<0)continue;
+            Element* Curr_El = El_Table->elemPtr(ielm);
             if((Curr_El->adapted_flag() > 0) && (myid == Curr_El->myprocess()))
                 if(Curr_El->state_vars(0) > GEOFLOW_TINY)
                     num_nonzero_elem++;

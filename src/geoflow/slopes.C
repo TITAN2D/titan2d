@@ -38,5 +38,14 @@ void slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* mat
     {
         Elms[i]->get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
     }
+       /* Element* Curr_El;
+    int Nelms = El_Table->size();
+    //if this element does not belong on this processor don't involve!!!
+//#pragma omp parallel for private(currentPtr,Curr_El)
+    for(int indx = 0; indx < Nelms; indx++)
+    {
+        if(El_Table->status_[indx]>=0 && El_Table->adapted_[indx] > 0)
+            El_Table->elem(indx).get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
+    }*/
     return;
 }

@@ -409,7 +409,6 @@ void cxxTitanSinglePhase::run()
     	HT_Node_Ptr->flushNodeTable();
         HT_Elem_Ptr->flushElemTable();
         //update temporary arrays of elements/nodes pointers
-        HT_Elem_Ptr->updateElements();
         HT_Elem_Ptr->updateLocalElements();
         HT_Elem_Ptr->updatePointersToNeighbours();
     }
@@ -538,7 +537,6 @@ void cxxTitanSinglePhase::run()
             HT_Node_Ptr->flushNodeTable();
             HT_Elem_Ptr->flushElemTable();
             
-            HT_Elem_Ptr->updateElements();
             HT_Elem_Ptr->updateLocalElements();
             HT_Elem_Ptr->updatePointersToNeighbours();
         }

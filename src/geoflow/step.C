@@ -245,7 +245,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
 
 #ifdef DEBUG_EXTRA_CHECKING
     El_Table->checkPointersToNeighbours("check_elements_pointers_StepStart");
-    El_Table->ckeckElementsPointers("ckeckAllEntriesPointers_StepStart");
     El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart");
 #endif
     
@@ -541,7 +540,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
     
 #ifdef DEBUG_EXTRA_CHECKING
     El_Table->checkPointersToNeighbours("check_elements_pointers_StepEnd");
-    El_Table->ckeckElementsPointers("ckeckAllEntriesPointers_StepEnd");
     El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepEnd");
 #endif
     return;

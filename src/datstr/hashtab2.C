@@ -53,7 +53,7 @@ HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double 
     for(i = 0; i < KEYLENGTH; i++)
         doublekeyrange[i] = doublekeyrangein[i];
     
-    hashconstant = 8.0 * NBUCKETS / (doublekeyrange[0] * doublekeyrange[1] + doublekeyrange[1]);
+    hashconstant = 1.0 * NBUCKETS / (doublekeyrange[0] * doublekeyrange[1] + doublekeyrange[1]);
     
     bucket.resize(NBUCKETS);
 
@@ -400,7 +400,16 @@ void ElementsHashTable::updateLocalElements()
         }
     }
 #else
-    for(int i = 0; i < bucket.size(); i++)
+    for(int i = 0; i < elenode_.size(); i++)
+    {
+        if(status_[i]>=0 && adapted_[i] > 0)
+        {//if this element does not belong on this processor don't involve!!!
+            ukeyLocalElements[count] = key_[i];
+            localElements[count] = &(elenode_[i]);
+            count++;
+        }
+    }
+    /*for(int i = 0; i < bucket.size(); i++)
     {
         for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
@@ -411,7 +420,7 @@ void ElementsHashTable::updateLocalElements()
                 count++;
             }
         }
-    }
+    }*/
 #endif
     NlocalElements = count;
     ukeyLocalElements.resize(NlocalElements);
@@ -436,7 +445,21 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
         }
     }
 #else
-    for(int i = 0; i < bucket.size(); i++)
+    for(int i = 0; i < elenode_.size(); i++)
+    {
+        if(status_[i]>=0)
+        {
+            if(adapted_[i] > 0)
+            {//if this element does not belong on this processor don't involve!!!
+                if(ukeyLocalElements[count] != key_[i] || localElements[count] != &(elenode_[i]))
+                    mismatch++;
+                localElements[count] = &(elenode_[i]);
+                count++;
+            }
+                
+        }
+    }
+    /*for(int i = 0; i < bucket.size(); i++)
     {
         for(int j = 0; j < bucket[i].ndx.size(); j++)
         {
@@ -447,75 +470,11 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
                 count++;
             }
         }
-    }
+    }*/
 #endif
     if(mismatch > 0)
     {
         printf("%s WARNING: AllEntriesPointersLocal are out-dated. %d values pointers/keys do not match.\n", prefix,
-               mismatch);
-    }
-    return mismatch;
-}
-void ElementsHashTable::updateElements()
-{
-    int count = 0, NEntriesInBucket;
-    ukeyElements.resize(ENTRIES);
-    elements.resize(ENTRIES);
-    
-#ifdef HASH_PRESERVE_ORDER
-    for(int i = 0; i < elenode_.size(); i++)
-    {
-        if(status_[i]>=0)
-        {
-            ukeyLocalElements[count] = key_[i];
-            localElements[count] = &(elenode_[i]);
-            count++;
-        }
-    }
-#else
-    for(int i = 0; i < bucket.size(); i++)
-    {
-        for(int j = 0; j < bucket[i].ndx.size(); j++)
-        {
-            ukeyElements[count] = bucket[i].key[j];
-            elements[count] = &(elenode_[bucket[i].ndx[j]]);
-            count++;
-        }
-    }
-#endif
-}
-int ElementsHashTable::ckeckElementsPointers(const char *prefix)
-{
-    int i, j, count = 0, NEntriesInBucket, mismatch = 0;
-    if(ENTRIES != ukeyElements.size())
-    {
-        printf("%s WARNING: AllEntriesPointers are out-dated, number of entries do not match.\n", prefix);
-        return ukeyElements.size();
-    }
-#ifdef HASH_PRESERVE_ORDER
-    for(int i = 0; i < elenode_.size(); i++)
-    {
-        if(status_[i]>=0)
-        {
-            if(ukeyElements[count] != key_[i] || elements[count] != &(elenode_[i]))
-                mismatch++;
-            count++;
-        }
-    }
-#else
-    for(int i = 0; i < bucket.size(); i++)
-    {
-        for(int j = 0; j < bucket[i].ndx.size(); j++)
-        {
-            if(ukeyElements[count] != bucket[i].key[j] || elements[count] != &(elenode_[bucket[i].ndx[j]]))
-                mismatch++;
-            count++;
-        }
-    }
-#endif
-    if(mismatch > 0)
-    {
-        printf("%s WARNING: AllEntriesPointers are out-dated. %d values pointers/keys do not match.\n", prefix,
                mismatch);
     }
     return mismatch;

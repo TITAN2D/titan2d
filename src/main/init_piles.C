@@ -168,7 +168,6 @@ void cxxTitanSinglePhase::init_piles()
     //update temporary arrays of elements/nodes pointers
     HT_Node_Ptr->flushNodeTable();
     HT_Elem_Ptr->flushElemTable();
-    HT_Elem_Ptr->updateElements();
     HT_Elem_Ptr->updateLocalElements();
     HT_Elem_Ptr->updatePointersToNeighbours();
     
