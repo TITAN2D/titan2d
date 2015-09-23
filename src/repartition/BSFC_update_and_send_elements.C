@@ -33,21 +33,18 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
     tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
     
     int i, j, k;
-    Element* EmTemp;
     
     j = 0;
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-    {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+    
+    Declare_IterVars_EHT(EmTemp);
+    
+    LoopAllElements_Start_EHT(EmTemp)
+        if(EmTemp->refined_flag())
         {
-            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            if(EmTemp->refined_flag())
-            {
-                EmTemp->set_new_old(-1);
-            }
+            EmTemp->set_new_old(-1);
         }
-    }
+    LoopAllElements_End_EHT()
+    
     // now figure out what processors need to have neighbor info updated 
     // and what processors to send elements to
     int* send_info = new int[numprocs * 2]; // number of {neigh_info, elements} for each proc

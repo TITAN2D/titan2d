@@ -155,6 +155,7 @@ public:
     
     ti_ndx_t lookup_ndx(const SFC_Key& keyi);
     T* lookup(const SFC_Key& keyi);
+    //T lookup(const SFC_Key& keyi);
 protected:
     ti_ndx_t add_ndx(const SFC_Key& keyi);
     T* add(const SFC_Key& keyi);
@@ -467,6 +468,13 @@ public:
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
     tivector<double> Swet_;
 };
+
+
+//LOOPING MACROS
+
+#define Declare_IterVars_EHT(VarName) Element *VarName
+#define LoopAllElements_Start_EHT(VarName) for(int ibuck = 0; ibuck < no_of_buckets; ibuck++){for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++){VarName = &(elenode_[bucket[ibuck].ndx[ielm]]);
+#define LoopAllElements_End_EHT() }}
 
 extern ElementsHashTable *elementsHashTable;
 

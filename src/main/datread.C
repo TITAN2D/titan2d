@@ -42,7 +42,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     int Node_Num, Elem_Num;
     
     int NODE_TABLE_SIZE = 400000;
-    
+    int EL_TABLE_SIZE   = 100000;
     //char  filename[14] = "lsh4800xx.inp";
     char filename[14] = "funkyxxxx.inp";
     //unsigned min_key[KEYLENGTH];
@@ -141,7 +141,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     //done reading in node data
     //start reading in element data
     
-    int EL_TABLE_SIZE = 100000;
+    
     
     //char  filename[14] = "lsh4800xx.inp";
     int material, elm_loc[2];

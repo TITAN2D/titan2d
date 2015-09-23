@@ -37,6 +37,7 @@
 class FluxProps;
 class MatProps;
 class NodeHashTable;
+class ElementsHashTable;
 class Element;
 
 
@@ -786,7 +787,7 @@ struct OutLine
             }
         return;
     }
-    
+    void update(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
     //! this function updates the maximum throughout time pileheight in every cell covered by an arbitrary element
     void update(double xstart, double xstop, double ystart, double ystop, double height, double *hv)
     {

@@ -24,6 +24,8 @@
 
 #include "../header/titan2d_utils.h"
 
+#include "../header/outline.h"
+
 //dUdx[0] dh_dx
 //dUdx[1] dhVx_dx
 //dUdx[2] dhVy_dx
@@ -237,7 +239,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
           TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
           int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag)
 {
-    double t_start;
+    double t_start,t_start2;
     
     /*El_Table->updateAllEntries();
      El_Table->updateAllLocalEntries();
@@ -469,6 +471,21 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
         realvolume += dx * dy * Curr_El->state_vars(0);
         eroded += elemeroded;
         deposited += elemdeposited;
+        
+#ifdef APPLY_BC
+        for(j = 0; j < 4; j++)
+            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
+                for(k = 0; k < NUM_STATE_VARS; k++)
+                    Curr_El->state_vars(k, 0.0);
+#endif
+    }
+    t_start2=MPI_Wtime();
+    outline_ptr->update(El_Table, NodeTable);
+   /* for(i = 0; i < Nelms; i++)
+    {
+        Curr_El = Elms[i];
+        double dx = Curr_El->dx(0);
+        double dy = Curr_El->dx(1);
         //update the record of maximum pileheight in the area covered by this element
         double hheight = Curr_El->state_vars(0);
         //if (hheight > 0 && hheight < 0)
@@ -493,7 +510,12 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                             Curr_El->coord(1) + 0.5 * dy, hheight, momenta);
 
 #endif
-        
+    }*/
+    titanTimings.outlineStepTime += MPI_Wtime() - t_start2;
+    titanTimingsAlongSimulation.outlineStepTime += MPI_Wtime() - t_start2;
+   /* for(i = 0; i < Nelms; i++)
+    {
+        Curr_El = Elms[i];
 #ifdef APPLY_BC
         for(j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
@@ -501,7 +523,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                     Curr_El->state_vars(k, 0.0);
 #endif
         
-    }
+    }*/
     titanTimings.correctorStepTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.correctorStepTime += MPI_Wtime() - t_start;
     //update the orientation of the "dryline" (divides partially wetted cells

@@ -24,6 +24,7 @@
 
 #include "../header/boundary.h"
 #include "../header/elenode.hpp"
+#include "../header/titan2d_utils.h"
 
 /*#undef SEEK_SET
 #undef SEEK_END
@@ -146,6 +147,17 @@ T* HashTable<T>::lookup(const SFC_Key& keyi)
     else
         return nullptr;
 }
+
+/*template <typename T>
+T HashTable<T>::lookup(const SFC_Key& keyi)
+{
+    ti_ndx_t ndx=lookup_ndx(keyi);
+    if(ti_ndx_not_negative(ndx))
+        return elenode_[ndx];
+    else
+        return T;
+}*/
+
 template <typename T>
 ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& keyi)
 {
@@ -340,6 +352,7 @@ void NodeHashTable::removeNode(Node* node)
 }
 void NodeHashTable::flushNodeTable()
 {
+    double t_start = MPI_Wtime();
     flushTable();
     
     int size=ndx_map.size();
@@ -357,6 +370,9 @@ void NodeHashTable::flushNodeTable()
         refinementflux_[i].reorder(&(ndx_map[0]), size);
     }
     connection_id_.reorder(&(ndx_map[0]), size);
+    
+    titanTimings.flushNodeTableTime += MPI_Wtime() - t_start;
+    titanTimingsAlongSimulation.flushNodeTableTime += MPI_Wtime() - t_start;
 }
 
 
@@ -615,6 +631,7 @@ void ElementsHashTable::removeElement(Element* elm)
 
 void ElementsHashTable::flushElemTable()
 {
+    double t_start = MPI_Wtime();
     //return;
     flushTable();
     int size=ndx_map.size();
@@ -668,4 +685,6 @@ void ElementsHashTable::flushElemTable()
     Awet_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<2;++i)drypoint_[i].reorder(&(ndx_map[0]), size);
     Swet_.reorder(&(ndx_map[0]), size);
+    titanTimings.flushElemTableTime += MPI_Wtime() - t_start;
+    titanTimingsAlongSimulation.flushElemTableTime += MPI_Wtime() - t_start;
 }
