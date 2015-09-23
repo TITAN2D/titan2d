@@ -19,6 +19,7 @@
 #endif
 
 #include "../header/hpfem.h"
+#include "../header/hadapt.h"
 
 #if HAVE_HDF5_H
 #include "../header/hd5calls.h"
@@ -106,8 +107,8 @@ void cxxTitanSimulation::input_summary()
 cxxTitanSinglePhase::cxxTitanSinglePhase() :
         cxxTitanSimulation()
 {
-    HT_Node=NULL;
-    HT_Elem=NULL;
+    NodeTable=NULL;
+    ElemTable=NULL;
 
     NUM_STATE_VARS = 3;
     SHORTSPEED=false;
@@ -373,6 +374,8 @@ void cxxTitanSinglePhase::run()
     TimeProps* timeprops_ptr=get_timeprops();
     MapNames* mapnames_ptr=get_mapnames();
     OutLine* outline_ptr=get_outline();
+    
+    
 
     process_input();
     input_summary();
@@ -382,37 +385,35 @@ void cxxTitanSinglePhase::run()
     int result;
 
     //check if restart is available
-    result=loadrun(myid, numprocs, &HT_Node, &HT_Elem, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
+    result=loadrun(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
                   &statprops, &discharge_planes, &outline);
 
     if(result==0)
-        Read_grid(myid, numprocs, &HT_Node, &HT_Elem, matprops_ptr, &outline);
-
-    ElementsHashTable* HT_Elem_Ptr=get_HT_Elem();
-    NodeHashTable* HT_Node_Ptr=get_HT_Node();
-
-
+        Read_grid(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &outline);
+    
+    
 
     if(result==0)
     {
-        setup_geoflow(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops);
+        setup_geoflow(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops);
 
-        move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+        move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
-        AssertMeshErrorFree(HT_Elem_Ptr, HT_Node_Ptr, numprocs, myid, -1.0);
+        AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -1.0);
 
         //initialize pile height and if appropriate perform initial adaptation
         init_piles();
     }
     else
     {
-    	HT_Node_Ptr->flushNodeTable();
-        HT_Elem_Ptr->flushElemTable();
+    	NodeTable->flushNodeTable();
+        ElemTable->flushElemTable();
         //update temporary arrays of elements/nodes pointers
-        HT_Elem_Ptr->updateLocalElements();
-        HT_Elem_Ptr->updatePointersToNeighbours();
+        ElemTable->updateLocalElements();
+        ElemTable->updatePointersToNeighbours();
     }
     
+    HAdapt hadapt(ElemTable, NodeTable);
 
     /* for debug only, to check if exactly what's loaded will be saved again
      by doing a diff on the files.
@@ -432,30 +433,30 @@ void cxxTitanSinglePhase::run()
     }
 
     MPI_Barrier (MPI_COMM_WORLD);
-    calc_stats(elementType, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
+    calc_stats(elementType, ElemTable, NodeTable, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
-    move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
     if(myid == 0)
         output_summary(&timeprops, &statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(elementType, HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
     if(vizoutput & 2)
-        meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
     {
         if(elementType == ElementType::TwoPhases)
         {
-            xdmerr=write_xdmf_two_phases(HT_Elem_Ptr,HT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
+            xdmerr=write_xdmf_two_phases(ElemTable,NodeTable,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
         }
         if(elementType == ElementType::SinglePhase)
         {
-            xdmerr=write_xdmf_single_phase(HT_Elem_Ptr,HT_Node_Ptr,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
+            xdmerr=write_xdmf_single_phase(ElemTable,NodeTable,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
         }
     }
 
@@ -465,7 +466,7 @@ void cxxTitanSinglePhase::run()
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops);
+        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
     }
 
     /*
@@ -508,43 +509,43 @@ void cxxTitanSinglePhase::run()
         //check for changes in topography and update if necessary
         if(timeprops.iter == 200)
         {
-            update_topo(HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
+            update_topo(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
         }
 
         if((adapt != 0) && (timeprops.iter % 5 == 4))
         {
-            AssertMeshErrorFree(HT_Elem_Ptr, HT_Node_Ptr, numprocs, myid, -2.0);
+            AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -2.0);
 
-            H_adapt(HT_Elem_Ptr, HT_Node_Ptr, h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
+            hadapt.adapt(h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
 
-            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
-            unrefine(HT_Elem_Ptr, HT_Node_Ptr, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
+            unrefine(ElemTable, NodeTable, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
-            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
             if((numprocs > 1) && (timeprops.iter % 10 == 9))
             {
-                repartition2(HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+                repartition2(ElemTable, NodeTable, &timeprops);
 
                 //this move_data() here for debug... to make AssertMeshErrorFree() Work
-                move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+                move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
             }
-            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
             //update temporary arrays of elements/nodes pointers
-            HT_Node_Ptr->flushNodeTable();
-            HT_Elem_Ptr->flushElemTable();
+            NodeTable->flushNodeTable();
+            ElemTable->flushElemTable();
             
-            HT_Elem_Ptr->updateLocalElements();
-            HT_Elem_Ptr->updatePointersToNeighbours();
+            ElemTable->updateLocalElements();
+            ElemTable->updatePointersToNeighbours();
         }
         titanTimings.meshAdaptionTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.meshAdaptionTime += MPI_Wtime() - t_start;
 
         t_start = MPI_Wtime();
-        step(elementType,HT_Elem_Ptr, HT_Node_Ptr, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
+        step(elementType,ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
              &order, &outline, &discharge_planes, adapt);
         titanTimings.stepTime += MPI_Wtime() - t_start;
         titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
@@ -554,7 +555,7 @@ void cxxTitanSinglePhase::run()
          * save a restart file
          */
         if(timeprops.ifsave())
-            saverun(&HT_Node_Ptr, myid, numprocs, &HT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
+            saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, order,
                     &statprops, &discharge_planes, &outline, &savefileflag);
 
         /*
@@ -562,7 +563,7 @@ void cxxTitanSinglePhase::run()
          */
         if(timeprops.ifoutput())
         {
-            move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
             output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
@@ -570,22 +571,22 @@ void cxxTitanSinglePhase::run()
                 output_summary(&timeprops, &statprops, savefileflag);
 
             if(vizoutput & 1)
-                tecplotter(elementType, HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
             if(vizoutput & 2)
-                meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
             if(vizoutput & 4)
             {
                 if(elementType == ElementType::TwoPhases)
                 {
-                    xdmerr=write_xdmf_two_phases(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+                    xdmerr=write_xdmf_two_phases(ElemTable, NodeTable, &timeprops,
                                         matprops_ptr, &mapnames, XDMF_OLD);
                 }
                 if(elementType == ElementType::SinglePhase)
                 {
-                    xdmerr=write_xdmf_single_phase(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+                    xdmerr=write_xdmf_single_phase(ElemTable, NodeTable, &timeprops,
                                         matprops_ptr, &mapnames, XDMF_OLD);
                 }
             }
@@ -595,17 +596,17 @@ void cxxTitanSinglePhase::run()
             {
                 if(myid == 0)
                     grass_sites_header_output(&timeprops);
-                grass_sites_proc_output(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops);
+                grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
             }
         }
 
 #ifdef PERFTEST
         int countedvalue=timeprops.iter%2+1;
-        int e_buckets=HT_Elem_Ptr->get_no_of_buckets();
+        int e_buckets=ElemTable->get_no_of_buckets();
         HashEntry* entryp;
         for(i=0; i<e_buckets; i++)
         {
-            entryp = *(HT_Elem_Ptr->getbucketptr() + i);
+            entryp = *(ElemTable->getbucketptr() + i);
             while(entryp)
             {
                 Element * EmTemp = (Element*)entryp->value;
@@ -638,13 +639,13 @@ void cxxTitanSinglePhase::run()
         }
     }
 
-    move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, &timeprops);
+    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
     /*
      * save a restart file
      */
 
-    saverun(&HT_Node_Ptr, myid, numprocs, &HT_Elem_Ptr, matprops_ptr, &timeprops, &mapnames, adapt, order,
+    saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, order,
             &statprops, &discharge_planes, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -655,22 +656,22 @@ void cxxTitanSinglePhase::run()
         output_summary(&timeprops, &statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(elementType, HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
     if(vizoutput & 2)
-        meshplotter(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
     {
         if(elementType == ElementType::TwoPhases)
         {
-            xdmerr=write_xdmf_two_phases(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+            xdmerr=write_xdmf_two_phases(ElemTable, NodeTable, &timeprops,
                         matprops_ptr, &mapnames, XDMF_CLOSE);
         }
         if(elementType == ElementType::SinglePhase)
         {
-            xdmerr=write_xdmf_single_phase(HT_Elem_Ptr, HT_Node_Ptr, &timeprops,
+            xdmerr=write_xdmf_single_phase(ElemTable, NodeTable, &timeprops,
                         matprops_ptr, &mapnames, XDMF_CLOSE);
         }
     }
@@ -680,13 +681,13 @@ void cxxTitanSinglePhase::run()
     {
         if(myid == 0)
             grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, &timeprops);
+        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     // write out ending warning, maybe flow hasn't finished moving
-    sim_end_warning(elementType, HT_Elem_Ptr, matprops_ptr, &timeprops, statprops.vstar);
+    sim_end_warning(elementType, ElemTable, matprops_ptr, &timeprops, statprops.vstar);
     MPI_Barrier(MPI_COMM_WORLD);
 
     //write out the final pile statistics (and run time)

@@ -121,8 +121,8 @@ public:
     MapNames mapnames;
     OutLine outline;
 
-    NodeHashTable* HT_Node;
-    ElementsHashTable* HT_Elem;
+    NodeHashTable* NodeTable;
+    ElementsHashTable* ElemTable;
 
     virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
     virtual MatProps* get_matprops(){return &matprops_single_phase;}
@@ -133,8 +133,8 @@ public:
     virtual MapNames* get_mapnames(){return &mapnames;}
     virtual OutLine* get_outline(){return &outline;}
 
-    virtual NodeHashTable* get_HT_Node(){return HT_Node;}
-    virtual ElementsHashTable* get_HT_Elem(){return HT_Elem;}
+    virtual NodeHashTable* get_HT_Node(){return NodeTable;}
+    virtual ElementsHashTable* get_HT_Elem(){return ElemTable;}
 
 protected:
     /** this function intializes the piles, by commenting/uncommenting define statements you can switch from

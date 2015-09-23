@@ -107,9 +107,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
 void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
                       FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel);
 
-//! this is the normal grid adaptive refinement function it also refreshes the flux sources
-void H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_count, double target, MatProps* matprops_ptr,
-             FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer);
+
 
 //! this function flushes the hashtables, it is called during grid adaptation in hadpt.C
 extern void htflush(ElementsHashTable*, NodeHashTable*, int);
