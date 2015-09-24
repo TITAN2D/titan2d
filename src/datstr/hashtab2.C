@@ -497,13 +497,31 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
 }
 void ElementsHashTable::updatePointersToNeighbours()
 {
-    for(int i = 0; i < elenode_.size(); i++)
+    for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
     {
-        if(status_[i]>=0)
+        if(status_[ndx]>=0)
         {
-            if(elenode_[i].adapted_flag() > 0)
-            {
-                elenode_[i].update_neighbors_nodes_and_elements_pointers(this, NodeTable);
+            if(adapted_[ndx] > 0)
+            {                
+                for (int j = 0; j < 8; j++) {
+                    ti_ndx_t neigh_ndx=lookup_ndx(neighbors_[j][ndx]);
+                    neighbor_ndx_[j][ndx]=neigh_ndx;
+
+                    if(ti_ndx_not_negative(neigh_ndx))
+                        neighborPtr_[j][ndx] = &(elenode_[neigh_ndx]);
+                    else
+                        neighborPtr_[j][ndx] = nullptr;
+                }
+                
+                for (int j = 0; j < 8; j++) {
+                    ti_ndx_t node_ndx=NodeTable->lookup_ndx(node_key_[j][ndx]);
+                    node_key_ndx_[j][ndx]=node_ndx;
+
+                    if(ti_ndx_not_negative(node_ndx))
+                        node_keyPtr_[j][ndx] = &(NodeTable->elenode_[node_ndx]);
+                    else
+                        node_keyPtr_[j][ndx] = nullptr;
+                }
             }
         }
     }
@@ -538,8 +556,10 @@ Element* ElementsHashTable::addElement(const SFC_Key& keyi)
     lb_key_.push_back();
     for(int i=0;i<8;++i)node_key_[i].push_back();
     for(int i=0;i<8;++i)node_keyPtr_[i].push_back();
+    for(int i=0;i<8;++i)node_key_ndx_[i].push_back();
     for(int i=0;i<8;++i)neighbors_[i].push_back();
     for(int i=0;i<8;++i)neighborPtr_[i].push_back();
+    for(int i=0;i<8;++i)neighbor_ndx_[i].push_back();
     father_.push_back();
     for(int i=0;i<4;++i)son_[i].push_back();
     for(int i=0;i<8;++i)neigh_proc_[i].push_back();
@@ -643,8 +663,10 @@ void ElementsHashTable::flushElemTable()
     lb_key_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)node_keyPtr_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)node_key_ndx_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neighbor_ndx_[i].reorder(&(ndx_map[0]), size);
     father_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);

@@ -217,9 +217,6 @@ public:
 
     Element* getNeighborPtr(int i);
 
-    //!update neighbors pointers from hash table
-    void update_neighbors_nodes_and_elements_pointers(ElementsHashTable*, NodeHashTable*);
-
     //!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
     int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, NodeHashTable*);
 

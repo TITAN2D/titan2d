@@ -580,22 +580,6 @@ inline void Element::putel_sq(double solsq, double errsq) {
     set_el_error(0, errsq);
 }
 
-
-inline void Element::update_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
-    int i;
-    if (El_Table != NULL) {
-        for (i = 0; i < 8; i++) {
-            elementsHashTable->neighborPtr_[i][ndx_] = (Element*) El_Table->lookup(neighbor(i));
-        }
-    }
-    if (NodeTable != NULL) {
-        for (i = 0; i < 8; i++) {
-            elementsHashTable->node_keyPtr_[i][ndx_] = (Node*) NodeTable->lookup(node_key(i));
-        }
-    }
-    return;
-}
-
 inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
     int i;
     int count = 0;
