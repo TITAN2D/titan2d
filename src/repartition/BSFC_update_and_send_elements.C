@@ -289,6 +289,8 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
 void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid)
 {
     int i, j;
+    int deleted_elements=0;
+    int deleted_nodes=0;
     Element* EmTemp, *son;
     int no_of_node_buckets = HT_Node_Ptr->get_no_of_buckets();
     Node* NdTemp;
@@ -315,7 +317,8 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
             {  // not an active element
                 EmTemp->void_bcptr();  // don't remove bc's
                 HT_Elem_Ptr->removeElement(EmTemp);
-                ielm--;
+                --ielm;
+                ++deleted_elements;
             }
             else
             {  //active element on this processor -- flag all nodes as being used
@@ -336,7 +339,9 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
         if(HT_Node_Ptr->status_[i]>=0 && HT_Node_Ptr->node(i).id() == 0)
         {
             HT_Node_Ptr->removeNode(&(HT_Node_Ptr->node(i)));
+            ++deleted_nodes;
         }
     }
+    printf("# deleted_nodes=%d, deleted_elements=%d\n",deleted_nodes,deleted_elements);
     return;
 }

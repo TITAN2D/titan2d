@@ -80,16 +80,8 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-    if((myid == TARGETPROC))
-    { //&&(timeprops_ptr->iter==354)){
-        printf("entering H_adapt()\n");
-        AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, 0.0);
-        printf("After first AssertMeshErrorFree\n");
-    }
     
-    //unsigned elemdebugkey2a[2] =
-    //{ 2114123639, 2004318068 };
-    Element* Curr_El = nullptr;//(Element*) HT_Elem_Ptr->lookup(elemdebugkey2a);
+    Element* Curr_El = nullptr;
     int k, i, j;
     Element* EmTemp;
     
@@ -104,6 +96,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     int h_begin = 1;
     int h_begin_type = 102;
     
+    // what it really does?
     delete_unused_elements_nodes(ElemTable, NodeTable, myid);
     
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
@@ -114,40 +107,39 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     
     int debug_ref_flag = 0;
     
+    //@initElemTableRef
     int no_of_buckets = ElemTable->get_no_of_buckets();
     vector<HashEntryLine> &bucket=ElemTable->bucket;
-    tivector<Element> &elenode_=ElemTable->elenode_;
+    tivector<Element> &elements=ElemTable->elenode_;
+    
+    tivector<ContentStatus> &status=ElemTable->status_;
+    tivector<int> &adapted=ElemTable->adapted_;
+    tivector<int> &generation=ElemTable->generation_;
+    tivector<double> &el_error=ElemTable->el_error_[0];
 
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    //@ElementsSingleLoopNoStatusCheck
+    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-        {
-            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            if(EmTemp->adapted_flag() >= NEWSON)
-                EmTemp->set_adapted_flag(NOTRECADAPTED);
-        }
+        //don't need to check if element schedule for deletion
+        if(adapted[ndx] >= NEWSON)adapted[ndx] = NOTRECADAPTED;
     }
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    //@ElementsSingleLoop
+    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        //-- this requirement is used to exclude the new elements
+        if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
         {
-            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            //-- this requirement is used to exclude the new elements
-            if(((EmTemp->adapted_flag() > 0) && (EmTemp->adapted_flag() < NEWSON)) && (EmTemp->generation()
-                    < REFINE_LEVEL)
-               && ((EmTemp->if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0) || (EmTemp->if_pile_boundary(
-                       ElemTable, REFINE_THRESHOLD1)
-                                                                                 > 0)
-                   || (EmTemp->if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                   || (EmTemp->if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
-                   || (EmTemp->if_source_boundary(ElemTable) > 0) || (EmTemp->el_error(0) > geo_target)))
+            if((el_error[ndx] > geo_target)
+                || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0) 
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
+                || (elements[ndx].if_source_boundary(ElemTable) > 0) )
             {
-                refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, EmTemp);
+                refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, &(elements[ndx]));
                 debug_ref_flag++;
             }
         }
@@ -177,7 +169,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
         {
             for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
                 if((EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1) || (EmTemp
                         ->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)
                                                                                           == 1)
@@ -200,7 +192,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
         {
             for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
                 if((EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0) || (EmTemp
                         ->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)
                                                                                          > 0)
@@ -223,7 +215,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
             {
                 for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
                     if(EmTemp->if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
                     {
                         refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, EmTemp);
@@ -252,7 +244,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
             {
                 for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
-                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
                     if(EmTemp->if_next_buffer_boundary(ElemTable, NodeTable,REFINE_THRESHOLD)> 0)
                         TempList.add(EmTemp);
                 }
@@ -279,7 +271,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     {
         for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
         {
-            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
             
             switch (EmTemp->adapted_flag())
             {
