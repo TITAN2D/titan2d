@@ -369,6 +369,7 @@ void refinewrapper(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, Ma
     
     int sur = 0, ifg = 1, ielem;
     
+    //check if element already refined
     for(ielem = 0; ielem < RefinedList->get_num_elem(); ielem++)
     {
         sur = (RefinedList->get_key(ielem)==EmTemp->key());

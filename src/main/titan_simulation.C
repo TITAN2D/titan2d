@@ -334,7 +334,7 @@ void cxxTitanSinglePhase::run()
     MPI_Status status;
 
     double start, end;
-    double t_start, t_end;
+    double t_start, t_start2, t_end;
     start = MPI_Wtime();
 
     /* create new MPI datastructures for class objects */
@@ -516,14 +516,24 @@ void cxxTitanSinglePhase::run()
         {
             AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -2.0);
 
+            t_start2 = MPI_Wtime();
+            
             hadapt.adapt(h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
 
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+            
+            titanTimings.refinementTime += MPI_Wtime() - t_start2;
+            titanTimingsAlongSimulation.refinementTime += MPI_Wtime() - t_start2;
+            
+            t_start2 = MPI_Wtime();
 
             unrefine(ElemTable, NodeTable, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+            
+            titanTimings.unrefinementTime += MPI_Wtime() - t_start2;
+            titanTimingsAlongSimulation.unrefinementTime += MPI_Wtime() - t_start2;
 
             if((numprocs > 1) && (timeprops.iter % 10 == 9))
             {

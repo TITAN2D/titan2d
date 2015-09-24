@@ -41,6 +41,10 @@ public:
         }
         printf("  Total execution time:... %.3f\n", totalTime);
         printf("    Mesh adoption time:... %.3f (%.2f %%)\n", meshAdaptionTime, 100.0 * meshAdaptionTime / totalTime);
+        printf("      Refinement time:.... %.3f (%.2f %%, %.2f %%)\n", refinementTime,
+               100.0 * refinementTime / meshAdaptionTime, 100.0 * refinementTime / totalTime);
+        printf("      Unrefinement time:.. %.3f (%.2f %%, %.2f %%)\n", unrefinementTime,
+               100.0 * unrefinementTime / meshAdaptionTime, 100.0 * unrefinementTime / totalTime);
         printf("    Step time:............ %.3f (%.2f %%)\n", stepTime, 100.0 * stepTime / totalTime);
         printf("      Predictor time:..... %.3f (%.2f %%, %.2f %%)\n", predictorStepTime,
                100.0 * predictorStepTime / stepTime, 100.0 * predictorStepTime / totalTime);
@@ -60,6 +64,8 @@ public:
     {
         totalTime = 0.0;
         meshAdaptionTime = 0.0;
+        refinementTime = 0.0;
+        unrefinementTime = 0.0;
         stepTime = 0.0;
         predictorStepTime = 0.0;
         correctorStepTime = 0.0;
@@ -74,6 +80,8 @@ public:
     {
         totalTime /= steps;
         meshAdaptionTime /= steps;
+        refinementTime /= steps;
+        unrefinementTime /= steps;
         stepTime /= steps;
         predictorStepTime /= steps;
         correctorStepTime /= steps;
@@ -86,6 +94,8 @@ public:
     
     double totalTime;
     double meshAdaptionTime;
+    double refinementTime;
+    double unrefinementTime;
     double stepTime;
     double predictorStepTime;
     double correctorStepTime;
