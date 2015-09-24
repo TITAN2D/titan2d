@@ -24,13 +24,20 @@ public:
     ElementsHashTable* ElemTable;
     NodeHashTable* NodeTable;
 public:
-    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable)
+    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable):TempList(_ElemTable, 384)
     {
         ElemTable=_ElemTable;
         NodeTable=_NodeTable;
     }
     void adapt(int h_count, double target, MatProps* matprops_ptr,
              FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer);
+    
+    void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);
+    void depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement,vector<ti_ndx_t> &allRefinement);
+    void refine2(Element* EmTemp, MatProps* matprops_ptr);
+    
+private:
+    ElemPtrList TempList;
 };
 
 #endif	/* HADAPT_H */

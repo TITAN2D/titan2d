@@ -21,7 +21,122 @@
 
 #include "../header/hpfem.h"
 
+#include "../header/hadapt.h"
+
 #define NumTriggerRef 256
+
+
+
+void HAdapt::depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement, vector<ti_ndx_t> &allRefinement)
+
+/*---
+ refined[] stores the address of ready-for-refinement element of the sub-domain
+ refined_temp[] stores the address of ready-for-refinement element triggered by one element refinement
+ count is counting the number of refinement of the subdomain
+ j is counting the number of refinement triggered by one element refinement
+ ---------------*/
+{
+    int ifg=1;
+    int i, j, k;
+    Element* element;
+    Element* Neigh;
+    TempList.trashlist();
+    int myid;
+    
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    
+    element = &(ElemTable->elenode_[ndx]); //-- EmTemp is the trigger of this round of refinement
+    TempList.add(element);
+    
+    j = 0;
+    k = 0;
+    
+            
+    while (element && (j < NumTriggerRef))
+    { //--element is temporary varible
+    
+        for(i = 0; i < 4; i++)
+        { //-- checking the four neighbors to identify which must be refined
+        
+            int neigh_proc = element->neigh_proc(i);
+            
+            if((neigh_proc != -1) && (neigh_proc != -2))
+            { //-- if there is a neighbor
+            
+                Neigh = (Element*) (ElemTable->lookup(element->neighbor(i)));
+                
+                //assert(Neigh);
+                if(Neigh != NULL && neigh_proc == myid)
+                { //-- if this neighbor is in the same proc as element is
+                
+                    if(element->generation() > Neigh->generation())
+                    {
+                        //-- if the neighbor is bigger, then it must be refined
+                        
+                        if((Neigh->adapted_flag() == NOTRECADAPTED) || (Neigh->adapted_flag() == NEWFATHER))
+                        {
+                            int flag = 1;
+                            for(int m = 0; m < TempList.get_num_elem(); m++)
+                                if(TempList.get_key(m)==Neigh->key())
+                                {
+                                    flag = 0;
+                                    break;
+                                }
+                            
+                            if(flag)
+                            { //-- if this neighbor has not yet been marked
+                            
+                                j++;
+                                TempList.add(Neigh);
+                            }
+                        }
+                        else if(Neigh->adapted_flag() != OLDFATHER)
+                        {
+                            ifg = 0;
+                            break;
+                        }
+                    }
+                    
+                }
+                else
+                { //-- need neighbor's generation infomation
+                
+                    if(element->generation() > element->neigh_gen(i))
+                    { //--stop this round of refinement
+                    
+                        ifg = 0;
+                        break;
+                    }
+                }
+            }
+            
+        }
+        if(!ifg)
+            break;
+        k++;
+        element = TempList.get(k); //--check next
+    }
+    
+    //copy TempList to RefinedList
+    if(ifg)
+    {
+        if(j < NumTriggerRef) //-- NumTriggerRef is the maximum tolerence of related refinement
+            for(int m = 0; m < TempList.get_num_elem(); m++)
+            {
+                if(set_for_refinement[TempList.get(m)->ndx()]==0)
+                {
+                    allRefinement.push_back(TempList.get(m)->ndx());
+                    set_for_refinement[TempList.get(m)->ndx()]=1;
+                }
+            }
+        else
+        {
+            ifg = 0; //-- refuse to do the refinement
+        }
+    }
+    return;
+}
+
 
 void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTable, int* ifg, ElemPtrList* RefinedList)
 
@@ -141,7 +256,6 @@ void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTab
     
     return;
 }
-
 #ifdef DISABLED
 void depchk(Element* EmTemp, ElementsHashTable* El_Table, int* ifg, Element* refined[], int* count)
 

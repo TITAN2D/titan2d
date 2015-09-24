@@ -116,6 +116,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     tivector<int> &adapted=ElemTable->adapted_;
     tivector<int> &generation=ElemTable->generation_;
     tivector<double> &el_error=ElemTable->el_error_[0];
+    tivector<int> &refined=ElemTable->refined_;
 
     //@ElementsSingleLoopNoStatusCheck
     for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
@@ -126,6 +127,13 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
+    vector<int> set_for_refinement;
+    vector<ti_ndx_t> primaryRefinement;
+    vector<ti_ndx_t> allRefinement;
+    
+    set_for_refinement.assign(ElemTable->size(),0);
+    
+    //find out primary refinements
     //@ElementsSingleLoop
     for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
     {
@@ -139,14 +147,29 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
                 || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
                 || (elements[ndx].if_source_boundary(ElemTable) > 0) )
             {
-                refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, &(elements[ndx]));
-                debug_ref_flag++;
+                primaryRefinement.push_back(ndx);
+                //set_for_refinement[ndx]=1;
             }
         }
     }
-    
+    //findout triggered refinements
+    for(ti_ndx_t ndx:primaryRefinement)
+    {
+        if(set_for_refinement[ndx]!=0)continue;
+        
+        depchk2(ndx, set_for_refinement, allRefinement);
+    }
+    //do refinements
+    for(ti_ndx_t ndx:allRefinement)
+    {
+        RefinedList.add(&(elements[ndx]));
+        refine2(&(elements[ndx]), matprops_ptr);
+        adapted[ndx]=OLDFATHER;
+        refined[ndx]=1;
+    }
     // -h_count for debugging
-    refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);
+    refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);    
+    //RefinedList was trashlist in previous step
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     if((myid == TARGETPROC))
@@ -362,6 +385,39 @@ void refinewrapper(NodeHashTable*HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, MatProp
     return;
 }
 #endif
+
+//Keith wrote this because the code block was repeated so many times
+void HAdapt::refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList,
+                   Element *EmTemp)
+{
+    
+    assert(0);
+    /*int sur = 0, ifg = 1, ielem;
+    
+    //check if element already refined
+    for(ielem = 0; ielem < RefinedList->get_num_elem(); ielem++)
+    {
+        sur = (RefinedList->get_key(ielem)==EmTemp->key());
+        if(sur)break;
+    }
+    
+    if(!sur)
+    {
+        //-- check out the triggered refinement
+        depchk2(EmTemp, &ifg, RefinedList);
+        
+        if(ifg)
+            for(ielem = 0; ielem < RefinedList->get_num_elem(); ielem++)
+                if(!((RefinedList->get(ielem))->refined_flag()))
+                {
+                    refine2(RefinedList->get(ielem), matprops_ptr);
+                    (RefinedList->get(ielem))->set_adapted_flag(OLDFATHER);
+                    (RefinedList->get(ielem))->set_refined_flag(1);
+                }
+    }*/
+    return;
+}
+
 //Keith wrote this because the code block was repeated so many times
 void refinewrapper(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, MatProps* matprops_ptr, ElemPtrList *RefinedList,
                    Element *EmTemp)
