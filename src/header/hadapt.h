@@ -33,11 +33,14 @@ public:
              FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer);
     
     void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);
-    void depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement,vector<ti_ndx_t> &allRefinement);
+    void depchk2(ti_ndx_t primary_ndx, vector<int> &set_for_refinement,vector<ti_ndx_t> &allRefinement);
     void refine2(Element* EmTemp, MatProps* matprops_ptr);
     
 private:
+    int myid;
+    int numprocs;
     ElemPtrList TempList;
+    vector<ti_ndx_t> tempList;
 };
 
 #endif	/* HADAPT_H */

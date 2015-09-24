@@ -73,9 +73,6 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
  *------------------------------------------------------*/
 
 {
-    
-    int myid;
-    int numprocs;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     

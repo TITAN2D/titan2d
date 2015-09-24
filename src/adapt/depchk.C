@@ -25,9 +25,10 @@
 
 #define NumTriggerRef 256
 
+#include <algorithm>
 
 
-void HAdapt::depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement, vector<ti_ndx_t> &allRefinement)
+void HAdapt::depchk2(ti_ndx_t primary_ndx, vector<int> &set_for_refinement, vector<ti_ndx_t> &allRefinement)
 
 /*---
  refined[] stores the address of ready-for-refinement element of the sub-domain
@@ -37,60 +38,46 @@ void HAdapt::depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement, vector<ti_nd
  ---------------*/
 {
     int ifg=1;
-    int i, j, k;
-    Element* element;
-    Element* Neigh;
-    TempList.trashlist();
-    int myid;
     
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    tempList.resize(0);
     
-    element = &(ElemTable->elenode_[ndx]); //-- EmTemp is the trigger of this round of refinement
-    TempList.add(element);
+    //the trigger of this round of refinement:
+    tempList.push_back(primary_ndx);
     
-    j = 0;
-    k = 0;
+    int elem_to_refine = 0;
     
-            
-    while (element && (j < NumTriggerRef))
+    int ielem=0; 
+    while ((ielem<tempList.size()) && (elem_to_refine < NumTriggerRef))
     { //--element is temporary varible
+        ti_ndx_t ndx=tempList[ielem];
     
-        for(i = 0; i < 4; i++)
+        for(int i = 0; i < 4; i++)
         { //-- checking the four neighbors to identify which must be refined
         
-            int neigh_proc = element->neigh_proc(i);
+            int neigh_proc = ElemTable->neigh_proc_[i][ndx];
             
             if((neigh_proc != -1) && (neigh_proc != -2))
             { //-- if there is a neighbor
             
-                Neigh = (Element*) (ElemTable->lookup(element->neighbor(i)));
+                ti_ndx_t neigh_ndx = qElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);
                 
                 //assert(Neigh);
-                if(Neigh != NULL && neigh_proc == myid)
+                if(ti_ndx_not_negative(neigh_ndx) && neigh_proc == myid)
                 { //-- if this neighbor is in the same proc as element is
                 
-                    if(element->generation() > Neigh->generation())
+                    if(ElemTable->generation_[ndx] > ElemTable->generation_[neigh_ndx])
                     {
                         //-- if the neighbor is bigger, then it must be refined
                         
-                        if((Neigh->adapted_flag() == NOTRECADAPTED) || (Neigh->adapted_flag() == NEWFATHER))
+                        if((ElemTable->adapted_[neigh_ndx] == NOTRECADAPTED) || (ElemTable->adapted_[neigh_ndx] == NEWFATHER))
                         {
-                            int flag = 1;
-                            for(int m = 0; m < TempList.get_num_elem(); m++)
-                                if(TempList.get_key(m)==Neigh->key())
-                                {
-                                    flag = 0;
-                                    break;
-                                }
-                            
-                            if(flag)
+                            if(find(tempList.begin(), tempList.end(), neigh_ndx)==tempList.end() )
                             { //-- if this neighbor has not yet been marked
-                            
-                                j++;
-                                TempList.add(Neigh);
+                                tempList.push_back(neigh_ndx);
+                                ++elem_to_refine;
                             }
                         }
-                        else if(Neigh->adapted_flag() != OLDFATHER)
+                        else if(ElemTable->adapted_[neigh_ndx] != OLDFATHER)
                         {
                             ifg = 0;
                             break;
@@ -101,7 +88,7 @@ void HAdapt::depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement, vector<ti_nd
                 else
                 { //-- need neighbor's generation infomation
                 
-                    if(element->generation() > element->neigh_gen(i))
+                    if(ElemTable->generation_[ndx] > ElemTable->generation_[neigh_ndx])
                     { //--stop this round of refinement
                     
                         ifg = 0;
@@ -113,20 +100,21 @@ void HAdapt::depchk2(ti_ndx_t ndx, vector<int> &set_for_refinement, vector<ti_nd
         }
         if(!ifg)
             break;
-        k++;
-        element = TempList.get(k); //--check next
+        ++ielem;
+        //k++;
+        //element = TempList.get(k); //--check next
     }
     
     //copy TempList to RefinedList
     if(ifg)
     {
-        if(j < NumTriggerRef) //-- NumTriggerRef is the maximum tolerence of related refinement
-            for(int m = 0; m < TempList.get_num_elem(); m++)
+        if(elem_to_refine < NumTriggerRef) //-- NumTriggerRef is the maximum tolerence of related refinement
+            for(int m = 0; m < tempList.size(); m++)
             {
-                if(set_for_refinement[TempList.get(m)->ndx()]==0)
+                if(set_for_refinement[tempList[m]]==0)
                 {
-                    allRefinement.push_back(TempList.get(m)->ndx());
-                    set_for_refinement[TempList.get(m)->ndx()]=1;
+                    allRefinement.push_back(tempList[m]);
+                    set_for_refinement[tempList[m]]=1;
                 }
             }
         else
