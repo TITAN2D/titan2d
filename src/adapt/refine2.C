@@ -736,7 +736,6 @@ void HAdapt::refine2(ti_ndx_t ndx)
         ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
-        Quad9P = &(ElemTable->elenode_[ndxQuad9P]);
     }
     //double* state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
@@ -749,40 +748,40 @@ void HAdapt::refine2(ti_ndx_t ndx)
     
     //the nodes
     
-    nodes[0] = EmTemp->node_key(4);
-    nodes[1] = EmTemp->node_key(1);
-    nodes[2] = EmTemp->node_key(5);
-    nodes[3] = EmTemp->key();
+    nodes[0] = ElemTable->node_key_[4][ndx];
+    nodes[1] = ElemTable->node_key_[1][ndx];
+    nodes[2] = ElemTable->node_key_[5][ndx];
+    nodes[3] = ElemTable->key_[ndx];
     nodes[4] = NewNodeKey[5];
     nodes[5] = NewNodeKey[8];
     nodes[6] = NewNodeKey[10];
     nodes[7] = NewNodeKey[7];
     nodes[8] = NewNodeKey[1];
 
-    n1 = (Node*) NodeTable->lookup(nodes[8]);
+    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->coord(i);
+        coord[i] = NodeTable->coord_[i][n1_ndx];
     
     //neighbors
-    if(EmTemp->neigh_proc(4) != -2)
-        neigh[0] = neigh[4] = EmTemp->neighbor(4); //this should be ok now matter what
+    if(ElemTable->neigh_proc_[4][ndx] != -2)
+        neigh[0] = neigh[4] = ElemTable->neighbors_[4][ndx]; //this should be ok now matter what
     else
-        neigh[0] = neigh[4] = EmTemp->neighbor(0); //this is only ok if neigh_proc==-2
-    neigh[1] = neigh[5] = EmTemp->neighbor(1);
+        neigh[0] = neigh[4] = ElemTable->neighbors_[0][ndx]; //this is only ok if neigh_proc==-2
+    neigh[1] = neigh[5] = ElemTable->neighbors_[1][ndx];
     neigh[2] = neigh[6] = NewNodeKey[2];
     neigh[3] = neigh[7] = NewNodeKey[0];
     
     //process of the neighbors
     
-    neigh_proc[0] = (EmTemp->neigh_proc(4) != -2) ? EmTemp->neigh_proc(4) : EmTemp->neigh_proc(0);
-    neigh_proc[1] = EmTemp->neigh_proc(1);
+    neigh_proc[0] = (ElemTable->neigh_proc_[4][ndx] != -2) ? ElemTable->neigh_proc_[4][ndx] : ElemTable->neigh_proc_[0][ndx];
+    neigh_proc[1] = ElemTable->neigh_proc_[1][ndx];
     neigh_proc[2] = myid;
     neigh_proc[3] = myid;
     
     neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
     
-    neigh_gen[0] = EmTemp->neigh_gen(0);
-    neigh_gen[1] = EmTemp->neigh_gen(1);
+    neigh_gen[0] = ElemTable->neigh_gen_[0][ndx];
+    neigh_gen[1] = ElemTable->neigh_gen_[1][ndx];
     neigh_gen[2] = generation;
     neigh_gen[3] = generation;
     
@@ -803,49 +802,47 @@ void HAdapt::refine2(ti_ndx_t ndx)
     }
     my_elm_loc[0] = elm_loc[0] + 1;
     my_elm_loc[1] = elm_loc[1];
-    dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
-    dpson[1] = EmTemp->drypoint(1) * 2 + 0.5;
+    dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
+    dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
     
-    old_elm = (Element*) ElemTable->lookup(nodes[8]);
-    if(old_elm != NULL)
+    ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
+    if(ti_ndx_not_negative(ndxQuad9P))
     {
         //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
+        ElemTable->elenode_[ndxQuad9P].void_bcptr();
         //HT_Elem_Ptr->removeElement(old_elm);
-        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
-                         EmTemp, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+        ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
-        Quad9P = old_elm;
     }
     else{
-        Quad9P = ElemTable->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
-                         EmTemp, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+        ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     }
     //state_vars = Quad9P->get_state_varsABCD();
     //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
     
-    Quad9P->set_which_son(1); //--by jp
-            
-    Quad9P->putel_sq(sol, err); //added by jp oct11
+    ElemTable->which_son_[ndxQuad9P]=1;  //--by jp
+    ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
     
     
     //---2nd new element---
     
     //the nodes
-    nodes[0] = EmTemp->key();
-    nodes[1] = EmTemp->node_key(5);
-    nodes[2] = EmTemp->node_key(2);
-    nodes[3] = EmTemp->node_key(6);
+    nodes[0] = ElemTable->key_[ndx];
+    nodes[1] = ElemTable->node_key_[5][ndx];
+    nodes[2] = ElemTable->node_key_[2][ndx];
+    nodes[3] = ElemTable->node_key_[6][ndx];
     nodes[4] = NewNodeKey[10];
     nodes[5] = NewNodeKey[13];
     nodes[6] = NewNodeKey[15];
     nodes[7] = NewNodeKey[12];
     nodes[8] = NewNodeKey[2];
 
-    n1 = (Node*) NodeTable->lookup(nodes[8]);
+    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->coord(i);
+        coord[i] = NodeTable->coord_[i][n1_ndx];
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[1];
@@ -920,19 +917,19 @@ void HAdapt::refine2(ti_ndx_t ndx)
     //---3rd new element---
     
     //the nodes
-    nodes[0] = EmTemp->node_key(7);
-    nodes[1] = EmTemp->key();
-    nodes[2] = EmTemp->node_key(6);
-    nodes[3] = EmTemp->node_key(3);
+    nodes[0] = ElemTable->node_key_[7][ndx];
+    nodes[1] = ElemTable->key_[ndx];
+    nodes[2] = ElemTable->node_key_[6][ndx];
+    nodes[3] = ElemTable->node_key_[3][ndx];
     nodes[4] = NewNodeKey[9];
     nodes[5] = NewNodeKey[12];
     nodes[6] = NewNodeKey[14];
     nodes[7] = NewNodeKey[11];
     nodes[8] = NewNodeKey[3];
     
-    n1 = (Node*) NodeTable->lookup(nodes[8]);
+    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
     for(i = 0; i < DIMENSION; i++)
-        coord[i] = n1->coord(i);
+        coord[i] = NodeTable->coord_[i][n1_ndx];
     
     //neighbors
     neigh[0] = neigh[4] = NewNodeKey[0];
