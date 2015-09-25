@@ -17,6 +17,7 @@ typedef int ti_ndx_t;
 constexpr ti_ndx_t ti_ndx_unknown=-1;
 constexpr ti_ndx_t ti_ndx_doesnt_exist=-2;
 inline bool ti_ndx_not_negative(const ti_ndx_t &ndx){return (ndx>=0);}
+inline bool ti_ndx_negative(const ti_ndx_t &ndx){return (ndx<0);}
 
 //#define LOW_MEMORY
 

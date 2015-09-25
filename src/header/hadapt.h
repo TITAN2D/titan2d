@@ -23,18 +23,22 @@ class HAdapt
 public:
     ElementsHashTable* ElemTable;
     NodeHashTable* NodeTable;
+    MatProps* matprops_ptr;
 public:
-    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable):TempList(_ElemTable, 384)
+    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, MatProps* _matprops):TempList(_ElemTable, 384)
     {
         ElemTable=_ElemTable;
         NodeTable=_NodeTable;
+        matprops_ptr=_matprops;
     }
-    void adapt(int h_count, double target, MatProps* matprops_ptr,
+    void adapt(int h_count, double target,
              FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer);
     
     void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);
     void depchk2(ti_ndx_t primary_ndx, vector<int> &set_for_refinement,vector<ti_ndx_t> &allRefinement);
-    void refine2(Element* EmTemp, MatProps* matprops_ptr);
+    void refine2(ti_ndx_t ndx);
+    void create_new_node2(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
+                     SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary, const int order);
     
 private:
     int myid;

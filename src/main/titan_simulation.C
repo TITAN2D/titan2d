@@ -413,7 +413,7 @@ void cxxTitanSinglePhase::run()
         ElemTable->updatePointersToNeighbours();
     }
     
-    HAdapt hadapt(ElemTable, NodeTable);
+    HAdapt hadapt(ElemTable, NodeTable,matprops_ptr);
 
     /* for debug only, to check if exactly what's loaded will be saved again
      by doing a diff on the files.
@@ -518,7 +518,7 @@ void cxxTitanSinglePhase::run()
 
             t_start2 = MPI_Wtime();
             
-            hadapt.adapt(h_count, TARGET, matprops_ptr, &fluxprops, &timeprops, 5);
+            hadapt.adapt(h_count, TARGET, &fluxprops, &timeprops, 5);
 
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
             

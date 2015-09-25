@@ -50,7 +50,7 @@ extern void htflush(NodeHashTable*, NodeHashTable*, int);
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
-void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
+void HAdapt::adapt(int h_count, double target,
              FluxProps *fluxprops, //doesn't need fluxprops
              TimeProps* timeprops_ptr, int num_buffer_layer)
 /*-------------
@@ -160,7 +160,7 @@ void HAdapt::adapt(int h_count, double target, MatProps* matprops_ptr,
     for(ti_ndx_t ndx:allRefinement)
     {
         RefinedList.add(&(elements[ndx]));
-        refine2(&(elements[ndx]), matprops_ptr);
+        refine2(ndx);
         adapted[ndx]=OLDFATHER;
         refined[ndx]=1;
     }

@@ -203,6 +203,8 @@ public:
     Node* createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
     Node* createAddNode(FILE* fp, MatProps* matprops_ptr);
     
+    ti_ndx_t createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr);
+    
     void removeNode(Node* node);
 
     Node& node(const ti_ndx_t ndx){return elenode_[ndx];}

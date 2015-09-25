@@ -59,7 +59,7 @@ void HAdapt::depchk2(ti_ndx_t primary_ndx, vector<int> &set_for_refinement, vect
             if((neigh_proc != -1) && (neigh_proc != -2))
             { //-- if there is a neighbor
             
-                ti_ndx_t neigh_ndx = qElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);
+                ti_ndx_t neigh_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);//ElemTable->neighbor_ndx_[i][ndx];
                 
                 //assert(Neigh);
                 if(ti_ndx_not_negative(neigh_ndx) && neigh_proc == myid)

@@ -58,7 +58,7 @@ public:
     void init(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
 
     //! this is the constructor that creates bubble and edge nodes for son Elements when the father Element is refined
-    void init(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);/*for refined*/
+    void init(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr);/*for refined*/
     
     //! this is the node constructor that is called in construct_el() in update_element_info.C
     void init(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);

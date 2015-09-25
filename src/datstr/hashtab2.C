@@ -327,6 +327,12 @@ Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf,
     node->init(keyi, coordi, inf, ord, matprops_ptr);
     return node;
 }
+ti_ndx_t NodeHashTable::createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr)
+{
+    ti_ndx_t ndx=add_ndx(keyi);
+    elenode_[ndx].init(keyi, coordi, inf, ord, matprops_ptr);
+    return ndx;
+}
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
 {
     Node* node = addNode(keyi);

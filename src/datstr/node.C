@@ -97,7 +97,7 @@ void Node::init(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
      */
 }
 
-void Node::init(const SFC_Key& keyi, double* coordi, int inf, int ord, MatProps* matprops_ptr)  //for refined
+void Node::init(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr)  //for refined
 {
     int i;
     id(0); /* keith added this so save_node wouldn't write an uninitialized
