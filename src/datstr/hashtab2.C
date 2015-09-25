@@ -315,6 +315,26 @@ Node* NodeHashTable::addNode(const SFC_Key& keyi)
     return node;
 }
 
+ti_ndx_t NodeHashTable::addNode_ndx(const SFC_Key& keyi)
+{
+    ti_ndx_t ndx = add_ndx(keyi);
+    
+    id_.push_back();
+    num_assoc_elem_.push_back();
+    info_.push_back();
+    order_.push_back();
+    for(int i=0;i<DIMENSION;i++)
+        coord_[i].push_back();
+    elevation_.push_back();
+    for(int i=0;i<NUM_STATE_VARS;i++)
+    {
+        flux_[i].push_back();
+        refinementflux_[i].push_back();
+    }
+    connection_id_.push_back();
+    return ndx;
+}
+
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
 {
     Node* node = addNode(keyi);
@@ -329,7 +349,7 @@ Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf,
 }
 ti_ndx_t NodeHashTable::createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr)
 {
-    ti_ndx_t ndx=add_ndx(keyi);
+    ti_ndx_t ndx=addNode_ndx(keyi);
     elenode_[ndx].init(keyi, coordi, inf, ord, matprops_ptr);
     return ndx;
 }
@@ -550,9 +570,9 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
         printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n", prefix, count);
     return count;
 }
-Element* ElementsHashTable::addElement(const SFC_Key& keyi)
+ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
 {
-    Element* elm=add(keyi);
+    ti_ndx_t ndx=add_ndx(keyi);
     
     myprocess_.push_back();
     generation_.push_back();
@@ -607,7 +627,13 @@ Element* ElementsHashTable::addElement(const SFC_Key& keyi)
     for(int i=0;i<2;++i)drypoint_[i].push_back();
     Swet_.push_back();
     
-    return elm;
+    return ndx;
+}
+
+Element* ElementsHashTable::addElement(const SFC_Key& keyi)
+{
+    ti_ndx_t ndx=addElement_ndx(keyi);
+    return &(elenode_[ndx]);
 }
 Element* ElementsHashTable::generateAddElement(const SFC_Key& keyi)
 {
@@ -635,6 +661,18 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SF
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
     return elm;
+}
+ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+                int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
+                NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+                double *drypoint_in)
+{
+    ti_ndx_t ndx=addElement_ndx(nodekeys[8]); //--using bubble key to represent the element
+    elenode_[ndx].init(nodekeys, neigh, n_pro, b, gen,
+                                  elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
+                                  El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
+                                  Awetfather, drypoint_in);
+    return ndx;
 }
 Element* ElementsHashTable::generateAddElement(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {

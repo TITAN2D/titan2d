@@ -21,6 +21,7 @@
 #include <assert.h>
 #include "boundary.h"
 #include "struct.h"
+#include "tivector.h"
 
 #include <fstream>
 #include <iostream>
@@ -169,9 +170,15 @@ public:
     void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
             double pile_height, int myid, const SFC_Key& opposite_brother);
 
-    //! constructor that creates a son element from its father during refinement
+    //! old constructor that creates a son element from its father during refinement
     void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
+            NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+            double *drypoint_in);
+    
+    //! constructor that creates a son element from its father during refinement
+    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+            int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *ElemTable,
             NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
 

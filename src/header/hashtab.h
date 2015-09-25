@@ -211,6 +211,7 @@ public:
     void flushNodeTable();
 private:
      Node* addNode(const SFC_Key& keyi);
+     ti_ndx_t addNode_ndx(const SFC_Key& keyi);
 public: 
     //! used in delete_unused_nodes_and_elements() function 
     tivector<int> id_;
@@ -293,6 +294,10 @@ public:
                 int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
+    ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+                int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
+                NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+                double *drypoint_in);
     //! constructor that creates a father element from its four sons during unrefinement
     Element* generateAddElement(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
@@ -309,6 +314,7 @@ public:
     Element* elemPtr(const ti_ndx_t ndx){return elenode_.array_+ndx;}
 private:
      Element* addElement(const SFC_Key& keyi);
+     ti_ndx_t addElement_ndx(const SFC_Key& keyi);
 public:
     //here goes element content storage probably should be separate class at the end
     
