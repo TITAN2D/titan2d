@@ -159,13 +159,13 @@ void HAdapt::adapt(int h_count, double target,
     //do refinements
     for(ti_ndx_t ndx:allRefinement)
     {
-        RefinedList.add(&(elements[ndx]));
+        //RefinedList.add(&(elements[ndx]));
         refine2(ndx);
         adapted[ndx]=OLDFATHER;
         refined[ndx]=1;
     }
     // -h_count for debugging
-    refine_neigh_update2(&RefinedList, allRefinement);    
+    refine_neigh_update2(allRefinement);    
     //RefinedList was trashlist in previous step
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);

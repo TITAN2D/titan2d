@@ -885,7 +885,7 @@ void refine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable,
 }
 
 #else
-void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_t> &allRefinement)
+void HAdapt::refine_neigh_update2(const vector<ti_ndx_t> &allRefinement)
 {
     
     Element* EmFather;
@@ -929,11 +929,10 @@ void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_
          fflush(stdout);
          MPI_Barrier(MPI_COMM_WORLD);
          */
-
-        for(ifather = RefinedList->get_inewstart(); ifather < RefinedList->get_num_elem(); ifather++)
+        for(ti_ndx_t ifather:allRefinement)
         {
             
-            EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+            EmFather = &(ElemTable->elenode_[ifather]); //Hello I'm the OLDFATHER
             assert(EmFather); //Help I've been abducted call the FBI!!!
             assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
             EmSon[0] = EmSon[1] = EmSon[2] = EmSon[3] = NULL;
@@ -1174,10 +1173,10 @@ void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_
                 ierr = MPI_Irecv((void *) recv[iproc], 4 * KEYLENGTH * num_recv[iproc], MPI_UNSIGNED, iproc,
                                  send_tag + iproc, MPI_COMM_WORLD, (request + numprocs + iproc));
         
-        for(ifather = RefinedList->get_inewstart(); ifather < RefinedList->get_num_elem(); ifather++)
+        for(ti_ndx_t ifather:allRefinement)
         {
             
-            EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+            EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
             assert(EmFather); //Help I've been abducted call the FBI!!!
             assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
             
@@ -1256,10 +1255,10 @@ void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_
     /* receive neighbor update information from other processors */
     /*************************************************************/
 
-    for(ifather = RefinedList->get_inewstart(); ifather < RefinedList->get_num_elem(); ifather++)
+    for(ti_ndx_t ifather:allRefinement)
     {
-        
-        EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+            
+        EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
         assert(EmFather); //Help I've been abducted call the FBI!!!
         assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
         
@@ -1980,11 +1979,10 @@ void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_
     }		  //if(nump>1)
     
 
-    for(ifather = 0; //RefinedList->get_inewstart();
-            ifather < RefinedList->get_num_elem(); ifather++)
+    for(ti_ndx_t ifather:allRefinement)
     {
-        
-        EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+            
+        EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
         assert(EmFather); //Help I've been abducted call the FBI!!!
         assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
         assert(EmFather->refined_flag() == 1);
@@ -1996,7 +1994,7 @@ void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_
     
 
     //clear the refined list
-    RefinedList->trashlist();
+    //RefinedList->trashlist();
     
     if(numprocs > 1)
     {

@@ -43,7 +43,7 @@ public:
     void refine2(ti_ndx_t ndx);
     void create_new_node2(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
                      SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary, const int order);
-    void refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_t> &allRefinement);
+    void refine_neigh_update2(const vector<ti_ndx_t> &allRefinement);
     
 private:
     int myid;
