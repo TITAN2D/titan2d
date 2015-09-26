@@ -25,6 +25,7 @@
 
 #include "../header/hpfem.h"
 #include "../header/refined_neighbor_info.h"
+#include "../header/hadapt.h"
 
 #define TARGETPROC -1
 
@@ -884,6 +885,1129 @@ void refine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable,
 }
 
 #else
+void HAdapt::refine_neigh_update2(ElemPtrList* RefinedList, const vector<ti_ndx_t> &allRefinement)
+{
+    
+    Element* EmFather;
+    Element* EmSon[4];
+    Element* EmNeighNew[4];
+    Element* EmNeighOld[2];
+    Node* NdTemp;
+    int ifather, iside, ineigh, ineighp4, isonA, isonB;
+    int ineighme, ineighmep4, ineighson, inewcase, inode;
+    
+    //interproc update only variables
+    int *num_send, *num_recv, *isend;
+    int iproc, ineighm4, ierr, send_tag = 061201 * 2, neigh_proc;
+    unsigned **send, **recv;
+    MPI_Request* request = new MPI_Request[2 * numprocs];
+    
+    /*************************************************************/
+    /* so I won't have to waste time waiting for neighbor update */
+    /* information from other processors later, we all send the  */
+    /* information first, i.e. before we do on processor updates */
+    /* so the other processor's information will already be here */
+    /* when I'm ready for it                                     */
+    /*************************************************************/
+    if(numprocs > 1)
+    {
+        int ineighother;  //only need this variable inside this if statement
+        //so declare here rather than up to and it will disapear when the loop
+        //exits
+        
+        num_send = CAllocI1(numprocs);
+        num_recv = CAllocI1(numprocs);
+        isend = CAllocI1(numprocs);
+        
+        for(iproc = 0; iproc < numprocs; iproc++)
+            num_send[iproc] = num_recv[iproc] = isend[iproc] = 0;
+        
+        /*
+         for(iproc=0;iproc<nump;iproc++)
+         printf("A myid=%d iproc=%d num_send=%d, num_recv=%d\n",
+         myid,iproc,num_send[iproc],num_recv[iproc]);
+         fflush(stdout);
+         MPI_Barrier(MPI_COMM_WORLD);
+         */
+
+        for(ifather = RefinedList->get_inewstart(); ifather < RefinedList->get_num_elem(); ifather++)
+        {
+            
+            EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+            assert(EmFather); //Help I've been abducted call the FBI!!!
+            assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
+            EmSon[0] = EmSon[1] = EmSon[2] = EmSon[3] = NULL;
+            
+            for(ineigh = 0; ineigh < 8; ineigh++)
+            {
+                neigh_proc = EmFather->neigh_proc(ineigh);
+                assert(neigh_proc < numprocs);
+                ineighm4 = ineigh % 4;
+                ineighp4 = ineighm4 + 4;
+                if(ineigh == ineighm4)
+                    ineighother = ineighp4;
+                else
+                    ineighother = ineighm4;
+                if((neigh_proc >= 0) && (neigh_proc != myid))
+                {
+                    num_send[neigh_proc]++;
+                    switch (ineigh)
+                    {
+                        case 0:
+                            isonA = 0;
+                            isonB = 1;
+                            break;
+                        case 7:
+                            isonA = 0;
+                            isonB = 3;
+                            break;
+                        case 1:
+                            isonA = 1;
+                            isonB = 2;
+                            break;
+                        case 4:
+                            isonA = 1;
+                            isonB = 0;
+                            break;
+                        case 2:
+                            isonA = 2;
+                            isonB = 3;
+                            break;
+                        case 5:
+                            isonA = 2;
+                            isonB = 1;
+                            break;
+                        case 3:
+                            isonA = 3;
+                            isonB = 0;
+                            break;
+                        case 6:
+                            isonA = 3;
+                            isonB = 2;
+                            break;
+                        default:
+                            assert(0);
+                            break;
+                    } //switch(ineigh)
+                    
+                    if(!EmSon[isonA])
+                    { //to save a little work, only lookup this
+                      //son if I don't already know him
+                        EmSon[isonA] = (Element*) ElemTable->lookup(EmFather->son(isonA));
+                        assert(EmSon[isonA]);
+                    }
+                    
+                    if(!EmSon[isonB])
+                    {	    //to save a little work, only lookup "other"
+                        //son if I don't already know him
+                        EmSon[isonB] = (Element*) ElemTable->lookup(EmFather->son(isonB));
+                        assert(EmSon[isonB]);
+                    }
+                    
+                    switch (EmFather->generation() - EmFather->neigh_gen(ineigh))
+                    {
+                        case -1:
+                            EmSon[isonA]->set_neighbor(ineighm4, EmFather->neighbor(ineigh));
+                            EmSon[isonA]->set_neighbor(ineighp4, EmFather->neighbor(ineigh));
+                            
+                            EmSon[isonA]->get_neigh_gen(ineighm4, EmSon[isonA]->generation());
+                            EmSon[isonA]->get_neigh_gen(ineighp4, EmSon[isonA]->generation());
+                            
+                            EmSon[isonA]->set_neigh_proc(ineighm4, neigh_proc);
+                            EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                            
+                            NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineighp4));
+                            assert(NdTemp);
+                            NdTemp->info(SIDE);
+                            //printf("node update yada 1\n");
+                            
+                            if(ineigh < 4)
+                            {
+                                //printf("node update yada 2\n");
+                                NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(CORNER);
+                            }
+                            
+                            if(EmFather->neigh_proc(ineighother) == myid)
+                            {
+                                //one neighbor on this side belongs to another processor and
+                                //has just been taken care of
+                                //however the other neighbor on this side belongs to my
+                                //processor and I need to update him now... the logic is simpler
+                                //and cleaner to do it here than with the on processor update
+                                //
+                                //Since the neighbors on this side are already younger than me
+                                //I know they could not have been adapted already.  That means
+                                //all I need to do are update this neighbor and myself, in other
+                                //words I know the other neighbor on this side can not possibly
+                                //be an OLDFATHER.
+                                
+                                //EmNeighOld[0] is only being assigned here for clarity, i.e.
+                                //to show the old neighbor is the same as the newneighbor
+                                EmNeighNew[0] = EmNeighOld[0] = (Element*) ElemTable->lookup(
+                                        EmFather->neighbor(ineighother));
+                                
+                                assert(EmNeighNew[0]);
+                                
+                                for(ineighme = 0; ineighme < 4; ineighme++)
+                                    if(EmFather->key()==EmNeighNew[0]->neighbor(ineighme))
+                                        break;
+                                
+                                assert(ineighme < 4);
+                                ineighmep4 = ineighme + 4;
+                                
+                                EmSon[isonB]->set_neighbor(ineighm4, EmFather->neighbor(ineighother));
+                                EmSon[isonB]->set_neighbor(ineighp4, EmFather->neighbor(ineighother));
+                                EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonB]->key());
+                                EmNeighNew[0]->set_neighbor(ineighmep4, EmSon[isonB]->key());
+                                
+                                EmSon[isonB]->get_neigh_gen(ineighm4, EmNeighNew[0]->generation());
+                                EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation());
+                                
+                                EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonB]->generation());
+                                EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonB]->generation());
+                                
+                                EmSon[isonB]->set_neigh_proc(ineighm4, myid);
+                                EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(SIDE);
+                                //printf("node update yada 1\n");
+                                
+                                if(ineigh >= 4)
+                                {
+                                    //printf("node update yada 2\n");
+                                    NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineighp4));
+                                    assert(NdTemp);
+                                    NdTemp->info(CORNER);
+                                }
+                            }
+                            
+                            break;
+                        case 0: //old neighbor was same generation as OLDFATHER and is
+                            //one generation older than NEWSON's so, because of the "new
+                            //difference" in generation we know that OLDFATHER's 2 corner
+                            //nodes on this side are actually CORNER's and not S_C_CON's
+                            if(ineigh < 4)
+                            {	    //only do once, this if should not be necessary
+                                //but better safe than sorry
+                                
+                                isonB = (isonA + 1) % 4;
+                                if(!EmSon[isonB])
+                                {	      //to save a little work, only lookup this
+                                    //son if I don't already know him
+                                    EmSon[isonB] = (Element*) ElemTable->lookup(EmFather->son(isonB));
+                                    assert(EmSon[isonB]);
+                                }
+                                
+                                EmSon[isonA]->set_neighbor(ineighm4, EmFather->neighbor(ineigh));
+                                EmSon[isonA]->set_neighbor(ineighp4, EmFather->neighbor(ineigh));
+                                EmSon[isonB]->set_neighbor(ineighm4, EmFather->neighbor(ineigh));
+                                EmSon[isonB]->set_neighbor(ineighp4, EmFather->neighbor(ineigh));
+                                
+                                EmSon[isonA]->get_neigh_gen(ineighm4, EmFather->generation());
+                                EmSon[isonA]->get_neigh_gen(ineighp4, EmFather->generation());
+                                EmSon[isonB]->get_neigh_gen(ineighm4, EmFather->generation());
+                                EmSon[isonB]->get_neigh_gen(ineighp4, EmFather->generation());
+                                
+                                EmSon[isonA]->set_neigh_proc(ineighm4, neigh_proc);
+                                EmSon[isonB]->set_neigh_proc(ineighm4, neigh_proc);
+                                
+                                EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                                EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineigh));
+                                assert(NdTemp);
+                                NdTemp->info(CORNER);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(S_S_CON);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(S_C_CON);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(S_S_CON);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key((ineigh + 1) % 4));
+                                assert(NdTemp);
+                                NdTemp->info(CORNER);
+                                
+                            }
+                            break;
+                        default:
+                            printf("FUBAR in refine_neigh_update() interproc part 1\n");
+                            assert(0);
+                            break;
+                    }		//switch(EmFather->generation-EmFather->neigh_gen[ineigh])
+                }		//if((neigh_proc>=0)&&(neigh_proc!=myid))
+                
+            }		//for(ineigh=0;ineigh<8;ineigh++)
+        }		//for(ifather=RefinedList->get_inewstart();...
+        
+        MPI_Alltoall(num_send, 1, MPI_INT, num_recv, 1, MPI_INT, MPI_COMM_WORLD);
+        num_send[myid] = num_recv[myid] = 0;
+        
+        int max_num_send = 0, max_num_recv = 0;
+        
+        for(iproc = 0; iproc < numprocs; iproc++)
+        {
+            if(num_send[iproc] > max_num_send)
+                max_num_send = num_send[iproc];
+            if(num_recv[iproc] > max_num_recv)
+                max_num_recv = num_recv[iproc];
+            //printf("B myid=%d iproc=%d num_send=%d, num_recv=%d\n",
+            //myid,iproc,num_send[iproc],num_recv[iproc]);
+        }
+        fflush(stdout);
+        
+        send = CAllocU2(numprocs, 4 * KEYLENGTH * max_num_send);
+        recv = CAllocU2(numprocs, 4 * KEYLENGTH * max_num_recv);
+        
+        for(iproc = 0; iproc < numprocs; iproc++)
+            if((iproc != myid) && (num_recv[iproc] > 0))
+                ierr = MPI_Irecv((void *) recv[iproc], 4 * KEYLENGTH * num_recv[iproc], MPI_UNSIGNED, iproc,
+                                 send_tag + iproc, MPI_COMM_WORLD, (request + numprocs + iproc));
+        
+        for(ifather = RefinedList->get_inewstart(); ifather < RefinedList->get_num_elem(); ifather++)
+        {
+            
+            EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+            assert(EmFather); //Help I've been abducted call the FBI!!!
+            assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
+            
+            for(iside = 0; iside < 4; iside++)
+            {
+                isonA = iside;
+                isonB = (iside + 1) % 4;
+                
+                ineigh = iside;
+                neigh_proc = EmFather->neigh_proc(ineigh);
+                if((neigh_proc >= 0) && (neigh_proc != myid))
+                {
+                    
+                    //The element I want my neighbor proc to update
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])),EmFather->neighbor(ineigh));
+                    //ME
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->key());
+                    
+                    switch (EmFather->generation() - EmFather->neigh_gen(ineigh))
+                    {
+                        case -1: //I'm one generation older than my old neighbor so
+                            //I know he couldn't have just refined and I know I have to
+                            //introduce him to sonA
+                            
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])),EmFather->son(isonA));
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])),EmFather->son(isonA));
+                            
+                            break;
+                        case 0: //I'm the same generation as my old neighbor so I
+                            //know I have to introduce him to both my sons
+
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])),EmFather->son(isonB));
+                            SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])),EmFather->son(isonA));
+                            break;
+                        default:
+                            printf("FUBAR\n");
+                            assert(0);
+                            break;
+                    }
+                    
+                    isend[neigh_proc]++;
+                }
+                
+                ineigh = iside + 4;
+                neigh_proc = EmFather->neigh_proc(ineigh);
+                if((neigh_proc >= 0) && (neigh_proc != myid))
+                {
+                    //I know I'm one generation older than my old neighbor so
+                    //I know he couldn't have just refined and I know I have to
+                    //introduce them to sonB, because he's neighbor 4<=ineigh<8
+                    
+                    //The element I want my neighbor proc to update
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])),EmFather->neighbor(ineigh));
+                    //ME
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 1) * KEYLENGTH])),EmFather->key());
+
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 2) * KEYLENGTH])), EmFather->son(isonB));
+                    SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 3) * KEYLENGTH])), EmFather->son(isonB));
+                    
+                    isend[neigh_proc]++;
+                }
+            }	  //for(iside=0;iside<4;iside++)
+            
+        }	  //for(ifather=RefinedList->get_inewstart();...
+        
+        //send the update neighbor information to the other processors
+        for(iproc = 0; iproc < numprocs; iproc++)
+            if((iproc != myid) && (num_send[iproc] > 0))
+                ierr = MPI_Isend((void *) send[iproc], 4 * KEYLENGTH * num_send[iproc], MPI_UNSIGNED, iproc,
+                                 send_tag + myid, MPI_COMM_WORLD, (request + iproc));
+        CDeAllocI1(isend);
+    }	  //if(nump>1)
+    
+    /*************************************************************/
+    /* now do the on processor updates while I'm waiting to      */
+    /* receive neighbor update information from other processors */
+    /*************************************************************/
+
+    for(ifather = RefinedList->get_inewstart(); ifather < RefinedList->get_num_elem(); ifather++)
+    {
+        
+        EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+        assert(EmFather); //Help I've been abducted call the FBI!!!
+        assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
+        
+        NdTemp = (Node*) NodeTable->lookup(EmFather->key());
+        assert(NdTemp);
+        NdTemp->info(CORNER);
+        
+        //These are my sons, I'm going to introduce them to my neighbors
+        for(isonA = 0; isonA < 4; isonA++)
+        {
+            EmSon[isonA] = (Element*) ElemTable->lookup(EmFather->son(isonA));
+            assert(EmSon[isonA]); //MY son has been abducted call the FBI!!!
+            
+            NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->key());
+            assert(NdTemp);
+            NdTemp->info(BUBBLE);
+            
+            NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key((isonA + 1) % 4 + 4));
+            assert(NdTemp);
+            NdTemp->info(SIDE);
+        }
+        
+        //visit my neighbors on each side
+        for(iside = 0; iside < 4; iside++)
+        {
+            
+            ineigh = iside;
+            ineighp4 = ineigh + 4;
+            isonA = ineigh;
+            isonB = (ineighp4 + 1) % 4;
+            
+            if(EmFather->neigh_proc(ineigh) == -1)
+            {
+                //handle map boundary special
+                EmSon[isonA]->set_neighbor(ineigh, sfc_key_zero);
+                EmSon[isonA]->set_neighbor(ineighp4, sfc_key_zero);
+                EmSon[isonB]->set_neighbor(ineigh, sfc_key_zero);
+                EmSon[isonB]->set_neighbor(ineighp4, sfc_key_zero);
+
+                EmSon[isonA]->get_neigh_gen(ineigh, 0);
+                EmSon[isonA]->get_neigh_gen(ineighp4, 0);
+                EmSon[isonB]->get_neigh_gen(ineigh, 0);
+                EmSon[isonB]->get_neigh_gen(ineighp4, 0);
+                
+                EmSon[isonA]->set_neigh_proc(ineigh, -1);
+                EmSon[isonB]->set_neigh_proc(ineigh, -1);
+                
+                EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+            }
+            else if((EmFather->neigh_proc(ineigh) == myid) && ((EmFather->neigh_proc(ineighp4) == myid)
+                    || (EmFather->neigh_proc(ineighp4) == -2)))
+            {
+                //case where one neighbor on this side is on my proc while the other
+                //is on another proc has already been handled up above, when packing
+                //the information to send to the other proc.
+                
+                //knock knock, Hello Neighbors
+                EmNeighOld[0] = (Element*) ElemTable->lookup(EmFather->neighbor(ineigh));
+                
+                assert(EmNeighOld[0]);
+                
+                EmNeighOld[1] = (Element*) ElemTable->lookup(EmFather->neighbor(ineighp4));
+                assert(EmNeighOld[1]);
+                EmNeighNew[0] = EmNeighNew[1] = EmNeighNew[2] = EmNeighNew[3] = NULL;
+                
+                for(ineighme = 0; ineighme < 8; ineighme++)
+                {
+                    if(EmFather->key()==EmNeighOld[1]->neighbor(ineighme))
+                        break;
+                    
+                }
+                if(!(ineighme < 8))
+                {
+                    cout<<"FUBAR 0 detected in refine_neigh_update\nEmFather={"<<EmFather->key()<<"}\n";
+                    cout<<"EmNeighOld[0]={"<<EmNeighOld[0]->key()<<"} ineigh="<<ineigh<<" isonA="<<isonA<<" isonB="<<isonB<<"\n";
+                    cout<<"aborting!!"<<endl;
+                    
+                    assert(ineighme < 8);
+                }
+                
+                //There are 5 cases I need to worry about about
+                //A: my old neighbor is one generation older than me, only
+                //   possible if we've both been refined
+                //B: my old neighbor is of my generation and hasn't been refined
+                //C: my old neighbor is of my generation and has been refined
+                //D: my old neighbor is one generation younger than me and hasn't
+                //   been refined
+                //E: my old neighbor is one generation younger than me and has
+                //   been refined
+                //
+                //I'm going to compress this into one of 3 cases I need to handle
+                //0: case A: same as case E but from the other side, only need
+                //   to do once so don't do anything this time
+                //1: my new neighbor is my generation
+                //2: my new neighbor is one generation younger than me
+                //3: my new neighbor is two generations younger than me
+                
+                //this switch loop compresses cases
+                switch (EmNeighOld[0]->generation() - EmFather->generation())
+                {
+                    case -1:
+                        //this is a case A
+                        inewcase = 0;
+                        assert(EmNeighOld[0]->adapted_flag()==OLDFATHER);
+                        ineighme = ineighmep4 = -1; //for sanity check
+                        break;
+                    case 0:
+                        assert(ineighme < 4);
+                        ineighmep4 = ineighme + 4;
+                        
+                        if(EmNeighOld[0]->adapted_flag() == OLDFATHER)
+                        {
+                            //this is a case C
+                            inewcase = 2;
+                            
+                            EmNeighNew[0] = (Element*) ElemTable->lookup(EmNeighOld[0]->son((ineighme + 1) % 4));
+                            assert(EmNeighNew[0]);
+                            
+                            EmNeighNew[1] = (Element*) ElemTable->lookup(EmNeighOld[0]->son(ineighme));
+                            assert(EmNeighNew[1]);
+                            EmNeighNew[2] = EmNeighNew[3] = NULL;
+                        }
+                        else
+                        {
+                            //this is a case B
+                            if(EmNeighOld[0]->adapted_flag() > TOBEDELETED)
+                            {
+                                inewcase = 1;
+                                EmNeighNew[0] = EmNeighOld[0];
+                                EmNeighNew[1] = EmNeighNew[2] = EmNeighNew[3] = NULL;
+                            }
+                            else
+                                inewcase = 0;
+                            
+                        }
+                        break;
+                    case 1:
+                        assert(ineighme < 4);
+                        ineighmep4 = ineighme + 4;
+                        
+                        if((EmNeighOld[0]->adapted_flag() == OLDFATHER) || (EmNeighOld[1]->adapted_flag() == OLDFATHER))
+                        {
+                            //this is a case E
+                            inewcase = 3;
+                            
+                            if(EmNeighOld[0]->adapted_flag() == OLDFATHER)
+                            {
+                                EmNeighNew[0] = (Element*) ElemTable->lookup(EmNeighOld[0]->son((ineighme + 1) % 4));
+                                assert(EmNeighNew[0]);
+                                
+                                EmNeighNew[1] = (Element*) ElemTable->lookup(EmNeighOld[0]->son(ineighme));
+                                assert(EmNeighNew[1]);
+                            }
+                            else
+                                EmNeighNew[1] = EmNeighNew[0] = EmNeighOld[0];
+                            
+                            if(EmNeighOld[1]->adapted_flag() == OLDFATHER)
+                            {
+                                EmNeighNew[2] = (Element*) ElemTable->lookup(EmNeighOld[1]->son((ineighme + 1) % 4));
+                                assert(EmNeighNew[2]);
+                                
+                                EmNeighNew[3] = (Element*) ElemTable->lookup(EmNeighOld[1]->son(ineighme));
+                                assert(EmNeighNew[3]);
+                            }
+                            else
+                                EmNeighNew[3] = EmNeighNew[2] = EmNeighOld[1];
+                        }
+                        else
+                        {
+                            //this is a case D
+                            inewcase = 2;
+                            
+                            EmNeighNew[0] = EmNeighOld[0];
+                            EmNeighNew[1] = EmNeighOld[1];
+                            EmNeighNew[2] = EmNeighNew[3] = NULL;
+                        }
+                        break;
+                    default:
+                        inewcase = -1;
+                        
+                        printf("FUBAR 1 detected in refine_neigh_update! aborting.\n");
+                        assert(0);
+                        break;
+                } //switch based on difference in generation between me and my old neighbor, this is used to reduce the number of cases from 5 to 3 (based on new neighbor generation)
+                
+                //sanity check
+                assert((ineigh >= 0) && (ineigh < 4));
+                assert(ineighp4 == ineigh + 4);
+                if(inewcase)
+                {
+                    assert((ineighme >= 0) && (ineighme < 4));
+                    assert(ineighmep4 == ineighme + 4);
+                }
+                
+                //now only deal with the new cases, and yes I know that I
+                //am resetting neighbor information in ghost cells but
+                //not neighbor information of the original cells on other
+                //processors, I'm going to fix that in a minute
+                switch (inewcase)
+                {
+                    case 0:
+                        //case A
+                        break;
+                    case 1:
+                        //case B
+                        //new neighbor generation is my (the OLDFATHER) generation
+                        EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonB]->key());
+                        EmNeighNew[0]->set_neighbor(ineighmep4, EmSon[isonA]->key());
+
+                        EmSon[isonA]->set_neighbor(ineigh, EmNeighNew[0]->key());
+                        EmSon[isonA]->set_neighbor(ineighp4, EmNeighNew[0]->key());
+                        EmSon[isonB]->set_neighbor(ineigh, EmNeighNew[0]->key());
+                        EmSon[isonB]->set_neighbor(ineighp4, EmNeighNew[0]->key());
+                        
+                        EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        
+                        EmSon[isonA]->get_neigh_gen(ineigh, EmNeighNew[0]->generation());
+                        EmSon[isonA]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation());
+                        EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[0]->generation());
+                        EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation());
+                        
+                        EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                        EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                        
+                        EmNeighNew[0]->set_neigh_proc(ineighme, EmFather->myprocess());
+                        EmNeighNew[0]->set_neigh_proc(ineighmep4, EmFather->myprocess());
+                        
+                        //update the nodes on this side
+                        //The new difference in generation tells me the OLDFATHER's
+                        //2 corner nodes on this side are actually CORNER's and not
+                        //S_C_CON's
+                        
+                        inode = ineigh;
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(CORNER);
+                        
+                        inode = ineighp4;
+                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(S_S_CON);
+                        
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(S_C_CON);
+                        
+                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(S_S_CON);
+                        
+                        inode = (ineigh + 1) % 4;
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(CORNER);
+                        
+                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        
+                        break;
+                    case 2:
+                        //cases C & D
+                        //new neighbor generation is my son's generation
+                        EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonA]->key());
+                        EmNeighNew[0]->set_neighbor(ineighmep4, EmSon[isonA]->key());
+                        EmNeighNew[1]->set_neighbor(ineighme, EmSon[isonB]->key());
+                        EmNeighNew[1]->set_neighbor(ineighmep4, EmSon[isonB]->key());
+                        
+                        EmSon[isonA]->set_neighbor(ineigh, EmNeighNew[0]->key());
+                        EmSon[isonA]->set_neighbor(ineighp4, EmNeighNew[0]->key());
+                        EmSon[isonB]->set_neighbor(ineigh, EmNeighNew[1]->key());
+                        EmSon[isonB]->set_neighbor(ineighp4, EmNeighNew[1]->key());
+                        
+                        EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        EmNeighNew[1]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[1]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        
+                        EmNeighNew[0]->set_neigh_proc(ineighmep4, -2);
+                        EmNeighNew[1]->set_neigh_proc(ineighmep4, -2);
+                        EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                        EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                        
+                        EmSon[isonA]->get_neigh_gen(ineigh, EmNeighNew[0]->generation());
+                        EmSon[isonA]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation());
+                        EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[0]->generation());
+                        EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation());
+                        
+                        EmSon[isonA]->set_neigh_proc(ineigh, EmNeighNew[0]->myprocess());
+                        
+                        EmSon[isonB]->set_neigh_proc(ineigh, EmNeighNew[1]->myprocess());
+                        
+                        EmNeighNew[0]->set_neigh_proc(ineighme, EmFather->myprocess());
+                        EmNeighNew[1]->set_neigh_proc(ineighme, EmFather->myprocess());
+                        
+                        //update the nodes on this side
+                        //don't update my corner nodes because they could be S_C_CON's
+                        //if they should be S_C_CON's and I reset them to CORNERs I
+                        //will no longer conserve mass/volume in a dramatically
+                        //observable fashion
+                        
+                        if(EmSon[isonA]->neigh_gen((ineigh + 3) % 4) == EmSon[isonA]->generation())
+                        {
+                            //neighbor before (tested here) and after this (the ineigh)
+                            //corner (i.e. the ineigh neighbor) are the same generation
+                            //as me, therefor this (the ineigh) node is a CORNER and not
+                            //an S_C_CON node
+                            inode = ineigh;
+                            NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                            assert(NdTemp);
+                            NdTemp->info(CORNER);
+                        }
+                        
+                        inode = ineigh + 4;
+                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(SIDE);
+                        
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(CORNER);
+                        
+                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(SIDE);
+                        
+                        if(EmSon[isonB]->neigh_gen((ineigh + 1) % 4) == EmSon[isonB]->generation())
+                        {
+                            //neighbor before (i.e. the ineigh neighbor) and after
+                            //(tested here) this (the (ineigh+1)%4) corner are the
+                            //the same generation as me, therefore this (the
+                            //(ineigh+1)%4) node is a CORNER and not an S_C_CON node
+                            inode = (ineigh + 1) % 4;
+                            NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                            assert(NdTemp);
+                            NdTemp->info(CORNER);
+                        }
+                        
+                        break;
+                    case 3:
+                        //case E
+                        
+                        //update the nodes on this side
+                        
+                        inode = ineigh; //father corner node
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(CORNER);
+                        
+                        inode = ineighp4; //father edge node
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(CORNER);
+                        
+                        inode = (ineigh + 1) % 4; //father corner node
+                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
+                        assert(NdTemp);
+                        NdTemp->info(CORNER);
+                        
+                            
+                        EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonA]->key());
+                        EmNeighNew[0]->set_neighbor(ineighmep4, EmSon[isonA]->key());
+                        EmNeighNew[1]->set_neighbor(ineighme, EmSon[isonA]->key());
+                        EmNeighNew[1]->set_neighbor(ineighmep4, EmSon[isonA]->key());
+
+                        EmNeighNew[2]->set_neighbor(ineighme, EmSon[isonB]->key());
+                        EmNeighNew[2]->set_neighbor(ineighmep4, EmSon[isonB]->key());
+                        EmNeighNew[3]->set_neighbor(ineighme, EmSon[isonB]->key());
+                        EmNeighNew[3]->set_neighbor(ineighmep4, EmSon[isonB]->key());
+
+                        EmSon[isonA]->set_neighbor(ineigh, EmNeighNew[0]->key());
+                        EmSon[isonA]->set_neighbor(ineighp4, EmNeighNew[1]->key());
+
+                        EmSon[isonB]->set_neighbor(ineigh, EmNeighNew[2]->key());
+                        EmSon[isonB]->set_neighbor(ineighp4, EmNeighNew[3]->key());
+                        
+                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        
+                        EmNeighNew[0]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[0]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        EmNeighNew[1]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[1]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        EmNeighNew[2]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[2]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        EmNeighNew[3]->get_neigh_gen(ineighme, EmSon[isonA]->generation());
+                        EmNeighNew[3]->get_neigh_gen(ineighmep4, EmSon[isonA]->generation());
+                        
+                        EmSon[isonA]->get_neigh_gen(ineigh, EmNeighNew[0]->generation());
+                        EmSon[isonA]->get_neigh_gen(ineighp4, EmNeighNew[0]->generation());
+                        
+                        EmSon[isonB]->get_neigh_gen(ineigh, EmNeighNew[2]->generation());
+                        EmSon[isonB]->get_neigh_gen(ineighp4, EmNeighNew[2]->generation());
+                        
+                        EmNeighNew[0]->set_neigh_proc(ineighmep4, -2);
+                        EmNeighNew[1]->set_neigh_proc(ineighmep4, -2);
+                        EmNeighNew[2]->set_neigh_proc(ineighmep4, -2);
+                        EmNeighNew[3]->set_neigh_proc(ineighmep4, -2);
+                        
+                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        
+                        EmSon[isonA]->set_neigh_proc(ineigh, EmFather->neigh_proc(ineigh));
+                        
+                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        
+                        EmSon[isonB]->set_neigh_proc(ineigh, EmFather->neigh_proc(ineighp4));
+                        
+                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        
+                        inode = ineighp4; //sonA edge node
+                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
+                        assert(NdTemp);
+                        if(EmSon[isonA]->neighbor(ineigh)==EmSon[isonA]->neighbor(ineighp4))
+                        {
+                            EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                            NdTemp->info(SIDE);
+                        }
+                        else
+                        {
+                            EmSon[isonA]->set_neigh_proc(ineighp4, EmSon[isonA]->neigh_proc(ineigh));
+                            
+                            NdTemp->info(S_C_CON);
+                            
+                            inode = ineighmep4;
+                            
+                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[0]->node_key(inode));
+                            assert(NdTemp);
+                            NdTemp->info(S_S_CON);
+                            
+                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[1]->node_key(inode));
+                            assert(NdTemp);
+                            NdTemp->info(S_S_CON);
+                        }
+                        
+                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        inode = ineighp4; //sonB edge node
+                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
+                        assert(NdTemp);
+                        if(EmSon[isonB]->neighbor(ineigh)==EmSon[isonB]->neighbor(ineighp4))
+                        {
+                            EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                            NdTemp->info(SIDE);
+                        }
+                        else
+                        {
+                            EmSon[isonB]->set_neigh_proc(ineighp4, EmSon[isonB]->neigh_proc(ineigh));
+                            
+                            NdTemp->info(S_C_CON);
+                            
+                            inode = ineighmep4;
+                            
+                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[2]->node_key(inode));
+                            assert(NdTemp);
+                            NdTemp->info(S_S_CON);
+                            
+                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[3]->node_key(inode));
+                            assert(NdTemp);
+                            NdTemp->info(S_S_CON);
+                        }
+                        
+                        break;
+                    default:
+                        printf("FUBAR 2 detected in refine_neigh_update! aborting.\n");
+                        assert(0);
+                        
+                        break;
+                } //switch(inewcase), case based on generation of my new neighbor
+                
+            } //else: not a map boundary
+            
+        } //iside loop
+        
+    } //ifather loop
+    
+    /*************************************************************/
+    /* The interprocessor update information should be here by   */
+    /* now or at the very least I won't have to weight very long */
+    /* receive neighbor update information from other processors */
+    /*************************************************************/
+
+    //now complete the interprocessor update
+    if(numprocs > 1)
+    {
+        int NumProcsNotRecvd, ifrecvd, nodeorder, irecvd;
+        MPI_Status status;
+        Element *EmTemp, *EmNeigh;
+        
+        do
+        {
+            
+            for(iproc = 0; iproc < numprocs; iproc++)
+            {
+                //printf("stop me\n");
+                if(num_recv[iproc] > 0)
+                {
+                    //only check processors I haven't already handled
+                    ifrecvd = 0;
+                    //printf("myid=%d before Test",myid); fflush(stdout);
+                    MPI_Test(request + numprocs + iproc, &ifrecvd, &status);
+                    //printf("myid=%d after Test",myid); fflush(stdout);
+                    if(ifrecvd)
+                    {
+                        
+                        for(irecvd = 0; irecvd < num_recv[iproc]; irecvd++)
+                        {
+                            //one by one check my Element's that my neighbor processor
+                            //says I need to update
+                            
+                            //Hi I'm EmTemp
+                            EmTemp = (Element*) ElemTable->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 0) * KEYLENGTH])));
+                            /*
+                             if(compare_key(EmTemp->key,ElemDebugKey)){
+                             ElemBackgroundCheck(El_Table,NodeTable,ElemDebugKey,fpbg);
+                             printf("stop me\n");
+                             }
+                             */
+                            if(!EmTemp)
+                            {
+                                printf("refine_neigh_update(): myid=%d receiving from iproc=%d, %dth element being received is {%10u,%10u} but this off processor neighbor is missing\n",
+                                       myid, iproc, irecvd, recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 0],
+                                       recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 1]);
+                                ElemBackgroundCheck(ElemTable, NodeTable, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 0) * KEYLENGTH])),
+                                stdout);
+                                assert(EmTemp);
+                            }
+                            
+                            //my old neighbor will introduce his NEWSONs to me
+                            for(ineigh = 0; ineigh < 4; ineigh++)
+                                if(EmTemp->neighbor(ineigh)==sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH])))
+                                    break;
+                            assert(ineigh < 4); //I don't know this Element pretending
+                            //to be my neighbor, I'm calling the FBI to report a
+                            //suspicious person... err.. suspicious Element
+                            //note it is impossible for my old neighbor to be younger
+                            //than me because there is no direct triggered refinement
+                            //across the interprocessor boundary, the "adapted" flag
+                            //value -BUFFER is an _instruction_ by my neighbor on
+                            //another processor telling me to refine, but he can't
+                            //refine unless he is the same age as me or older than me.
+                            ineighp4 = ineigh + 4;
+                            
+                            EmNeigh = (Element*) ElemTable->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH])));
+                            if(EmNeigh)
+                            {
+                                if(!(sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH]))==EmNeigh->key()))
+                                {
+                                    printf("refine_neigh_update(): myid=%d receiving from iproc=%d, %dth element being received is {%10u,%10u}\n That element is supposed to have an onprocessor element {%10u,%10u} as a neighbor but that \"on processor element\" thinks it key is ",
+                                           myid, iproc, irecvd, recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 0],
+                                           recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 1],
+                                           recv[iproc][(4 * irecvd + 1) * KEYLENGTH + 0],
+                                           recv[iproc][(4 * irecvd + 1) * KEYLENGTH + 1]);
+                                    cout<<"{"<<EmNeigh->key()<<"}\n";
+                                    ElemBackgroundCheck(ElemTable, NodeTable,
+                                                        sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 0) * KEYLENGTH])), stdout);
+                                    ElemBackgroundCheck(ElemTable, NodeTable,
+                                                        sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 1) * KEYLENGTH])), stdout);
+                                    ElemBackgroundCheck(ElemTable, NodeTable, EmNeigh->key(), stdout);
+                                    assert(EmNeigh);
+                                }
+                                EmNeigh->void_bcptr();
+                                ElemTable->removeElement(EmNeigh);
+                            }
+                            
+                            //EmFather=(Element*) El_Table->lookup(EmTemp->father);
+                            
+                            if(EmTemp->adapted_flag() == OLDFATHER)
+                            {
+                                //I know my neighbor was my generation, and we both refined
+                                //so the corners I share with this old neighbor are CORNERs
+                                //and not S_C_CONs
+                                isonA = ineigh;
+                                isonB = (ineigh + 1) % 4;
+                                
+                                inode = isonA;
+                                NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
+                                assert(NdTemp);
+                                NdTemp->info(CORNER);
+                                
+                                inode = isonB;
+                                NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
+                                assert(NdTemp);
+                                NdTemp->info(CORNER);
+                                
+                                EmSon[0] = EmSon[1] = EmSon[2] = EmSon[3] = NULL;
+                                EmSon[isonA] = (Element*) ElemTable->lookup(EmTemp->son(isonA));
+                                assert(EmSon[isonA]);
+                                
+                                EmSon[isonB] = (Element*) ElemTable->lookup(EmTemp->son(isonB));
+                                assert(EmSon[isonA]);
+                                
+                                
+                                EmSon[isonA]->set_neighbor(ineigh, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 2) * KEYLENGTH])));
+                                EmSon[isonA]->set_neighbor(ineighp4, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 2) * KEYLENGTH])));
+
+                                //bob
+                                EmSon[isonB]->set_neighbor(ineigh, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 3) * KEYLENGTH])));
+                                EmSon[isonB]->set_neighbor(ineighp4, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 3) * KEYLENGTH])));
+
+                                EmSon[isonA]->get_neigh_gen(ineigh, EmSon[isonA]->generation());
+                                EmSon[isonA]->get_neigh_gen(ineighp4, EmSon[isonA]->generation());
+                                EmSon[isonB]->get_neigh_gen(ineigh, EmSon[isonA]->generation());
+                                EmSon[isonB]->get_neigh_gen(ineighp4, EmSon[isonA]->generation());
+                                
+                                EmSon[isonA]->set_neigh_proc(ineigh, iproc);
+                                EmSon[isonB]->set_neigh_proc(ineigh, iproc);
+                                
+                                EmSon[isonA]->set_neigh_proc(ineighp4, -2);
+                                EmSon[isonB]->set_neigh_proc(ineighp4, -2);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(CORNER);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(SIDE);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(ineighp4));
+                                assert(NdTemp);
+                                NdTemp->info(SIDE);
+                            }
+                            else
+                            { //my oldneighbor was either a generation older than me
+                              //or he was my generation,
+                            
+                                if(EmTemp->neigh_gen(ineigh) == EmTemp->generation())
+                                {
+                                    //he was my generation so the two corner nodes we
+                                    //shared are CORNER and not S_C_CONs
+                                    inode = ineigh;
+                                    NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
+                                    assert(NdTemp);
+                                    NdTemp->info(CORNER);
+                                    
+                                    inode = (ineigh + 1) % 4;
+                                    NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
+                                    assert(NdTemp);
+                                    NdTemp->info(CORNER);
+                                }
+                                else
+                                {
+                                    //he was a generation older than me (his son is now my
+                                    //generation so if my neighbor element's who share the
+                                    //corner's I share with the new son are my generation,
+                                    //then these shared corners are CORNERs and not S_C_CONs
+                                    if(EmTemp->neigh_gen((ineigh + 3) % 4) == EmTemp->generation())
+                                    {
+                                        inode = ineigh;
+                                        NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
+                                        assert(NdTemp);
+                                        NdTemp->info(CORNER);
+                                    }
+                                    
+                                    if(EmTemp->neigh_gen((ineigh + 1) % 4) == EmTemp->generation())
+                                    {
+                                        inode = (ineigh + 1) % 4;
+                                        NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(inode));
+                                        assert(NdTemp);
+                                        NdTemp->info(CORNER);
+                                    }
+                                }
+                                
+                                EmTemp->set_neighbor(ineigh, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 2) * KEYLENGTH])));
+
+                                EmTemp->set_neighbor(ineighp4, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 3) * KEYLENGTH])));
+
+                                EmTemp->get_neigh_gen(ineighp4, EmTemp->neigh_gen(ineigh) + 1);
+                                EmTemp->get_neigh_gen(ineigh, EmTemp->neigh_gen(ineigh) + 1);
+                                
+                                EmTemp->set_neigh_proc(ineigh, iproc);
+                                
+                                NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(ineighp4));
+                                assert(NdTemp);
+                                
+                                if(EmTemp->neighbor(ineigh)==EmTemp->neighbor(ineighp4))
+                                {
+                                    EmTemp->set_neigh_proc(ineighp4, -2);
+                                    NdTemp->info(SIDE);
+                                }
+                                else
+                                {
+                                    EmTemp->set_neigh_proc(ineighp4, iproc);
+                                    NdTemp->info(S_C_CON);
+                                    /*
+                                     if(compare_key(EmTemp->key,ElemDebugKey)){
+                                     ElemBackgroundCheck(El_Table,NodeTable,ElemDebugKey,fpbg);
+                                     printf("stop me 2\n");
+                                     }
+                                     */
+                                }
+                                
+                                if(EmTemp->generation() > EmTemp->neigh_gen(ineigh))
+                                {
+                                    NdTemp = (Node*) NodeTable->lookup(EmTemp->node_key(EmTemp->which_son()));
+                                    assert(NdTemp);
+                                    NdTemp->info(CORNER);
+                                }
+                                //ElemBackgroundCheck(El_Table,NodeTable,EmTemp->key,fpbg);
+                                
+                            }		  //else
+                            
+                        }		  //for(irecvd=0;irecvd<num_recv[iproc];irecvd++)
+                        num_recv[iproc] = 0;
+                    }		  //if(ifrecvd)
+                }		  //if(num_recv[iproc]>0)
+                
+            }		  //for(iproc=0;iproc<nump;iproc++)
+            NumProcsNotRecvd = 0;
+            for(iproc = 0; iproc < numprocs; iproc++)
+                if(num_recv[iproc] > 0)
+                    NumProcsNotRecvd++;
+            
+        }
+        while (NumProcsNotRecvd > 0);
+        
+        CDeAllocU2(recv);
+        CDeAllocI1(num_recv);
+    }		  //if(nump>1)
+    
+
+    for(ifather = 0; //RefinedList->get_inewstart();
+            ifather < RefinedList->get_num_elem(); ifather++)
+    {
+        
+        EmFather = RefinedList->get(ifather); //Hello I'm the OLDFATHER
+        assert(EmFather); //Help I've been abducted call the FBI!!!
+        assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
+        assert(EmFather->refined_flag() == 1);
+        EmFather->set_adapted_flag(TOBEDELETED); //I've lived a good life, it's my time to die
+        EmFather->void_bcptr();
+        ElemTable->removeElement(EmFather);
+    }
+    //RefinedList->set_inewstart(RefinedList->get_num_elem());
+    
+
+    //clear the refined list
+    RefinedList->trashlist();
+    
+    if(numprocs > 1)
+    {
+        MPI_Barrier (MPI_COMM_WORLD);
+        CDeAllocU2(send);
+        CDeAllocI1(num_send);
+    }
+    
+    return;
+}
+
 void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int nump, int myid, void* RL,
                          TimeProps* timeprops_ptr)
 {

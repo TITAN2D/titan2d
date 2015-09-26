@@ -52,7 +52,7 @@ extern void htflush(NodeHashTable*, NodeHashTable*, int);
 
 void HAdapt::adapt(int h_count, double target,
              FluxProps *fluxprops, //doesn't need fluxprops
-             TimeProps* timeprops_ptr, int num_buffer_layer)
+             int num_buffer_layer)
 /*-------------
  scanning element hashtable, if the error of an element is bigger than the target error
  1). check if it has been marked for refinement caused by other element refinement
@@ -165,7 +165,7 @@ void HAdapt::adapt(int h_count, double target,
         refined[ndx]=1;
     }
     // -h_count for debugging
-    refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);    
+    refine_neigh_update2(&RefinedList, allRefinement);    
     //RefinedList was trashlist in previous step
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
