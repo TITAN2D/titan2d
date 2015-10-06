@@ -174,51 +174,71 @@ void HAdapt::adapt(int h_count, double target,
         AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, 0.0);
         printf("After third AssertMeshErrorFree\n");
     }
-    
+    set_for_refinement.assign(ElemTable->size(),0);
+    primaryRefinement.resize(0);
+    allRefinement.resize(0);
     /*************************************************************************/
     /* Add an num_buffer_layer wide buffer layer around the pile/mass-source */
     /*************************************************************************/
+    
     if(num_buffer_layer >= 1)
     {
         
         move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
         
         //refine where necessary before placing the innermost buffer layer
-        //@ElementsBucketDoubleLoop
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        //@ElementsSingleLoop
+        for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
         {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+            //-- this requirement is used to exclude the new elements
+            if((status[ndx]>=0))
             {
-                EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                if((EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1) || (EmTemp
-                        ->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)
-                                                                                          == 1)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
+                if((elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1) 
+                    || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1) == 1)
+                    || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
+                    || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
                 {
-                    refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, EmTemp);
-                    debug_ref_flag++;
+                    primaryRefinement.push_back(ndx);
                 }
             }
         }
+        //findout triggered refinements
+        for(ti_ndx_t ndx:primaryRefinement)
+        {
+            if(set_for_refinement[ndx]!=0)continue;
+
+            depchk2(ndx, set_for_refinement, allRefinement);
+        }
+        //do refinements
+        for(ti_ndx_t ndx:allRefinement)
+        {
+            refine2(ndx);
+            adapted[ndx]=OLDFATHER;
+            refined[ndx]=1;
+        }
         
-        refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);
+        refine_neigh_update2(allRefinement);
+        
+        set_for_refinement.assign(ElemTable->size(),0);
+        primaryRefinement.resize(0);
+        allRefinement.resize(0);
         
         move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
         
         //mark the elements in the innermost buffer layer as the BUFFER layer
-        //@ElementsBucketDoubleLoop
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        //@ElementsSingleLoop
+        for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
         {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+            //-- this requirement is used to exclude the new elements
+            if((status[ndx]>=0))
             {
-                EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                if((EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0) || (EmTemp
-                        ->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)
-                                                                                         > 0)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) > 0))
-                    EmTemp->set_adapted_flag(BUFFER);
+                if((elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0) 
+                    || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)> 0)
+                    || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
+                    || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) > 0))
+                {
+                    adapted[ndx]=BUFFER;
+                }
             }
         }
         
@@ -230,23 +250,38 @@ void HAdapt::adapt(int h_count, double target,
             move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
             
             //refine where necessary before placing the next buffer layer
-            //@ElementsBucketDoubleLoop
-            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+            //@ElementsSingleLoop
+            for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
             {
-                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+                //-- this requirement is used to exclude the new elements
+                if((status[ndx]>=0))
                 {
-                    EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                    if(EmTemp->if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
+                    if((elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
                     {
-                        refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, EmTemp);
-                        debug_ref_flag++;
+                        primaryRefinement.push_back(ndx);
                     }
                 }
             }
-            
+            //findout triggered refinements
+            for(ti_ndx_t ndx:primaryRefinement)
+            {
+                if(set_for_refinement[ndx]!=0)continue;
+
+                depchk2(ndx, set_for_refinement, allRefinement);
+            }
+            //do refinements
+            for(ti_ndx_t ndx:allRefinement)
+            {
+                refine2(ndx);
+                adapted[ndx]=OLDFATHER;
+                refined[ndx]=1;
+            }
             //refine_neigh_update() needs to know new sons are NEWSONs,
             //can't call them BUFFER until after refine_neigh_update()
-            refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);
+            refine_neigh_update2(allRefinement);
+
+            set_for_refinement.assign(ElemTable->size(),0);
+            primaryRefinement.resize(0);
             
             move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
             

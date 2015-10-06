@@ -176,7 +176,7 @@ public:
         reserved_size_old_=tmp_reserved_size_;
     }
 public:
-    void resize(size_t new_size,bool movecontent=true)
+    void resize(tisize_t new_size,bool movecontent=true)
     {
         if(new_size>reserved_size_){
             //move to array_old_
