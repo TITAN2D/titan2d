@@ -50,7 +50,7 @@ void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
     vector<HashEntryLine> &bucket=El_Table->bucket;
     tivector<Element> &elenode_=El_Table->elenode_;
     //@ElementsBucketDoubleLoop
-#pragma omp parallel for private(currentPtr,Curr_El) reduction(+:localoutflow_sum)
+//#pragma omp parallel for private(currentPtr,Curr_El) reduction(+:localoutflow_sum)
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
         for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)

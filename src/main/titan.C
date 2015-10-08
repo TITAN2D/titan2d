@@ -37,6 +37,11 @@
 
 #include "../header/titan_simulation.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+
 extern "C" void init_cxxtitan();
 
 int main(int argc, char *argv[])
@@ -87,14 +92,71 @@ int main(int argc, char *argv[])
     elementsHashTable=nullptr;
     nodeHashTable=nullptr;
     
-    if(argc > 0)
+    bool printUsage=false;
+
+    if(argc > 1)
     {
-        Py_Main(argc, argv);
+    	int argc4py=0;
+    	char **argv4py=new char*[argc];
+
+    	int num_threads=1;
+
+    	for(int i;i<argc;i++){
+    		string arg(argv[i]);
+    		//strip off arguments which should not make to python
+    		if(arg=="-nt")
+    		{
+
+    			if((i+1>=argc) || (!isdigit(argv[i+1][0])))
+    			{
+    				argc4py=0;
+    				printUsage=true;//print usage and exit
+    				printf("Error: Incorrect command line format\n");
+    				break;
+    			}
+    			++i;
+
+    			num_threads=atoi(argv[i]);
+
+    	       //set openmp threads
+#ifdef _OPENMP
+    			printf("Set threads number to %d\n\n",num_threads);
+    			omp_set_num_threads(num_threads);
+#else
+    			if(num_threads>1)
+    				printf("Warning: This version was compiled without openmp support!\n");
+
+    			num_threads=1;
+    			printf("Set threads number to %d\n\n",num_threads);
+#endif
+    			continue;
+    		}
+    		argv4py[argc4py]=argv[i];
+    		++argc4py;
+    	}
+
+
+    	if(argc4py > 1){
+    		Py_Main(argc4py, argv4py);
+    	}
+    	else{
+    		printUsage=true;//print usage and exit
+    	}
+
+        delete [] argv4py;
     }
-    else if(myid == 0)
+    else
     {
-        printf("Usage:\n");
-        printf("\t%s <run_script>\n", argv[0]);
+    	printUsage=true;//print usage and exit
+    }
+
+    if(printUsage)
+    {
+		if(myid == 0)
+		{
+			printf("Usage:\n");
+			printf("\t%s [-nt <number of threads>] <run_script>\n", argv[0]);
+		}
     }
     
     Py_Finalize();
