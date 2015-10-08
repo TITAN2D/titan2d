@@ -48,39 +48,43 @@ public:
         printf("  Total execution time:................... %.3f\n", totalTime);
         printf("    Mesh adoption time:................... %.3f (%.2f %%)\n", meshAdaptionTime, 100.0 * meshAdaptionTime / totalTime);
         printf("      Refinement time:.................... %.3f (%.2f %%, %.2f %%)\n", refinementTime,
-               100.0 * refinementTime / meshAdaptionTime, 100.0 * refinementTime / totalTime);
+               100.0 * refinementTime / totalTime, 100.0 * refinementTime / meshAdaptionTime);
+        IF_DEF_TIMING3(
+		printf("        elementWeightCalc:................ %.3f (%.2f %%, %.2f %%)\n", elementWeightCalc,
+					   100.0 * elementWeightCalc / totalTime, 100.0 * elementWeightCalc / refinementTime);
+		)
         IF_DEF_TIMING3(
         printf("        primaryRefinementsSearch:......... %.3f (%.2f %%, %.2f %%)\n", primaryRefinementsSearch,
-                       100.0 * primaryRefinementsSearch / refinementTime, 100.0 * primaryRefinementsSearch / totalTime);
+                       100.0 * primaryRefinementsSearch / totalTime, 100.0 * primaryRefinementsSearch / refinementTime);
         )
         IF_DEF_TIMING3(
 		printf("        triggeredRefinementsSearch:....... %.3f (%.2f %%, %.2f %%)\n", triggeredRefinementsSearch,
-					   100.0 * triggeredRefinementsSearch / refinementTime, 100.0 * triggeredRefinementsSearch / totalTime);
+					   100.0 * triggeredRefinementsSearch / totalTime, 100.0 * triggeredRefinementsSearch / refinementTime);
 		)
 		IF_DEF_TIMING3(
 		printf("        refineElements:................... %.3f (%.2f %%, %.2f %%)\n", refineElements,
-					   100.0 * refineElements / meshAdaptionTime, 100.0 * refineElements / totalTime);
+					   100.0 * refineElements / totalTime, 100.0 * refineElements / meshAdaptionTime);
 		)
 		IF_DEF_TIMING3(
 		printf("        refinedElementsNeigboursUpdate:... %.3f (%.2f %%, %.2f %%)\n", refinedElementsNeigboursUpdate,
-					   100.0 * refinedElementsNeigboursUpdate / refinementTime, 100.0 * refinedElementsNeigboursUpdate / totalTime);
+					   100.0 * refinedElementsNeigboursUpdate / totalTime, 100.0 * refinedElementsNeigboursUpdate / refinementTime);
 		)
         IF_DEF_TIMING3(
 		printf("        sourcesRefinements:............... %.3f (%.2f %%, %.2f %%)\n", sourcesRefinements,
-					   100.0 * sourcesRefinements / refinementTime, 100.0 * sourcesRefinements / totalTime);
+					   100.0 * sourcesRefinements / totalTime, 100.0 * sourcesRefinements / refinementTime);
 		)
 
         printf("      Unrefinement time:.................. %.3f (%.2f %%, %.2f %%)\n", unrefinementTime,
-               100.0 * unrefinementTime / meshAdaptionTime, 100.0 * unrefinementTime / totalTime);
+               100.0 * unrefinementTime / totalTime, 100.0 * unrefinementTime / meshAdaptionTime);
         printf("    Step time:............................ %.3f (%.2f %%)\n", stepTime, 100.0 * stepTime / totalTime);
         printf("      Predictor time:..................... %.3f (%.2f %%, %.2f %%)\n", predictorStepTime,
-               100.0 * predictorStepTime / stepTime, 100.0 * predictorStepTime / totalTime);
+               100.0 * predictorStepTime / totalTime, 100.0 * predictorStepTime / stepTime);
         printf("      Corrector time:..................... %.3f (%.2f %%, %.2f %%)\n", correctorStepTime,
-               100.0 * correctorStepTime / stepTime, 100.0 * correctorStepTime / totalTime);
+               100.0 * correctorStepTime / totalTime, 100.0 * correctorStepTime / stepTime);
         printf("      Outline time:....................... %.3f (%.2f %%, %.2f %%)\n", outlineStepTime,
-               100.0 * outlineStepTime / stepTime, 100.0 * outlineStepTime / totalTime);
+               100.0 * outlineStepTime / totalTime, 100.0 * outlineStepTime / stepTime);
         printf("      Slope Calc. time:................... %.3f (%.2f %%, %.2f %%)\n", slopesCalcTime,
-               100.0 * slopesCalcTime / stepTime, 100.0 * slopesCalcTime / totalTime);
+               100.0 * slopesCalcTime / totalTime, 100.0 * slopesCalcTime / stepTime);
         printf("    Results dump time:.................... %.3f (%.2f %%)\n", resultsOutputTime, 100.0 * resultsOutputTime / totalTime);
         printf("    Flush ElemTable time:................. %.3f (%.2f %%)\n", flushElemTableTime, 100.0 * flushElemTableTime / totalTime);
         printf("    Flush NodeTable time:................. %.3f (%.2f %%)\n", flushNodeTableTime, 100.0 * flushNodeTableTime / totalTime);
@@ -92,6 +96,7 @@ public:
         totalTime = 0.0;
         meshAdaptionTime = 0.0;
         refinementTime = 0.0;
+        IF_DEF_TIMING3(elementWeightCalc = 0.0);
         IF_DEF_TIMING3(primaryRefinementsSearch = 0.0);
         IF_DEF_TIMING3(triggeredRefinementsSearch = 0.0);
         IF_DEF_TIMING3(refineElements = 0.0);
@@ -113,6 +118,7 @@ public:
         totalTime /= steps;
         meshAdaptionTime /= steps;
         refinementTime /= steps;
+        IF_DEF_TIMING3(elementWeightCalc /= steps);
         IF_DEF_TIMING3(primaryRefinementsSearch /= steps);
         IF_DEF_TIMING3(triggeredRefinementsSearch /= steps);
         IF_DEF_TIMING3(refineElements /= steps);
@@ -132,6 +138,7 @@ public:
     double totalTime;
     double meshAdaptionTime;
     double refinementTime;
+    IF_DEF_TIMING3(double elementWeightCalc);
     IF_DEF_TIMING3(double primaryRefinementsSearch);
     IF_DEF_TIMING3(double triggeredRefinementsSearch);
     IF_DEF_TIMING3(double refineElements);

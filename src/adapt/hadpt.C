@@ -52,9 +52,7 @@ extern void htflush(NodeHashTable*, NodeHashTable*, int);
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
-void HAdapt::adapt(int h_count, double target,
-             FluxProps *fluxprops, //doesn't need fluxprops
-             int num_buffer_layer)
+void HAdapt::adapt(int h_count, double target)
 /*-------------
  scanning element hashtable, if the error of an element is bigger than the target error
  1). check if it has been marked for refinement caused by other element refinement
@@ -98,13 +96,16 @@ void HAdapt::adapt(int h_count, double target,
     int h_begin_type = 102;
     
     // what it really does?
-    delete_unused_elements_nodes(ElemTable, NodeTable, myid);
+    if(numprocs>1)
+    	delete_unused_elements_nodes(ElemTable, NodeTable, myid);
     
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
     // determine which elements to refine and flag them for refinement
+    TIMING3_START(t_start3);
     double geo_target = element_weight(ElemTable, NodeTable, myid, numprocs);
+    TIMING3_STOP(elementWeightCalc,t_start3);
     
     int debug_ref_flag = 0;
     
@@ -150,7 +151,7 @@ void HAdapt::adapt(int h_count, double target,
     TIMING3_STOP(refineElements,t_start3);
 
     TIMING3_START(t_start3);
-    refinedNeighboursUpdate(allRefinement);    
+    refinedNeighboursUpdate(allRefinement);
     TIMING3_STOP(refinedElementsNeigboursUpdate,t_start3);
     //RefinedList was trashlist in previous step
     
@@ -170,43 +171,33 @@ void HAdapt::adapt(int h_count, double target,
         
         move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
         
+        //reset temporary arrays
+        primaryRefinement.resize(0);
+        allRefinement.resize(0);
+        set_for_refinement.assign(ElemTable->size(),0);
+
         //refine where necessary before placing the innermost buffer layer
-        //@ElementsBucketDoubleLoop
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-        {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-            {
-                EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                if(   (EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
-                {
-                    refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, EmTemp);
-                    debug_ref_flag++;
-                }
-            }
-        }
-        
-        refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);
-        
+        findBuferFirstLayerRefinements(primaryRefinement);
+        findTriggeredRefinements(primaryRefinement, set_for_refinement, allRefinement);
+        refineElements(allRefinement);
+        refinedNeighboursUpdate(allRefinement);
+
         move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
         
         //mark the elements in the innermost buffer layer as the BUFFER layer
-        //@ElementsBucketDoubleLoop
+        //@ElementsBucketDoubleLoop2_OrderDontMatter
         for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
         {
             for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
-                EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                if(   (EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) > 0))
-                    EmTemp->set_adapted_flag(BUFFER);
+            	ti_ndx_t ndx=bucket[ibuck].ndx[ielm];
+            	if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0)
+				   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
+				   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
+				   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) > 0))
+            		adapted[ndx]=BUFFER;
             }
         }
-        
         //increase the width of the buffer layer by one element at a time
         //until it's num_buffer_layer Elements wide
         for(int ibufferlayer = 2; ibufferlayer <= num_buffer_layer; ibufferlayer++)
@@ -214,25 +205,19 @@ void HAdapt::adapt(int h_count, double target,
             
             move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
             
+            //reset temporary arrays
+			primaryRefinement.resize(0);
+			allRefinement.resize(0);
+			set_for_refinement.assign(ElemTable->size(),0);
+
             //refine where necessary before placing the next buffer layer
-            //@ElementsBucketDoubleLoop
-            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-            {
-                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-                {
-                    EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                    if(EmTemp->if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
-                    {
-                        refinewrapper(ElemTable, NodeTable, matprops_ptr, &RefinedList, EmTemp);
-                        debug_ref_flag++;
-                    }
-                }
-            }
-            
-            //refine_neigh_update() needs to know new sons are NEWSONs,
+			findBuferNextLayerRefinements(primaryRefinement);
+			findTriggeredRefinements(primaryRefinement, set_for_refinement, allRefinement);
+			refineElements(allRefinement);
+			//refine_neigh_update() needs to know new sons are NEWSONs,
             //can't call them BUFFER until after refine_neigh_update()
-            refine_neigh_update(ElemTable, NodeTable, numprocs, myid, (void*) &RefinedList, timeprops_ptr);
-            
+			refinedNeighboursUpdate(allRefinement);
+
             move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
             
             //move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr,timeprops_ptr);
@@ -243,27 +228,23 @@ void HAdapt::adapt(int h_count, double target,
             }
             
             //mark the elements just outside the buffer layer as the NEWBUFFER layer
-            TempList.trashlist();
-            //@ElementsBucketDoubleLoop
-            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-            {
-                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-                {
-                    EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                    if(EmTemp->if_next_buffer_boundary(ElemTable, NodeTable,REFINE_THRESHOLD)> 0)
-                        TempList.add(EmTemp);
-                }
-            }
-            
-            //remark the NEWBUFFER elements as BUFFER element (move them from NEWBUFFER to BUFFER)
-            
-            for(i = 0; i < TempList.get_num_elem(); i++)
-            {
-                EmTemp = TempList.get(i);
-                assert(EmTemp);
-                EmTemp->set_adapted_flag(BUFFER);
-            }
-            TempList.trashlist();
+            //reset temporary arrays
+            primaryRefinement.resize(0);
+            //@ElementsBucketDoubleLoop2_OrderDontMatter
+			for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+			{
+				for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+				{
+					ti_ndx_t ndx=bucket[ibuck].ndx[ielm];
+					if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable,REFINE_THRESHOLD)> 0)
+						primaryRefinement.push_back(ndx);
+
+				}
+			}
+			//remark the NEWBUFFER elements as BUFFER element (move them from NEWBUFFER to BUFFER)
+			for(ti_ndx_t ndx2:primaryRefinement)
+				adapted[ndx2]=BUFFER;
+
         }
     }
     TIMING3_STOP(sourcesRefinements,t_start3);
@@ -319,9 +300,6 @@ void HAdapt::adapt(int h_count, double target,
             
         }
     }
-    
-    //printf("myid=%d exiting H_adapt\n",myid);
-    
     return;
 }
 void HAdapt::findPrimaryRefinements(vector<ti_ndx_t> &primaryRefinement, const double geo_target)
@@ -345,12 +323,45 @@ void HAdapt::findPrimaryRefinements(vector<ti_ndx_t> &primaryRefinement, const d
                 || (elements[ndx].if_source_boundary(ElemTable) > 0) )
             {
                 primaryRefinement.push_back(ndx);
-                //set_for_refinement[ndx]=1;
             }
         }
     }
 }
-
+void HAdapt::findBuferFirstLayerRefinements(vector<ti_ndx_t> &primaryRefinement)
+{
+	tivector<Element> &elements=ElemTable->elenode_;
+	tivector<ContentStatus> &status=ElemTable->status_;
+	//@ElementsSingleLoop
+	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+	{
+		if(status[ndx]>=0)
+		{
+			if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
+			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
+			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
+			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
+			{
+				primaryRefinement.push_back(ndx);
+			}
+		}
+    }
+}
+void HAdapt::findBuferNextLayerRefinements(vector<ti_ndx_t> &primaryRefinement)
+{
+	tivector<Element> &elements=ElemTable->elenode_;
+	tivector<ContentStatus> &status=ElemTable->status_;
+	//@ElementsSingleLoop
+	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+	{
+		if(status[ndx]>=0)
+		{
+			if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
+			{
+				primaryRefinement.push_back(ndx);
+			}
+		}
+    }
+}
 
 #ifdef DISABLED
 //Keith wrote this because the code block was repeated so many times

@@ -4159,7 +4159,7 @@ int Element::if_source_boundary(ElementsHashTable *ElemTable)
     return (0); //not on line bounding area with mass source/sink
 }
 
-int Element::if_first_buffer_boundary(ElementsHashTable *ElemTable, double contour_height)
+int Element::if_first_buffer_boundary(ElementsHashTable *ElemTable, double contour_height) const
 {
     
     int ineigh;
