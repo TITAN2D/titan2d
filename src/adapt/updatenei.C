@@ -885,7 +885,7 @@ void refine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable,
 }
 
 #else
-void HAdapt::refine_neigh_update2(const vector<ti_ndx_t> &allRefinement)
+void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
 {
     
     Element* EmFather;

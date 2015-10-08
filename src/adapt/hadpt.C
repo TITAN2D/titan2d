@@ -21,6 +21,8 @@
 
 #include "../header/hpfem.h"
 #include "../header/hadapt.h"
+
+
 #define TARGETPROC -1
 //#define FORDEBUG
 
@@ -76,6 +78,8 @@ void HAdapt::adapt(int h_count, double target,
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     
+    TIMING3_DEFINE(t_start3);
+
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
     Element* Curr_El = nullptr;
@@ -131,41 +135,23 @@ void HAdapt::adapt(int h_count, double target,
     set_for_refinement.assign(ElemTable->size(),0);
     
     //find out primary refinements
-    //@ElementsSingleLoop
-    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
-    {
-        //-- this requirement is used to exclude the new elements
-        if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
-        {
-            if((el_error[ndx] > geo_target)
-                || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0) 
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
-                || (elements[ndx].if_source_boundary(ElemTable) > 0) )
-            {
-                primaryRefinement.push_back(ndx);
-                //set_for_refinement[ndx]=1;
-            }
-        }
-    }
+    TIMING3_START(t_start3);
+    findPrimaryRefinements(primaryRefinement,geo_target);
+    TIMING3_STOP(primaryRefinementsSearch,t_start3);
+
     //findout triggered refinements
-    for(ti_ndx_t ndx:primaryRefinement)
-    {
-        if(set_for_refinement[ndx]!=0)continue;
-        
-        depchk2(ndx, set_for_refinement, allRefinement);
-    }
+    TIMING3_START(t_start3);
+    findTriggeredRefinements(primaryRefinement, set_for_refinement, allRefinement);
+    TIMING3_STOP(triggeredRefinementsSearch,t_start3);
+
     //do refinements
-    for(ti_ndx_t ndx:allRefinement)
-    {
-        //RefinedList.add(&(elements[ndx]));
-        refine2(ndx);
-        adapted[ndx]=OLDFATHER;
-        refined[ndx]=1;
-    }
-    // -h_count for debugging
-    refine_neigh_update2(allRefinement);    
+    TIMING3_START(t_start3);
+    refineElements(allRefinement);
+    TIMING3_STOP(refineElements,t_start3);
+
+    TIMING3_START(t_start3);
+    refinedNeighboursUpdate(allRefinement);    
+    TIMING3_STOP(refinedElementsNeigboursUpdate,t_start3);
     //RefinedList was trashlist in previous step
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
@@ -178,6 +164,7 @@ void HAdapt::adapt(int h_count, double target,
     /*************************************************************************/
     /* Add an num_buffer_layer wide buffer layer around the pile/mass-source */
     /*************************************************************************/
+    TIMING3_START(t_start3);
     if(num_buffer_layer >= 1)
     {
         
@@ -190,9 +177,8 @@ void HAdapt::adapt(int h_count, double target,
             for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
                 EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                if((EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1) || (EmTemp
-                        ->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)
-                                                                                          == 1)
+                if(   (EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
+                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
                    || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
                    || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
                 {
@@ -213,9 +199,8 @@ void HAdapt::adapt(int h_count, double target,
             for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
             {
                 EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
-                if((EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0) || (EmTemp
-                        ->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)
-                                                                                         > 0)
+                if(   (EmTemp->if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0)
+                   || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
                    || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
                    || (EmTemp->if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) > 0))
                     EmTemp->set_adapted_flag(BUFFER);
@@ -281,7 +266,7 @@ void HAdapt::adapt(int h_count, double target,
             TempList.trashlist();
         }
     }
-    
+    TIMING3_STOP(sourcesRefinements,t_start3);
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
     htflush(ElemTable, NodeTable, 2);
@@ -339,6 +324,33 @@ void HAdapt::adapt(int h_count, double target,
     
     return;
 }
+void HAdapt::findPrimaryRefinements(vector<ti_ndx_t> &primaryRefinement, const double geo_target)
+{
+	tivector<Element> &elements=ElemTable->elenode_;
+	tivector<ContentStatus> &status=ElemTable->status_;
+	tivector<int> &adapted=ElemTable->adapted_;
+	tivector<int> &generation=ElemTable->generation_;
+	tivector<double> &el_error=ElemTable->el_error_[0];
+    //@ElementsSingleLoop
+    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+    {
+        //-- this requirement is used to exclude the new elements
+        if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
+        {
+            if((el_error[ndx] > geo_target)
+                || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
+                || (elements[ndx].if_source_boundary(ElemTable) > 0) )
+            {
+                primaryRefinement.push_back(ndx);
+                //set_for_refinement[ndx]=1;
+            }
+        }
+    }
+}
+
 
 #ifdef DISABLED
 //Keith wrote this because the code block was repeated so many times

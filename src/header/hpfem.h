@@ -31,6 +31,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <vector>
 using namespace std;
 
 #include <stdlib.h>
@@ -50,6 +51,7 @@ using namespace std;
 #include "FileFormat.h"
 #include "flux_srcs.h"
 
+#include "titan2d_utils.h"
 
 //! construct_el is a friend function of the Element class that fills an element with information it receives in a variable of the ElemPack class from an MPI call
 void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_Ptr, int myid, double* e_error);

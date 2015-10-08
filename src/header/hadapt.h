@@ -39,12 +39,20 @@ public:
              FluxProps *fluxprops_ptr, int num_buffer_layer);
     
     void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);
-    void depchk2(ti_ndx_t primary_ndx, vector<int> &set_for_refinement,vector<ti_ndx_t> &allRefinement);
-    void refine2(ti_ndx_t ndx);
+
+
+    
+
+private:
+    void findPrimaryRefinements(vector<ti_ndx_t> &primaryRefinement, const double geo_target);
+    void findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement, vector<int> &set_for_refinement,vector<ti_ndx_t> &allRefinement);
+
+    void refineElements(const vector<ti_ndx_t> &allRefinement);
+
     void create_new_node2(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
                      SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary, const int order);
-    void refine_neigh_update2(const vector<ti_ndx_t> &allRefinement);
-    
+    void refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement);
+
 private:
     int myid;
     int numprocs;

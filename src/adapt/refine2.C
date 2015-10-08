@@ -100,906 +100,913 @@ void HAdapt::create_new_node2(const int which, const int Node1, const int Node2,
 //only 4 one step because of the info FLAG!!!
 //if the new node is on INTERFACE flag will be -1
 
-void HAdapt::refine2(ti_ndx_t ndx)
+void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 {
-    //printf("refining element %u %u \n",*(EmTemp->pass_key()), *(EmTemp->pass_key()+1));
-    //@todo replace which with macro or enum
-    //@todo reuse indexes for nodes and elements
-    int which;
-    ti_ndx_t n1_ndx, n2_ndx, n3_ndx, n4_ndx;
-    
-    ti_ndx_t ndxNodeTemp[9];
-    SFC_Key NewNodeKey[16];
-    ti_ndx_t ndxQuad9P;
-    
-    int i;
-    ti_ndx_t neigh_elm_ndx;
-    //SFC_Key* neigh_node_key;
-    int RefinedNeigh = 0;
-    int info;
-    int other_proc = 0;
-    int boundary;
-    int order[5];
-    int NewOrder[4][5];
-    
-    int elm_loc[2], my_elm_loc[2];
-    elm_loc[0] = 2 * ElemTable->elm_loc_[0][ndx];
-    elm_loc[1] = 2 * ElemTable->elm_loc_[1][ndx];
-    
-    
-    for(i = 0; i < 8; i++) //-- corners and sides
-    {
-        ndxNodeTemp[i] = NodeTable->lookup_ndx(ElemTable->node_key_[i][ndx]);
-        assert(ti_ndx_not_negative(ndxNodeTemp[i]));
-    }
-    
-    for(i = 0; i < 5; i++)
-        order[i] = ElemTable->order_[i][ndx];
-    
-    /*filling up the new order array
-     str: side orders remain;
-     newsides get the higher order of the already existing sides
-     bubbles get the order of the old bubble
-     */
-    for(i = 0; i < 4; i++) //-- orders for the 4 sons
-    {
-        int a = i - 1;
-        if(a == -1)
-            a = 3;
-        NewOrder[i][a] = order[a];
-        NewOrder[i][i] = order[i];
-        NewOrder[i][4] = order[4];
-    }
-    
-    //for the new internal sides they get the order of the max side order
-    for(i = 0; i < 4; i++)
-    {
-        int a = i + 1;
-        int b = i + 2;
-        int c = i - 1;
-        if(i == 2)
-            b = 0;
-        if(i == 3)
-        {
-            a = 0;
-            b = 1;
-        } //in the case of the 3rd element
-        if(c == -1)
-            c = 3; //in the case of the 0th element
-            
-        NewOrder[i][a] = NewOrder[i][b] = order[0];
-        
-        for(int j = 1; j < 4; j++)
-            if(order[j] > NewOrder[i][a])
-                NewOrder[i][a] = NewOrder[i][b] = order[j];
-    }
-    
-    ndxNodeTemp[8] = NodeTable->lookup_ndx(ElemTable->key_[ndx]);//-- bubble
-    assert(ti_ndx_not_negative(ndxNodeTemp[8]));
-            
-    //SIDE 0
-    if(ElemTable->neigh_proc_[0][ndx] == -1)
-        boundary = 1;
-    else
-        boundary = 0;
-    
-    if(boundary == 1 || ElemTable->neigh_gen_[0][ndx] <= ElemTable->generation_[ndx])
-    {
-        RefinedNeigh = 0;
-        info = S_S_CON;
-        if(ElemTable->neigh_proc_[0][ndx] != myid)
-        {
-            other_proc = 1;
-            info = -1;
-        }
-        
-        which = 4;
-        //---Fourth new node---
-        /*n1_ndx = NodeTable->lookup_ndx(ElemTable->node_key_[4][ndx]);
-        n2_ndx = NodeTable->lookup_ndx(ElemTable->node_key_[0][ndx]);
-        n1 = &(NodeTable->elenode_[n1_ndx]);
-        n2 = &(NodeTable->elenode_[n2_ndx]);*/
-        
-        create_new_node2(which, 0, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[0]);
-        
-        //---Fourth old node---
-        if(RefinedNeigh || boundary)
-            NodeTable->info_[ndxNodeTemp[4]]=CORNER;
-        else if(other_proc)
-            NodeTable->info_[ndxNodeTemp[4]]=-1;
-        else
-            NodeTable->info_[ndxNodeTemp[4]]=S_C_CON;
-        
-        //---Fifth new node---
-        which = 5;
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
-        
-        create_new_node2(which, 1, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[0]);
-    }
-    else
-    {
-        //Keith Added this if
-        if((ElemTable->neigh_proc_[0][ndx] != myid) || ((ElemTable->neigh_proc_[4][ndx] != myid)
-                && (ElemTable->neigh_proc_[4][ndx] != -2)))
-            other_proc = 1;
-        else
-            other_proc = 0;
-        
-        // fourth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[0][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[4] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[4]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-        //fourth old node
-        NodeTable->info_[ndxNodeTemp[4]]=CORNER;
-        if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTable->info_[ndxNodeTemp[4]]=-1;
-        
-        // fifth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[5] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[5]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-    }
-    
-//+++++++++++++++++++++++++++SIDE1
-    
-    if(ElemTable->neigh_proc_[1][ndx] == -1)
-        boundary = 1;
-    else
-        boundary = 0;
-    
-    if(boundary == 1 || ElemTable->neigh_gen_[1][ndx] <= ElemTable->generation_[ndx])
-    {
-        RefinedNeigh = 0;
-        info = S_S_CON;
-        if(ElemTable->neigh_gen_[1][ndx] != myid)    // && *(EmTemp->get_neigh_proc()+1)>0)
-        {
-            other_proc = 1;
-            info = -1;
-        }
-        else
-            other_proc = 0;
-        
-        //---Eight new node---
-        which = 8;
-        //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
-        
-        create_new_node2(which, 1, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[1]);
-        
-        //---Fifth old node---
-        if(RefinedNeigh || boundary)
-            NodeTable->info_[ndxNodeTemp[5]]=CORNER;
-        else if(other_proc)
-            NodeTable->info_[ndxNodeTemp[5]]=info;
-        else
-            NodeTable->info_[ndxNodeTemp[5]]=S_C_CON;
-        
-        //---Thirteenth new node---
-        which = 13;
-        //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
-        
-        create_new_node2(which, 2, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[1]);
-    }
-    else
-    {
-        //Keith Added this if
-        if((ElemTable->neigh_proc_[1][ndx] != myid) || ((ElemTable->neigh_proc_[5][ndx] != myid)
-                && (ElemTable->neigh_proc_[5][ndx] != -2)))
-            other_proc = 1;
-        else
-            other_proc = 0;
-        
-        // eighth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[8] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[8]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-        
-        // fifth old node
-        NodeTable->info_[ndxNodeTemp[5]]=CORNER;
-        if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTable->info_[ndxNodeTemp[5]]=-1;
-        
-        // thirteenth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[13] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[13]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-    }
-    
-    //+++++++++++++++++++++++++++SIDE2
-    if(ElemTable->neigh_proc_[2][ndx] == -1)
-        boundary = 1;
-    else
-        boundary = 0;
-    
-    if(boundary == 1 || ElemTable->neigh_gen_[2][ndx] <= ElemTable->generation_[ndx])
-    {
-        info = S_S_CON;
-        
-        if(ElemTable->neigh_gen_[2][ndx] != myid)    // && *(EmTemp->get_neigh_proc()+2)>0)
-        {
-            other_proc = 1;
-            info = -1;
-        }
-        else
-            other_proc = 0;
-        
-        RefinedNeigh = 0;
-        
-        //---Fourteenth new node---
-        which = 14;
-        //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-        
-        create_new_node2(which, 3, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[2]);
-        
-        //---Sixth old node---
-        if(RefinedNeigh || boundary)
-            NodeTable->info_[ndxNodeTemp[6]]=CORNER;
-        else if(other_proc)
-            NodeTable->info_[ndxNodeTemp[6]]=info;
-        else
-            NodeTable->info_[ndxNodeTemp[6]]=S_C_CON;
-        
-        //---Fifteenth new node---
-        which = 15;
-        // geoflow info
-        //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
-        
-        create_new_node2(which, 2, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[2]);
-    }
-    else
-    {
-        //Keith Added this if
-        if((ElemTable->neigh_proc_[2][ndx] != myid) || ((ElemTable->neigh_proc_[6][ndx] != myid)
-                && (ElemTable->neigh_proc_[6][ndx] != -2)))
-            other_proc = 1;
-        else
-            other_proc = 0;
-        
-        // fourteenth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[14] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[14]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-        
-        // sixth old node
-        NodeTable->info_[ndxNodeTemp[6]]=CORNER;
-        if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTable->info_[ndxNodeTemp[6]]=-1;
-        
-        // fifteenth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[15] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[15]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-    }
-    
-    //+++++++++++++++++++++++++++SIDE 3
-    if(ElemTable->neigh_proc_[3][ndx] == -1)
-        boundary = 1;
-    else
-        boundary = 0;
-    
-    if(boundary == 1 || ElemTable->neigh_gen_[3][ndx] <= ElemTable->generation_[ndx])
-    {
-        info = S_S_CON;
-        
-        if(ElemTable->neigh_gen_[3][ndx] != myid)  //&& *(EmTemp->get_neigh_proc()+3)>0)
-        {
-            other_proc = 1;
-            info = -1;
-        }
-        else
-            other_proc = 0;
-        
-        RefinedNeigh = 0;
-        
-        //---Sixth new node----
-        which = 6;
-        //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
-        
-        create_new_node2(which, 0, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[3]);
-        
-        //---Seventh old node---
-        if(RefinedNeigh || boundary)
-            NodeTable->info_[ndxNodeTemp[7]]=CORNER;
-        else if(other_proc)
-            NodeTable->info_[ndxNodeTemp[7]]=-1;
-        else
-            NodeTable->info_[ndxNodeTemp[7]]=S_C_CON;
-        
-        //---Eleventh new node---
-        which = 11;
-        //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-        //n2 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
-        
-        create_new_node2(which, 3, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[3]);
-    }
-    else
-    {
-        //Keith Added this if
-        if((ElemTable->neigh_proc_[3][ndx] != myid) || ((ElemTable->neigh_proc_[7][ndx] != myid)
-                && (ElemTable->neigh_proc_[7][ndx] != -2)))
-            other_proc = 1;
-        else
-            other_proc = 0;
-        
-        // sixth new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[6] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[6]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-        
-        // seventh old node
-        NodeTable->info_[ndxNodeTemp[7]]=CORNER;
-        if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
-            NodeTable->info_[ndxNodeTemp[7]]=-1;
-        // eleventh new node
-        neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]);
-        i = 0;
-        which = -1;
-        while (i < 4 && which == -1)
-        {
-            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-                which = i;
-            i++;
-        }
-        assert(which != -1);
-        NewNodeKey[11] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-        n1_ndx = NodeTable->lookup_ndx(NewNodeKey[11]);
-        if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
-            NodeTable->info_[n1_ndx]=SIDE;
-        else
-            NodeTable->info_[n1_ndx]=S_C_CON;
-    }
-    //++++++++++++++++INTERNAL SIDE NODES 7, 8OLD, 12, 9, 10
-    
-    RefinedNeigh = 0;
-    boundary = 0;
-    info = SIDE;
-    
-    //---Seventh new node---
-    
-    which = 7;
-    // geoflow info
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
-    //n2 = (Node*) NodeTable->lookup(EmTemp->key());
-    
-    create_new_node2(which, 4, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][1]);
-    
-    NodeTable->info_[ndxNodeTemp[8]]=CORNER;    //changing the old bubble
-            
-    //---Twelwth new node---
-    
-    which = 12;
-    // geoflow info
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-    
-    create_new_node2(which, 6, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[3][1]);
-    
-    //---Ninth new node---
-    
-    which = 9;
-    // geoflow info
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-    
-    create_new_node2(which, 7, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][2]);
-    
-    //---Tenth new node---
-    
-    which = 10;
-    // geoflow info
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-    
-    create_new_node2(which, 5, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[1][2]);
-    
-    //+++++++++++++++++++THE NEW BUBBLES 0, 1, 2, 3
-    
-    info = BUBBLE;
-    
-    //---0th new node---
-    
-    ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[6]);
-    ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[7]);
-    which = 0;
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
-    //n3 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
-    //n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-    
-    create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][4]);
-    
-    //---1st new node---
-    
-    ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[7]);
-    ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[8]);
-    which = 1;
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
-    //n4 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-    
-    create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[1][4]);
-    
-    //---2nd new node---
-    
-    ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[12]);
-    ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[13]);
-    which = 2;
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
-    //n3 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-    //n4 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-    
-    create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[2][4]);
-    
-    //---3rd new node---
-    
-    ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[11]);
-    ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[12]);
-    which = 3;
-    //n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-    //n3 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
-    //n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-    
-    create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[3][4]);
-    
-    //---NEW ELEMENTS---
-    
-    SFC_Key nodes[9];
-    SFC_Key neigh[8];
-    int neigh_proc[8];
-    BC* bcptr = NULL;
-    BC* orig_bcptr = ElemTable->bcptr_[ndx];
-    int generation = ElemTable->generation_[ndx] + 1;
-    int neigh_gen[4];
-    int material = ElemTable->material_[ndx];
-    
-    double coord[DIMENSION];
-    //---0th new element---
-    
-    //the nodes
-    
-    nodes[0] = ElemTable->node_key_[0][ndx];
-    nodes[1] = ElemTable->node_key_[4][ndx];
-    nodes[2] = ElemTable->key_[ndx];
-    nodes[3] = ElemTable->node_key_[7][ndx];
-    nodes[4] = NewNodeKey[4];
-    nodes[5] = NewNodeKey[7];
-    nodes[6] = NewNodeKey[9];
-    nodes[7] = NewNodeKey[6];
-    nodes[8] = NewNodeKey[0];
+	tivector<int> &adapted=ElemTable->adapted_;
+	tivector<int> &refined=ElemTable->refined_;
+	for(ti_ndx_t ndx:allRefinement)
+	{
+		//printf("refining element %u %u \n",*(EmTemp->pass_key()), *(EmTemp->pass_key()+1));
+		//@todo replace which with macro or enum
+		//@todo reuse indexes for nodes and elements
+		int which;
+		ti_ndx_t n1_ndx, n2_ndx, n3_ndx, n4_ndx;
 
-    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
-    for(i = 0; i < DIMENSION; i++)
-        coord[i] = NodeTable->coord_[i][n1_ndx];
-    //neighbors
-    neigh[0] = neigh[4] = ElemTable->neighbors_[0][ndx]; //Why is this ok if not ok for 3 down
-    neigh[1] = neigh[5] = NewNodeKey[1];
-    neigh[2] = neigh[6] = NewNodeKey[3];
-    if(ElemTable->neigh_proc_[7][ndx]!= -2)
-        neigh[3] = neigh[7] = ElemTable->neighbors_[7][ndx]; //This should be okay no matter what
-    else
-        neigh[3] = neigh[7] = ElemTable->neighbors_[3][ndx]; //This is only ok if neigh_proc==-2
-    
-    //process of the neighbors
-    
-    neigh_proc[0] = ElemTable->neigh_proc_[0][ndx];
-    neigh_proc[1] = myid;
-    neigh_proc[2] = myid;
-    if(ElemTable->neigh_proc_[7][ndx] != -2)
-        neigh_proc[3] = ElemTable->neigh_proc_[7][ndx]; //depending if the neighboring element is already refined
-    else
-        neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
-    
-    neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
-    
-    neigh_gen[0] = ElemTable->neigh_gen_[0][ndx];
-    neigh_gen[1] = generation;
-    neigh_gen[2] = generation;
-    neigh_gen[3] = ElemTable->neigh_gen_[3][ndx];
-    
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
-    {
-        bcptr = new BC;
-        bcptr->type[0] = orig_bcptr->type[0];
-        bcptr->type[3] = orig_bcptr->type[3];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
-                bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
-            }
-    }
-    
-    double err = ElemTable->el_error_[0][ndx] * .5; //added by jp oct11
-    double sol = ElemTable->el_solution_[0][ndx] * .5; //added by jp oct11
-    // son 0 can use elm_loc
-    int iwetnodefather = ElemTable->iwetnode_[ndx];
-    double Awetfather = ElemTable->Awet_[ndx];
-    double dpson[2];
-    dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
-    dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
-    
-    Element* old_elm;
-    ti_ndx_t old_elm_ndx;
-    
-    ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-    if(ti_ndx_not_negative(ndxQuad9P))
-    {
-        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        //old_elm->void_bcptr();
-        ElemTable->elenode_[ndxQuad9P].void_bcptr();
-        //HT_Elem_Ptr->removeElement(old_elm);
-        ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    else{
-        
-        ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    //double* state_vars = Quad9P->get_state_varsABCD();
-    //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
-    
-    ElemTable->which_son_[ndxQuad9P]=0;  //--by jp, 0 means son 0
-    ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
-    
-    
-    //---1st new element---
-    
-    //the nodes
-    
-    nodes[0] = ElemTable->node_key_[4][ndx];
-    nodes[1] = ElemTable->node_key_[1][ndx];
-    nodes[2] = ElemTable->node_key_[5][ndx];
-    nodes[3] = ElemTable->key_[ndx];
-    nodes[4] = NewNodeKey[5];
-    nodes[5] = NewNodeKey[8];
-    nodes[6] = NewNodeKey[10];
-    nodes[7] = NewNodeKey[7];
-    nodes[8] = NewNodeKey[1];
+		ti_ndx_t ndxNodeTemp[9];
+		SFC_Key NewNodeKey[16];
+		ti_ndx_t ndxQuad9P;
 
-    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
-    for(i = 0; i < DIMENSION; i++)
-        coord[i] = NodeTable->coord_[i][n1_ndx];
-    
-    //neighbors
-    if(ElemTable->neigh_proc_[4][ndx] != -2)
-        neigh[0] = neigh[4] = ElemTable->neighbors_[4][ndx]; //this should be ok now matter what
-    else
-        neigh[0] = neigh[4] = ElemTable->neighbors_[0][ndx]; //this is only ok if neigh_proc==-2
-    neigh[1] = neigh[5] = ElemTable->neighbors_[1][ndx];
-    neigh[2] = neigh[6] = NewNodeKey[2];
-    neigh[3] = neigh[7] = NewNodeKey[0];
-    
-    //process of the neighbors
-    
-    neigh_proc[0] = (ElemTable->neigh_proc_[4][ndx] != -2) ? ElemTable->neigh_proc_[4][ndx] : ElemTable->neigh_proc_[0][ndx];
-    neigh_proc[1] = ElemTable->neigh_proc_[1][ndx];
-    neigh_proc[2] = myid;
-    neigh_proc[3] = myid;
-    
-    neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
-    
-    neigh_gen[0] = ElemTable->neigh_gen_[0][ndx];
-    neigh_gen[1] = ElemTable->neigh_gen_[1][ndx];
-    neigh_gen[2] = generation;
-    neigh_gen[3] = generation;
-    
-    bcptr = NULL;
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[1])) //else bcptr is a NULL pointer by default
-    {
-        bcptr = new BC;
-        bcptr->type[0] = orig_bcptr->type[0];
-        bcptr->type[1] = orig_bcptr->type[1];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
-                bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
-            }
-        
-    }
-    my_elm_loc[0] = elm_loc[0] + 1;
-    my_elm_loc[1] = elm_loc[1];
-    dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
-    dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
-    
-    ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-    if(ti_ndx_not_negative(ndxQuad9P))
-    {
-        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        ElemTable->elenode_[ndxQuad9P].void_bcptr();
-        //HT_Elem_Ptr->removeElement(old_elm);
-        ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    else{
-        ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    //state_vars = Quad9P->get_state_varsABCD();
-    //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
-    
-    ElemTable->which_son_[ndxQuad9P]=1;  //--by jp
-    ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
-    
-    
-    //---2nd new element---
-    
-    //the nodes
-    nodes[0] = ElemTable->key_[ndx];
-    nodes[1] = ElemTable->node_key_[5][ndx];
-    nodes[2] = ElemTable->node_key_[2][ndx];
-    nodes[3] = ElemTable->node_key_[6][ndx];
-    nodes[4] = NewNodeKey[10];
-    nodes[5] = NewNodeKey[13];
-    nodes[6] = NewNodeKey[15];
-    nodes[7] = NewNodeKey[12];
-    nodes[8] = NewNodeKey[2];
+		int i;
+		ti_ndx_t neigh_elm_ndx;
+		//SFC_Key* neigh_node_key;
+		int RefinedNeigh = 0;
+		int info;
+		int other_proc = 0;
+		int boundary;
+		int order[5];
+		int NewOrder[4][5];
 
-    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
-    for(i = 0; i < DIMENSION; i++)
-        coord[i] = NodeTable->coord_[i][n1_ndx];
-    
-    //neighbors
-    neigh[0] = neigh[4] = NewNodeKey[1];
-    if(ElemTable->neigh_proc_[5][ndx] != -2)
-        neigh[1] = neigh[5] = ElemTable->neighbors_[5][ndx]; //This should be ok no matter what
-    else
-        neigh[1] = neigh[5] = ElemTable->neighbors_[1][ndx]; //this is only ok is neigh_proc==-2
-    neigh[2] = neigh[6] = ElemTable->neighbors_[2][ndx];
-    neigh[3] = neigh[6] = NewNodeKey[3];
-        
-    
-    //process of the neighbors
-    
-    neigh_proc[0] = myid;
-    neigh_proc[1] = (ElemTable->neigh_proc_[5][ndx] != -2) ? ElemTable->neigh_proc_[5][ndx] : ElemTable->neigh_proc_[1][ndx];
-    neigh_proc[2] = ElemTable->neigh_proc_[2][ndx];
-    neigh_proc[3] = myid;
-    
-    neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
-    
-    neigh_gen[0] = generation;
-    neigh_gen[1] = ElemTable->neigh_gen_[1][ndx];
-    neigh_gen[2] = ElemTable->neigh_gen_[2][ndx];
-    neigh_gen[3] = generation;
-    
-    bcptr = NULL;
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[1] || orig_bcptr->type[2])) //else bcptr is a NULL pointer by default
-    {
-        bcptr = new BC;
-        bcptr->type[1] = orig_bcptr->type[1];
-        bcptr->type[2] = orig_bcptr->type[2];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
-                bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
-            }
-        
-    }
-    my_elm_loc[0] = elm_loc[0] + 1;
-    my_elm_loc[1] = elm_loc[1] + 1;
-    dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
-    dpson[1] = ElemTable->drypoint_[1][ndx] * 2 - 0.5;
-    
-    ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-    if(ti_ndx_not_negative(ndxQuad9P))
-    {
-        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        ElemTable->elenode_[ndxQuad9P].void_bcptr();
-        //HT_Elem_Ptr->removeElement(old_elm);
-        ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    else{
-        ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    //state_vars = Quad9P->get_state_varsABCD();
-    //printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
-    
-    ElemTable->which_son_[ndxQuad9P]=2;  //--by jp
-    ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
-    
-    
-    
-    //---3rd new element---
-    
-    //the nodes
-    nodes[0] = ElemTable->node_key_[7][ndx];
-    nodes[1] = ElemTable->key_[ndx];
-    nodes[2] = ElemTable->node_key_[6][ndx];
-    nodes[3] = ElemTable->node_key_[3][ndx];
-    nodes[4] = NewNodeKey[9];
-    nodes[5] = NewNodeKey[12];
-    nodes[6] = NewNodeKey[14];
-    nodes[7] = NewNodeKey[11];
-    nodes[8] = NewNodeKey[3];
-    
-    n1_ndx = NodeTable->lookup_ndx(nodes[8]);
-    for(i = 0; i < DIMENSION; i++)
-        coord[i] = NodeTable->coord_[i][n1_ndx];
-    
-    //neighbors
-    neigh[0] = neigh[4] = NewNodeKey[0];
-    neigh[1] = neigh[5] = NewNodeKey[2];
-    if(ElemTable->neigh_proc_[6][ndx] != -2)
-        neigh[2] = neigh[6] = ElemTable->neighbors_[6][ndx];
-    else
-        neigh[2] = neigh[6] = ElemTable->neighbors_[2][ndx];
+		int elm_loc[2], my_elm_loc[2];
+		elm_loc[0] = 2 * ElemTable->elm_loc_[0][ndx];
+		elm_loc[1] = 2 * ElemTable->elm_loc_[1][ndx];
 
-    neigh[3] = neigh[6] = ElemTable->neighbors_[3][ndx];
 
-    
-    //process of the neighbors
-    
-    neigh_proc[0] = myid;
-    neigh_proc[1] = myid;
-    neigh_proc[2] = (ElemTable->neigh_proc_[6][ndx] != -2) ? ElemTable->neigh_proc_[6][ndx] : ElemTable->neigh_proc_[2][ndx];
-    neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
-    
-    neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
-    
-    neigh_gen[0] = generation;
-    neigh_gen[1] = generation;
-    neigh_gen[2] = ElemTable->neigh_gen_[2][ndx];
-    neigh_gen[3] = ElemTable->neigh_gen_[3][ndx];
-    
-    bcptr = NULL;
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[2] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default
-    {
-        bcptr = new BC;
-        bcptr->type[2] = orig_bcptr->type[2];
-        bcptr->type[3] = orig_bcptr->type[3];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
-                bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
-            }
-        
-    }
-    
-    my_elm_loc[0] = elm_loc[0];
-    my_elm_loc[1] = elm_loc[1] + 1;
-    dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
-    dpson[1] = ElemTable->drypoint_[1][ndx] * 2 - 0.5;
-    
-    ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-    if(ti_ndx_not_negative(ndxQuad9P))
-    {
-        //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        ElemTable->elenode_[ndxQuad9P].void_bcptr();
-        //HT_Elem_Ptr->removeElement(old_elm);
-        ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    else{
-        ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
-                         ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-                         dpson);
-    }
-    //state_vars = Quad9P->get_state_varsABCD();
-    //printf("state_vars= %g   %g   %g\n\n",state_vars[0],state_vars[1],state_vars[2]);
-    
-    ElemTable->which_son_[ndxQuad9P]=3;  //--by jp
-    ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
-    
-    
-    
-    //---CHANGING THE FATHER---
-    ElemTable->elenode_[ndx].set_sons(NewNodeKey);
-    // putting in brother info
-    for(i = 0; i < 4; i++)
-    {
-        ElemTable->elenode_[ElemTable->lookup_ndx(NewNodeKey[i])].set_brothers(NewNodeKey);
-    }
-    
-    return;
+		for(i = 0; i < 8; i++) //-- corners and sides
+		{
+			ndxNodeTemp[i] = NodeTable->lookup_ndx(ElemTable->node_key_[i][ndx]);
+			assert(ti_ndx_not_negative(ndxNodeTemp[i]));
+		}
+
+		for(i = 0; i < 5; i++)
+			order[i] = ElemTable->order_[i][ndx];
+
+		/*filling up the new order array
+		 str: side orders remain;
+		 newsides get the higher order of the already existing sides
+		 bubbles get the order of the old bubble
+		 */
+		for(i = 0; i < 4; i++) //-- orders for the 4 sons
+		{
+			int a = i - 1;
+			if(a == -1)
+				a = 3;
+			NewOrder[i][a] = order[a];
+			NewOrder[i][i] = order[i];
+			NewOrder[i][4] = order[4];
+		}
+
+		//for the new internal sides they get the order of the max side order
+		for(i = 0; i < 4; i++)
+		{
+			int a = i + 1;
+			int b = i + 2;
+			int c = i - 1;
+			if(i == 2)
+				b = 0;
+			if(i == 3)
+			{
+				a = 0;
+				b = 1;
+			} //in the case of the 3rd element
+			if(c == -1)
+				c = 3; //in the case of the 0th element
+
+			NewOrder[i][a] = NewOrder[i][b] = order[0];
+
+			for(int j = 1; j < 4; j++)
+				if(order[j] > NewOrder[i][a])
+					NewOrder[i][a] = NewOrder[i][b] = order[j];
+		}
+
+		ndxNodeTemp[8] = NodeTable->lookup_ndx(ElemTable->key_[ndx]);//-- bubble
+		assert(ti_ndx_not_negative(ndxNodeTemp[8]));
+
+		//SIDE 0
+		if(ElemTable->neigh_proc_[0][ndx] == -1)
+			boundary = 1;
+		else
+			boundary = 0;
+
+		if(boundary == 1 || ElemTable->neigh_gen_[0][ndx] <= ElemTable->generation_[ndx])
+		{
+			RefinedNeigh = 0;
+			info = S_S_CON;
+			if(ElemTable->neigh_proc_[0][ndx] != myid)
+			{
+				other_proc = 1;
+				info = -1;
+			}
+
+			which = 4;
+			//---Fourth new node---
+			/*n1_ndx = NodeTable->lookup_ndx(ElemTable->node_key_[4][ndx]);
+			n2_ndx = NodeTable->lookup_ndx(ElemTable->node_key_[0][ndx]);
+			n1 = &(NodeTable->elenode_[n1_ndx]);
+			n2 = &(NodeTable->elenode_[n2_ndx]);*/
+
+			create_new_node2(which, 0, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[0]);
+
+			//---Fourth old node---
+			if(RefinedNeigh || boundary)
+				NodeTable->info_[ndxNodeTemp[4]]=CORNER;
+			else if(other_proc)
+				NodeTable->info_[ndxNodeTemp[4]]=-1;
+			else
+				NodeTable->info_[ndxNodeTemp[4]]=S_C_CON;
+
+			//---Fifth new node---
+			which = 5;
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
+
+			create_new_node2(which, 1, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[0]);
+		}
+		else
+		{
+			//Keith Added this if
+			if((ElemTable->neigh_proc_[0][ndx] != myid) || ((ElemTable->neigh_proc_[4][ndx] != myid)
+					&& (ElemTable->neigh_proc_[4][ndx] != -2)))
+				other_proc = 1;
+			else
+				other_proc = 0;
+
+			// fourth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[0][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[4] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[4]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+			//fourth old node
+			NodeTable->info_[ndxNodeTemp[4]]=CORNER;
+			if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
+				NodeTable->info_[ndxNodeTemp[4]]=-1;
+
+			// fifth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[5] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[5]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+		}
+
+	//+++++++++++++++++++++++++++SIDE1
+
+		if(ElemTable->neigh_proc_[1][ndx] == -1)
+			boundary = 1;
+		else
+			boundary = 0;
+
+		if(boundary == 1 || ElemTable->neigh_gen_[1][ndx] <= ElemTable->generation_[ndx])
+		{
+			RefinedNeigh = 0;
+			info = S_S_CON;
+			if(ElemTable->neigh_gen_[1][ndx] != myid)    // && *(EmTemp->get_neigh_proc()+1)>0)
+			{
+				other_proc = 1;
+				info = -1;
+			}
+			else
+				other_proc = 0;
+
+			//---Eight new node---
+			which = 8;
+			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
+
+			create_new_node2(which, 1, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[1]);
+
+			//---Fifth old node---
+			if(RefinedNeigh || boundary)
+				NodeTable->info_[ndxNodeTemp[5]]=CORNER;
+			else if(other_proc)
+				NodeTable->info_[ndxNodeTemp[5]]=info;
+			else
+				NodeTable->info_[ndxNodeTemp[5]]=S_C_CON;
+
+			//---Thirteenth new node---
+			which = 13;
+			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
+
+			create_new_node2(which, 2, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[1]);
+		}
+		else
+		{
+			//Keith Added this if
+			if((ElemTable->neigh_proc_[1][ndx] != myid) || ((ElemTable->neigh_proc_[5][ndx] != myid)
+					&& (ElemTable->neigh_proc_[5][ndx] != -2)))
+				other_proc = 1;
+			else
+				other_proc = 0;
+
+			// eighth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[8] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[8]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+
+			// fifth old node
+			NodeTable->info_[ndxNodeTemp[5]]=CORNER;
+			if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
+				NodeTable->info_[ndxNodeTemp[5]]=-1;
+
+			// thirteenth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[13] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[13]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+		}
+
+		//+++++++++++++++++++++++++++SIDE2
+		if(ElemTable->neigh_proc_[2][ndx] == -1)
+			boundary = 1;
+		else
+			boundary = 0;
+
+		if(boundary == 1 || ElemTable->neigh_gen_[2][ndx] <= ElemTable->generation_[ndx])
+		{
+			info = S_S_CON;
+
+			if(ElemTable->neigh_gen_[2][ndx] != myid)    // && *(EmTemp->get_neigh_proc()+2)>0)
+			{
+				other_proc = 1;
+				info = -1;
+			}
+			else
+				other_proc = 0;
+
+			RefinedNeigh = 0;
+
+			//---Fourteenth new node---
+			which = 14;
+			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
+
+			create_new_node2(which, 3, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[2]);
+
+			//---Sixth old node---
+			if(RefinedNeigh || boundary)
+				NodeTable->info_[ndxNodeTemp[6]]=CORNER;
+			else if(other_proc)
+				NodeTable->info_[ndxNodeTemp[6]]=info;
+			else
+				NodeTable->info_[ndxNodeTemp[6]]=S_C_CON;
+
+			//---Fifteenth new node---
+			which = 15;
+			// geoflow info
+			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
+
+			create_new_node2(which, 2, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[2]);
+		}
+		else
+		{
+			//Keith Added this if
+			if((ElemTable->neigh_proc_[2][ndx] != myid) || ((ElemTable->neigh_proc_[6][ndx] != myid)
+					&& (ElemTable->neigh_proc_[6][ndx] != -2)))
+				other_proc = 1;
+			else
+				other_proc = 0;
+
+			// fourteenth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[14] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[14]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+
+			// sixth old node
+			NodeTable->info_[ndxNodeTemp[6]]=CORNER;
+			if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
+				NodeTable->info_[ndxNodeTemp[6]]=-1;
+
+			// fifteenth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[15] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[15]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+		}
+
+		//+++++++++++++++++++++++++++SIDE 3
+		if(ElemTable->neigh_proc_[3][ndx] == -1)
+			boundary = 1;
+		else
+			boundary = 0;
+
+		if(boundary == 1 || ElemTable->neigh_gen_[3][ndx] <= ElemTable->generation_[ndx])
+		{
+			info = S_S_CON;
+
+			if(ElemTable->neigh_gen_[3][ndx] != myid)  //&& *(EmTemp->get_neigh_proc()+3)>0)
+			{
+				other_proc = 1;
+				info = -1;
+			}
+			else
+				other_proc = 0;
+
+			RefinedNeigh = 0;
+
+			//---Sixth new node----
+			which = 6;
+			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
+
+			create_new_node2(which, 0, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[3]);
+
+			//---Seventh old node---
+			if(RefinedNeigh || boundary)
+				NodeTable->info_[ndxNodeTemp[7]]=CORNER;
+			else if(other_proc)
+				NodeTable->info_[ndxNodeTemp[7]]=-1;
+			else
+				NodeTable->info_[ndxNodeTemp[7]]=S_C_CON;
+
+			//---Eleventh new node---
+			which = 11;
+			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
+			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
+
+			create_new_node2(which, 3, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[3]);
+		}
+		else
+		{
+			//Keith Added this if
+			if((ElemTable->neigh_proc_[3][ndx] != myid) || ((ElemTable->neigh_proc_[7][ndx] != myid)
+					&& (ElemTable->neigh_proc_[7][ndx] != -2)))
+				other_proc = 1;
+			else
+				other_proc = 0;
+
+			// sixth new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[6] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[6]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+
+			// seventh old node
+			NodeTable->info_[ndxNodeTemp[7]]=CORNER;
+			if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
+				NodeTable->info_[ndxNodeTemp[7]]=-1;
+			// eleventh new node
+			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]);
+			i = 0;
+			which = -1;
+			while (i < 4 && which == -1)
+			{
+				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+					which = i;
+				i++;
+			}
+			assert(which != -1);
+			NewNodeKey[11] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
+			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[11]);
+			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
+				NodeTable->info_[n1_ndx]=SIDE;
+			else
+				NodeTable->info_[n1_ndx]=S_C_CON;
+		}
+		//++++++++++++++++INTERNAL SIDE NODES 7, 8OLD, 12, 9, 10
+
+		RefinedNeigh = 0;
+		boundary = 0;
+		info = SIDE;
+
+		//---Seventh new node---
+
+		which = 7;
+		// geoflow info
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
+		//n2 = (Node*) NodeTable->lookup(EmTemp->key());
+
+		create_new_node2(which, 4, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][1]);
+
+		NodeTable->info_[ndxNodeTemp[8]]=CORNER;    //changing the old bubble
+
+		//---Twelwth new node---
+
+		which = 12;
+		// geoflow info
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
+
+		create_new_node2(which, 6, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[3][1]);
+
+		//---Ninth new node---
+
+		which = 9;
+		// geoflow info
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
+
+		create_new_node2(which, 7, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][2]);
+
+		//---Tenth new node---
+
+		which = 10;
+		// geoflow info
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
+
+		create_new_node2(which, 5, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[1][2]);
+
+		//+++++++++++++++++++THE NEW BUBBLES 0, 1, 2, 3
+
+		info = BUBBLE;
+
+		//---0th new node---
+
+		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[6]);
+		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[7]);
+		which = 0;
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
+		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
+		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
+
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][4]);
+
+		//---1st new node---
+
+		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[7]);
+		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[8]);
+		which = 1;
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
+		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
+
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[1][4]);
+
+		//---2nd new node---
+
+		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[12]);
+		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[13]);
+		which = 2;
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
+		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
+		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
+
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[2][4]);
+
+		//---3rd new node---
+
+		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[11]);
+		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[12]);
+		which = 3;
+		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
+		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
+		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
+
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[3][4]);
+
+		//---NEW ELEMENTS---
+
+		SFC_Key nodes[9];
+		SFC_Key neigh[8];
+		int neigh_proc[8];
+		BC* bcptr = NULL;
+		BC* orig_bcptr = ElemTable->bcptr_[ndx];
+		int generation = ElemTable->generation_[ndx] + 1;
+		int neigh_gen[4];
+		int material = ElemTable->material_[ndx];
+
+		double coord[DIMENSION];
+		//---0th new element---
+
+		//the nodes
+
+		nodes[0] = ElemTable->node_key_[0][ndx];
+		nodes[1] = ElemTable->node_key_[4][ndx];
+		nodes[2] = ElemTable->key_[ndx];
+		nodes[3] = ElemTable->node_key_[7][ndx];
+		nodes[4] = NewNodeKey[4];
+		nodes[5] = NewNodeKey[7];
+		nodes[6] = NewNodeKey[9];
+		nodes[7] = NewNodeKey[6];
+		nodes[8] = NewNodeKey[0];
+
+		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		for(i = 0; i < DIMENSION; i++)
+			coord[i] = NodeTable->coord_[i][n1_ndx];
+		//neighbors
+		neigh[0] = neigh[4] = ElemTable->neighbors_[0][ndx]; //Why is this ok if not ok for 3 down
+		neigh[1] = neigh[5] = NewNodeKey[1];
+		neigh[2] = neigh[6] = NewNodeKey[3];
+		if(ElemTable->neigh_proc_[7][ndx]!= -2)
+			neigh[3] = neigh[7] = ElemTable->neighbors_[7][ndx]; //This should be okay no matter what
+		else
+			neigh[3] = neigh[7] = ElemTable->neighbors_[3][ndx]; //This is only ok if neigh_proc==-2
+
+		//process of the neighbors
+
+		neigh_proc[0] = ElemTable->neigh_proc_[0][ndx];
+		neigh_proc[1] = myid;
+		neigh_proc[2] = myid;
+		if(ElemTable->neigh_proc_[7][ndx] != -2)
+			neigh_proc[3] = ElemTable->neigh_proc_[7][ndx]; //depending if the neighboring element is already refined
+		else
+			neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+
+		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
+
+		neigh_gen[0] = ElemTable->neigh_gen_[0][ndx];
+		neigh_gen[1] = generation;
+		neigh_gen[2] = generation;
+		neigh_gen[3] = ElemTable->neigh_gen_[3][ndx];
+
+		//boundary conditions
+		if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
+		{
+			bcptr = new BC;
+			bcptr->type[0] = orig_bcptr->type[0];
+			bcptr->type[3] = orig_bcptr->type[3];
+			for(i = 0; i < 2; i++)
+				for(int j = 0; j < 2; j++)
+				{
+					bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
+					bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
+				}
+		}
+
+		double err = ElemTable->el_error_[0][ndx] * .5; //added by jp oct11
+		double sol = ElemTable->el_solution_[0][ndx] * .5; //added by jp oct11
+		// son 0 can use elm_loc
+		int iwetnodefather = ElemTable->iwetnode_[ndx];
+		double Awetfather = ElemTable->Awet_[ndx];
+		double dpson[2];
+		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
+		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
+
+		Element* old_elm;
+		ti_ndx_t old_elm_ndx;
+
+		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
+		if(ti_ndx_not_negative(ndxQuad9P))
+		{
+			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+			//old_elm->void_bcptr();
+			ElemTable->elenode_[ndxQuad9P].void_bcptr();
+			//HT_Elem_Ptr->removeElement(old_elm);
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		else{
+
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		//double* state_vars = Quad9P->get_state_varsABCD();
+		//printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
+
+		ElemTable->which_son_[ndxQuad9P]=0;  //--by jp, 0 means son 0
+		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
+
+
+		//---1st new element---
+
+		//the nodes
+
+		nodes[0] = ElemTable->node_key_[4][ndx];
+		nodes[1] = ElemTable->node_key_[1][ndx];
+		nodes[2] = ElemTable->node_key_[5][ndx];
+		nodes[3] = ElemTable->key_[ndx];
+		nodes[4] = NewNodeKey[5];
+		nodes[5] = NewNodeKey[8];
+		nodes[6] = NewNodeKey[10];
+		nodes[7] = NewNodeKey[7];
+		nodes[8] = NewNodeKey[1];
+
+		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		for(i = 0; i < DIMENSION; i++)
+			coord[i] = NodeTable->coord_[i][n1_ndx];
+
+		//neighbors
+		if(ElemTable->neigh_proc_[4][ndx] != -2)
+			neigh[0] = neigh[4] = ElemTable->neighbors_[4][ndx]; //this should be ok now matter what
+		else
+			neigh[0] = neigh[4] = ElemTable->neighbors_[0][ndx]; //this is only ok if neigh_proc==-2
+		neigh[1] = neigh[5] = ElemTable->neighbors_[1][ndx];
+		neigh[2] = neigh[6] = NewNodeKey[2];
+		neigh[3] = neigh[7] = NewNodeKey[0];
+
+		//process of the neighbors
+
+		neigh_proc[0] = (ElemTable->neigh_proc_[4][ndx] != -2) ? ElemTable->neigh_proc_[4][ndx] : ElemTable->neigh_proc_[0][ndx];
+		neigh_proc[1] = ElemTable->neigh_proc_[1][ndx];
+		neigh_proc[2] = myid;
+		neigh_proc[3] = myid;
+
+		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
+
+		neigh_gen[0] = ElemTable->neigh_gen_[0][ndx];
+		neigh_gen[1] = ElemTable->neigh_gen_[1][ndx];
+		neigh_gen[2] = generation;
+		neigh_gen[3] = generation;
+
+		bcptr = NULL;
+		//boundary conditions
+		if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[1])) //else bcptr is a NULL pointer by default
+		{
+			bcptr = new BC;
+			bcptr->type[0] = orig_bcptr->type[0];
+			bcptr->type[1] = orig_bcptr->type[1];
+			for(i = 0; i < 2; i++)
+				for(int j = 0; j < 2; j++)
+				{
+					bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
+					bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
+				}
+
+		}
+		my_elm_loc[0] = elm_loc[0] + 1;
+		my_elm_loc[1] = elm_loc[1];
+		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
+		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
+
+		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
+		if(ti_ndx_not_negative(ndxQuad9P))
+		{
+			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+			ElemTable->elenode_[ndxQuad9P].void_bcptr();
+			//HT_Elem_Ptr->removeElement(old_elm);
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		else{
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		//state_vars = Quad9P->get_state_varsABCD();
+		//printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
+
+		ElemTable->which_son_[ndxQuad9P]=1;  //--by jp
+		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
+
+
+		//---2nd new element---
+
+		//the nodes
+		nodes[0] = ElemTable->key_[ndx];
+		nodes[1] = ElemTable->node_key_[5][ndx];
+		nodes[2] = ElemTable->node_key_[2][ndx];
+		nodes[3] = ElemTable->node_key_[6][ndx];
+		nodes[4] = NewNodeKey[10];
+		nodes[5] = NewNodeKey[13];
+		nodes[6] = NewNodeKey[15];
+		nodes[7] = NewNodeKey[12];
+		nodes[8] = NewNodeKey[2];
+
+		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		for(i = 0; i < DIMENSION; i++)
+			coord[i] = NodeTable->coord_[i][n1_ndx];
+
+		//neighbors
+		neigh[0] = neigh[4] = NewNodeKey[1];
+		if(ElemTable->neigh_proc_[5][ndx] != -2)
+			neigh[1] = neigh[5] = ElemTable->neighbors_[5][ndx]; //This should be ok no matter what
+		else
+			neigh[1] = neigh[5] = ElemTable->neighbors_[1][ndx]; //this is only ok is neigh_proc==-2
+		neigh[2] = neigh[6] = ElemTable->neighbors_[2][ndx];
+		neigh[3] = neigh[6] = NewNodeKey[3];
+
+
+		//process of the neighbors
+
+		neigh_proc[0] = myid;
+		neigh_proc[1] = (ElemTable->neigh_proc_[5][ndx] != -2) ? ElemTable->neigh_proc_[5][ndx] : ElemTable->neigh_proc_[1][ndx];
+		neigh_proc[2] = ElemTable->neigh_proc_[2][ndx];
+		neigh_proc[3] = myid;
+
+		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
+
+		neigh_gen[0] = generation;
+		neigh_gen[1] = ElemTable->neigh_gen_[1][ndx];
+		neigh_gen[2] = ElemTable->neigh_gen_[2][ndx];
+		neigh_gen[3] = generation;
+
+		bcptr = NULL;
+		//boundary conditions
+		if(orig_bcptr && (orig_bcptr->type[1] || orig_bcptr->type[2])) //else bcptr is a NULL pointer by default
+		{
+			bcptr = new BC;
+			bcptr->type[1] = orig_bcptr->type[1];
+			bcptr->type[2] = orig_bcptr->type[2];
+			for(i = 0; i < 2; i++)
+				for(int j = 0; j < 2; j++)
+				{
+					bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
+					bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
+				}
+
+		}
+		my_elm_loc[0] = elm_loc[0] + 1;
+		my_elm_loc[1] = elm_loc[1] + 1;
+		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
+		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 - 0.5;
+
+		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
+		if(ti_ndx_not_negative(ndxQuad9P))
+		{
+			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+			ElemTable->elenode_[ndxQuad9P].void_bcptr();
+			//HT_Elem_Ptr->removeElement(old_elm);
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		else{
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		//state_vars = Quad9P->get_state_varsABCD();
+		//printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
+
+		ElemTable->which_son_[ndxQuad9P]=2;  //--by jp
+		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
+
+
+
+		//---3rd new element---
+
+		//the nodes
+		nodes[0] = ElemTable->node_key_[7][ndx];
+		nodes[1] = ElemTable->key_[ndx];
+		nodes[2] = ElemTable->node_key_[6][ndx];
+		nodes[3] = ElemTable->node_key_[3][ndx];
+		nodes[4] = NewNodeKey[9];
+		nodes[5] = NewNodeKey[12];
+		nodes[6] = NewNodeKey[14];
+		nodes[7] = NewNodeKey[11];
+		nodes[8] = NewNodeKey[3];
+
+		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		for(i = 0; i < DIMENSION; i++)
+			coord[i] = NodeTable->coord_[i][n1_ndx];
+
+		//neighbors
+		neigh[0] = neigh[4] = NewNodeKey[0];
+		neigh[1] = neigh[5] = NewNodeKey[2];
+		if(ElemTable->neigh_proc_[6][ndx] != -2)
+			neigh[2] = neigh[6] = ElemTable->neighbors_[6][ndx];
+		else
+			neigh[2] = neigh[6] = ElemTable->neighbors_[2][ndx];
+
+		neigh[3] = neigh[6] = ElemTable->neighbors_[3][ndx];
+
+
+		//process of the neighbors
+
+		neigh_proc[0] = myid;
+		neigh_proc[1] = myid;
+		neigh_proc[2] = (ElemTable->neigh_proc_[6][ndx] != -2) ? ElemTable->neigh_proc_[6][ndx] : ElemTable->neigh_proc_[2][ndx];
+		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+
+		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
+
+		neigh_gen[0] = generation;
+		neigh_gen[1] = generation;
+		neigh_gen[2] = ElemTable->neigh_gen_[2][ndx];
+		neigh_gen[3] = ElemTable->neigh_gen_[3][ndx];
+
+		bcptr = NULL;
+		//boundary conditions
+		if(orig_bcptr && (orig_bcptr->type[2] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default
+		{
+			bcptr = new BC;
+			bcptr->type[2] = orig_bcptr->type[2];
+			bcptr->type[3] = orig_bcptr->type[3];
+			for(i = 0; i < 2; i++)
+				for(int j = 0; j < 2; j++)
+				{
+					bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
+					bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
+				}
+
+		}
+
+		my_elm_loc[0] = elm_loc[0];
+		my_elm_loc[1] = elm_loc[1] + 1;
+		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
+		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 - 0.5;
+
+		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
+		if(ti_ndx_not_negative(ndxQuad9P))
+		{
+			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
+			ElemTable->elenode_[ndxQuad9P].void_bcptr();
+			//HT_Elem_Ptr->removeElement(old_elm);
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		else{
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
+							 dpson);
+		}
+		//state_vars = Quad9P->get_state_varsABCD();
+		//printf("state_vars= %g   %g   %g\n\n",state_vars[0],state_vars[1],state_vars[2]);
+
+		ElemTable->which_son_[ndxQuad9P]=3;  //--by jp
+		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
+
+
+
+		//---CHANGING THE FATHER---
+		ElemTable->elenode_[ndx].set_sons(NewNodeKey);
+		// putting in brother info
+		for(i = 0; i < 4; i++)
+		{
+			ElemTable->elenode_[ElemTable->lookup_ndx(NewNodeKey[i])].set_brothers(NewNodeKey);
+		}
+
+
+        adapted[ndx]=OLDFATHER;
+        refined[ndx]=1;
+	}
+	return;
 }
-
 //()---new node numbering
 
 //  3---(14)--6---(15)--2

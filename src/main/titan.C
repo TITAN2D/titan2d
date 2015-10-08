@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
     	int num_threads=1;
 
-    	for(int i;i<argc;i++){
+    	for(int i=0;i<argc;i++){
     		string arg(argv[i]);
     		//strip off arguments which should not make to python
     		if(arg=="-nt")
@@ -135,7 +135,6 @@ int main(int argc, char *argv[])
     		++argc4py;
     	}
 
-
     	if(argc4py > 1){
     		Py_Main(argc4py, argv4py);
     	}
@@ -149,7 +148,6 @@ int main(int argc, char *argv[])
     {
     	printUsage=true;//print usage and exit
     }
-
     if(printUsage)
     {
 		if(myid == 0)
