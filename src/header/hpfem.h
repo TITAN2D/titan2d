@@ -40,6 +40,8 @@ using namespace std;
 #include <string.h>
 #include <assert.h>
 
+#include "titan2d.h"
+
 #include "properties.h"
 #include "elenode.hpp"
 #include "recv.h"

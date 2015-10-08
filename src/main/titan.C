@@ -135,6 +135,12 @@ int main(int argc, char *argv[])
     		++argc4py;
     	}
 
+#ifdef _OPENMP
+    	threads_number=omp_get_max_threads();
+    	printf("Max threads number is %d\n\n",threads_number);
+#else
+        threads_number=1;
+#endif
     	if(argc4py > 1){
     		Py_Main(argc4py, argv4py);
     	}

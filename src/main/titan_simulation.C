@@ -39,6 +39,7 @@ int REFINE_LEVEL = 3;
 
 TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
+int threads_number;
 
 
 #include <stdio.h>

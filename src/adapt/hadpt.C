@@ -52,6 +52,91 @@ extern void htflush(NodeHashTable*, NodeHashTable*, int);
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
+PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,const double _geo_target)
+    :ElemTable(_ElemTable),geo_target(_geo_target),
+    elements(ElemTable->elenode_),
+    status(ElemTable->status_),
+    adapted(ElemTable->adapted_),
+    generation(ElemTable->generation_),
+    el_error(ElemTable->el_error_[0])
+
+{
+}
+void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
+{
+    //@ElementsSingleLoop
+    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+    {
+        //-- this requirement is used to exclude the new elements
+        if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
+        {
+            if((el_error[ndx] > geo_target)
+                || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
+                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
+                || (elements[ndx].if_source_boundary(ElemTable) > 0) )
+            {
+                seedRefinement.push_back(ndx);
+            }
+        }
+    }
+}
+BuferFirstLayerRefinementsFinder::BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable)
+    :ElemTable(_ElemTable),
+    elements(ElemTable->elenode_),
+    status(ElemTable->status_)
+
+{
+}
+void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
+{
+	//@ElementsSingleLoop
+	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+	{
+		if(status[ndx]>=0)
+		{
+			if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
+			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
+			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
+			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
+			{
+			    seedRefinement.push_back(ndx);
+			}
+		}
+    }
+}
+BuferNextLayerRefinementsFinder::BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable)
+    :ElemTable(_ElemTable),NodeTable(_NodeTable),
+    elements(ElemTable->elenode_),
+    status(ElemTable->status_)
+
+{
+}
+void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
+{
+	//@ElementsSingleLoop
+	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+	{
+		if(status[ndx]>=0)
+		{
+			if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
+			{
+			    seedRefinement.push_back(ndx);
+			}
+		}
+    }
+}
+
+HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):TempList(_ElemTable, 384)
+{
+    ElemTable=_ElemTable;
+    NodeTable=_NodeTable;
+    matprops_ptr=_matprops;
+    timeprops_ptr=_timeprops;
+    num_buffer_layer=_num_buffer_layer;
+}
+
 void HAdapt::adapt(int h_count, double target)
 /*-------------
  scanning element hashtable, if the error of an element is bigger than the target error
@@ -97,7 +182,12 @@ void HAdapt::adapt(int h_count, double target)
     
     // what it really does?
     if(numprocs>1)
+    {
     	delete_unused_elements_nodes(ElemTable, NodeTable, myid);
+    	//update temporary arrays of elements/nodes pointers
+        ElemTable->updateLocalElements();
+        ElemTable->updatePointersToNeighbours();
+    }
     
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
@@ -126,63 +216,20 @@ void HAdapt::adapt(int h_count, double target)
         //don't need to check if element schedule for deletion
         if(adapted[ndx] >= NEWSON)adapted[ndx] = NOTRECADAPTED;
     }
-    
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-    
-    vector<int> set_for_refinement;
-    vector<ti_ndx_t> primaryRefinement;
-    vector<ti_ndx_t> allRefinement;
-    
-    set_for_refinement.assign(ElemTable->size(),0);
     
     //find out primary refinements
-    TIMING3_START(t_start3);
-    findPrimaryRefinements(primaryRefinement,geo_target);
-    TIMING3_STOP(primaryRefinementsSearch,t_start3);
-
-    //findout triggered refinements
-    TIMING3_START(t_start3);
-    findTriggeredRefinements(primaryRefinement, set_for_refinement, allRefinement);
-    TIMING3_STOP(triggeredRefinementsSearch,t_start3);
-
-    //do refinements
-    TIMING3_START(t_start3);
-    refineElements(allRefinement);
-    TIMING3_STOP(refineElements,t_start3);
-
-    TIMING3_START(t_start3);
-    refinedNeighboursUpdate(allRefinement);
-    TIMING3_STOP(refinedElementsNeigboursUpdate,t_start3);
-    //RefinedList was trashlist in previous step
-    
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-    if((myid == TARGETPROC))
-    { //&&(timeprops_ptr->iter==354)){
-        AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, 0.0);
-        printf("After third AssertMeshErrorFree\n");
-    }
+    PrimaryRefinementsFinder primaryRefinementsFinder(ElemTable,geo_target);
+    refine2(primaryRefinementsFinder);
     
     /*************************************************************************/
     /* Add an num_buffer_layer wide buffer layer around the pile/mass-source */
     /*************************************************************************/
-    TIMING3_START(t_start3);
     if(num_buffer_layer >= 1)
     {
-        
-        move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-        
-        //reset temporary arrays
-        primaryRefinement.resize(0);
-        allRefinement.resize(0);
-        set_for_refinement.assign(ElemTable->size(),0);
-
         //refine where necessary before placing the innermost buffer layer
-        findBuferFirstLayerRefinements(primaryRefinement);
-        findTriggeredRefinements(primaryRefinement, set_for_refinement, allRefinement);
-        refineElements(allRefinement);
-        refinedNeighboursUpdate(allRefinement);
-
-        move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+        BuferFirstLayerRefinementsFinder buferFirstLayerRefinementsFinder(ElemTable);
+        refine2(buferFirstLayerRefinementsFinder);
         
         //mark the elements in the innermost buffer layer as the BUFFER layer
         //@ElementsBucketDoubleLoop2_OrderDontMatter
@@ -198,27 +245,15 @@ void HAdapt::adapt(int h_count, double target)
             		adapted[ndx]=BUFFER;
             }
         }
+        move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
         //increase the width of the buffer layer by one element at a time
         //until it's num_buffer_layer Elements wide
         for(int ibufferlayer = 2; ibufferlayer <= num_buffer_layer; ibufferlayer++)
         {
-            
-            move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-            
-            //reset temporary arrays
-			primaryRefinement.resize(0);
-			allRefinement.resize(0);
-			set_for_refinement.assign(ElemTable->size(),0);
-
             //refine where necessary before placing the next buffer layer
-			findBuferNextLayerRefinements(primaryRefinement);
-			findTriggeredRefinements(primaryRefinement, set_for_refinement, allRefinement);
-			refineElements(allRefinement);
-			//refine_neigh_update() needs to know new sons are NEWSONs,
-            //can't call them BUFFER until after refine_neigh_update()
-			refinedNeighboursUpdate(allRefinement);
-
-            move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+			BuferNextLayerRefinementsFinder buferNextLayerRefinementsFinder(ElemTable, NodeTable);
+			refine2(buferNextLayerRefinementsFinder);
             
             //move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr,timeprops_ptr);
             if((myid == TARGETPROC))
@@ -229,7 +264,7 @@ void HAdapt::adapt(int h_count, double target)
             
             //mark the elements just outside the buffer layer as the NEWBUFFER layer
             //reset temporary arrays
-            primaryRefinement.resize(0);
+            seedRefinement.resize(0);
             //@ElementsBucketDoubleLoop2_OrderDontMatter
 			for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
 			{
@@ -237,21 +272,21 @@ void HAdapt::adapt(int h_count, double target)
 				{
 					ti_ndx_t ndx=bucket[ibuck].ndx[ielm];
 					if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable,REFINE_THRESHOLD)> 0)
-						primaryRefinement.push_back(ndx);
+						seedRefinement.push_back(ndx);
 
 				}
 			}
 			//remark the NEWBUFFER elements as BUFFER element (move them from NEWBUFFER to BUFFER)
-			for(ti_ndx_t ndx2:primaryRefinement)
+			for(ti_ndx_t ndx2:seedRefinement)
 				adapted[ndx2]=BUFFER;
-
+			move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
         }
     }
-    TIMING3_STOP(sourcesRefinements,t_start3);
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
+
     htflush(ElemTable, NodeTable, 2);
     
+    TIMING3_START(t_start3);
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {
@@ -300,67 +335,38 @@ void HAdapt::adapt(int h_count, double target)
             
         }
     }
+    TIMING3_STOP(refinementsPostProc,t_start3);
     return;
 }
-void HAdapt::findPrimaryRefinements(vector<ti_ndx_t> &primaryRefinement, const double geo_target)
+void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 {
-	tivector<Element> &elements=ElemTable->elenode_;
-	tivector<ContentStatus> &status=ElemTable->status_;
-	tivector<int> &adapted=ElemTable->adapted_;
-	tivector<int> &generation=ElemTable->generation_;
-	tivector<double> &el_error=ElemTable->el_error_[0];
-    //@ElementsSingleLoop
-    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
-    {
-        //-- this requirement is used to exclude the new elements
-        if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
-        {
-            if((el_error[ndx] > geo_target)
-                || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
-                || (elements[ndx].if_source_boundary(ElemTable) > 0) )
-            {
-                primaryRefinement.push_back(ndx);
-            }
-        }
-    }
-}
-void HAdapt::findBuferFirstLayerRefinements(vector<ti_ndx_t> &primaryRefinement)
-{
-	tivector<Element> &elements=ElemTable->elenode_;
-	tivector<ContentStatus> &status=ElemTable->status_;
-	//@ElementsSingleLoop
-	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
-	{
-		if(status[ndx]>=0)
-		{
-			if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
-			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
-			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
-			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
-			{
-				primaryRefinement.push_back(ndx);
-			}
-		}
-    }
-}
-void HAdapt::findBuferNextLayerRefinements(vector<ti_ndx_t> &primaryRefinement)
-{
-	tivector<Element> &elements=ElemTable->elenode_;
-	tivector<ContentStatus> &status=ElemTable->status_;
-	//@ElementsSingleLoop
-	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
-	{
-		if(status[ndx]>=0)
-		{
-			if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
-			{
-				primaryRefinement.push_back(ndx);
-			}
-		}
-    }
+    TIMING3_DEFINE(t_start3);
+    //reset temporary arrays
+    seedRefinement.resize(0);
+    allRefinement.resize(0);
+    set_for_refinement.assign(ElemTable->size(),0);
+
+    //find sead refinements
+    TIMING3_START(t_start3);
+    seedRefinementsFinder.findSeedRefinements(seedRefinement);
+    TIMING3_STOP(seedRefinementsSearch,t_start3);
+
+    //findout triggered refinements
+    TIMING3_START(t_start3);
+    findTriggeredRefinements(seedRefinement, set_for_refinement, allRefinement);
+    TIMING3_STOP(triggeredRefinementsSearch,t_start3);
+
+    //do refinements
+    TIMING3_START(t_start3);
+    refineElements(allRefinement);
+    TIMING3_STOP(refineElements,t_start3);
+
+    //update neighbours
+    TIMING3_START(t_start3);
+    refinedNeighboursUpdate(allRefinement);
+    TIMING3_STOP(refinedElementsNeigboursUpdate,t_start3);
+
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
 }
 
 #ifdef DISABLED

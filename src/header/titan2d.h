@@ -22,4 +22,6 @@
 #define TITAN2D_VERSION_MINOR 1
 #define TITAN2D_VERSION_REVISION 2
 
+extern int threads_number;
+
 #endif
