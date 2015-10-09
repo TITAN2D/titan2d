@@ -31,13 +31,14 @@ public:
 class PrimaryRefinementsFinder:public SeedRefinementsFinder
 {
 public:
-	PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,const double _geo_target);
+	PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable);
 	virtual ~PrimaryRefinementsFinder(){}
 	virtual void findSeedRefinements(vector<ti_ndx_t> &seedRefinement);
 public:
 	double geo_target;
 private:
 	ElementsHashTable* ElemTable;
+	NodeHashTable* NodeTable;
 	tivector<Element> &elements;
 	tivector<ContentStatus> &status;
 	tivector<int> &adapted;
@@ -105,6 +106,11 @@ private:
     void create_new_node2(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
                      SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary, const int order);
     void refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement);
+
+private:
+    PrimaryRefinementsFinder primaryRefinementsFinder;
+    BuferFirstLayerRefinementsFinder buferFirstLayerRefinementsFinder;
+    BuferNextLayerRefinementsFinder buferNextLayerRefinementsFinder;
 
 private:
     //temporary arrays used during refinement

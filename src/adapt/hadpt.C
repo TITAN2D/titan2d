@@ -52,8 +52,10 @@ extern void htflush(NodeHashTable*, NodeHashTable*, int);
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
-PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,const double _geo_target)
-    :ElemTable(_ElemTable),geo_target(_geo_target),
+PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable):
+    ElemTable(_ElemTable),
+    NodeTable(_NodeTable),
+    geo_target(0.0),
     elements(ElemTable->elenode_),
     status(ElemTable->status_),
     adapted(ElemTable->adapted_),
@@ -128,13 +130,17 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
     }
 }
 
-HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):TempList(_ElemTable, 384)
+HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):
+   TempList(_ElemTable, 384),
+   ElemTable(_ElemTable),
+   NodeTable(_NodeTable),
+   matprops_ptr(_matprops),
+   timeprops_ptr(_timeprops),
+   num_buffer_layer(_num_buffer_layer),
+   primaryRefinementsFinder(ElemTable, NodeTable),
+   buferFirstLayerRefinementsFinder(ElemTable),
+   buferNextLayerRefinementsFinder(ElemTable, NodeTable)
 {
-    ElemTable=_ElemTable;
-    NodeTable=_NodeTable;
-    matprops_ptr=_matprops;
-    timeprops_ptr=_timeprops;
-    num_buffer_layer=_num_buffer_layer;
 }
 
 void HAdapt::adapt(int h_count, double target)
@@ -194,7 +200,7 @@ void HAdapt::adapt(int h_count, double target)
     
     // determine which elements to refine and flag them for refinement
     TIMING3_START(t_start3);
-    double geo_target = element_weight(ElemTable, NodeTable, myid, numprocs);
+    primaryRefinementsFinder.geo_target = element_weight(ElemTable, NodeTable, myid, numprocs);
     TIMING3_STOP(elementWeightCalc,t_start3);
     
     int debug_ref_flag = 0;
@@ -219,7 +225,6 @@ void HAdapt::adapt(int h_count, double target)
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
     //find out primary refinements
-    PrimaryRefinementsFinder primaryRefinementsFinder(ElemTable,geo_target);
     refine2(primaryRefinementsFinder);
     
     /*************************************************************************/
@@ -228,7 +233,6 @@ void HAdapt::adapt(int h_count, double target)
     if(num_buffer_layer >= 1)
     {
         //refine where necessary before placing the innermost buffer layer
-        BuferFirstLayerRefinementsFinder buferFirstLayerRefinementsFinder(ElemTable);
         refine2(buferFirstLayerRefinementsFinder);
         
         //mark the elements in the innermost buffer layer as the BUFFER layer
@@ -252,7 +256,6 @@ void HAdapt::adapt(int h_count, double target)
         for(int ibufferlayer = 2; ibufferlayer <= num_buffer_layer; ibufferlayer++)
         {
             //refine where necessary before placing the next buffer layer
-			BuferNextLayerRefinementsFinder buferNextLayerRefinementsFinder(ElemTable, NodeTable);
 			refine2(buferNextLayerRefinementsFinder);
             
             //move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr,timeprops_ptr);
