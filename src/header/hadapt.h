@@ -44,6 +44,8 @@ private:
 	tivector<int> &adapted;
 	tivector<int> &generation;
 	tivector<double> &el_error;
+
+	vector< vector<ti_ndx_t> > loc_SeedRefinement;
 };
 
 //!BuferFirstLayerRefinementsFinder
@@ -57,6 +59,8 @@ private:
     ElementsHashTable* ElemTable;
     tivector<Element> &elements;
     tivector<ContentStatus> &status;
+
+    vector< vector<ti_ndx_t> > loc_SeedRefinement;
 };
 
 
@@ -72,6 +76,8 @@ private:
     NodeHashTable* NodeTable;
     tivector<Element> &elements;
     tivector<ContentStatus> &status;
+
+    vector< vector<ti_ndx_t> > loc_SeedRefinement;
 };
 
 

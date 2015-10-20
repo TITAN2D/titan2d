@@ -104,6 +104,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 {
 	tivector<int> &adapted=ElemTable->adapted_;
 	tivector<int> &refined=ElemTable->refined_;
+
 	for(ti_ndx_t ndx:allRefinement)
 	{
 		//printf("refining element %u %u \n",*(EmTemp->pass_key()), *(EmTemp->pass_key()+1));
@@ -133,13 +134,15 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 		for(i = 0; i < 8; i++) //-- corners and sides
 		{
-			ndxNodeTemp[i] = NodeTable->lookup_ndx(ElemTable->node_key_[i][ndx]);
-			assert(ti_ndx_not_negative(ndxNodeTemp[i]));
+			ndxNodeTemp[i] = ElemTable->node_key_ndx_[i][ndx];
+			ASSERT3(ElemTable->node_key_ndx_[i][ndx]==NodeTable->lookup_ndx(ElemTable->node_key_[i][ndx]));
+			ASSERT3(ti_ndx_not_negative(ndxNodeTemp[i]));
 		}
 
 		for(i = 0; i < 5; i++)
+		{
 			order[i] = ElemTable->order_[i][ndx];
-
+		}
 		/*filling up the new order array
 		 str: side orders remain;
 		 newsides get the higher order of the already existing sides
@@ -177,9 +180,10 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				if(order[j] > NewOrder[i][a])
 					NewOrder[i][a] = NewOrder[i][b] = order[j];
 		}
-
-		ndxNodeTemp[8] = NodeTable->lookup_ndx(ElemTable->key_[ndx]);//-- bubble
-		assert(ti_ndx_not_negative(ndxNodeTemp[8]));
+        //-- bubble
+		ndxNodeTemp[8] = ElemTable->node_bubble_ndx_[ndx];//NodeTable->lookup_ndx(ElemTable->key_[ndx]);
+		ASSERT3(ElemTable->node_bubble_ndx_[ndx]==NodeTable->lookup_ndx(ElemTable->key_[ndx]));
+        ASSERT3(ti_ndx_not_negative(ndxNodeTemp[8]));
 
 		//SIDE 0
 		if(ElemTable->neigh_proc_[0][ndx] == -1)

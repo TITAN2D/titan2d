@@ -22,7 +22,7 @@
 #include "../header/hpfem.h"
 #include "../header/hadapt.h"
 
-
+#include <algorithm>
 #define TARGETPROC -1
 //#define FORDEBUG
 
@@ -60,74 +60,109 @@ PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable
     status(ElemTable->status_),
     adapted(ElemTable->adapted_),
     generation(ElemTable->generation_),
-    el_error(ElemTable->el_error_[0])
+    el_error(ElemTable->el_error_[0]),
+    loc_SeedRefinement(threads_number)
 
 {
 }
 void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
 {
-    //@ElementsSingleLoop
-    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+    tisize_t N=ElemTable->size();
+    //tisize_t elementsToRefine=0;
+    #pragma omp parallel
     {
-        //-- this requirement is used to exclude the new elements
-        if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
+        int ithread=omp_get_thread_num();
+        loc_SeedRefinement[ithread].resize(0);
+        ti_ndx_t ndx_start=ithread*N/threads_number;
+        ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+
+        //@ElementsSingleLoop
+        //#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
         {
-            if((el_error[ndx] > geo_target)
-                || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
-                || (elements[ndx].if_source_boundary(ElemTable) > 0) )
+            //-- this requirement is used to exclude the new elements
+            if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
             {
-                seedRefinement.push_back(ndx);
+                if((el_error[ndx] > geo_target)
+                    || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0)
+                    || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
+                    || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
+                    || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
+                    || (elements[ndx].if_source_boundary(ElemTable) > 0) )
+                {
+                    loc_SeedRefinement[ithread].push_back(ndx);
+                }
             }
         }
     }
+    merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
 }
 BuferFirstLayerRefinementsFinder::BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable)
     :ElemTable(_ElemTable),
     elements(ElemTable->elenode_),
-    status(ElemTable->status_)
+    status(ElemTable->status_),
+    loc_SeedRefinement(threads_number)
 
 {
 }
 void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
 {
-	//@ElementsSingleLoop
-	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
-	{
-		if(status[ndx]>=0)
-		{
-			if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
-			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
-			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
-			   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
-			{
-			    seedRefinement.push_back(ndx);
-			}
-		}
+    tisize_t N=ElemTable->size();
+    #pragma omp parallel
+    {
+        int ithread=omp_get_thread_num();
+        loc_SeedRefinement[ithread].resize(0);
+        ti_ndx_t ndx_start=ithread*N/threads_number;
+        ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+        //@ElementsSingleLoop
+        //#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+        {
+            if(status[ndx]>=0)
+            {
+                if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
+                   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
+                   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
+                   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
+                {
+                    loc_SeedRefinement[ithread].push_back(ndx);
+                }
+            }
+        }
     }
+    merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
 }
 BuferNextLayerRefinementsFinder::BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable)
     :ElemTable(_ElemTable),NodeTable(_NodeTable),
     elements(ElemTable->elenode_),
-    status(ElemTable->status_)
+    status(ElemTable->status_),
+    loc_SeedRefinement(threads_number)
 
 {
 }
 void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
 {
-	//@ElementsSingleLoop
-	for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
-	{
-		if(status[ndx]>=0)
-		{
-			if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
-			{
-			    seedRefinement.push_back(ndx);
-			}
-		}
+    tisize_t N=ElemTable->size();
+    #pragma omp parallel
+    {
+        int ithread=omp_get_thread_num();
+        loc_SeedRefinement[ithread].resize(0);
+        ti_ndx_t ndx_start=ithread*N/threads_number;
+        ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+        //@ElementsSingleLoop
+        //#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+        {
+            if(status[ndx]>=0)
+            {
+                if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
+                {
+                    loc_SeedRefinement[ithread].push_back(ndx);
+                }
+            }
+        }
     }
+    merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
 }
 
 HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):
@@ -343,6 +378,7 @@ void HAdapt::adapt(int h_count, double target)
 }
 void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 {
+    printf("refine2\n");
     TIMING3_DEFINE(t_start3);
     //reset temporary arrays
     seedRefinement.resize(0);

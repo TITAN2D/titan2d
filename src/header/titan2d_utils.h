@@ -18,6 +18,12 @@
 #define TITAN2D_UTILS_H
 
 #include "stdio.h"
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+
 #define TIMING3_DEFINE(t_start) double t_start
 
 #define TIMING3_START(t_start) t_start=MPI_Wtime()
@@ -157,4 +163,57 @@ public:
 };
 extern TitanTimings titanTimings;
 extern TitanTimings titanTimingsAlongSimulation;
+
+
+
+
+
+
+
+
+
+#ifndef _OPENMP
+#define omp_get_thread_num() 0
+#endif
+
+template<typename T>
+void merge_vectors_from_threads(vector<T> &where, const vector< vector<T> > &what)
+{
+    /*size_t  N=0;
+    for(int ithread;ithread<threads_number;++ithread)
+    {
+        N+=what[ithread].size();
+    }*/
+    where.resize(0);
+    for(int ithread=0;ithread<threads_number;++ithread)
+    {
+        where.insert(where.end(),what[ithread].begin(), what[ithread].end());
+    }
+}
+
+/*void parallel_for_get_my_part(const int ithread, const tisize_t N, ti_ndx_t &ndx_start, ti_ndx_t &ndx_end)
+{
+    ndx_start=ithread*N/threads_number;
+    ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+}*/
+
+
+
+
+
+
+
+
+#ifdef DEB3
+#define IF_DEB3(statement) {statement}
+#define ASSERT3(statement) assert(statement)
+#else
+#define IF_DEB3(statement) {}
+#define ASSERT3(statement) {}
+#endif
+
+
+
+
+
 #endif

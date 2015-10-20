@@ -24,4 +24,6 @@
 
 extern int threads_number;
 
+#define TITAN2D_DINAMIC_CHUNK 64
+
 #endif
