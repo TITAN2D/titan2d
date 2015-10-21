@@ -45,7 +45,6 @@ using namespace std;
 
 #include "properties.h"
 #include "elenode.hpp"
-#include "recv.h"
 #include "extfun.h"
 #include "geoflow.h"
 #include "scale.h"
