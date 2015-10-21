@@ -28,7 +28,7 @@ extern void create_new_node(int, int, int, NodeHashTable*, Node*[], SFC_Key[], i
 
 
 void HAdapt::create_new_node2(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
-                     SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary, const int order)
+                     SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary)
 {
     double NewNodeCoord[2];
     double norm_coord[2];
@@ -63,7 +63,7 @@ void HAdapt::create_new_node2(const int which, const int Node1, const int Node2,
     
     if(ti_ndx_negative(ndx))
     {
-        ndx = NodeTable->createAddNode_ndx(key, NewNodeCoord, info, order, matprops_ptr);
+        ndx = NodeTable->createAddNode_ndx(key, NewNodeCoord, info, matprops_ptr);
     }
     else if(NodeTable->coord_[0][ndx] != NewNodeCoord[0] || NodeTable->coord_[1][ndx] != NewNodeCoord[1])
     {
@@ -124,8 +124,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		int info;
 		int other_proc = 0;
 		int boundary;
-		int order[5];
-		int NewOrder[4][5];
 
 		int elm_loc[2], my_elm_loc[2];
 		elm_loc[0] = 2 * ElemTable->elm_loc_[0][ndx];
@@ -139,47 +137,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			ASSERT3(ti_ndx_not_negative(ndxNodeTemp[i]));
 		}
 
-		for(i = 0; i < 5; i++)
-		{
-			order[i] = ElemTable->order_[i][ndx];
-		}
-		/*filling up the new order array
-		 str: side orders remain;
-		 newsides get the higher order of the already existing sides
-		 bubbles get the order of the old bubble
-		 */
-		for(i = 0; i < 4; i++) //-- orders for the 4 sons
-		{
-			int a = i - 1;
-			if(a == -1)
-				a = 3;
-			NewOrder[i][a] = order[a];
-			NewOrder[i][i] = order[i];
-			NewOrder[i][4] = order[4];
-		}
-
-		//for the new internal sides they get the order of the max side order
-		for(i = 0; i < 4; i++)
-		{
-			int a = i + 1;
-			int b = i + 2;
-			int c = i - 1;
-			if(i == 2)
-				b = 0;
-			if(i == 3)
-			{
-				a = 0;
-				b = 1;
-			} //in the case of the 3rd element
-			if(c == -1)
-				c = 3; //in the case of the 0th element
-
-			NewOrder[i][a] = NewOrder[i][b] = order[0];
-
-			for(int j = 1; j < 4; j++)
-				if(order[j] > NewOrder[i][a])
-					NewOrder[i][a] = NewOrder[i][b] = order[j];
-		}
         //-- bubble
 		ndxNodeTemp[8] = ElemTable->node_bubble_ndx_[ndx];//NodeTable->lookup_ndx(ElemTable->key_[ndx]);
 		ASSERT3(ElemTable->node_bubble_ndx_[ndx]==NodeTable->lookup_ndx(ElemTable->key_[ndx]));
@@ -208,7 +165,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			n1 = &(NodeTable->elenode_[n1_ndx]);
 			n2 = &(NodeTable->elenode_[n2_ndx]);*/
 
-			create_new_node2(which, 0, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[0]);
+			create_new_node2(which, 0, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 			//---Fourth old node---
 			if(RefinedNeigh || boundary)
@@ -222,7 +179,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			which = 5;
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
 
-			create_new_node2(which, 1, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[0]);
+			create_new_node2(which, 1, 4, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 		}
 		else
 		{
@@ -298,7 +255,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
 
-			create_new_node2(which, 1, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[1]);
+			create_new_node2(which, 1, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 			//---Fifth old node---
 			if(RefinedNeigh || boundary)
@@ -313,7 +270,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
 
-			create_new_node2(which, 2, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[1]);
+			create_new_node2(which, 2, 5, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 		}
 		else
 		{
@@ -391,7 +348,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
 
-			create_new_node2(which, 3, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[2]);
+			create_new_node2(which, 3, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 			//---Sixth old node---
 			if(RefinedNeigh || boundary)
@@ -407,7 +364,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
 
-			create_new_node2(which, 2, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[2]);
+			create_new_node2(which, 2, 6, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 		}
 		else
 		{
@@ -485,7 +442,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
 
-			create_new_node2(which, 0, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[3]);
+			create_new_node2(which, 0, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 			//---Seventh old node---
 			if(RefinedNeigh || boundary)
@@ -500,7 +457,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
 
-			create_new_node2(which, 3, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, order[3]);
+			create_new_node2(which, 3, 7, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 		}
 		else
 		{
@@ -564,7 +521,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
 		//n2 = (Node*) NodeTable->lookup(EmTemp->key());
 
-		create_new_node2(which, 4, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][1]);
+		create_new_node2(which, 4, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		NodeTable->info_[ndxNodeTemp[8]]=CORNER;    //changing the old bubble
 
@@ -574,7 +531,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		// geoflow info
 		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
 
-		create_new_node2(which, 6, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[3][1]);
+		create_new_node2(which, 6, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//---Ninth new node---
 
@@ -582,7 +539,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		// geoflow info
 		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
 
-		create_new_node2(which, 7, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][2]);
+		create_new_node2(which, 7, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//---Tenth new node---
 
@@ -590,7 +547,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		// geoflow info
 		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
 
-		create_new_node2(which, 5, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[1][2]);
+		create_new_node2(which, 5, 8, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//+++++++++++++++++++THE NEW BUBBLES 0, 1, 2, 3
 
@@ -605,7 +562,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
 		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
 
-		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[0][4]);
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//---1st new node---
 
@@ -615,7 +572,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
 		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
 
-		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[1][4]);
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//---2nd new node---
 
@@ -626,7 +583,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
 		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
 
-		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[2][4]);
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//---3rd new node---
 
@@ -637,7 +594,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
 		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
 
-		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary, NewOrder[3][4]);
+		create_new_node2(which, 0, 1, ndxNodeTemp, NewNodeKey, info, RefinedNeigh, boundary);
 
 		//---NEW ELEMENTS---
 
@@ -727,13 +684,13 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//old_elm->void_bcptr();
 			ElemTable->elenode_[ndxQuad9P].void_bcptr();
 			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
 		else{
 
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
@@ -811,12 +768,12 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
 			ElemTable->elenode_[ndxQuad9P].void_bcptr();
 			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
 		else{
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
@@ -894,12 +851,12 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
 			ElemTable->elenode_[ndxQuad9P].void_bcptr();
 			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
 		else{
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
@@ -980,12 +937,12 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
 			ElemTable->elenode_[ndxQuad9P].void_bcptr();
 			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+			ElemTable->elenode_[ndxQuad9P].init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
 		else{
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		}
@@ -1063,8 +1020,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
         assert(NodeTemp[i]);
     }
     
-    for(i = 0; i < 5; i++)
-        order[i] = EmTemp->order(i);
     
     /*filling up the new order array
      str: side orders remain;

@@ -203,7 +203,7 @@ public:
     Node* createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
     Node* createAddNode(FILE* fp, MatProps* matprops_ptr);
     
-    ti_ndx_t createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr);
+    ti_ndx_t createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
     
     void removeNode(Node* node);
 
@@ -222,9 +222,6 @@ public:
 
     //! says what type of node this is see the comments of Node::get_info()
     tivector<int> info_;
-
-    //! this is legacy afeapi and is not important though it would involve quite a bit of work to remove because it occurs frequently in Titan
-    tivector<int> order_;
 
     //! the global x and y coordinates of the node
     tivector<double> coord_[DIMENSION];
@@ -371,9 +368,6 @@ public:
 
     //! this array holds the process(or) id of this element's 8 neighbors, there can be 8 neighbors because of the 1 irregularity rule.  neigh_proc[4:7] != -2 only if it has 2 neighbors on that side, a value of -1 for neigh_proc means that this edge is a boundary of the computational domain. 
     tivector<int> neigh_proc_[8];
-
-    //! this is legacy afeapi, all finite volume "elements"/cells are piece wise constant, but I believe this is actually used in the DG (Discontinuous Galerkin) version of titan
-    tivector<int> order_[5];
 
     //! neigh_gen is an array that holds the "generation" (how refined it is) of this element's 8 neighbors, there can-be/are 2 neighbors to a side because of the 1 irregularity rule
     tivector<int> neigh_gen_[8];

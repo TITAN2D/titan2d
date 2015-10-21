@@ -58,11 +58,6 @@ inline void Node::set_key(const SFC_Key& new_key)
 inline double Node::coord(int idim) const {return nodeHashTable->coord_[idim][ndx_];}
 inline void Node::coord(int idim, double new_crd){nodeHashTable->coord_[idim][ndx_]=new_crd;}   
 
-inline int Node::order(){return nodeHashTable->order_[ndx_];}
-inline void Node::order(int i){nodeHashTable->order_[ndx_] = i;}
-
-inline void Node::set_parameters(int inf, int ord){info(inf);order(ord);}
-
 inline int Node::id() const {return nodeHashTable->id_[ndx_];}
 inline void Node::id(int id_in){nodeHashTable->id_[ndx_] = id_in;}
 

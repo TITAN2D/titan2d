@@ -165,7 +165,6 @@ void update_neighbor_interprocessor(NodeHashTable* HT_Elem_Ptr, NodeHashTable* H
                     
                     assert(NodeTemp->info() == S_S_CON);
                     NodeTemp->info(SIDE);
-                    NodeTemp->order(EmTemp->order(which_neighbor));
                     
                     NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(which_neighbor));
                     if(NodeTemp->info() == S_C_CON)
@@ -197,7 +196,6 @@ void update_neighbor_interprocessor(NodeHashTable* HT_Elem_Ptr, NodeHashTable* H
                     NodeTemp = (Node*) HT_Node_Ptr->lookup(Son->node_key(which_neighbor + 4));
                     assert(NodeTemp);
                     NodeTemp->info(SIDE);
-                    NodeTemp->order(Son->order(which_neighbor));
                 }
             }
             

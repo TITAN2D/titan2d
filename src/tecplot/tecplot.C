@@ -854,14 +854,6 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
             EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
             {
-                order = 1;
-                for(int k = 0; k < 5; k++)
-                {
-                    int help_order = EmTemp->order(k);
-                    if(help_order > order)
-                        order = help_order;
-                }
-                
                 double err = sqrt(EmTemp->el_error(0));
                 for(int j = 0; j < 4; j++)
                 {
@@ -1087,14 +1079,6 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
             EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->adapted_flag() > 0)
             {
-                order = 1;
-                for(int k = 0; k < 5; k++)
-                {
-                    int help_order = EmTemp->order(k);
-                    if(help_order > order)
-                        order = help_order;
-                }
-                
                 double err = sqrt(EmTemp->el_error(0));
                 for(int j = 0; j < 4; j++)
                 {

@@ -118,17 +118,6 @@ inline void Element::set_neigh_proc(const int i, const int& proc) {
     elementsHashTable->neigh_proc_[i][ndx_] = proc;
 }
 
-//! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-
-inline int Element::order(const int i) const {
-    return elementsHashTable->order_[i][ndx_];
-}
-//! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-
-inline void Element::set_order(const int i, const int ord) {
-    elementsHashTable->order_[i][ndx_] = ord;
-}
-
 
 //!only used in unrefinement
 inline const SFC_Key& Element::father_by_ref() const {

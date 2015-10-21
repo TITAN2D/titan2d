@@ -24,7 +24,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, NodeHashTable* HT_Node_Ptr, i
         elem->neigh_gen[i] = sendel->neigh_gen(i);
     }
     for(i = 0; i < 5; i++)
-        elem->order[i] = sendel->order(i);
+        elem->order[i] = 0;
     
     elem->ndof = sendel->ndof();
     elem->no_of_eqns = sendel->no_of_eqns();
@@ -56,7 +56,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, NodeHashTable* HT_Node_Ptr, i
     {
         node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem->node_key[i]));
         assert(node);
-        elem->n_order[i] = node->order();
+        elem->n_order[i] = 2;
         elem->n_info[i] = node->info();
         for(j = 0; j < 2; j++)
             elem->n_coord[i][j] = node->coord(j);
@@ -65,7 +65,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, NodeHashTable* HT_Node_Ptr, i
     
     node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem->key));
     assert(node);
-    elem->n_order[8] = node->order();
+    elem->n_order[8] = 2;
     elem->n_info[8] = node->info();
     for(j = 0; j < 2; j++)
         elem->n_coord[8][j] = node->coord(j);

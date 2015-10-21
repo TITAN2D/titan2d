@@ -78,20 +78,13 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     }
     
     bcptr(b);
-
-    for(i = 0; i < 5; i++)
-        set_order(i, POWER);   //--used in initial uniform mesh
                 
     for(i = 0; i < 8; i++)
         get_neigh_gen(i, 0);
 
     set_no_of_eqns(EQUATIONS);
     
-    int help = 0;
-    for(i = 0; i < 4; i++)
-        help += order(i) * (no_of_eqns());
-    help += pow((float) (order(4) - 1), 2) * (no_of_eqns());
-    set_ndof(help);
+    set_ndof(0);
     
     set_refined_flag(0);
     
@@ -262,19 +255,10 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     
     bcptr(b);
     
-    for(i = 0; i < 5; i++)
-    {
-        set_order(i, *(ord + i));   //--used in initial uniform mesh
-        //cout<<"In the constructor the order"<<order[i]<<"\n\n"<<flush;
-    }
     
     set_no_of_eqns(EQUATIONS);
     
-    int help = 0;
-    for(i = 0; i < 4; i++)
-        help += order(i) * (no_of_eqns());
-    help += pow((float) (order(4) - 1), 2) * (no_of_eqns());
-    set_ndof(help);
+    set_ndof(0);
     
     set_refined_flag(0);
     
@@ -388,19 +372,9 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     
     bcptr(b);
     
-    for(i = 0; i < 5; i++)
-    {
-        set_order(i, *(ord + i));   //--used in initial uniform mesh
-        //cout<<"In the constructor the order"<<order[i]<<"\n\n"<<flush;
-    }
-    
     set_no_of_eqns(EQUATIONS);
     
-    int help = 0;
-    for(i = 0; i < 4; i++)
-        help += order(i) * (no_of_eqns());
-    help += pow((float) (order(4) - 1), 2) * (no_of_eqns());
-    set_ndof(help);
+    set_ndof(0);
     
     set_refined_flag(0);
     
@@ -521,28 +495,8 @@ void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable*
     
     calc_which_son();
     bcptr(sons[0]->bcptr());
-    //order information -- keep the highest order
-    set_order(0, sons[0]->order(0));
-    if(order(0) < sons[1]->order(0))
-        set_order(0, sons[1]->order(0));
-    set_order(1, sons[1]->order(1));
-    if(order(1) < sons[2]->order(1))
-        set_order(1, sons[2]->order(1));
-    set_order(2, sons[2]->order(2));
-    if(order(2) < sons[3]->order(2))
-        set_order(2, sons[3]->order(2));
-    set_order(3, sons[3]->order(3));
-    if(order(3) < sons[0]->order(3))
-        set_order(3, sons[0]->order(3));
-    set_order(4, sons[0]->order(4));
-    for(i = 1; i < 4; i++)
-        if(order(4) < sons[i]->order(4))
-            set_order(4, sons[i]->order(4));
     
     set_ndof(0);
-    for(i = 0; i < 4; i++)
-        set_ndof(ndof() + order(i) * (no_of_eqns()));
-    set_ndof(ndof() + pow((float) (order(4) - 1), 2) * (no_of_eqns()));
     
     set_refined_flag(1); // not an active element yet!!!
             
@@ -853,12 +807,7 @@ void Element::change_neighbor(const SFC_Key * newneighbs, int which_side, int pr
 
 void Element::update_ndof()
 {
-    int help = 0;
-    for(int i = 0; i < 4; i++)
-        help += order(i) * (no_of_eqns());
-    
-    help += pow((float) (order(4) - 1), 2) * (no_of_eqns());
-    set_ndof(help);
+    set_ndof(0);
 }
 
 void Element::get_nelb_icon(NodeHashTable* NodeTable, ElementsHashTable* HT_Elem_Ptr, int* Nelb, int* icon)
@@ -4321,7 +4270,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 #endif
     for(itemp = 0; itemp < 5; itemp++)
     {
-        temp4.i = order(itemp);
+        temp4.i = 0;
         writespace[Itemp++] = temp4.u;
 #ifdef DEBUG_SAVE_ELEM
         fprintf(fpdb,"%d ",order(itemp));
@@ -4606,7 +4555,7 @@ void Element::init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, i
     for(itemp = 0; itemp < 5; itemp++)
     {
         temp4.u = readspace[Itemp++];
-        set_order(itemp, temp4.i);
+        //order used to be here
     }
     assert(Itemp == 8);
     

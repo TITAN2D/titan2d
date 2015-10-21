@@ -34,7 +34,6 @@
 void Node::init()
 {
     id(0);
-    order(0);
     connection_id(-1);
     info(INIT);
     
@@ -52,13 +51,6 @@ void Node::init(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
     id(0); /* keith added this so save_node wouldn't write an uninitialized
      variable and valgrind wouldn't flag an error.  id is used in
      ../repartition/BSFC_update_and_send_elements.C */
-    order(0); /* keith added this for no good reason, so if you don't know 
-     that this is right find out, keith isn't responsible for 
-     any errors it may cause because right now the node order 
-     is unused, it shouldn't be used, but I wanted to see if 
-     assigning it zero gets rid of what looks like a "self 
-     contained" memory error
-     */
     
     connection_id(-1);
     
@@ -113,7 +105,6 @@ void Node::init(const SFC_Key& keyi, const double *coordi, const int inf, const 
     set_key(keyi);
     
     info(inf);
-    order(ord);
     //geoflow stuff
     zero_flux();
     // find the max resolution of the GIS info and then get the elevation at this node
@@ -162,7 +153,6 @@ void Node::init(const SFC_Key& keyi, double* coordi, int inf, int ord, double el
     set_key(keyi);
     
     info(inf);
-    order(ord);
     //geoflow stuff
     zero_flux();
     elevation(elev);

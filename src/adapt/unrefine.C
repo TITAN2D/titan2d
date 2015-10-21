@@ -303,7 +303,7 @@ int Element::check_unrefinement(ElementsHashTable* El_Table, double target)
 
 void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void *EmFather_in)
 {
-    int ison, isonneigh, ineigh, inode, nodeorder[9];
+    int ison, isonneigh, ineigh, inode;
     Element *EmSon, *EmNeigh;
     Node* NdTemp;
     Element *EmFather = (Element *) EmFather_in;
@@ -337,12 +337,10 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
             NodeBackgroundCheck(El_Table, NodeTable, EmFather->node_key(inode), stdout);
         }
         assert(NdTemp);
-        nodeorder[inode] = NdTemp->order();
     }
     inode = 8;
     NdTemp = (Node *) NodeTable->lookup(EmFather->key());
     assert(NdTemp);
-    nodeorder[inode] = NdTemp->order();
     
     for(ison = 0; ison < 4; ison++)
     {
@@ -362,8 +360,6 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
         if(EmFather->son(ison)==65175920631581991ull)
         		printf("lookup something");
         assert(NdTemp);
-        if(NdTemp->order() > nodeorder[8])
-            nodeorder[8] = NdTemp->order();
         NodeTable->removeNode(NdTemp);
         
         //delete son to son edge nodes
@@ -384,8 +380,6 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
             {
-                if(NdTemp->order() > nodeorder[inode])
-                    nodeorder[inode] = NdTemp->order();
                 NodeTable->removeNode(NdTemp);
             }
         }
@@ -408,9 +402,6 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             if(NdTemp)
             {
-                if(NdTemp->order() > nodeorder[inode])
-                    nodeorder[inode] = NdTemp->order();
-                
                 NodeTable->removeNode(NdTemp);
             }
             
@@ -427,23 +418,15 @@ void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int m
             NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
             assert(NdTemp);
             NdTemp->info(S_C_CON);
-            nodeorder[inode] = NdTemp->order();
         }
         
         //Now delete this oldson Element
         EmSon->void_bcptr();
         El_Table->removeElement(EmSon);
     }
-    
-    for(inode = 4; inode < 8; inode++)
-    {
-        NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-        NdTemp->order(nodeorder[inode]);
-    }
     inode = 8;
     
     NdTemp = (Node *) NodeTable->lookup(EmFather->key());
-    NdTemp->order(nodeorder[inode]);
     NdTemp->info(BUBBLE);
     
     return;
@@ -762,7 +745,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
         printf("myid=%d unref_interp_neigh_update 4.0\n", myid);
     fflush(stdout);
     
-    int NumProcsNotRecvd, ifrecvd, nodeorder;
+    int NumProcsNotRecvd, ifrecvd;
     MPI_Status status;
     Element *EmTemp;
     if(max_num_recv > 0)
@@ -790,9 +773,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                         //I have just received new data from a neighboring processor
                         //I need to update some elements on my interprocessor
                         //boundary
-                        
-                        nodeorder = 0; //initialize to zero
-                                
+
                         for(iopu = 0; iopu < num_recv[iproc]; iopu++)
                         {
                             //one by one check my Element's that my neighbor processor
@@ -841,19 +822,14 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                                 NdTemp = (Node *) NodeTable->lookup(EmTemp->node_key(ineighmod4 + 4));
                                 if(NdTemp)
                                 {
-                                    if(NdTemp->order() > nodeorder)
-                                        nodeorder = NdTemp->order();
                                     NodeTable->removeNode(NdTemp);
                                 }
                                 NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(ineighmod4 + 4));
-                                NdTemp->order(nodeorder);
                                 NdTemp->info(SIDE);
                                 
                             }
                             else if(EmTemp->adapted_flag() >= NOTRECADAPTED)
                             {
-                                nodeorder = 0;
-                                
                                 //my neighbor on the other processor was of either my
                                 //generation or one generation younger/higher than me,
                                 //that makes

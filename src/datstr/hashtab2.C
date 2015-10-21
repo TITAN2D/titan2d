@@ -302,7 +302,6 @@ Node* NodeHashTable::addNode(const SFC_Key& keyi)
     id_.push_back();
     num_assoc_elem_.push_back();
     info_.push_back();
-    order_.push_back();
     for(int i=0;i<DIMENSION;i++)
         coord_[i].push_back();
     elevation_.push_back();
@@ -322,7 +321,6 @@ ti_ndx_t NodeHashTable::addNode_ndx(const SFC_Key& keyi)
     id_.push_back();
     num_assoc_elem_.push_back();
     info_.push_back();
-    order_.push_back();
     for(int i=0;i<DIMENSION;i++)
         coord_[i].push_back();
     elevation_.push_back();
@@ -347,10 +345,11 @@ Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf,
     node->init(keyi, coordi, inf, ord, matprops_ptr);
     return node;
 }
-ti_ndx_t NodeHashTable::createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const int ord, const MatProps *matprops_ptr)
+ti_ndx_t NodeHashTable::createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr)
 {
     ti_ndx_t ndx=addNode_ndx(keyi);
-    elenode_[ndx].init(keyi, coordi, inf, ord, matprops_ptr);
+    //@TODO remove ord
+    elenode_[ndx].init(keyi, coordi, inf, -3, matprops_ptr);
     return ndx;
 }
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada)
@@ -386,7 +385,6 @@ void NodeHashTable::flushNodeTable()
     id_.reorder(&(ndx_map[0]), size);
     num_assoc_elem_.reorder(&(ndx_map[0]), size);
     info_.reorder(&(ndx_map[0]), size);
-    order_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<DIMENSION;i++)
         coord_[i].reorder(&(ndx_map[0]), size);
     elevation_.reorder(&(ndx_map[0]), size);
@@ -591,7 +589,6 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     father_.push_back();
     for(int i=0;i<4;++i)son_[i].push_back();
     for(int i=0;i<8;++i)neigh_proc_[i].push_back();
-    for(int i=0;i<5;++i)order_[i].push_back();
     for(int i=0;i<8;++i)neigh_gen_[i].push_back();
     bcptr_.push_back();
     ndof_.push_back();
@@ -718,7 +715,6 @@ void ElementsHashTable::flushElemTable()
     father_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<5;++i)order_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
     bcptr_.reorder(&(ndx_map[0]), size);
     ndof_.reorder(&(ndx_map[0]), size);

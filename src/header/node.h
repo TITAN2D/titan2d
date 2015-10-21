@@ -82,14 +82,6 @@ public:
     double coord(int idim) const;
     void coord(int idim, double new_crd);
 
-    //! this is legacy afeapi and is not used
-    int order();
-    //! this is legacy afeapi and is not used
-    void order(int i);
-
-    //! this function sets the node information and order, node order is legacy afeapi but node information is currently used, this function is called in update_element_info.C, another distict function with a similar name refined_neighbor::set_parameters also existis and is used in updatenei.C, these should not be confused
-    void set_parameters(int inf, int ord);
-
     //! this function returns the id of a node, it is used in repartitioning, 
     int id() const;
     //! this function sets the id of a node, it is used in repartitioning, 

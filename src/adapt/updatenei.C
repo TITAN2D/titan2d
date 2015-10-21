@@ -3681,7 +3681,6 @@ void update_neighbor_info(NodeHashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, 
                         {
                             NdTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(j + 4));
                             NdTemp->info(S_C_CON);
-                            NdTemp->order(EmTemp->order(j));
                             for(int k = 0; k < 2; k++)
                             {
                                 SonTemp = (Element*) HT_Elem_Ptr->lookup(EmTemp->son(SIDE_SONS[j][k]));
@@ -3701,7 +3700,6 @@ void update_neighbor_info(NodeHashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, 
                                 NdTemp = (Node*) HT_Node_Ptr->lookup(SonTemp->node_key(j + 4));
                                 assert(NdTemp);
                                 NdTemp->info(SIDE);
-                                NdTemp->order(SonTemp->order(j));
                             }
                             
                         }

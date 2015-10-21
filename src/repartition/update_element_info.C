@@ -184,8 +184,6 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
         newelement->set_neigh_proc(i, elem2->neigh_proc[i]);
         newelement->get_neigh_gen(i, elem2->neigh_gen[i]);
     }
-    for(i = 0; i < 5; i++)
-        newelement->set_order(i, elem2->order[i]);
     
     newelement->set_ndof(elem2->ndof);
     newelement->set_no_of_eqns(elem2->no_of_eqns);
@@ -246,7 +244,7 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
                 assert(screwd);
             }
             if(newelement->refined_flag() == 0)  // only update if this is from an active element
-                node->set_parameters(elem2->n_info[i], elem2->n_order[i]);
+                node->info(elem2->n_info[i]);
         }
     }
     
@@ -257,7 +255,7 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
                         8);
     }
     else if(newelement->refined_flag() != 0) // only update if this is from an active element
-        node->set_parameters(elem2->n_info[8], elem2->n_order[8]);
+        node->info(elem2->n_info[8]);
     
     //The boundary conditions
     

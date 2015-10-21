@@ -261,13 +261,6 @@ public:
 
     void set_neigh_proc(const int i, const int& proc);
 
-    //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-
-    int order(const int i) const;
-    //! afeapi legacy not used in the finite difference/volume version of Titan, but it is used in the discontinuous galerkin version (a separate more accurate less stable implementation with a lot of things in common with the finite difference/volume code)
-
-    void set_order(const int i, const int ord);
-
     //! find and return what the key of this element's father element would be, very simple since the bubble node has the same key as the element, so all this function does is find which of its corner nodes will be the father element's bubble node, which it knows since it knows which_son it is.  
     const SFC_Key& father() const;
     //!only used in unrefinement

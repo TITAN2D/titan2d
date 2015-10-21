@@ -110,7 +110,7 @@ private:
     void refineElements(const vector<ti_ndx_t> &allRefinement);
 
     void create_new_node2(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
-                     SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary, const int order);
+                     SFC_Key NewNodeKey[], const int info, int& RefNe, const int boundary);
     void refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement);
 
 private:
