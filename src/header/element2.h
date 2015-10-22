@@ -182,6 +182,13 @@ public:
             NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
 
+    //! constructor that creates a son element from its father during refinement
+    void init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen, int elm_loc_in[],
+            int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *ElemTable,
+            NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+            double *drypoint_in);
+
+
     //! constructor that creates a father element from its four sons during unrefinement
     void init(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
@@ -201,6 +208,9 @@ public:
 
     void set_key(const SFC_Key& new_key);
 
+    const ti_ndx_t node_bubble_ndx() const;
+    void node_bubble_ndx(const ti_ndx_t& new_ndx);
+
     //! returns the integer material flag for this element, needed for use of a material map which allows bedfriction to vary with physical position
 
     int material() const;
@@ -215,6 +225,10 @@ public:
     const SFC_Key& node_key(const int i) const;
 
     void set_node_key(const int i, const SFC_Key& new_key);
+
+    const ti_ndx_t& node_key_ndx(const int i) const;
+
+    void node_key_ndx(const int i, const ti_ndx_t& new_ndx);
 
     //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
 
@@ -301,6 +315,13 @@ public:
     //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
 
     void set_neighbor(const int i, const SFC_Key &new_key);
+
+    //! returns the key for this element's 8 neighbors
+
+    const ti_ndx_t& neighbor_ndx(const int i) const;
+    //! this function stores the key "n" of neighbor "i" in the array of the 8 keys of the neighbor keys
+
+    void neighbor_ndx(const int i, const ti_ndx_t &new_ndx);
 
     //! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
 

@@ -32,7 +32,13 @@ inline const SFC_Key& Element::key() const {
 inline void Element::set_key(const SFC_Key& new_key) {
     elementsHashTable->key_[ndx_]=new_key;
 }
+inline const ti_ndx_t Element::node_bubble_ndx() const {
+    return elementsHashTable->node_bubble_ndx_[ndx_];
+}
 
+inline void Element::node_bubble_ndx(const ti_ndx_t& new_ndx) {
+    elementsHashTable->node_bubble_ndx_[ndx_]=new_ndx;
+}
 //index in storage
 inline ti_ndx_t Element::ndx() const {return ndx_;}
 inline void Element::ndx(ti_ndx_t new_ndx) {ndx_ = new_ndx;}
@@ -55,6 +61,15 @@ inline void Element::set_node_key(const int i, const SFC_Key& new_key) {
     elementsHashTable->node_key_[i][ndx_] = new_key;
 }
 
+inline const ti_ndx_t& Element::node_key_ndx(const int i) const
+{
+    return elementsHashTable->node_key_ndx_[i][ndx_];
+}
+
+inline void Element::node_key_ndx(const int i, const ti_ndx_t& new_ndx)
+{
+    elementsHashTable->node_key_ndx_[i][ndx_] = new_ndx;
+}
 
 //! returns the pointers to the i-th of 8 (nodes 0-7) nodes, careful pointers can be outdated
 inline Node* Element::getNodePtr(int i) {
@@ -172,7 +187,14 @@ inline void Element::set_neighbor(const int i, const SFC_Key &new_key) {
     elementsHashTable->neighbors_[i][ndx_] = new_key;
 }
 
-//! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
+inline const ti_ndx_t& Element::neighbor_ndx(const int i) const {
+    return elementsHashTable->neighbor_ndx_[i][ndx_];
+}
+
+inline void Element::neighbor_ndx(const int i, const ti_ndx_t &new_ndx) {
+    elementsHashTable->neighbor_ndx_[i][ndx_] = new_ndx;
+}
+
 
 inline BC* Element::bcptr() {
     return elementsHashTable->bcptr_[ndx_];

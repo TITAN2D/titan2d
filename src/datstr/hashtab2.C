@@ -673,6 +673,18 @@ ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, cons
                                   Awetfather, drypoint_in);
     return ndx;
 }
+ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen, int elm_loc_in[],
+                int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
+                NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+                double *drypoint_in)
+{
+    ti_ndx_t ndx=addElement_ndx(nodekeys[8]); //--using bubble key to represent the element
+    elenode_[ndx].init(nodekeys, nodes_ndx, neigh, neigh_ndx, n_pro, b, gen,
+                                  elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
+                                  El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
+                                  Awetfather, drypoint_in);
+    return ndx;
+}
 Element* ElementsHashTable::generateAddElement(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
 {
     Element* elm=addElement(sons[2]->node_key(0));

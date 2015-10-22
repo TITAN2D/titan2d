@@ -291,10 +291,16 @@ public:
                 int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
+    //! constructor that creates a son element from its father during refinement
     ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
+    //! constructor that creates a son element from its father during refinement
+    ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen, int elm_loc_in[],
+                    int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
+                    NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
+                    double *drypoint_in);
     //! constructor that creates a father element from its four sons during unrefinement
     Element* generateAddElement(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 

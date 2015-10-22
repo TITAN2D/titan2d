@@ -427,6 +427,131 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     
     return;
 }
+//used for refinement
+void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen,
+                 int elm_loc_in[], int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in,
+                 ElementsHashTable *ElemTable, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
+                 double Awetfather, double *drypoint_in)
+{
+    int i;
+    int ikey;
+
+    set_adapted_flag(NEWSON);
+
+    for(i = 0; i < NUM_STATE_VARS; i++)
+    {
+        prev_state_vars(i, 0.);
+        Influx(i, 0.);
+    }
+    for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
+        d_state_vars(i, 0.);
+
+    set_father(sfc_key_zero);
+    for(i = 0; i < 4; i++){
+        set_brother(i, sfc_key_zero);
+        set_son(i, sfc_key_zero);
+    }
+    set_lb_key(sfc_key_zero);
+    set_lb_weight(1.0);
+    set_myprocess(myid);
+    generation(gen); //--first generation
+    set_opposite_brother_flag(1);
+    set_material(mat);
+    for(i = 0; i < EQUATIONS; i++)
+        set_el_error(i, 0.0);
+
+    set_key(nodekeys[8]); //--using buble key to represent the element
+    node_bubble_ndx(nodes_ndx[8]); //--using buble key to represent the element
+
+
+    set_elm_loc(0, elm_loc_in[0]);
+    set_elm_loc(1, elm_loc_in[1]);
+
+    for(i = 0; i < 8; i++)
+    {
+        set_node_key(i, nodekeys[i]);
+        node_key_ndx(i, nodes_ndx[i]);
+    }
+
+    for(i = 0; i < 4; i++)
+    {
+        set_neigh_proc(i, n_pro[i]);
+        set_neigh_proc(i + 4, -2); //-- -2 means regular element
+        if(neigh_proc(i) != -1){
+            set_neighbor(i, neigh[i]);
+            set_neighbor(i + 4, neigh[i]);
+            neighbor_ndx(i, neigh_ndx[i]);
+            neighbor_ndx(i + 4, neigh_ndx[i]);
+        }
+        else
+        {
+            set_neighbor(i, sfc_key_zero);
+            set_neighbor(i + 4, sfc_key_zero);
+            neighbor_ndx(i, ti_ndx_unknown);
+            neighbor_ndx(i + 4, ti_ndx_unknown);
+        }
+
+        get_neigh_gen(i, gen_neigh[i]);
+        get_neigh_gen(i + 4, gen_neigh[i]);
+    }
+
+    bcptr(b);
+
+    set_no_of_eqns(EQUATIONS);
+
+    set_ndof(0);
+
+    set_refined_flag(0);
+
+
+    set_new_old(NEW);
+    //geoflow stuff
+    dx(0,.5 * ElemTable->dx_[0][fthTemp]);  //assume constant refinement
+    dx(1,.5 * ElemTable->dx_[1][fthTemp]);
+
+    set_iwetnode(iwetnodefather);
+
+    drypoint(0, drypoint_in[0]);
+    drypoint(1, drypoint_in[1]);
+
+    double myfractionoffather;
+    if((Awetfather == 0.0) || (Awetfather == 1.0))
+    {
+        set_Awet(Awetfather);
+        myfractionoffather = 1.0;
+    }
+    else
+    {
+        set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
+        myfractionoffather = Awet() / Awetfather;
+    }
+    set_Swet(1.0);
+
+    double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
+    double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
+    for(i = 0; i < NUM_STATE_VARS; i++)
+    {
+        // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+        state_vars(i, ElemTable->state_vars_[i][fthTemp] * myfractionoffather);
+        prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp] * myfractionoffather);
+        set_shortspeed(ElemTable->shortspeed_[fthTemp]);
+    }
+
+    if(state_vars(0) < 0.)
+        state_vars(0, 0.);
+
+    find_positive_x_side(NodeTable);
+
+    calc_topo_data(matprops_ptr);
+    calc_gravity_vector(matprops_ptr);
+
+    set_coord(0, coord_in[0]);
+    set_coord(1, coord_in[1]);
+
+    set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
+
+    return;
+}
 /*********************************
  making a father element from its sons
  *****************************************/
