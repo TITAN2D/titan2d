@@ -525,7 +525,7 @@ void ElementsHashTable::updatePointersToNeighbours()
     {
         if(status_[ndx]>=0)
         {
-            if(adapted_[ndx] > 0)
+            //if(adapted_[ndx] > 0)
             {                
                 for (int j = 0; j < 8; j++) {
                     ti_ndx_t neigh_ndx=lookup_ndx(neighbors_[j][ndx]);

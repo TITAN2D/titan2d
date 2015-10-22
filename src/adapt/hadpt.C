@@ -224,10 +224,15 @@ void HAdapt::adapt(int h_count, double target)
     // what it really does?
     if(numprocs>1)
     {
-    	delete_unused_elements_nodes(ElemTable, NodeTable, myid);
+        //this thing delete ghost elements, which will be recreated again
+        //why to do that
+        //probably was fixing leakage at some point
+        //if we don't do that results are same
+
+    	//delete_unused_elements_nodes(ElemTable, NodeTable, myid);
     	//update temporary arrays of elements/nodes pointers
-        ElemTable->updateLocalElements();
-        ElemTable->updatePointersToNeighbours();
+        //ElemTable->updateLocalElements();
+        //ElemTable->updatePointersToNeighbours();
     }
     
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
@@ -378,7 +383,6 @@ void HAdapt::adapt(int h_count, double target)
 }
 void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 {
-    printf("refine2\n");
     TIMING3_DEFINE(t_start3);
     //reset temporary arrays
     seedRefinement.resize(0);
@@ -406,6 +410,11 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
     TIMING3_STOP(refinedElementsNeigboursUpdate,t_start3);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
+    //update temporary arrays of elements/nodes pointers
+    //@todo after ndx conversion should be replaced with DBG3 checking
+    ElemTable->updateLocalElements();
+    ElemTable->updatePointersToNeighbours();
 }
 
 #ifdef DISABLED
