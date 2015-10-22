@@ -113,21 +113,9 @@ void HAdapt::create_new_node3(const int which, const int Node1, const int Node2,
     SET_NEWKEY(key,oldkey);
     NewNodeKey[which]=key;
 
-    ndx = NodeTable->lookup_ndx(key);
+    ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx(key)));
 
-    if(ti_ndx_negative(ndx))
-    {
-        ndx = NodeTable->createAddNode_ndx(key, NewNodeCoord, info, matprops_ptr);
-    }
-    else if(NodeTable->coord_[0][ndx] != NewNodeCoord[0] || NodeTable->coord_[1][ndx] != NewNodeCoord[1])
-    {
-        short same_key = 0;
-        assert(same_key);
-    }
-    else
-    {
-        RefNe = 1;
-    }
+    ndx = NodeTable->createAddNode_ndx(key, NewNodeCoord, info, matprops_ptr);
     NewNodeNdx[which]=ndx;
 
     if(RefNe || boundary)
@@ -281,7 +269,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[ndxNodeTemp[4]]=-1;
 
 			// fifth new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[4][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -352,7 +341,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				other_proc = 0;
 
 			// eighth new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[1][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -363,7 +353,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			}
 			assert(which != -1);
 			NewNodeKey[8] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[8]);
+			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
+			NewNodeNdx[8]=n1_ndx;
+			ASSERT3(NewNodeNdx[8] == NodeTable->lookup_ndx(NewNodeKey[8]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -375,7 +367,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[ndxNodeTemp[5]]=-1;
 
 			// thirteenth new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[5][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -386,7 +379,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			}
 			assert(which != -1);
 			NewNodeKey[13] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[13]);
+			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
+			NewNodeNdx[13]=n1_ndx;
+			ASSERT3(NewNodeNdx[13] == NodeTable->lookup_ndx(NewNodeKey[13]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -446,7 +441,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				other_proc = 0;
 
 			// fourteenth new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[6][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -457,7 +453,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			}
 			assert(which != -1);
 			NewNodeKey[14] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[14]);
+			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
+			NewNodeNdx[14]=n1_ndx;
+			ASSERT3(NewNodeNdx[14] == NodeTable->lookup_ndx(NewNodeKey[14]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -469,7 +467,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[ndxNodeTemp[6]]=-1;
 
 			// fifteenth new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[2][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -480,7 +479,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			}
 			assert(which != -1);
 			NewNodeKey[15] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[15]);
+            n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
+            NewNodeNdx[15]=n1_ndx;
+            ASSERT3(NewNodeNdx[15] == NodeTable->lookup_ndx(NewNodeKey[15]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -539,7 +540,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				other_proc = 0;
 
 			// sixth new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[7][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -550,7 +552,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			}
 			assert(which != -1);
 			NewNodeKey[6] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[6]);
+			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
+			NewNodeNdx[6]=n1_ndx;
+			ASSERT3(NewNodeNdx[6] == NodeTable->lookup_ndx(NewNodeKey[6]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -561,7 +565,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			if(other_proc) //ERROR: other_proc is never set, we never checked to see if the more refined neighbor was on another processor
 				NodeTable->info_[ndxNodeTemp[7]]=-1;
 			// eleventh new node
-			neigh_elm_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]);
+			neigh_elm_ndx = ElemTable->neighbor_ndx_[3][ndx];
+			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -572,7 +577,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			}
 			assert(which != -1);
 			NewNodeKey[11] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = NodeTable->lookup_ndx(NewNodeKey[11]);
+            n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
+            NewNodeNdx[11]=n1_ndx;
+            ASSERT3(NewNodeNdx[11] == NodeTable->lookup_ndx(NewNodeKey[11]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -585,39 +592,22 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		info = SIDE;
 
 		//---Seventh new node---
-
 		which = 7;
-		// geoflow info
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
-		//n2 = (Node*) NodeTable->lookup(EmTemp->key());
-
-		check_create_new_node(which, 4, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 4, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		NodeTable->info_[ndxNodeTemp[8]]=CORNER;    //changing the old bubble
 
 		//---Twelwth new node---
-
 		which = 12;
-		// geoflow info
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-
-		check_create_new_node(which, 6, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 6, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---Ninth new node---
-
 		which = 9;
-		// geoflow info
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-
-		check_create_new_node(which, 7, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 7, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---Tenth new node---
-
 		which = 10;
-		// geoflow info
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-
-		check_create_new_node(which, 5, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 5, 8, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//+++++++++++++++++++THE NEW BUBBLES 0, 1, 2, 3
 
@@ -628,43 +618,28 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[6]);
 		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[7]);
 		which = 0;
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
-		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(4));
-		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-
-		check_create_new_node(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---1st new node---
 
 		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[7]);
 		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[8]);
 		which = 1;
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
-		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-
-		check_create_new_node(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---2nd new node---
 
 		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[12]);
 		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[13]);
 		which = 2;
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
-		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-
-		check_create_new_node(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---3rd new node---
 
 		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[11]);
 		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[12]);
 		which = 3;
-		//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-		//n3 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
-		//n4 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-
-		check_create_new_node(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---NEW ELEMENTS---
 
