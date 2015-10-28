@@ -275,10 +275,12 @@ public:
 
     //! set neighboring elements and nodes pointers in elements
     void updatePointersToNeighbours();
+    void update_neighbours_ndx_on_ghosts();
 
     //! check that neighboring elements and nodes pointers are correct
-    int checkPointersToNeighbours(const char *prefix);
-        
+    int checkPointersToNeighbours(const char *prefix,const bool checkPointers=true,const bool checkNewElements=true);
+    void checkPointersToNeighbours(const ti_ndx_t ndx, const bool checkPointers, int &count_ptr,int &count_elem_ndx,int &count_node_ndx);
+
     //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
     Element* generateAddElement(const SFC_Key& keyi);
 
@@ -307,6 +309,8 @@ public:
     //! constructor that creates/restores a saved element during restart
     Element* generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid);
     
+    ti_ndx_t generateAddElement_ndx(const SFC_Key& keyi){return addElement_ndx(keyi);}
+
     //!should not be used
     void removeElement(Element* elm);
     
@@ -371,6 +375,9 @@ public:
 
     //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     tivector<SFC_Key> son_[4];
+
+    //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
+    tivector<ti_ndx_t> son_ndx_[4];
 
     //! this array holds the process(or) id of this element's 8 neighbors, there can be 8 neighbors because of the 1 irregularity rule.  neigh_proc[4:7] != -2 only if it has 2 neighbors on that side, a value of -1 for neigh_proc means that this edge is a boundary of the computational domain. 
     tivector<int> neigh_proc_[8];

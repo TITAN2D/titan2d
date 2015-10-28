@@ -262,8 +262,9 @@ void HAdapt::adapt(int h_count, double target)
         //don't need to check if element schedule for deletion
         if(adapted[ndx] >= NEWSON)adapted[ndx] = NOTRECADAPTED;
     }
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
     //find out primary refinements
     refine2(primaryRefinementsFinder);
     
@@ -411,10 +412,9 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
 
-    //update temporary arrays of elements/nodes pointers
-    //@todo after ndx conversion should be replaced with DBG3 checking
-    ElemTable->updateLocalElements();
-    ElemTable->updatePointersToNeighbours();
+    if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
+
+    ASSERT3(ElemTable->checkPointersToNeighbours("HAdapt::refine",false)==0);
 }
 
 #ifdef DISABLED

@@ -148,6 +148,9 @@ public:
             state_vars(i, -1.0);
             Influx(i, 0.0);
         }
+        for (int i = 0; i < 8; i++) {
+            neighbor_ndx(i, ti_ndx_doesnt_exist);
+        }
         set_adapted_flag(TOBEDELETED);
         set_refined_flag(1);
         set_Awet(0.0);
@@ -238,9 +241,6 @@ public:
 
     Element* getNeighborPtr(int i);
 
-    //!check neighbors pointers for validity, used for debug purpose. Return number of mismatch
-    int check_neighbors_nodes_and_elements_pointers(ElementsHashTable*, NodeHashTable*);
-
     //! not used in finite difference/volume version of titan, legacy, returns number of degrees of freedom, used is global stiffness matrices
 
     int ndof() const;
@@ -291,6 +291,9 @@ public:
     void set_son(const int i, const SFC_Key& new_key);
     //! store the keys for the four son "elements" in the father element, used temporarily during refinement
     void set_sons(const SFC_Key*);
+
+    const ti_ndx_t& son_ndx(const int i) const;
+    void son_ndx(const int i, const ti_ndx_t& new_ndx);
 
     //! stores the ?square? of the "solution" and solution error, used durring refinement
     void putel_sq(double solsq, double ellsq);

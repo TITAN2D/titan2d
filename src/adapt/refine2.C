@@ -153,7 +153,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 {
 	tivector<int> &adapted=ElemTable->adapted_;
 	tivector<int> &refined=ElemTable->refined_;
-
 	for(ti_ndx_t ndx:allRefinement)
 	{
 		//printf("refining element %u %u \n",*(EmTemp->pass_key()), *(EmTemp->pass_key()+1));
@@ -166,6 +165,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		SFC_Key NewNodeKey[16];
 		ti_ndx_t NewNodeNdx[16];
 		ti_ndx_t ndxQuad9P;
+		ti_ndx_t ndxSons[4];
 
 
 		int i;
@@ -180,10 +180,21 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		elm_loc[0] = 2 * ElemTable->elm_loc_[0][ndx];
 		elm_loc[1] = 2 * ElemTable->elm_loc_[1][ndx];
 
-		for(i = 0; i < 8; i++)
+#ifdef DEB3
+		ndxQuad9P=ti_ndx_doesnt_exist;
+		for(i = 0; i < 16; i++)
 		{
 		    NewNodeNdx[i]=ti_ndx_doesnt_exist;
 		}
+		for(i = 0; i < 9; i++)
+		{
+		    ndxNodeTemp[i]=ti_ndx_doesnt_exist;
+		}
+		for(i = 0; i < 4; i++)
+        {
+		    ndxSons[i]=ti_ndx_doesnt_exist;
+        }
+#endif
 
 		for(i = 0; i < 8; i++) //-- corners and sides
 		{
@@ -615,33 +626,44 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 		//---0th new node---
 
-		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[6]);
-		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[7]);
+		ndxNodeTemp[0] = NewNodeNdx[6];//NodeTable->lookup_ndx(NewNodeKey[6]);
+		ndxNodeTemp[1] = NewNodeNdx[7];//NodeTable->lookup_ndx(NewNodeKey[7]);
 		which = 0;
 		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---1st new node---
 
-		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[7]);
-		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[8]);
+		ndxNodeTemp[0] = NewNodeNdx[7];//NodeTable->lookup_ndx(NewNodeKey[7]);
+		ndxNodeTemp[1] = NewNodeNdx[8];//NodeTable->lookup_ndx(NewNodeKey[8]);
 		which = 1;
 		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---2nd new node---
 
-		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[12]);
-		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[13]);
+		ndxNodeTemp[0] = NewNodeNdx[12];//NodeTable->lookup_ndx(NewNodeKey[12]);
+		ndxNodeTemp[1] = NewNodeNdx[13];//NodeTable->lookup_ndx(NewNodeKey[13]);
 		which = 2;
 		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---3rd new node---
 
-		ndxNodeTemp[0] = NodeTable->lookup_ndx(NewNodeKey[11]);
-		ndxNodeTemp[1] = NodeTable->lookup_ndx(NewNodeKey[12]);
+		ndxNodeTemp[0] = NewNodeNdx[11];//NodeTable->lookup_ndx(NewNodeKey[11]);
+		ndxNodeTemp[1] = NewNodeNdx[12];//NodeTable->lookup_ndx(NewNodeKey[12]);
 		which = 3;
 		create_new_node3(which, 0, 1, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 		//---NEW ELEMENTS---
+		//check if such element exists (should not be such element)
+		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[0])));
+		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[1])));
+		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[2])));
+		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[3])));
+		//first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
+		ndxSons[0]=ElemTable->generateAddElement_ndx(NewNodeKey[0]);
+		ndxSons[1]=ElemTable->generateAddElement_ndx(NewNodeKey[1]);
+		ndxSons[2]=ElemTable->generateAddElement_ndx(NewNodeKey[2]);
+		ndxSons[3]=ElemTable->generateAddElement_ndx(NewNodeKey[3]);
+
 
 		SFC_Key nodes[9];
 		ti_ndx_t nodes_ndx[9];
@@ -679,7 +701,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         nodes_ndx[7] = NewNodeNdx[6];
         nodes_ndx[8] = NewNodeNdx[0];
 
-		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		n1_ndx = nodes_ndx[8];
 		for(i = 0; i < DIMENSION; i++)
 			coord[i] = NodeTable->coord_[i][n1_ndx];
 		//neighbors
@@ -692,8 +714,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			neigh[3] = neigh[7] = ElemTable->neighbors_[3][ndx]; //This is only ok if neigh_proc==-2
 
 		neigh_ndx[0] = neigh_ndx[4] = ElemTable->neighbor_ndx_[0][ndx]; //Why is this ok if not ok for 3 down
-		neigh_ndx[1] = neigh_ndx[5] = NewNodeNdx[1];
-		neigh_ndx[2] = neigh_ndx[6] = NewNodeNdx[3];
+		neigh_ndx[1] = neigh_ndx[5] = ndxSons[1];
+		neigh_ndx[2] = neigh_ndx[6] = ndxSons[3];
         if(ElemTable->neigh_proc_[7][ndx]!= -2)
             neigh_ndx[3] = neigh_ndx[7] = ElemTable->neighbor_ndx_[7][ndx]; //This should be okay no matter what
         else
@@ -739,29 +761,12 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
 		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
 
-		Element* old_elm;
-		ti_ndx_t old_elm_ndx;
 
-		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-		if(ti_ndx_not_negative(ndxQuad9P))
-		{
-			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-			//old_elm->void_bcptr();
-			ElemTable->elenode_[ndxQuad9P].void_bcptr();
-			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, elm_loc, NULL, neigh_gen, material,
+		//init new element
+		ndxQuad9P = ndxSons[0];
+		ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
-		}
-		else{
-
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, elm_loc, NULL, neigh_gen, material,
-							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-							 dpson);
-		}
-		//double* state_vars = Quad9P->get_state_varsABCD();
-		//printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
-
 		ElemTable->which_son_[ndxQuad9P]=0;  //--by jp, 0 means son 0
 		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
 
@@ -790,7 +795,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		nodes_ndx[7] = NewNodeNdx[7];
 		nodes_ndx[8] = NewNodeNdx[1];
 
-		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		n1_ndx = nodes_ndx[8];
 		for(i = 0; i < DIMENSION; i++)
 			coord[i] = NodeTable->coord_[i][n1_ndx];
 
@@ -808,8 +813,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         else
             neigh_ndx[0] = neigh_ndx[4] = ElemTable->neighbor_ndx_[0][ndx]; //this is only ok if neigh_proc==-2
 		neigh_ndx[1] = neigh_ndx[5] = ElemTable->neighbor_ndx_[1][ndx];
-		neigh_ndx[2] = neigh_ndx[6] = NewNodeNdx[2];
-        neigh_ndx[3] = neigh_ndx[7] = NewNodeNdx[0];
+		neigh_ndx[2] = neigh_ndx[6] = ndxSons[2];
+        neigh_ndx[3] = neigh_ndx[7] = ndxSons[0];
 
 		//process of the neighbors
 
@@ -845,24 +850,11 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
 		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 + 0.5;
 
-		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-		if(ti_ndx_not_negative(ndxQuad9P))
-		{
-			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-			ElemTable->elenode_[ndxQuad9P].void_bcptr();
-			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
+        //init new element
+        ndxQuad9P = ndxSons[1];
+        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
-		}
-		else{
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
-							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-							 dpson);
-		}
-		//state_vars = Quad9P->get_state_varsABCD();
-		//printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
-
 		ElemTable->which_son_[ndxQuad9P]=1;  //--by jp
 		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
 
@@ -890,7 +882,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         nodes_ndx[7] = NewNodeNdx[12];
         nodes_ndx[8] = NewNodeNdx[2];
 
-		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		n1_ndx = nodes_ndx[8];
 		for(i = 0; i < DIMENSION; i++)
 			coord[i] = NodeTable->coord_[i][n1_ndx];
 
@@ -901,15 +893,15 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		else
 			neigh[1] = neigh[5] = ElemTable->neighbors_[1][ndx]; //this is only ok is neigh_proc==-2
 		neigh[2] = neigh[6] = ElemTable->neighbors_[2][ndx];
-		neigh[3] = neigh[6] = NewNodeKey[3];
+		neigh[3] = neigh[7] = NewNodeKey[3];
 
-		neigh_ndx[0] = neigh_ndx[4] = NewNodeNdx[1];
+		neigh_ndx[0] = neigh_ndx[4] = ndxSons[1];
         if(ElemTable->neigh_proc_[5][ndx] != -2)
             neigh_ndx[1] = neigh_ndx[5] = ElemTable->neighbor_ndx_[5][ndx]; //This should be ok no matter what
         else
             neigh_ndx[1] = neigh_ndx[5] = ElemTable->neighbor_ndx_[1][ndx]; //this is only ok is neigh_proc==-2
         neigh_ndx[2] = neigh_ndx[6] = ElemTable->neighbor_ndx_[2][ndx];
-        neigh_ndx[3] = neigh_ndx[6] = NewNodeNdx[3];
+        neigh_ndx[3] = neigh_ndx[7] = ndxSons[3];
 
 
 		//process of the neighbors
@@ -946,24 +938,11 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
 		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 - 0.5;
 
-		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-		if(ti_ndx_not_negative(ndxQuad9P))
-		{
-			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-			ElemTable->elenode_[ndxQuad9P].void_bcptr();
-			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
+        //init new element
+        ndxQuad9P = ndxSons[2];
+        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
-		}
-		else{
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
-							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-							 dpson);
-		}
-		//state_vars = Quad9P->get_state_varsABCD();
-		//printf("state_vars= %g   %g   %g\n",state_vars[0],state_vars[1],state_vars[2]);
-
 		ElemTable->which_son_[ndxQuad9P]=2;  //--by jp
 		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
 
@@ -986,13 +965,13 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         nodes_ndx[1] = ElemTable->node_bubble_ndx_[ndx];
         nodes_ndx[2] = ElemTable->node_key_ndx_[6][ndx];
         nodes_ndx[3] = ElemTable->node_key_ndx_[3][ndx];
-        nodes_ndx[4] = NewNodeKey[9];
-        nodes_ndx[5] = NewNodeKey[12];
-        nodes_ndx[6] = NewNodeKey[14];
-        nodes_ndx[7] = NewNodeKey[11];
-        nodes_ndx[8] = NewNodeKey[3];
+        nodes_ndx[4] = NewNodeNdx[9];
+        nodes_ndx[5] = NewNodeNdx[12];
+        nodes_ndx[6] = NewNodeNdx[14];
+        nodes_ndx[7] = NewNodeNdx[11];
+        nodes_ndx[8] = NewNodeNdx[3];
 
-		n1_ndx = NodeTable->lookup_ndx(nodes[8]);
+		n1_ndx = nodes_ndx[8];
 		for(i = 0; i < DIMENSION; i++)
 			coord[i] = NodeTable->coord_[i][n1_ndx];
 
@@ -1003,15 +982,15 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			neigh[2] = neigh[6] = ElemTable->neighbors_[6][ndx];
 		else
 			neigh[2] = neigh[6] = ElemTable->neighbors_[2][ndx];
-		neigh[3] = neigh[6] = ElemTable->neighbors_[3][ndx];
+		neigh[3] = neigh[7] = ElemTable->neighbors_[3][ndx];
 
-		neigh_ndx[0] = neigh_ndx[4] = NewNodeNdx[0];
-		neigh_ndx[1] = neigh_ndx[5] = NewNodeNdx[2];
+		neigh_ndx[0] = neigh_ndx[4] = ndxSons[0];
+		neigh_ndx[1] = neigh_ndx[5] = ndxSons[2];
         if(ElemTable->neigh_proc_[6][ndx] != -2)
             neigh_ndx[2] = neigh_ndx[6] = ElemTable->neighbor_ndx_[6][ndx];
         else
             neigh_ndx[2] = neigh_ndx[6] = ElemTable->neighbor_ndx_[2][ndx];
-        neigh_ndx[3] = neigh_ndx[6] = ElemTable->neighbor_ndx_[3][ndx];
+        neigh_ndx[3] = neigh_ndx[7] = ElemTable->neighbor_ndx_[3][ndx];
 
 
 		//process of the neighbors
@@ -1049,41 +1028,63 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
 		dpson[1] = ElemTable->drypoint_[1][ndx] * 2 - 0.5;
 
-		ndxQuad9P = ElemTable->lookup_ndx(nodes[8]);
-		if(ti_ndx_not_negative(ndxQuad9P))
-		{
-			//old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-			ElemTable->elenode_[ndxQuad9P].void_bcptr();
-			//HT_Elem_Ptr->removeElement(old_elm);
-			ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
+        //init new element
+        ndxQuad9P = ndxSons[3];
+        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
-		}
-		else{
-			ndxQuad9P = ElemTable->generateAddElement_ndx(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
-							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-							 dpson);
-		}
-		//state_vars = Quad9P->get_state_varsABCD();
-		//printf("state_vars= %g   %g   %g\n\n",state_vars[0],state_vars[1],state_vars[2]);
-
 		ElemTable->which_son_[ndxQuad9P]=3;  //--by jp
 		ElemTable->elenode_[ndxQuad9P].putel_sq(sol, err);  //added by jp oct11
 
 
 
 		//---CHANGING THE FATHER---
-		ElemTable->elenode_[ndx].set_sons(NewNodeKey);
+		for(i = 0; i < 4; i++)
+		{
+		    ElemTable->son_[i][ndx]=NewNodeKey[i];
+		    ElemTable->son_ndx_[i][ndx]=ndxSons[i];
+		}
 		// putting in brother info
 		for(i = 0; i < 4; i++)
 		{
-			ElemTable->elenode_[ElemTable->lookup_ndx(NewNodeKey[i])].set_brothers(NewNodeKey);
+			ElemTable->elenode_[ndxSons[i]].set_brothers(NewNodeKey);
 		}
+
+		int count_ptr = 0;
+        int count_elem_ndx = 0;
+        int count_node_ndx = 0;
+        for(i = 0; i < 4; i++)
+        {
+            ElemTable->checkPointersToNeighbours(ndxSons[i],false,count_ptr,count_elem_ndx,count_node_ndx);
+            if(count_elem_ndx+count_node_ndx>0)
+                printf("DDDDDDDDDD1 %d %d %d\n",ndx,i,ndxSons[i]);
+
+        }
+        ElemTable->checkPointersToNeighbours(ndx,false,count_ptr,count_elem_ndx,count_node_ndx);
+        if(count_elem_ndx+count_node_ndx>0)
+                        printf("DDDDDDDDDD2 %d %d %d\n",ndx,count_elem_ndx,count_node_ndx);
+
 
 
         adapted[ndx]=OLDFATHER;
         refined[ndx]=1;
 	}
+
+	if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
+
+#ifdef DEB3
+	//some checking
+    /*for(ti_ndx_t ndx:allRefinement)
+    {
+        for(int i = 0; i < 4; ++i)
+        {
+            if(ElemTable->node_bubble_ndx_[ElemTable->son_ndx_[i][ndx]]!=NodeTable->lookup_ndx(ElemTable->key_[ElemTable->son_ndx_[i][ndx]]))
+            {
+                printf("RRR %d %d %d\n",i,ElemTable->node_bubble_ndx_[ElemTable->son_ndx_[i][ndx]],NodeTable->lookup_ndx(ElemTable->key_[ElemTable->son_ndx_[i][ndx]]));
+            }
+        }
+    }*/
+#endif
 	return;
 }
 //()---new node numbering

@@ -154,6 +154,15 @@ inline void Element::set_son(const int i, const SFC_Key& new_key) {
     elementsHashTable->son_[i][ndx_] = new_key;
 }
 
+inline const ti_ndx_t& Element::son_ndx(const int i) const {
+    return elementsHashTable->son_ndx_[i][ndx_];
+}
+
+inline void Element::son_ndx(const int i, const ti_ndx_t& new_ndx) {
+    elementsHashTable->son_ndx_[i][ndx_] = new_ndx;
+}
+
+
 //! return the element's solution
 inline double Element::el_solution(int i) const {
     return elementsHashTable->el_solution_[i][ndx_];
@@ -230,6 +239,7 @@ inline void Element::set_refined_flag(const int i) {
 inline int Element::adapted_flag() const {
     return elementsHashTable->adapted_[ndx_];
 }
+#include <execinfo.h>
 //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag(). The magnitude of the "adapted" flag indicates whether the cell is NEWSON, NEWFATHER, NOTRECADAPTED, or TOBEDELETED.  A postive value indicates it's on this processor, a negative sign indicates a GHOST cell. These values are defined in constant.h.  The NEWSON value has allowed Keith to provide one time only immunity from unrefinement to recently refined elements, after which the "adapted" flag is resent to NOTRECADAPTED.
 inline void Element::set_adapted_flag(const int new_adapted_status) {
     elementsHashTable->adapted_[ndx_] = new_adapted_status;
@@ -589,24 +599,6 @@ inline void Element::set_brothers(const SFC_Key* s) {
 inline void Element::putel_sq(double solsq, double errsq) {
     set_el_solution(0, solsq);
     set_el_error(0, errsq);
-}
-
-inline int Element::check_neighbors_nodes_and_elements_pointers(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
-    int i;
-    int count = 0;
-    if (El_Table != NULL) {
-        for (i = 0; i < 8; i++) {
-            if (elementsHashTable->neighborPtr_[i][ndx_] != (Element*) El_Table->lookup(neighbor(i)))
-                count++;
-        }
-    }
-    if (NodeTable != NULL) {
-        for (i = 0; i < 8; i++) {
-            if (elementsHashTable->node_keyPtr_[i][ndx_] != (Node*) NodeTable->lookup(node_key(i)))
-                count++;
-        }
-    }
-    return count;
 }
 
 

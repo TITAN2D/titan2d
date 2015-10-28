@@ -519,6 +519,43 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
     }
     return mismatch;
 }
+
+void ElementsHashTable::update_neighbours_ndx_on_ghosts()
+{
+    for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
+    {
+        if(status_[ndx]>=0)
+        {
+            if(-6 < adapted_[ndx] && adapted_[ndx] < 0 )
+            {
+                for (int j = 0; j < 8; j++) {
+                    neighbor_ndx_[j][ndx]=lookup_ndx(neighbors_[j][ndx]);
+                }
+
+                for (int j = 0; j < 8; j++) {
+                    node_key_ndx_[j][ndx]=NodeTable->lookup_ndx(node_key_[j][ndx]);
+                }
+                node_bubble_ndx_[ndx] = NodeTable->lookup_ndx(key_[ndx]);
+
+                //now the neighbours
+                for (int i = 0; i < 8; i++)
+                {
+                    ti_ndx_t ndx2=neighbor_ndx_[i][ndx];
+                    for (int j = 0; j < 8; j++) {
+                        neighbor_ndx_[j][ndx2]=lookup_ndx(neighbors_[j][ndx2]);
+                    }
+
+                    for (int j = 0; j < 8; j++) {
+                        node_key_ndx_[j][ndx2]=NodeTable->lookup_ndx(node_key_[j][ndx2]);
+                    }
+                    node_bubble_ndx_[ndx2] = NodeTable->lookup_ndx(key_[ndx2]);
+                }
+            }
+        }
+    }
+    return;
+}
+
 void ElementsHashTable::updatePointersToNeighbours()
 {
     for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
@@ -552,22 +589,78 @@ void ElementsHashTable::updatePointersToNeighbours()
     }
     return;
 }
-int ElementsHashTable::checkPointersToNeighbours(const char *prefix)
+void ElementsHashTable::checkPointersToNeighbours(const ti_ndx_t ndx, const bool checkPointers, int &count_ptr, int &count_elem_ndx,int &count_node_ndx)
 {
-    int count = 0;
-    
-    for(int i = 0; i < elenode_.size(); i++)
-    {
-        if(status_[i]>=0)
+    for (int j = 0; j < 8; j++) {
+        ti_ndx_t neigh_ndx=lookup_ndx(neighbors_[j][ndx]);
+        if(neighbor_ndx_[j][ndx]!=neigh_ndx)
+            ++count_elem_ndx;
+
+        if(checkPointers)
         {
-            if(elenode_[i].adapted_flag() > 0) //if this element does not belong on this processor don't involve!!!
-                count += elenode_[i].check_neighbors_nodes_and_elements_pointers(this, NodeTable);
+            if(ti_ndx_not_negative(neigh_ndx))
+            {
+                count_ptr+=neighborPtr_[j][ndx] != &(elenode_[neigh_ndx]);
+            }
+            else
+            {
+                count_ptr+=neighborPtr_[j][ndx] != nullptr;
+            }
         }
     }
-    
-    if(count > 0)
-        printf("%s WARNING: neighbors nodes and elements pointers mismatch to key. %d mismatched.\n", prefix, count);
-    return count;
+
+    for (int j = 0; j < 8; j++) {
+        ti_ndx_t node_ndx=NodeTable->lookup_ndx(node_key_[j][ndx]);
+        if(node_key_ndx_[j][ndx]!=node_ndx)
+            ++count_node_ndx;
+
+        if(checkPointers)
+        {
+            if(ti_ndx_not_negative(node_ndx))
+            {
+                count_ptr+=node_keyPtr_[j][ndx] != &(NodeTable->elenode_[node_ndx]);
+            }
+            else
+            {
+                count_ptr+=node_keyPtr_[j][ndx] != nullptr;
+            }
+        }
+    }
+    count_node_ndx+=node_bubble_ndx_[ndx] != NodeTable->lookup_ndx(key_[ndx]);
+}
+int ElementsHashTable::checkPointersToNeighbours(const char *prefix,const bool checkPointers,const bool checkNewElements)
+{
+    int count=0;
+    int count_ptr = 0;
+    int count_elem_ndx = 0;
+    int count_node_ndx = 0;
+    bool check_element;
+    for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
+    {
+        if(checkNewElements)
+            check_element=status_[ndx]>=0;
+        else
+            check_element=status_[ndx]==CS_Permanent;
+
+
+        if(check_element)
+        {
+            checkPointersToNeighbours(ndx,checkPointers,count_ptr,count_elem_ndx,count_node_ndx);
+        }
+    }
+    count+=count_elem_ndx+count_node_ndx;
+    if(checkPointers)
+    {
+        count+=count_ptr;
+    }
+    if(count> 0)
+    {
+        printf("%s WARNING: neighbors nodes and elements pointers mismatch to key.\n", prefix);
+        if(checkPointers)printf("%s WARNING: %d mismatched pointers.\n", prefix, count_ptr);
+        printf("%s WARNING: %d mismatched indexes to elements.\n", prefix, count_elem_ndx);
+        printf("%s WARNING: %d mismatched indexes to nodes.\n", prefix, count_node_ndx);
+    }
+    return count_ptr+count_elem_ndx;
 }
 ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
 {
@@ -588,6 +681,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     for(int i=0;i<8;++i)neighbor_ndx_[i].push_back();
     father_.push_back();
     for(int i=0;i<4;++i)son_[i].push_back();
+    for(int i=0;i<4;++i)son_ndx_[i].push_back();
     for(int i=0;i<8;++i)neigh_proc_[i].push_back();
     for(int i=0;i<8;++i)neigh_gen_[i].push_back();
     bcptr_.push_back();
@@ -726,6 +820,7 @@ void ElementsHashTable::flushElemTable()
     for(int i=0;i<8;++i)neighbor_ndx_[i].reorder(&(ndx_map[0]), size);
     father_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<4;++i)son_ndx_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
     bcptr_.reorder(&(ndx_map[0]), size);
