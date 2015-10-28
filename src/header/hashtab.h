@@ -415,6 +415,9 @@ public:
     //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     tivector<SFC_Key> brothers_[4];
 
+    //! this array holds the keys of this element's 4 brothers (an element is considered to be it's own brother), this information is used during mesh unrefinement (combining the 4 brothers to make their father), keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
+    tivector<ti_ndx_t> brothers_ndx_[4];
+
     //! coord holds the coordinates of the elements cell center, these are the same as the coordinates of the element's bubble node's
     tivector<double> coord_[DIMENSION];
 

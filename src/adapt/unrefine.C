@@ -20,6 +20,7 @@
 #endif
 
 #include "../header/hpfem.h"
+#include "../header/hadapt.h"
 
 //#define MIN_GENERATION -1
 #define TARGET_PROC -1
@@ -54,23 +55,29 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch)
     
     return (1);
 }*/
-
-void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
-              MatProps* matprops_ptr)
+HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops):
+   ElemTable(_ElemTable),
+   NodeTable(_NodeTable),
+   matprops_ptr(_matprops),
+   timeprops_ptr(_timeprops)
 {
-    
-    //printf("myid=%d entering unrefine\n",myid);
-    
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+}
+
+void HAdaptUnrefine::unrefine(const double target)
+{
     int time_step = timeprops_ptr->iter;
     
     int i, j, k;
     Element* Curr_El;
-    ElemPtrList NewFatherList(El_Table), OtherProcUpdate(El_Table);
+    NewFatherList.resize(0);
+    OtherProcUpdate.resize(0);
     
     //-------------------go through all the elements of the subdomain------------------------
-    int no_of_buckets = El_Table->get_no_of_buckets();
-    vector<HashEntryLine> &bucket=El_Table->bucket;
-    tivector<Element> &elenode_=El_Table->elenode_;
+    int no_of_buckets = ElemTable->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=ElemTable->bucket;
+    tivector<Element> &elenode_=ElemTable->elenode_;
 
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -111,8 +118,7 @@ void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double targ
                                 ++ielm2;
                         }
                     }
-                    Curr_El->find_brothers(El_Table, NodeTable, target, myid, matprops_ptr, &NewFatherList,
-                                           &OtherProcUpdate);
+                    Curr_El->find_brothers(ElemTable, NodeTable, target, myid, matprops_ptr, NewFatherList,OtherProcUpdate);
 
                 }
             }
@@ -122,84 +128,16 @@ void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double targ
     int iproc;
     time_t tic, toc;
     
-    /*
-     for(iproc=0;iproc<nump-1;iproc++)
-     if(myid>iproc); MPI_Barrier(MPI_COMM_WORLD);
-
-     printf("myid=%d unref before unref_neigh_update\n",myid); fflush(stdout);
-
-     tic=time(NULL);
-     toc=tic+2;
-     do{
-     tic=time(NULL);
-     }while(tic<toc);
-
-     for(iproc=1;iproc<nump;iproc++)
-     if(myid<iproc); MPI_Barrier(MPI_COMM_WORLD);
-
-     MPI_Barrier(MPI_COMM_WORLD);
-     */
     //assert(!IfMissingElem(El_Table, myid, time_step, 0));
-    unrefine_neigh_update(El_Table, NodeTable, myid, (void*) &NewFatherList);
+    unrefine_neigh_update();
     
     //assert(!IfMissingElem(El_Table, myid, time_step, 1));
     
-    unrefine_interp_neigh_update(El_Table, NodeTable, nump, myid, (void*) &OtherProcUpdate);
+    unrefine_interp_neigh_update();
     
-    /*
-     for(iproc=0;iproc<nump-1;iproc++)
-     if(myid>iproc); MPI_Barrier(MPI_COMM_WORLD);
+    delete_oldsons();
 
-     printf("myid=%d unref before delete\n",myid); fflush(stdout);
-
-     tic=time(NULL);
-     toc=tic+2;
-     do{
-     tic=time(NULL);
-     }while(tic<toc);
-
-     for(iproc=1;iproc<nump;iproc++)
-     if(myid<iproc); MPI_Barrier(MPI_COMM_WORLD);
-
-     MPI_Barrier(MPI_COMM_WORLD);
-     */
-
-    for(k = 0; k < NewFatherList.get_num_elem(); k++)
-        delete_oldsons(El_Table, NodeTable, myid, NewFatherList.get(k));
-    /*
-     MPI_Barrier(MPI_COMM_WORLD);
-
-     for(iproc=0;iproc<nump-1;iproc++)
-     if(myid>iproc); MPI_Barrier(MPI_COMM_WORLD);
-
-     printf("myid=%d unref after delete\n",myid); fflush(stdout);
-
-     tic=time(NULL);
-     toc=tic+2;
-     do{
-     tic=time(NULL);
-     }while(tic<toc);
-
-     for(iproc=1;iproc<nump;iproc++)
-     if(myid<iproc); MPI_Barrier(MPI_COMM_WORLD);
-
-     MPI_Barrier(MPI_COMM_WORLD);
-     */
-
-    //assert(!IfMissingElem(El_Table, myid, time_step, 2));
-    /*  printf("myid=%d after deleting\n",myid);
-     MPI_Barrier(MPI_COMM_WORLD);
-     printf("myid=%d leaving unrefine\n",myid);
-     */
-
-    /*
-     char debugfilename[64];
-     sprintf(debugfilename,"unref%02d%08d.debug",myid,time_step);
-     FILE *fpdebug=fopen(debugfilename,"w");
-     fprintf(fpdebug,"%d elements unrefined on process %d ====================================!!!!!!!!!!!\n", unrefined*4, myid);
-     fclose(fpdebug);
-     */
-    move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -208,19 +146,15 @@ void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double targ
         {
             Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(Curr_El->adapted_flag() > TOBEDELETED)
-                Curr_El->calc_wet_dry_orient(El_Table);
+                Curr_El->calc_wet_dry_orient(ElemTable);
         }
     }
-    
-    //printf("myid=%d exiting unrefine\n",myid);
     return;
 }
 
 int Element::find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
-                           void *NFL, void *OPU)
+                           vector<ti_ndx_t> &NewFatherList, vector<ti_ndx_t> &OtherProcUpdate)
 {
-    ElemPtrList* NewFatherList = (ElemPtrList*) NFL;
-    ElemPtrList* OtherProcUpdate = (ElemPtrList*) OPU;
     
     int i = 0, j;
     int unrefine_flag = 1;
@@ -247,22 +181,21 @@ int Element::find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable
     }
     
     if(unrefine_flag == 1)
-    { // we want to unrefine this element...
-      //first we create the father element
-      //printf("==============================\n unrefining an element \n===============================\n");
-        //if(*(bros[1]->getfather()) == (unsigned) 1529353130)
-        //    printf("creating father %u %u from %u %u\n", *(bros[1]->getfather()), *(bros[1]->getfather() + 1),
-        //           *(bros[1]->pass_key()), *(bros[1]->pass_key() + 1));
+    {
+        // we want to unrefine this element...
+        //first we create the father element
         bros[0] = El_Table->generateAddElement((bros + 1), NodeTable, El_Table, matprops_ptr);
         assert(bros[0]);  // a copy of the parent should always be on the same process as the sons
-        NewFatherList->add(bros[0]);
+        NewFatherList.push_back(bros[0]->ndx());
         
         for(int ineigh = 0; ineigh < 8; ineigh++)
+        {
             if((bros[0]->neigh_proc(ineigh) >= 0) && (bros[0]->neigh_proc(ineigh) != myid))
             {
-                OtherProcUpdate->add(bros[0]);
+                OtherProcUpdate.push_back(bros[0]->ndx());
                 break;
             }
+        }
     }
     
     return unrefine_flag;
@@ -301,134 +234,121 @@ int Element::check_unrefinement(ElementsHashTable* El_Table, double target)
     return (1);
 }
 
-void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void *EmFather_in)
+void HAdaptUnrefine::delete_oldsons()
 {
-    int ison, isonneigh, ineigh, inode;
-    Element *EmSon, *EmNeigh;
-    Node* NdTemp;
-    Element *EmFather = (Element *) EmFather_in;
-    assert(EmFather);
+    for(int iupdate = 0; iupdate < NewFatherList.size(); iupdate++)
+    {
+        int ison, isonneigh, ineigh, inode;
+        Element *EmSon, *EmNeigh;
+        Node* NdTemp;
+        Element *EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
+        assert(EmFather);
     
-    /*
-     unsigned elemdebugkey[2]={ 695892755,2973438897};
-     if(compare_key(EmFather->pass_key(),elemdebugkey)){
-     printf("myid=%d unrefine():deleteoldsons():EmFather={%10u,%10u}\n",
-     myid,elemdebugkey[0],elemdebugkey[1]);
-     ElemBackgroundCheck(El_Table,NodeTable,elemdebugkey,stdout);
-     printf("it's 4 sons are\n");
-     for(ison=0;ison<4;ison++) {
-     printf("***ison=%d {%10u,%10u}\n",ison,
-     EmFather->son[ison][0],EmFather->son[ison][1]);
-     ElemBackgroundCheck(El_Table,NodeTable,EmFather->son[ison],stdout);
-     }
-     }
-     */
+        EmFather->set_refined_flag(0);
+        
+        for(inode = 4; inode < 8; inode++)
+        {
+            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
+            if(!NdTemp)
+            {
+                ElemBackgroundCheck(ElemTable, NodeTable, EmFather->key(), stdout);
+                printf("inode=%d is missing\n", inode);
+                fflush(stdout);
+                NodeBackgroundCheck(ElemTable, NodeTable, EmFather->node_key(inode), stdout);
+            }
+            assert(NdTemp);
+        }
+        inode = 8;
+        NdTemp = (Node *) NodeTable->lookup(EmFather->key());
+        assert(NdTemp);
+        
+        for(ison = 0; ison < 4; ison++)
+        {
+            EmSon = (Element *) ElemTable->lookup(EmFather->son(ison));
+            if(EmSon == NULL)
+            {
+                cout<<"delete_oldsons() null son, ison="<<ison<<" son={"<<EmFather->son(ison)<<"}\n";
+                int yada;
+                scanf("%d", &yada);
+            }
+            assert(EmSon);
+            assert(EmSon->adapted_flag()==OLDSON);
+            EmSon->set_adapted_flag(TOBEDELETED);
+            
+            //delete son's bubble nodes
+            NdTemp = (Node *) NodeTable->lookup(EmFather->son(ison));
+            if(EmFather->son(ison)==65175920631581991ull)
+                    printf("lookup something");
+            assert(NdTemp);
+            NodeTable->removeNode(NdTemp);
 
-    EmFather->set_refined_flag(0);
-    
-    for(inode = 4; inode < 8; inode++)
-    {
-        NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-        if(!NdTemp)
-        {
-            ElemBackgroundCheck(El_Table, NodeTable, EmFather->key(), stdout);
-            printf("inode=%d is missing\n", inode);
-            fflush(stdout);
-            NodeBackgroundCheck(El_Table, NodeTable, EmFather->node_key(inode), stdout);
-        }
-        assert(NdTemp);
-    }
-    inode = 8;
-    NdTemp = (Node *) NodeTable->lookup(EmFather->key());
-    assert(NdTemp);
-    
-    for(ison = 0; ison < 4; ison++)
-    {
-        EmSon = (Element *) El_Table->lookup(EmFather->son(ison));
-        if(EmSon == NULL)
-        {
-            cout<<"delete_oldsons() null son, ison="<<ison<<" son={"<<EmFather->son(ison)<<"}\n";
-            int yada;
-            scanf("%d", &yada);
-        }
-        assert(EmSon);
-        assert(EmSon->adapted_flag()==OLDSON);
-        EmSon->set_adapted_flag(TOBEDELETED);
-        
-        //delete son's bubble nodes
-        NdTemp = (Node *) NodeTable->lookup(EmFather->son(ison));
-        if(EmFather->son(ison)==65175920631581991ull)
-        		printf("lookup something");
-        assert(NdTemp);
-        NodeTable->removeNode(NdTemp);
-        
-        //delete son to son edge nodes
-        inode = (ison + 1) % 4 + 4;
-        NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-        assert(NdTemp);
-        NodeTable->removeNode(NdTemp);
-        
-        //check 2 other edge nodes per son and delete if necessary
-        //the first
-        isonneigh = ison;
-        inode = isonneigh + 4;
-        ineigh = ison;
-        
-        //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-        if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
-        {
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-            if(NdTemp)
-            {
-                NodeTable->removeNode(NdTemp);
-            }
-        }
-        else if(EmFather->neigh_proc(ineigh) == myid)
-        {
-            assert(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
+            //delete son to son edge nodes
+            inode = (ison + 1) % 4 + 4;
             NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
             assert(NdTemp);
-            NdTemp->info(S_S_CON);
-        }
-        
-        //the second
-        isonneigh = (ison + 3) % 4;
-        inode = isonneigh + 4;
-        ineigh = inode;
-        
-        //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-        if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
-        {
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-            if(NdTemp)
+            NodeTable->removeNode(NdTemp);
+
+            //check 2 other edge nodes per son and delete if necessary
+            //the first
+            isonneigh = ison;
+            inode = isonneigh + 4;
+            ineigh = ison;
+
+            //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
+            if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
             {
-                NodeTable->removeNode(NdTemp);
+                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
+                if(NdTemp)
+                {
+                    NodeTable->removeNode(NdTemp);
+                }
+            }
+            else if(EmFather->neigh_proc(ineigh) == myid)
+            {
+                assert(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
+                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
+                assert(NdTemp);
+                NdTemp->info(S_S_CON);
+            }
+
+            //the second
+            isonneigh = (ison + 3) % 4;
+            inode = isonneigh + 4;
+            ineigh = inode;
+
+            //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
+            if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
+            {
+                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
+                if(NdTemp)
+                {
+                    NodeTable->removeNode(NdTemp);
+                }
+
+                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
+                assert(NdTemp);
+                NdTemp->info(SIDE);
+            }
+            else if(EmFather->neigh_proc(ineigh) == myid)
+            {
+                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
+                assert(NdTemp);
+                NdTemp->info(S_S_CON);
+
+                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
+                assert(NdTemp);
+                NdTemp->info(S_C_CON);
             }
             
-            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-            assert(NdTemp);
-            NdTemp->info(SIDE);
+            //Now delete this oldson Element
+            EmSon->void_bcptr();
+            ElemTable->removeElement(EmSon);
         }
-        else if(EmFather->neigh_proc(ineigh) == myid)
-        {
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-            assert(NdTemp);
-            NdTemp->info(S_S_CON);
-            
-            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-            assert(NdTemp);
-            NdTemp->info(S_C_CON);
-        }
+        inode = 8;
         
-        //Now delete this oldson Element
-        EmSon->void_bcptr();
-        El_Table->removeElement(EmSon);
+        NdTemp = (Node *) NodeTable->lookup(EmFather->key());
+        NdTemp->info(BUBBLE);
     }
-    inode = 8;
-    
-    NdTemp = (Node *) NodeTable->lookup(EmFather->key());
-    NdTemp->info(BUBBLE);
-    
     return;
 }
 /*
@@ -484,22 +404,19 @@ void Element::change_neigh_info(unsigned* fth_key, unsigned* ng_key, int neworde
 }
 */
 //make this an element friend function
-void unrefine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void* NFL)
+void HAdaptUnrefine::unrefine_neigh_update()
 {
-    
-    ElemPtrList* NewFatherList = (ElemPtrList*) NFL;
-    
     int iupdate, ineigh, isonA, isonB, ineighme, ikey;
     Element *EmNeigh, *EmFather;
     
     //loop through the NEWFATHER elements
-    for(iupdate = 0; iupdate < NewFatherList->get_num_elem(); iupdate++)
+    for(iupdate = 0; iupdate < NewFatherList.size(); iupdate++)
     {
         
         //I'm a NEWFATHER I'm going to update my neighbors with
         //my information and if he's a NEWFATHER too I'm going
         //to and update my information about him
-        EmFather = NewFatherList->get(iupdate);
+        EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
         assert(EmFather); //Help I've been abducted call the FBI!!!
         /*
          unsigned elemdebugkey[2]={ 695892755,2973438897};
@@ -523,7 +440,7 @@ void unrefine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable
                 //only update the information of on processor neighbors in
                 //this function.
                 
-                EmNeigh = (Element*) El_Table->lookup(EmFather->neighbor(ineigh));
+                EmNeigh = (Element*) ElemTable->lookup(EmFather->neighbor(ineigh));
                 assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
                 
                 if(EmNeigh->adapted_flag() != NEWFATHER)
@@ -535,7 +452,7 @@ void unrefine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable
                     if(EmNeigh->adapted_flag() == OLDSON)
                     {
                         //I am introduced to a NEWFATHER neighbor by his OLDSON
-                        EmNeigh = (Element*) El_Table->lookup(EmNeigh->father_by_ref());
+                        EmNeigh = (Element*) ElemTable->lookup(EmNeigh->father_by_ref());
                         assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
                     }
                     
@@ -588,17 +505,15 @@ void unrefine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable
 }
 
 //make this a Node and Element friend fucntion
-void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int nump, int myid, void* OPU)
+void HAdaptUnrefine::unrefine_interp_neigh_update()
 {
-    ElemPtrList* OtherProcUpdate = (ElemPtrList*) OPU;
-    
-    if(nump < 2)
+    if(numprocs < 2)
         return;
     
-    int *num_send = CAllocI1(nump), *num_recv = CAllocI1(nump), *isend = CAllocI1(nump);
+    int *num_send = CAllocI1(numprocs), *num_recv = CAllocI1(numprocs), *isend = CAllocI1(numprocs);
     int ierr, iopu, iproc, ineigh, ison, ikey, neigh_proc; //iopu stands for i other processor update
     int send_tag = 061116; //2006 November 16, the day I coded this function.
-    MPI_Request* request = new MPI_Request[2 * nump];
+    MPI_Request* request = new MPI_Request[2 * numprocs];
     Element* EmFather;
     Node *NdTemp;
     
@@ -606,12 +521,12 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
         printf("myid=%d unref_interp_neigh_update 1.0\n", myid);
     fflush(stdout);
     
-    for(iproc = 0; iproc < nump; iproc++)
+    for(iproc = 0; iproc < numprocs; iproc++)
         num_send[iproc] = num_recv[iproc] = isend[iproc] = 0;
     
-    for(iopu = 0; iopu < OtherProcUpdate->get_num_elem(); iopu++)
+    for(iopu = 0; iopu < OtherProcUpdate.size(); iopu++)
     {
-        EmFather = OtherProcUpdate->get(iopu);
+        EmFather = &(ElemTable->elenode_[OtherProcUpdate[iopu]]);
         assert(EmFather);
         assert(EmFather->myprocess() == myid);
         for(ineigh = 0; ineigh < 8; ineigh++)
@@ -628,14 +543,14 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
     MPI_Alltoall(num_send, 1, MPI_INT, num_recv, 1, MPI_INT, MPI_COMM_WORLD);
     
     if(myid == TARGET_PROC)
-        for(iproc = 0; iproc < nump; iproc++)
+        for(iproc = 0; iproc < numprocs; iproc++)
         {
             printf("myid=%2d to/from proc %2d num_send=%6d num_recv=%6d\n", myid, iproc, num_send[iproc],
                    num_recv[iproc]);
             fflush(stdout);
         }
     MPI_Barrier (MPI_COMM_WORLD);
-    if((myid != TARGET_PROC) && (TARGET_PROC < nump) && (TARGET_PROC > 0))
+    if((myid != TARGET_PROC) && (TARGET_PROC < numprocs) && (TARGET_PROC > 0))
     {
         printf("myid=%2d to/from proc %2d num_send=%6d num_recv=%6d\n", myid, TARGET_PROC, num_send[TARGET_PROC],
                num_recv[TARGET_PROC]);
@@ -652,7 +567,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
             
     int max_num_send = 0, max_num_recv = 0;
     
-    for(iproc = 0; iproc < nump; iproc++)
+    for(iproc = 0; iproc < numprocs; iproc++)
     {
         if(num_send[iproc] > max_num_send)
             max_num_send = num_send[iproc];
@@ -663,22 +578,22 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
     unsigned **send, **recv;
     
     if(max_num_send > 0)
-        send = CAllocU2(nump, 4 * KEYLENGTH * max_num_send);
+        send = CAllocU2(numprocs, 4 * KEYLENGTH * max_num_send);
     if(max_num_recv > 0)
-        recv = CAllocU2(nump, 4 * KEYLENGTH * max_num_recv);
+        recv = CAllocU2(numprocs, 4 * KEYLENGTH * max_num_recv);
     
-    for(iproc = 0; iproc < nump; iproc++)
+    for(iproc = 0; iproc < numprocs; iproc++)
         if((iproc != myid) && (num_recv[iproc] > 0))
             ierr = MPI_Irecv((void *) recv[iproc], 4 * KEYLENGTH * num_recv[iproc], MPI_UNSIGNED, iproc,
-                             send_tag + iproc, MPI_COMM_WORLD, (request + nump + iproc));
+                             send_tag + iproc, MPI_COMM_WORLD, (request + numprocs + iproc));
     
     if(myid == TARGET_PROC)
         printf("myid=%d unref_interp_neigh_update 2.0\n", myid);
     fflush(stdout);
     
-    for(iopu = 0; iopu < OtherProcUpdate->get_num_elem(); iopu++)
+    for(iopu = 0; iopu < OtherProcUpdate.size(); iopu++)
     {
-        EmFather = OtherProcUpdate->get(iopu);
+        EmFather = &(ElemTable->elenode_[OtherProcUpdate[iopu]]);
         assert(EmFather);
         for(ineigh = 0; ineigh < 8; ineigh++)
         {
@@ -727,7 +642,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
             }
         }
     }
-    for(iproc = 0; iproc < nump; iproc++)
+    for(iproc = 0; iproc < numprocs; iproc++)
         assert(isend[iproc] == num_send[iproc]);
     
     CDeAllocI1(isend);
@@ -736,7 +651,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
         printf("myid=%d unref_interp_neigh_update 3.0\n", myid);
     fflush(stdout);
     
-    for(iproc = 0; iproc < nump; iproc++)
+    for(iproc = 0; iproc < numprocs; iproc++)
         if((iproc != myid) && (num_send[iproc] > 0))
             ierr = MPI_Isend((void *) send[iproc], 4 * KEYLENGTH * num_send[iproc], MPI_UNSIGNED, iproc,
                              send_tag + myid, MPI_COMM_WORLD, (request + iproc));
@@ -752,7 +667,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
         do
         {
             
-            for(iproc = 0; iproc < nump; iproc++)
+            for(iproc = 0; iproc < numprocs; iproc++)
                 if((iproc != myid) && (num_recv[iproc] > 0))
                 {
                     if(myid == TARGET_PROC)
@@ -762,7 +677,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                     //only check processors I haven't already handled
                     ifrecvd = 0;
                     //printf("myid=%d before Test",myid); fflush(stdout);
-                    MPI_Test(request + nump + iproc, &ifrecvd, &status);
+                    MPI_Test(request + numprocs + iproc, &ifrecvd, &status);
                     //printf("myid=%d after Test",myid); fflush(stdout);
                     if(ifrecvd)
                     {
@@ -780,7 +695,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                             //says I need to update
                             
                             //Hi I'm EmTemp
-                            EmTemp = (Element*) El_Table->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 0) * KEYLENGTH])));
+                            EmTemp = (Element*) ElemTable->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 0) * KEYLENGTH])));
                             
                             //my old neighbor will introduce his NEWFATHER to me
                             for(ineigh = 0; ineigh < 8; ineigh++)
@@ -799,7 +714,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                                 //we can use my father's key directly instead of having to
                                 //use get_father() because we know that my father's key
                                 //was assigned to me in unrefine_elements()
-                                EmFather = (Element*) El_Table->lookup(EmTemp->father_by_ref());
+                                EmFather = (Element*) ElemTable->lookup(EmTemp->father_by_ref());
                                 assert(EmFather);
                                 
                                 //which means my father will only have 1 neighbor on that side
@@ -868,7 +783,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
                                     NdTemp = (Node*) NodeTable->lookup(sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 3) * KEYLENGTH])));
                                     if(!NdTemp)
                                     {
-                                        ElemBackgroundCheck(El_Table, NodeTable,
+                                        ElemBackgroundCheck(ElemTable, NodeTable,
                                                             sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 3) * KEYLENGTH])), stdout);
                                         assert(NdTemp);
                                     }
@@ -894,7 +809,7 @@ void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* No
             fflush(stdout);
             
             NumProcsNotRecvd = 0;
-            for(iproc = 0; iproc < nump; iproc++)
+            for(iproc = 0; iproc < numprocs; iproc++)
                 if((iproc != myid) && (num_recv[iproc] > 0))
                     NumProcsNotRecvd++;
             

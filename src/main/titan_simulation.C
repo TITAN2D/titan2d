@@ -419,6 +419,7 @@ void cxxTitanSinglePhase::run()
     }
     
     HAdapt hadapt(ElemTable, NodeTable,&timeprops,matprops_ptr,5);
+    HAdaptUnrefine Unrefine(ElemTable, NodeTable,&timeprops,matprops_ptr);
 
     /* for debug only, to check if exactly what's loaded will be saved again
      by doing a diff on the files.
@@ -496,6 +497,8 @@ void cxxTitanSinglePhase::run()
      for the colima hazard map runs, otherwise pass ifend() a constant
      valued */
 
+    ASSERT3(ElemTable->checkPointersToNeighbours("Prestep index check",false)==0);
+
     titanTimingsAlongSimulation.totalTime = MPI_Wtime();
     while (!(timeprops.ifend(0)) && !ifstop)
     {
@@ -527,7 +530,7 @@ void cxxTitanSinglePhase::run()
             
             
             TIMING1_START(t_start2);
-            unrefine(ElemTable, NodeTable, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
+            Unrefine.unrefine(UNREFINE_TARGET);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);

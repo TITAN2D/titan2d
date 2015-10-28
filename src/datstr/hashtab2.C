@@ -537,6 +537,10 @@ void ElementsHashTable::update_neighbours_ndx_on_ghosts()
                 }
                 node_bubble_ndx_[ndx] = NodeTable->lookup_ndx(key_[ndx]);
 
+                for (int j = 0; j < 4; j++) {
+                    brothers_ndx_[j][ndx]=NodeTable->lookup_ndx(brothers_[j][ndx]);
+                }
+
                 //now the neighbours
                 for (int i = 0; i < 8; i++)
                 {
@@ -549,6 +553,9 @@ void ElementsHashTable::update_neighbours_ndx_on_ghosts()
                         node_key_ndx_[j][ndx2]=NodeTable->lookup_ndx(node_key_[j][ndx2]);
                     }
                     node_bubble_ndx_[ndx2] = NodeTable->lookup_ndx(key_[ndx2]);
+                    for (int j = 0; j < 4; j++) {
+                        brothers_ndx_[j][ndx2]=NodeTable->lookup_ndx(brothers_[j][ndx2]);
+                    }
                 }
             }
         }
@@ -584,6 +591,11 @@ void ElementsHashTable::updatePointersToNeighbours()
                         node_keyPtr_[j][ndx] = nullptr;
                 }
                 node_bubble_ndx_[ndx] = NodeTable->lookup_ndx(key_[ndx]);
+
+                for (int j = 0; j < 4; j++) {
+                    brothers_ndx_[j][ndx]=NodeTable->lookup_ndx(brothers_[j][ndx]);
+                }
+
             }
         }
     }
@@ -627,6 +639,9 @@ void ElementsHashTable::checkPointersToNeighbours(const ti_ndx_t ndx, const bool
         }
     }
     count_node_ndx+=node_bubble_ndx_[ndx] != NodeTable->lookup_ndx(key_[ndx]);
+    for (int j = 0; j < 4; j++) {
+        count_elem_ndx+=brothers_ndx_[j][ndx]!=NodeTable->lookup_ndx(brothers_[j][ndx]);
+    }
 }
 int ElementsHashTable::checkPointersToNeighbours(const char *prefix,const bool checkPointers,const bool checkNewElements)
 {
@@ -694,6 +709,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     which_son_.push_back();
     new_old_.push_back();
     for(int i=0;i<4;++i)brothers_[i].push_back();
+    for(int i=0;i<4;++i)brothers_ndx_[i].push_back();
     for(int i=0;i<DIMENSION;++i)coord_[i].push_back();
     for(int i=0;i<DIMENSION;++i)elm_loc_[i].push_back();
     for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].push_back();
@@ -833,6 +849,7 @@ void ElementsHashTable::flushElemTable()
     which_son_.reorder(&(ndx_map[0]), size);
     new_old_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)brothers_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<4;++i)brothers_ndx_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<DIMENSION;++i)coord_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<DIMENSION;++i)elm_loc_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reorder(&(ndx_map[0]), size);

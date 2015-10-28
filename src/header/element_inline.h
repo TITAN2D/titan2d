@@ -122,6 +122,15 @@ inline void Element::set_brother(const int i, const SFC_Key& new_key) {
     elementsHashTable->brothers_[i][ndx_] = new_key;
 }
 
+inline const ti_ndx_t& Element::brother_ndx(const int i) const
+{
+    return elementsHashTable->brothers_ndx_[i][ndx_];
+}
+inline void Element::brother_ndx(const int i, const ti_ndx_t& new_ndx)
+{
+    elementsHashTable->brothers_ndx_[i][ndx_] = new_ndx;
+}
+
 //! returns the processors for the i-th neighbours of this element
 
 inline const int& Element::neigh_proc(const int i) const {

@@ -135,5 +135,36 @@ private:
     vector<ti_ndx_t> tempList;
 };
 
+//! class for unrefinement
+class HAdaptUnrefine
+{
+public:
+    ElementsHashTable* ElemTable;
+    NodeHashTable* NodeTable;
+    MatProps* matprops_ptr;
+    TimeProps* timeprops_ptr;
+public:
+    HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops);
+
+
+    //! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
+    void unrefine(const double target);
+private:
+    void unrefine_neigh_update();
+    void unrefine_interp_neigh_update();
+    void delete_oldsons();
+
+private:
+    //temporary arrays used during refinement
+    vector<ti_ndx_t> NewFatherList;
+    vector<ti_ndx_t> OtherProcUpdate;
+private:
+    int myid;
+    int numprocs;
+};
+
+
+
+
 #endif	/* HADAPT_H */
 

@@ -1048,23 +1048,11 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		for(i = 0; i < 4; i++)
 		{
 			ElemTable->elenode_[ndxSons[i]].set_brothers(NewNodeKey);
+			for(int j = 0; j < 4; j++)
+			{
+			    ElemTable->brothers_ndx_[j][ndxSons[i]]=ndxSons[j];
+			}
 		}
-
-		int count_ptr = 0;
-        int count_elem_ndx = 0;
-        int count_node_ndx = 0;
-        for(i = 0; i < 4; i++)
-        {
-            ElemTable->checkPointersToNeighbours(ndxSons[i],false,count_ptr,count_elem_ndx,count_node_ndx);
-            if(count_elem_ndx+count_node_ndx>0)
-                printf("DDDDDDDDDD1 %d %d %d\n",ndx,i,ndxSons[i]);
-
-        }
-        ElemTable->checkPointersToNeighbours(ndx,false,count_ptr,count_elem_ndx,count_node_ndx);
-        if(count_elem_ndx+count_node_ndx>0)
-                        printf("DDDDDDDDDD2 %d %d %d\n",ndx,count_elem_ndx,count_node_ndx);
-
-
 
         adapted[ndx]=OLDFATHER;
         refined[ndx]=1;

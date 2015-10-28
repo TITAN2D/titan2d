@@ -34,21 +34,8 @@ void ElemBackgroundCheck2(ElementsHashTable* El_Table, NodeHashTable* NodeTable,
 //! investigate a Node question his "friends and family" about him.
 void NodeBackgroundCheck(ElementsHashTable* El_Table, NodeHashTable* NodeTable, const SFC_Key& debugkey, FILE *fp);
 
-//! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
-void unrefine(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, int nump, TimeProps* timeprops_ptr,
-              MatProps* matprops_ptr);
-
-void delete_oldsons(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void *EmFather);
-
 void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int numprocs, int myid, void* RefinedList,
                          TimeProps* timeprops_ptr);
-
-void unrefine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, void* NewFatherList);
-
-//void unrefine_neigh_update(ElementsHashTable* El_Table, int myid, int NumNewFathers, Element** NewFatherList);
-
-void unrefine_interp_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int nump, int myid, void* OtherProcUpdate);
-//void  unrefine_interp_neigh_update(HashTable* El_Table, HashTable* NodeTable,				   int nump, int myid, int NumOtherProcUpdate, 				   Element **OtherProcUpdate);
 
 //! only used in debugging
 //int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch);

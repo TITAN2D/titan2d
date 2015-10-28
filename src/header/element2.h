@@ -268,6 +268,9 @@ public:
     //! when a father element is refined into 4 son elements, the 4 son elements are "brothers" (they can be recombined into the father), this function stores the keys of all four brothers in one of them, it should be called 4 times one for each brother
     void set_brothers(const SFC_Key*);
 
+    const ti_ndx_t& brother_ndx(const int i) const;
+    void brother_ndx(const int i, const ti_ndx_t& new_ndx);
+
     //! returns the processors for the i-th neighbours of this element
 
     const int& neigh_proc(const int i) const;
@@ -604,7 +607,7 @@ public:
 
     //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
     int find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
-            void* NewFatherList, void* OtherProcUpdate);
+                      vector<ti_ndx_t> &NewFatherList, vector<ti_ndx_t> &OtherProcUpdate);
     /*
      //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
      int find_brothers(HashTable* El_Table, HashTable* NodeTable, 

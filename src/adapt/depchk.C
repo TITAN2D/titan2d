@@ -129,7 +129,7 @@ void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement,
 }
 
 
-void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTable, int* ifg, ElemPtrList* RefinedList)
+void depchk(Element* EmTemp, ElementsHashTable* ElemTable, NodeHashTable* NodeTable, int* ifg, ElemPtrList* RefinedList)
 
 /*---
  refined[] stores the address of ready-for-refinement element of the sub-domain
@@ -142,7 +142,7 @@ void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTab
     int i, j, k;
     Element* element;
     Element* Neigh;
-    ElemPtrList TempList(El_Table, 384);
+    ElemPtrList TempList(ElemTable, 384);
     int myid;
     
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
@@ -164,7 +164,7 @@ void depchk(Element* EmTemp, ElementsHashTable* El_Table, NodeHashTable* NodeTab
             if((neigh_proc != -1) && (neigh_proc != -2))
             { //-- if there is a neighbor
             
-                Neigh = (Element*) (El_Table->lookup(element->neighbor(i)));
+                Neigh = (Element*) (ElemTable->lookup(element->neighbor(i)));
                 
                 //assert(Neigh);
                 if(Neigh != NULL && neigh_proc == myid)
