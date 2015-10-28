@@ -334,9 +334,13 @@ void cxxTitanSinglePhase::run()
     //-- MPI
     MPI_Status status;
 
-    double start, end;
-    double t_start, t_start2, t_end;
-    start = MPI_Wtime();
+    TIMING1_DEFINE(start);
+    TIMING1_DEFINE(end);
+    TIMING1_DEFINE(t_start);
+    TIMING1_DEFINE(t_start2);
+    TIMING1_DEFINE(t_end);
+
+    TIMING1_START(start);
 
     /* create new MPI datastructures for class objects */
     MPI_New_Datatype();
@@ -498,7 +502,7 @@ void cxxTitanSinglePhase::run()
         /*
          *  mesh adaption routines
          */
-        t_start = MPI_Wtime();
+        TIMING1_START(t_start);
         double TARGET = .05;
         double UNREFINE_TARGET = .01;
         int h_count = 0;
@@ -517,24 +521,17 @@ void cxxTitanSinglePhase::run()
         {
             AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -2.0);
 
-            t_start2 = MPI_Wtime();
-            
+            TIMING1_START(t_start2);
             hadapt.adapt(h_count, TARGET);
-
-            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+            TIMING1_STOPADD(refinementTime, t_start2);
             
-            titanTimings.refinementTime += MPI_Wtime() - t_start2;
-            titanTimingsAlongSimulation.refinementTime += MPI_Wtime() - t_start2;
             
-            t_start2 = MPI_Wtime();
-
+            TIMING1_START(t_start2);
             unrefine(ElemTable, NodeTable, UNREFINE_TARGET, myid, numprocs, &timeprops, matprops_ptr);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
-            
-            titanTimings.unrefinementTime += MPI_Wtime() - t_start2;
-            titanTimingsAlongSimulation.unrefinementTime += MPI_Wtime() - t_start2;
+            TIMING1_STOPADD(unrefinementTime, t_start2);
 
             if((numprocs > 1) && (timeprops.iter % 10 == 9))
             {
@@ -552,16 +549,14 @@ void cxxTitanSinglePhase::run()
             ElemTable->updateLocalElements();
             ElemTable->updatePointersToNeighbours();
         }
-        titanTimings.meshAdaptionTime += MPI_Wtime() - t_start;
-        titanTimingsAlongSimulation.meshAdaptionTime += MPI_Wtime() - t_start;
+        TIMING1_STOPADD(meshAdaptionTime, t_start);
 
-        t_start = MPI_Wtime();
+        TIMING1_START(t_start);
         step(elementType,ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
              &order, &outline, &discharge_planes, adapt);
-        titanTimings.stepTime += MPI_Wtime() - t_start;
-        titanTimingsAlongSimulation.stepTime += MPI_Wtime() - t_start;
+        TIMING1_STOPADD(stepTime, t_start);
 
-        t_start = MPI_Wtime();
+        TIMING1_START(t_start);
         /*
          * save a restart file
          */
@@ -637,8 +632,7 @@ void cxxTitanSinglePhase::run()
         }
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
-        titanTimings.resultsOutputTime += MPI_Wtime() - t_start;
-        titanTimingsAlongSimulation.resultsOutputTime += MPI_Wtime() - t_start;
+        TIMING1_STOPADD(resultsOutputTime, t_start);
 
         if(timeprops.iter % 200 == 0)
         {
@@ -743,8 +737,7 @@ void cxxTitanSinglePhase::run()
     fprintf(fpperf,"%d Finished -- used %ld elements of %ld total in %e seconds, %e\n",myid,m,ii,end-start, ii/(end-start));
     fclose(fpperf);
 #endif
-
-    titanTimings.totalTime = MPI_Wtime() - start;
+    TIMING1_STOP(totalTime, start);
     if(myid == 0)
         titanTimings.print();
 

@@ -24,11 +24,21 @@
 #endif
 
 
+#define TIMING1_DEFINE(t_start) double t_start
+#define TIMING1_START(t_start) t_start=MPI_Wtime()
+#define TIMING1_STOP(where,t_start) titanTimings.where=MPI_Wtime()-t_start;
+#define TIMING1_STOPADD(where,t_start) titanTimingsAlongSimulation.where+=MPI_Wtime()-t_start;titanTimings.where+=MPI_Wtime()-t_start;
+#define IF_DEF_TIMING1(statement) statement
+
+#define TIMING2_DEFINE(t_start) double t_start
+#define TIMING2_START(t_start) t_start=MPI_Wtime()
+#define TIMING2_STOPADD(where,t_start) titanTimingsAlongSimulation.where+=MPI_Wtime()-t_start;titanTimings.where+=MPI_Wtime()-t_start;
+#define IF_DEF_TIMING2(statement) statement
+
+
 #define TIMING3_DEFINE(t_start) double t_start
-
 #define TIMING3_START(t_start) t_start=MPI_Wtime()
-#define TIMING3_STOP(where,t_start) titanTimingsAlongSimulation.where+=MPI_Wtime()-t_start;titanTimings.where+=MPI_Wtime()-t_start;
-
+#define TIMING3_STOPADD(where,t_start) titanTimingsAlongSimulation.where+=MPI_Wtime()-t_start;titanTimings.where+=MPI_Wtime()-t_start;
 #define IF_DEF_TIMING3(statement) statement
 
 class TitanTimings

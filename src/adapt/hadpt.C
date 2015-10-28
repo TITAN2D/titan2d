@@ -224,7 +224,7 @@ void HAdapt::adapt(int h_count, double target)
     // what it really does?
     if(numprocs>1)
     {
-        //this thing delete ghost elements, which will be recreated again
+        //this thing delete ghost elements, which will be recreated again during next move_data call
         //why to do that
         //probably was fixing leakage at some point
         //if we don't do that results are same
@@ -241,7 +241,7 @@ void HAdapt::adapt(int h_count, double target)
     // determine which elements to refine and flag them for refinement
     TIMING3_START(t_start3);
     primaryRefinementsFinder.geo_target = element_weight(ElemTable, NodeTable, myid, numprocs);
-    TIMING3_STOP(elementWeightCalc,t_start3);
+    TIMING3_STOPADD(elementWeightCalc,t_start3);
     
     int debug_ref_flag = 0;
     
@@ -379,7 +379,9 @@ void HAdapt::adapt(int h_count, double target)
             
         }
     }
-    TIMING3_STOP(refinementsPostProc,t_start3);
+
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    TIMING3_STOPADD(refinementsPostProc,t_start3);
     return;
 }
 void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
@@ -393,22 +395,22 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
     //find sead refinements
     TIMING3_START(t_start3);
     seedRefinementsFinder.findSeedRefinements(seedRefinement);
-    TIMING3_STOP(seedRefinementsSearch,t_start3);
+    TIMING3_STOPADD(seedRefinementsSearch,t_start3);
 
     //findout triggered refinements
     TIMING3_START(t_start3);
     findTriggeredRefinements(seedRefinement, set_for_refinement, allRefinement);
-    TIMING3_STOP(triggeredRefinementsSearch,t_start3);
+    TIMING3_STOPADD(triggeredRefinementsSearch,t_start3);
 
     //do refinements
     TIMING3_START(t_start3);
     refineElements(allRefinement);
-    TIMING3_STOP(refineElements,t_start3);
+    TIMING3_STOPADD(refineElements,t_start3);
 
     //update neighbours
     TIMING3_START(t_start3);
     refinedNeighboursUpdate(allRefinement);
-    TIMING3_STOP(refinedElementsNeigboursUpdate,t_start3);
+    TIMING3_STOPADD(refinedElementsNeigboursUpdate,t_start3);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
 
