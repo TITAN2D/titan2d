@@ -69,11 +69,12 @@ void HAdaptUnrefine::unrefine(const double target)
 {
     int time_step = timeprops_ptr->iter;
     
-    int i, j, k;
     Element* Curr_El;
     NewFatherList.resize(0);
     OtherProcUpdate.resize(0);
     
+    ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine PRE",false)==0);
+
     //-------------------go through all the elements of the subdomain------------------------
     int no_of_buckets = ElemTable->get_no_of_buckets();
     vector<HashEntryLine> &bucket=ElemTable->bucket;
@@ -91,53 +92,38 @@ void HAdaptUnrefine::unrefine(const double target)
     }
     
     // start unrefinement
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    //@ElementsSingleLoop
+    for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        if(ElemTable->status_[ndx]>=0 && ElemTable->adapted_[ndx]==NOTRECADAPTED)
         {
-            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            if(Curr_El->adapted_flag() == NOTRECADAPTED)
-            {	//if this is a refined element don't involve!!!
+            //if this is a refined element don't involve!!!
 
-                // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
-                if((Curr_El->generation() > MIN_GENERATION) && (Curr_El->which_son() == 0))
-                {
-                    //check to see if currentPtr might get deleted and if it might, find next ptr that won't
-                    //@TODO why it happens only in one bucket?
-                    if(ielm+1<bucket[ibuck].ndx.size())
-                    {
-                        int newnext = 0;
-                        int ielm2=ielm+1;
-                        while (newnext == 0 && ielm2<bucket[ibuck].ndx.size())
-                        {
-                            Element* nextelm = &(elenode_[bucket[ibuck].ndx[ielm2]]);
-                            if(nextelm->which_son() == 0)
-                                newnext = 1;
-                            else
-                                ++ielm2;
-                        }
-                    }
-                    Curr_El->find_brothers(ElemTable, NodeTable, target, myid, matprops_ptr, NewFatherList,OtherProcUpdate);
-
-                }
+            // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
+            if((ElemTable->generation_[ndx] > MIN_GENERATION) && (ElemTable->which_son_[ndx] == 0))
+            {
+                ElemTable->elenode_[ndx].find_brothers(ElemTable, NodeTable, target, myid, matprops_ptr, NewFatherList,OtherProcUpdate);
             }
         }
     }
+    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After new fathers creation",false)==0);
     
     int iproc;
     time_t tic, toc;
     
     //assert(!IfMissingElem(El_Table, myid, time_step, 0));
     unrefine_neigh_update();
-    
+    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_neigh_update",false)==0);
     //assert(!IfMissingElem(El_Table, myid, time_step, 1));
     
     unrefine_interp_neigh_update();
+    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_interp_neigh_update",false)==0);
     
     delete_oldsons();
+    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After delete_oldsons",false)==0);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -351,59 +337,6 @@ void HAdaptUnrefine::delete_oldsons()
     }
     return;
 }
-/*
-void Element::change_neigh_info(unsigned* fth_key, unsigned* ng_key, int neworder, int fth_gen, int fth_proc)
-{
-    int i, j, which_side = -1, same;
-    i = 0;
-    
-    while (i < 8 && which_side == -1)
-    {
-        if(neigh_proc[i] >= 0)
-        {
-            j = 0;
-            same = 1;
-            while (j < KEYLENGTH && same == 1)
-            {
-                if(neighbor[i][j] != ng_key[j])
-                    same = 0;
-                j++;
-            }
-            if(same == 1)
-            {
-                if(i < 4)
-                    which_side = i;
-                else
-                    which_side = i - 4;
-            }
-        }
-        i++;
-    }
-    if(!(which_side >= 0))
-    {
-        int yada;
-        printf("which_side=%d \n", which_side);
-        scanf("%d", &yada);
-    }
-    
-    assert(which_side >= 0);
-    order[which_side] = neworder;
-    
-    for(i = 0; i < KEYLENGTH; i++)
-    {
-        neighbor[which_side][i] = fth_key[i];
-        neighbor[which_side + 4][i] = fth_key[i];
-    }
-    
-    neigh_gen[which_side] = fth_gen;
-    neigh_gen[which_side + 4] = fth_gen;
-    
-    neigh_proc[which_side + 4] = -2;
-    
-    return;
-}
-*/
-//make this an element friend function
 void HAdaptUnrefine::unrefine_neigh_update()
 {
     int iupdate, ineigh, isonA, isonB, ineighme, ikey;
@@ -418,21 +351,6 @@ void HAdaptUnrefine::unrefine_neigh_update()
         //to and update my information about him
         EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
         assert(EmFather); //Help I've been abducted call the FBI!!!
-        /*
-         unsigned elemdebugkey[2]={ 695892755,2973438897};
-         if(compare_key(EmFather->pass_key(),elemdebugkey)){
-         printf("myid=%d unrefine():refine_neigh_update: EmFather={%10u,%10u}\n",
-         myid,elemdebugkey[0],elemdebugkey[1]);
-         ElemBackgroundCheck(El_Table,NodeTable,elemdebugkey,stdout);
-         printf("it's 4 sons are\n");
-         for(int ison=0;ison<4;ison++) {
-         printf("***ison=%d {%10u,%10u} \n",ison,
-         EmFather->getson()+ison*KEYLENGTH+0,
-         EmFather->getson()+ison*KEYLENGTH+1);
-         ElemBackgroundCheck(El_Table,NodeTable,EmFather->getson()+ison*KEYLENGTH,stdout);
-         }
-         }
-         */
 
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(EmFather->neigh_proc(ineigh) == myid)
