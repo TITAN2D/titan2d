@@ -195,6 +195,8 @@ constexpr tisize_t node_reserved_size=elem_reserved_size*9;
 class NodeHashTable: public HashTable<Node>
 {
 public:
+    friend class ElementsHashTable;
+
     NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
     ~NodeHashTable();
     
@@ -275,7 +277,7 @@ public:
     int ckeckLocalElementsPointers(const char *prefix);
 
     //! set neighboring elements and nodes pointers in elements
-    void updatePointersToNeighbours();
+    void updateNeighboursIndexes();
     void updateBrothersIndexes(const bool onlyForNewElements);
     void update_neighbours_ndx_on_ghosts(const bool check_neigh_proc=false);
 

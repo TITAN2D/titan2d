@@ -245,10 +245,8 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
      El_Table->updateAllLocalEntries();
      update_elements_pointers(El_Table, NodeTable);*/
 
-#ifdef DEBUG_EXTRA_CHECKING
-    El_Table->checkPointersToNeighbours("check_elements_pointers_StepStart");
-    El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart");
-#endif
+    ASSERT3(El_Table->checkPointersToNeighbours("check_elements_pointers_StepStart")==0);
+    ASSERT3(El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart")==0);
     
     /* 
      * PREDICTOR-CORRECTED based on Davis' Simplified Godunov Method 

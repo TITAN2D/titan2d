@@ -258,6 +258,28 @@ public:
             array_[i]=array_old_[new_order[i]];
         }
     }
+    void reorder_ndx(ti_ndx_t *new_order, ti_ndx_t *old_to_new, tisize_t new_size)
+    {
+        swap_arrays();
+        if(new_size>reserved_size_){
+            //move to array_old_
+            delete [] array_;
+            //allocate new
+            reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
+            array_=new T[reserved_size_];
+        }
+        size_=new_size;
+
+        for(ti_ndx_t i=0;i<new_size;i++)
+        {
+            array_[i]=array_old_[new_order[i]];
+        }
+        for(ti_ndx_t i=0;i<new_size;i++)
+        {
+            if(array_[i]>=0)
+                array_[i]=old_to_new[array_[i]];
+        }
+    }
     void set(const T& value)
     {
         for(ti_ndx_t i=0;i<size_;i++)

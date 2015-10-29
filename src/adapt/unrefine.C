@@ -126,7 +126,8 @@ void HAdaptUnrefine::unrefine(const double target)
     ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After delete_oldsons",false)==0);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-    //ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
+    if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
+    ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)

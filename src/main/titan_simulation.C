@@ -415,7 +415,7 @@ void cxxTitanSinglePhase::run()
         ElemTable->flushElemTable();
         //update temporary arrays of elements/nodes pointers
         ElemTable->updateLocalElements();
-        ElemTable->updatePointersToNeighbours();
+        ElemTable->updateNeighboursIndexes();
     }
     
     HAdapt hadapt(ElemTable, NodeTable,&timeprops,matprops_ptr,5);
@@ -542,15 +542,17 @@ void cxxTitanSinglePhase::run()
 
                 //this move_data() here for debug... to make AssertMeshErrorFree() Work
                 move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+
+                ElemTable->updateLocalElements();
+                ElemTable->updateNeighboursIndexes();
             }
-            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+
 
             //update temporary arrays of elements/nodes pointers
             NodeTable->flushNodeTable();
             ElemTable->flushElemTable();
             
-            ElemTable->updateLocalElements();
-            ElemTable->updatePointersToNeighbours();
+            ASSERT2(ElemTable->checkPointersToNeighbours("After all adaptions",false)==0);
         }
         TIMING1_STOPADD(meshAdaptionTime, t_start);
 

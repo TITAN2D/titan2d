@@ -169,7 +169,7 @@ void cxxTitanSinglePhase::init_piles()
     HT_Node_Ptr->flushNodeTable();
     HT_Elem_Ptr->flushElemTable();
     HT_Elem_Ptr->updateLocalElements();
-    HT_Elem_Ptr->updatePointersToNeighbours();
+    HT_Elem_Ptr->updateNeighboursIndexes();
     
     slopes(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr);
     

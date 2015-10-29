@@ -605,7 +605,7 @@ void ElementsHashTable::updateBrothersIndexes(const bool onlyForNewElements)
     }
     return;
 }
-void ElementsHashTable::updatePointersToNeighbours()
+void ElementsHashTable::updateNeighboursIndexes()
 {
     for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
     {
@@ -941,15 +941,15 @@ void ElementsHashTable::flushElemTable()
     lb_key_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)node_keyPtr_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)node_key_ndx_[i].reorder(&(ndx_map[0]), size);
-    node_bubble_ndx_.reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)node_key_ndx_[i].reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
+    node_bubble_ndx_.reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
     for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)neighbor_ndx_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<8;++i)neighbor_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
     father_.reorder(&(ndx_map[0]), size);
-    father_ndx_.reorder(&(ndx_map[0]), size);
+    father_ndx_.reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
     for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<4;++i)son_ndx_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<4;++i)son_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
     for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
     bcptr_.reorder(&(ndx_map[0]), size);
@@ -962,7 +962,7 @@ void ElementsHashTable::flushElemTable()
     which_son_.reorder(&(ndx_map[0]), size);
     new_old_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)brothers_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<4;++i)brothers_ndx_[i].reorder(&(ndx_map[0]), size);
+    for(int i=0;i<4;++i)brothers_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
     for(int i=0;i<DIMENSION;++i)coord_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<DIMENSION;++i)elm_loc_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reorder(&(ndx_map[0]), size);
@@ -988,6 +988,32 @@ void ElementsHashTable::flushElemTable()
     Awet_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<2;++i)drypoint_[i].reorder(&(ndx_map[0]), size);
     Swet_.reorder(&(ndx_map[0]), size);
+
+    for(ti_ndx_t ndx = 0; ndx < size; ndx++)
+    {
+        if(status_[ndx]>=0)
+        {
+            //elements
+            for (int j = 0; j < 8; j++) {
+                ti_ndx_t neigh_ndx=neighbor_ndx_[j][ndx];
+
+                if(ti_ndx_not_negative(neigh_ndx))
+                    neighborPtr_[j][ndx] = &(elenode_[neigh_ndx]);
+                else
+                    neighborPtr_[j][ndx] = nullptr;
+            }
+            //nodes
+            for (int j = 0; j < 8; j++) {
+                ti_ndx_t node_ndx=node_key_ndx_[j][ndx];
+
+                if(ti_ndx_not_negative(node_ndx))
+                    node_keyPtr_[j][ndx] = &(NodeTable->elenode_[node_ndx]);
+                else
+                    node_keyPtr_[j][ndx] = nullptr;
+            }
+        }
+    }
+    updateLocalElements();
     titanTimings.flushElemTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushElemTableTime += MPI_Wtime() - t_start;
 }

@@ -102,7 +102,7 @@ void adapt_fluxsrc_region(ElementsHashTable *ElemTable, NodeHashTable *NodeTable
         NodeTable->flushNodeTable();
         ElemTable->flushElemTable();
         ElemTable->updateLocalElements();
-        ElemTable->updatePointersToNeighbours();
+        ElemTable->updateNeighboursIndexes();
     }
     
 
