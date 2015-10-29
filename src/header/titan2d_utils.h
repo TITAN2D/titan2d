@@ -215,13 +215,20 @@ void merge_vectors_from_threads(vector<T> &where, const vector< vector<T> > &wha
 
 
 #ifdef DEB3
+#define IF_DEB1(statement) {statement}
+#define ASSERT1(statement) assert(statement)
+#define IF_DEB2(statement) {statement}
+#define ASSERT2(statement) assert(statement)
 #define IF_DEB3(statement) {statement}
 #define ASSERT3(statement) assert(statement)
 #else
+#define IF_DEB1(statement) {}
+#define ASSERT1(statement) {}
+#define IF_DEB2(statement) {}
+#define ASSERT2(statement) {}
 #define IF_DEB3(statement) {}
 #define ASSERT3(statement) {}
 #endif
-
 
 
 

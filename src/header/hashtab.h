@@ -205,6 +205,7 @@ public:
     
     ti_ndx_t createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
     
+    void removeNode(const ti_ndx_t ndx);
     void removeNode(Node* node);
 
     Node& node(const ti_ndx_t ndx){return elenode_[ndx];}
@@ -275,11 +276,13 @@ public:
 
     //! set neighboring elements and nodes pointers in elements
     void updatePointersToNeighbours();
-    void update_neighbours_ndx_on_ghosts();
+    void updateBrothersIndexes(const bool onlyForNewElements);
+    void update_neighbours_ndx_on_ghosts(const bool check_neigh_proc=false);
 
     //! check that neighboring elements and nodes pointers are correct
-    int checkPointersToNeighbours(const char *prefix,const bool checkPointers=true,const bool checkNewElements=true);
-    void checkPointersToNeighbours(const ti_ndx_t ndx, const bool checkPointers, int &count_ptr,int &count_elem_ndx,int &count_node_ndx);
+    int checkPointersToNeighbours(const char *prefix,const bool checkPointers=true,const bool checkNewElements=true, const bool checkBrothers=false);
+    void checkPointersToNeighbours(const ti_ndx_t ndx, int &count_elem_neigbours_ndx, int &count_elem_brothers_ndx, int &count_elem_sons_ndx, int &count_elem_father_ndx,
+            int &count_node_ndx, const bool checkPointers, int &count_ptr, const bool checkBrothers, int &count);
 
     //! default Element generator constructor, does nothing except set stoppedflags=2, this should never be used
     Element* generateAddElement(const SFC_Key& keyi);
@@ -304,7 +307,7 @@ public:
                     NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                     double *drypoint_in);
     //! constructor that creates a father element from its four sons during unrefinement
-    Element* generateAddElement(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
+    ti_ndx_t generateAddElement_ndx(ti_ndx_t *sons_ndx, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
     Element* generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid);
@@ -372,6 +375,7 @@ public:
 
     //! the key of the father it is assigned in the refine() and unrefine_elements() functions
     tivector<SFC_Key> father_;
+    tivector<ti_ndx_t> father_ndx_;
 
     //! this array holds the keys of this element's 4 sons, it is only used temporarily in the refinement process before the father (this element) is deleted, there's was an old comment "garantee ccw" associated with this variable, I don't know what it means, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
     tivector<SFC_Key> son_[4];

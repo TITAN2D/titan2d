@@ -73,7 +73,7 @@ void HAdaptUnrefine::unrefine(const double target)
     NewFatherList.resize(0);
     OtherProcUpdate.resize(0);
     
-    ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine PRE",false)==0);
+    ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine PRE",false)==0);
 
     //-------------------go through all the elements of the subdomain------------------------
     int no_of_buckets = ElemTable->get_no_of_buckets();
@@ -106,24 +106,27 @@ void HAdaptUnrefine::unrefine(const double target)
             }
         }
     }
-    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After new fathers creation",false)==0);
-    
+    //updateBrothersIndexes for new fathers, as brothers which are also new fathers was not handled during initiation
+    ElemTable->updateBrothersIndexes(true);
+    ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After new fathers creation",false)==0);
     int iproc;
     time_t tic, toc;
     
     //assert(!IfMissingElem(El_Table, myid, time_step, 0));
     unrefine_neigh_update();
-    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_neigh_update",false)==0);
+    ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_neigh_update",false)==0);
     //assert(!IfMissingElem(El_Table, myid, time_step, 1));
     
     unrefine_interp_neigh_update();
-    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_interp_neigh_update",false)==0);
+    if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
+    ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_interp_neigh_update",false)==0);
     
     delete_oldsons();
-    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After delete_oldsons",false)==0);
+    if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
+    ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After delete_oldsons",false)==0);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
-    //ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
+    //ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -138,31 +141,35 @@ void HAdaptUnrefine::unrefine(const double target)
     return;
 }
 
-int Element::find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
+int Element::find_brothers(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
                            vector<ti_ndx_t> &NewFatherList, vector<ti_ndx_t> &OtherProcUpdate)
 {
     
-    int i = 0, j;
+    int j;
     int unrefine_flag = 1;
     Element* bros[5];
+    ti_ndx_t new_father;
+    ti_ndx_t bros_ndx[4];
     if(opposite_brother_flag() == 0)
     {
-        find_opposite_brother(El_Table);
+        find_opposite_brother(ElemTable);
         if(opposite_brother_flag() == 0)
             return 0;
     }
+    int i = 0;
     while (i < 4 && unrefine_flag == 1)
     {
-        Element* EmTemp = (Element*) El_Table->lookup(brother(i));
+        Element* EmTemp = (Element*) ElemTable->lookup(brother(i));
         if(EmTemp == NULL) //|| EmTemp->refined != 0)
             return 0;
         else if(EmTemp->adapted_flag() != NOTRECADAPTED) //this should be sufficient
             return 0;
         bros[i + 1] = EmTemp;
+        bros_ndx[i] = EmTemp->ndx();
         if(bros[i + 1]->myprocess() != myid)
             return 0; //should not be necessary because of "adapted" check
             
-        unrefine_flag = EmTemp->check_unrefinement(El_Table, target);
+        unrefine_flag = EmTemp->check_unrefinement(ElemTable, target);
         i++;
     }
     
@@ -170,15 +177,15 @@ int Element::find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable
     {
         // we want to unrefine this element...
         //first we create the father element
-        bros[0] = El_Table->generateAddElement((bros + 1), NodeTable, El_Table, matprops_ptr);
-        assert(bros[0]);  // a copy of the parent should always be on the same process as the sons
-        NewFatherList.push_back(bros[0]->ndx());
+        new_father = ElemTable->generateAddElement_ndx(bros_ndx, matprops_ptr);
+        ASSERT2(ti_ndx_not_negative(new_father));// a copy of the parent should always be on the same process as the sons
+        NewFatherList.push_back(new_father);
         
         for(int ineigh = 0; ineigh < 8; ineigh++)
         {
-            if((bros[0]->neigh_proc(ineigh) >= 0) && (bros[0]->neigh_proc(ineigh) != myid))
+            if((ElemTable->neigh_proc_[ineigh][new_father] >= 0) && (ElemTable->neigh_proc_[ineigh][new_father] != myid))
             {
-                OtherProcUpdate.push_back(bros[0]->ndx());
+                OtherProcUpdate.push_back(new_father);
                 break;
             }
         }
@@ -228,50 +235,37 @@ void HAdaptUnrefine::delete_oldsons()
         Element *EmSon, *EmNeigh;
         Node* NdTemp;
         Element *EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
-        assert(EmFather);
+        ASSERT3(EmFather);
     
         EmFather->set_refined_flag(0);
         
+#ifdef DEB3
         for(inode = 4; inode < 8; inode++)
         {
             NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-            if(!NdTemp)
-            {
-                ElemBackgroundCheck(ElemTable, NodeTable, EmFather->key(), stdout);
-                printf("inode=%d is missing\n", inode);
-                fflush(stdout);
-                NodeBackgroundCheck(ElemTable, NodeTable, EmFather->node_key(inode), stdout);
-            }
-            assert(NdTemp);
+            ASSERT3(NdTemp);
         }
+#endif
         inode = 8;
-        NdTemp = (Node *) NodeTable->lookup(EmFather->key());
-        assert(NdTemp);
+        ASSERT3(EmFather->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->key()));
+        NdTemp = &(NodeTable->elenode_[EmFather->node_bubble_ndx()]);
         
         for(ison = 0; ison < 4; ison++)
         {
-            EmSon = (Element *) ElemTable->lookup(EmFather->son(ison));
-            if(EmSon == NULL)
-            {
-                cout<<"delete_oldsons() null son, ison="<<ison<<" son={"<<EmFather->son(ison)<<"}\n";
-                int yada;
-                scanf("%d", &yada);
-            }
-            assert(EmSon);
-            assert(EmSon->adapted_flag()==OLDSON);
+            EmSon = &(ElemTable->elenode_[EmFather->son_ndx(ison)]);
+            ASSERT3(EmFather->son_ndx(ison)==ElemTable->lookup_ndx(EmFather->son(ison)));
+            ASSERT3(EmSon->adapted_flag()==OLDSON);
             EmSon->set_adapted_flag(TOBEDELETED);
             
             //delete son's bubble nodes
-            NdTemp = (Node *) NodeTable->lookup(EmFather->son(ison));
-            if(EmFather->son(ison)==65175920631581991ull)
-                    printf("lookup something");
-            assert(NdTemp);
+            ASSERT3(EmSon->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->son(ison)));
+            NdTemp = &(NodeTable->elenode_[EmSon->node_bubble_ndx()]);
             NodeTable->removeNode(NdTemp);
 
             //delete son to son edge nodes
             inode = (ison + 1) % 4 + 4;
-            NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-            assert(NdTemp);
+            ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+            NdTemp = &(NodeTable->elenode_[EmSon->node_key_ndx(inode)]);
             NodeTable->removeNode(NdTemp);
 
             //check 2 other edge nodes per son and delete if necessary
@@ -283,18 +277,18 @@ void HAdaptUnrefine::delete_oldsons()
             //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
             if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
             {
-                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-                if(NdTemp)
+                if(NodeTable->status_[EmSon->node_key_ndx(inode)]>=0 && ti_ndx_not_negative(EmSon->node_key_ndx(inode)))
                 {
-                    NodeTable->removeNode(NdTemp);
+                    //delete if not deleted previously
+                    ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                    NodeTable->removeNode(EmSon->node_key_ndx(inode));
                 }
             }
             else if(EmFather->neigh_proc(ineigh) == myid)
             {
-                assert(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
-                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-                assert(NdTemp);
-                NdTemp->info(S_S_CON);
+                ASSERT3(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
+                ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                NodeTable->info_[EmSon->node_key_ndx(inode)]=S_S_CON;
             }
 
             //the second
@@ -305,35 +299,33 @@ void HAdaptUnrefine::delete_oldsons()
             //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
             if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
             {
-                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-                if(NdTemp)
+                if(NodeTable->status_[EmSon->node_key_ndx(inode)]>=0 && ti_ndx_not_negative(EmSon->node_key_ndx(inode)))
                 {
-                    NodeTable->removeNode(NdTemp);
+                    //delete if not deleted previously
+                    ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                    NodeTable->removeNode(EmSon->node_key_ndx(inode));
                 }
-
-                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-                assert(NdTemp);
-                NdTemp->info(SIDE);
+                ASSERT3(EmFather->node_key_ndx(inode)==NodeTable->lookup_ndx(EmFather->node_key(inode)));
+                NodeTable->info_[EmFather->node_key_ndx(inode)]=SIDE;
             }
             else if(EmFather->neigh_proc(ineigh) == myid)
             {
-                NdTemp = (Node *) NodeTable->lookup(EmSon->node_key(inode));
-                assert(NdTemp);
-                NdTemp->info(S_S_CON);
+                ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                NodeTable->info_[EmSon->node_key_ndx(inode)]=S_S_CON;
 
-                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-                assert(NdTemp);
-                NdTemp->info(S_C_CON);
+                ASSERT3(EmFather->node_key_ndx(inode)==NodeTable->lookup_ndx(EmFather->node_key(inode)));
+                NodeTable->info_[EmFather->node_key_ndx(inode)]=S_C_CON;
             }
             
             //Now delete this oldson Element
             EmSon->void_bcptr();
             ElemTable->removeElement(EmSon);
+            EmFather->son_ndx(ison,ti_ndx_doesnt_exist);
         }
         inode = 8;
         
-        NdTemp = (Node *) NodeTable->lookup(EmFather->key());
-        NdTemp->info(BUBBLE);
+        ASSERT3(EmFather->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->key()));
+        NodeTable->info_[EmFather->node_bubble_ndx()]=BUBBLE;
     }
     return;
 }
@@ -341,6 +333,7 @@ void HAdaptUnrefine::unrefine_neigh_update()
 {
     int iupdate, ineigh, isonA, isonB, ineighme, ikey;
     Element *EmNeigh, *EmFather;
+    ti_ndx_t EmNeighNdx, EmFatherNdx;
     
     //loop through the NEWFATHER elements
     for(iupdate = 0; iupdate < NewFatherList.size(); iupdate++)
@@ -349,17 +342,18 @@ void HAdaptUnrefine::unrefine_neigh_update()
         //I'm a NEWFATHER I'm going to update my neighbors with
         //my information and if he's a NEWFATHER too I'm going
         //to and update my information about him
-        EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
-        assert(EmFather); //Help I've been abducted call the FBI!!!
+        EmFatherNdx=NewFatherList[iupdate];
+        EmFather = &(ElemTable->elenode_[EmFatherNdx]);
+        ASSERT2(EmFather); //Help I've been abducted call the FBI!!!
 
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(EmFather->neigh_proc(ineigh) == myid)
             {
                 //only update the information of on processor neighbors in
                 //this function.
-                
-                EmNeigh = (Element*) ElemTable->lookup(EmFather->neighbor(ineigh));
-                assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
+                EmNeighNdx = EmFather->neighbor_ndx(ineigh);//ElemTable->lookup_ndx(EmFather->neighbor(ineigh));
+                EmNeigh = &(ElemTable->elenode_[EmNeighNdx]);
+                ASSERT2(EmNeighNdx == ElemTable->lookup_ndx(EmFather->neighbor(ineigh))); //Somebody has abducted my neighbor call the FBI!!!
                 
                 if(EmNeigh->adapted_flag() != NEWFATHER)
                 {
@@ -370,8 +364,9 @@ void HAdaptUnrefine::unrefine_neigh_update()
                     if(EmNeigh->adapted_flag() == OLDSON)
                     {
                         //I am introduced to a NEWFATHER neighbor by his OLDSON
-                        EmNeigh = (Element*) ElemTable->lookup(EmNeigh->father_by_ref());
-                        assert(EmNeigh); //Somebody has abducted my neighbor call the FBI!!!
+                        ASSERT2(EmNeigh->father_ndx() == ElemTable->lookup_ndx(EmNeigh->father_by_ref())); //Somebody has abducted my neighbor call the FBI!!!*/
+                        EmNeighNdx = EmNeigh->father_ndx();//ElemTable->lookup_ndx(EmNeigh->father_by_ref());
+                        EmNeigh = &(ElemTable->elenode_[EmNeighNdx]);
                     }
                     
                     //One of my OLDSONs will introduce my neighbor to me
@@ -407,6 +402,11 @@ void HAdaptUnrefine::unrefine_neigh_update()
                             EmFather->set_neighbor(ineigh + 4, EmNeigh->key());
                             EmNeigh->set_neighbor(ineighme, EmFather->key());
                             EmNeigh->set_neighbor(ineighme + 4, EmFather->key());
+
+                            EmFather->neighbor_ndx(ineigh, EmNeigh->ndx());
+                            EmFather->neighbor_ndx(ineigh + 4, EmNeigh->ndx());
+                            EmNeigh->neighbor_ndx(ineighme, EmFather->ndx());
+                            EmNeigh->neighbor_ndx(ineighme + 4, EmFather->ndx());
                     }
                     else
                     {
@@ -414,6 +414,9 @@ void HAdaptUnrefine::unrefine_neigh_update()
                         //KEYLENGTH is made, it saves on overhead
                         EmNeigh->set_neighbor(ineighme, EmFather->key());
                         EmNeigh->set_neighbor(ineighme + 4, EmFather->key());
+
+                        EmNeigh->neighbor_ndx(ineighme, EmFather->ndx());
+                        EmNeigh->neighbor_ndx(ineighme + 4, EmFather->ndx());
                     }
                 }
             }
@@ -582,6 +585,7 @@ void HAdaptUnrefine::unrefine_interp_neigh_update()
     MPI_Status status;
     Element *EmTemp;
     if(max_num_recv > 0)
+    {
         do
         {
             
@@ -641,6 +645,9 @@ void HAdaptUnrefine::unrefine_interp_neigh_update()
                                 EmFather->set_neighbor(ineighmod4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 EmFather->set_neighbor(ineighmod4 + 4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 
+                                //EmFather->neighbor_ndx(ineighmod4, ElemTable->lookup_ndx(EmFather->neighbor(ineighmod4)));
+                                //EmFather->neighbor_ndx(ineighmod4 + 4, ElemTable->lookup_ndx(EmFather->neighbor(ineighmod4 + 4)));
+
                                 //I know my neighbor on the other processor is the same
                                 //generation as me because we were both unrefined and only
                                 //one of us would have been able to unrefine if we were of
@@ -675,6 +682,9 @@ void HAdaptUnrefine::unrefine_interp_neigh_update()
                                 EmTemp->set_neighbor(ineighmod4 + 4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 EmTemp->set_neighbor(ineighmod4, sfc_key_from_oldkey(&(recv[iproc][(4 * iopu + 2) * KEYLENGTH])));
                                 
+                                //EmFather->neighbor_ndx(ineighmod4 + 4, ElemTable->lookup_ndx(EmFather->neighbor(ineighmod4 + 4)));
+                                //EmFather->neighbor_ndx(ineighmod4, ElemTable->lookup_ndx(EmFather->neighbor(ineighmod4)));
+
                                 EmTemp->get_neigh_gen(ineighmod4 + 4, EmTemp->neigh_gen(ineighmod4) - 1);
                                 EmTemp->get_neigh_gen(ineighmod4, EmTemp->neigh_gen(ineighmod4) - 1);
                                 //(recv[iproc][(4*iopu+3)*KEYLENGTH+0]?-1:1)*
@@ -733,6 +743,7 @@ void HAdaptUnrefine::unrefine_interp_neigh_update()
             
         }
         while (NumProcsNotRecvd > 0);
+    }
     if(myid == TARGET_PROC)
         printf("myid=%d unref_interp_neigh_update 9.0\n", myid);
     fflush(stdout);

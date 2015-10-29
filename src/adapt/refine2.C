@@ -113,7 +113,7 @@ void HAdapt::create_new_node3(const int which, const int Node1, const int Node2,
     SET_NEWKEY(key,oldkey);
     NewNodeKey[which]=key;
 
-    ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx(key)));
+    ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(key)));
 
     ndx = NodeTable->createAddNode_ndx(key, NewNodeCoord, info, matprops_ptr);
     NewNodeNdx[which]=ndx;
@@ -199,14 +199,14 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		for(i = 0; i < 8; i++) //-- corners and sides
 		{
 			ndxNodeTemp[i] = ElemTable->node_key_ndx_[i][ndx];
-			ASSERT3(ElemTable->node_key_ndx_[i][ndx]==NodeTable->lookup_ndx(ElemTable->node_key_[i][ndx]));
-			ASSERT3(ti_ndx_not_negative(ndxNodeTemp[i]));
+			ASSERT2(ElemTable->node_key_ndx_[i][ndx]==NodeTable->lookup_ndx(ElemTable->node_key_[i][ndx]));
+			ASSERT2(ti_ndx_not_negative(ndxNodeTemp[i]));
 		}
 
         //-- bubble
 		ndxNodeTemp[8] = ElemTable->node_bubble_ndx_[ndx];//NodeTable->lookup_ndx(ElemTable->key_[ndx]);
-		ASSERT3(ElemTable->node_bubble_ndx_[ndx]==NodeTable->lookup_ndx(ElemTable->key_[ndx]));
-        ASSERT3(ti_ndx_not_negative(ndxNodeTemp[8]));
+		ASSERT2(ElemTable->node_bubble_ndx_[ndx]==NodeTable->lookup_ndx(ElemTable->key_[ndx]));
+        ASSERT2(ti_ndx_not_negative(ndxNodeTemp[8]));
 
 		//SIDE 0
 		if(ElemTable->neigh_proc_[0][ndx] == -1)
@@ -256,7 +256,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// fourth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[0][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[0][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[0][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -265,11 +265,11 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 					which = i;
 				i++;
 			}
-			ASSERT3(which != -1);
+			ASSERT2(which != -1);
 			NewNodeKey[4] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
 			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
 			NewNodeNdx[4]=n1_ndx;
-			ASSERT3(NewNodeNdx[4] == NodeTable->lookup_ndx(NewNodeKey[4]));
+			ASSERT2(NewNodeNdx[4] == NodeTable->lookup_ndx(NewNodeKey[4]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -281,7 +281,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// fifth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[4][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -294,7 +294,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[5] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
 			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
 			NewNodeNdx[5]=n1_ndx;
-			ASSERT3(NewNodeNdx[5] == NodeTable->lookup_ndx(NewNodeKey[5]));
+			ASSERT2(NewNodeNdx[5] == NodeTable->lookup_ndx(NewNodeKey[5]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -353,7 +353,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// eighth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[1][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -366,7 +366,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[8] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
 			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
 			NewNodeNdx[8]=n1_ndx;
-			ASSERT3(NewNodeNdx[8] == NodeTable->lookup_ndx(NewNodeKey[8]));
+			ASSERT2(NewNodeNdx[8] == NodeTable->lookup_ndx(NewNodeKey[8]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -379,7 +379,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// thirteenth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[5][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -392,7 +392,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[13] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
 			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
 			NewNodeNdx[13]=n1_ndx;
-			ASSERT3(NewNodeNdx[13] == NodeTable->lookup_ndx(NewNodeKey[13]));
+			ASSERT2(NewNodeNdx[13] == NodeTable->lookup_ndx(NewNodeKey[13]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -453,7 +453,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// fourteenth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[6][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -466,7 +466,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[14] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
 			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
 			NewNodeNdx[14]=n1_ndx;
-			ASSERT3(NewNodeNdx[14] == NodeTable->lookup_ndx(NewNodeKey[14]));
+			ASSERT2(NewNodeNdx[14] == NodeTable->lookup_ndx(NewNodeKey[14]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -479,7 +479,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// fifteenth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[2][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -492,7 +492,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[15] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
             n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
             NewNodeNdx[15]=n1_ndx;
-            ASSERT3(NewNodeNdx[15] == NodeTable->lookup_ndx(NewNodeKey[15]));
+            ASSERT2(NewNodeNdx[15] == NodeTable->lookup_ndx(NewNodeKey[15]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -552,7 +552,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			// sixth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[7][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -565,7 +565,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[6] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
 			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
 			NewNodeNdx[6]=n1_ndx;
-			ASSERT3(NewNodeNdx[6] == NodeTable->lookup_ndx(NewNodeKey[6]));
+			ASSERT2(NewNodeNdx[6] == NodeTable->lookup_ndx(NewNodeKey[6]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -577,7 +577,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[ndxNodeTemp[7]]=-1;
 			// eleventh new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[3][ndx];
-			ASSERT3(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]));
+			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]));
 			i = 0;
 			which = -1;
 			while (i < 4 && which == -1)
@@ -590,7 +590,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			NewNodeKey[11] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
             n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
             NewNodeNdx[11]=n1_ndx;
-            ASSERT3(NewNodeNdx[11] == NodeTable->lookup_ndx(NewNodeKey[11]));
+            ASSERT2(NewNodeNdx[11] == NodeTable->lookup_ndx(NewNodeKey[11]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -654,10 +654,10 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 		//---NEW ELEMENTS---
 		//check if such element exists (should not be such element)
-		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[0])));
-		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[1])));
-		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[2])));
-		ASSERT3(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[3])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[0])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[1])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[2])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[3])));
 		//first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
 		ndxSons[0]=ElemTable->generateAddElement_ndx(NewNodeKey[0]);
 		ndxSons[1]=ElemTable->generateAddElement_ndx(NewNodeKey[1]);

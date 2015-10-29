@@ -44,9 +44,13 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         d_state_vars(i, 0.);
 
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
     for(i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
+        brother_ndx(i,ti_ndx_doesnt_exist);
         set_son(i, sfc_key_zero);
+        son_ndx(i,ti_ndx_doesnt_exist);
     }
     set_lb_key(sfc_key_zero);
 
@@ -214,9 +218,13 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         d_state_vars(i, 0.);
     
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
     for(i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
+        brother_ndx(i,ti_ndx_doesnt_exist);
         set_son(i, sfc_key_zero);
+        son_ndx(i,ti_ndx_doesnt_exist);
     }
     set_lb_key(sfc_key_zero);
     set_lb_weight(1.0);
@@ -331,9 +339,13 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         d_state_vars(i, 0.);
     
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
     for(i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
+        brother_ndx(i,ti_ndx_doesnt_exist);
         set_son(i, sfc_key_zero);
+        son_ndx(i,ti_ndx_doesnt_exist);
     }
     set_lb_key(sfc_key_zero);
     set_lb_weight(1.0);
@@ -447,9 +459,14 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
         d_state_vars(i, 0.);
 
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
+
     for(i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
+        brother_ndx(i,ti_ndx_doesnt_exist);
         set_son(i, sfc_key_zero);
+        son_ndx(i,ti_ndx_doesnt_exist);
     }
     set_lb_key(sfc_key_zero);
     set_lb_weight(1.0);
@@ -555,8 +572,9 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
 /*********************************
  making a father element from its sons
  *****************************************/
-void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
+void Element::init(ti_ndx_t *sons_ndx, NodeHashTable* NodeTable, ElementsHashTable* ElemTable, MatProps* matprops_ptr)
 {
+
     set_adapted_flag(NEWFATHER);
     
     for(int i = 0; i < NUM_STATE_VARS; i++)
@@ -568,21 +586,32 @@ void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable*
         d_state_vars(i, 0.);
     
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
     for(int i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
+        brother_ndx(i, ti_ndx_doesnt_exist);
         set_son(i, sfc_key_zero);
+        son_ndx(i,ti_ndx_doesnt_exist);
+    }
+    Element* sons[4];
+    for(int i = 0; i < 4; i++){
+        son_ndx(i,sons_ndx[i]);
+        sons[i]=&(ElemTable->elenode_[sons_ndx[i]]);
     }
 
     
     int i, j, ison, isonneigh, ineigh;
     
     set_key(sons[2]->node_key(0));
+    node_bubble_ndx(sons[2]->node_key_ndx(0));
     
     for(ison = 0; ison < 4; ison++)
     {
         sons[ison]->set_adapted_flag(OLDSON);
         set_son(ison, sons[ison]->key());
         sons[ison]->set_father(key());
+        sons[ison]->father_ndx(ndx());
     }
     
     set_lb_key(sfc_key_zero);
@@ -600,6 +629,8 @@ void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable*
     }
     
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
     set_node_key(0, sons[0]->node_key(0));
     set_node_key(1, sons[1]->node_key(1));
     set_node_key(2, sons[2]->node_key(2));
@@ -608,6 +639,16 @@ void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable*
     set_node_key(5, sons[1]->node_key(2));
     set_node_key(6, sons[2]->node_key(3));
     set_node_key(7, sons[3]->node_key(0));
+
+    node_key_ndx(0, sons[0]->node_key_ndx(0));
+    node_key_ndx(1, sons[1]->node_key_ndx(1));
+    node_key_ndx(2, sons[2]->node_key_ndx(2));
+    node_key_ndx(3, sons[3]->node_key_ndx(3));
+    node_key_ndx(4, sons[0]->node_key_ndx(1));
+    node_key_ndx(5, sons[1]->node_key_ndx(2));
+    node_key_ndx(6, sons[2]->node_key_ndx(3));
+    node_key_ndx(7, sons[3]->node_key_ndx(0));
+
 
     for(int idim = 0; idim < DIMENSION; idim++)
     {
@@ -632,12 +673,14 @@ void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable*
         ineigh = isonneigh;
         get_neigh_gen(ineigh, sons[ison]->neigh_gen(isonneigh));
         set_neighbor(ineigh, sons[ison]->neighbor(isonneigh));
+        neighbor_ndx(ineigh, sons[ison]->neighbor_ndx(isonneigh));
         set_neigh_proc(ineigh, sons[ison]->neigh_proc(isonneigh));
         
         isonneigh = (ison + 3) % 4;
         ineigh = isonneigh + 4;
         get_neigh_gen(ineigh, sons[ison]->neigh_gen(isonneigh));
         set_neighbor(ineigh, sons[ison]->neighbor(isonneigh));
+        neighbor_ndx(ineigh, sons[ison]->neighbor_ndx(isonneigh));
         if((sons[ison]->neigh_gen(isonneigh) == generation()) || (sons[ison]->neigh_proc(isonneigh)== -1))
             set_neigh_proc(ineigh, -2);
         else
@@ -652,167 +695,222 @@ void Element::init(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable*
     {
         case 0:
             set_brother(0, key());
+            brother_ndx(0, ndx());
+            ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             if(neigh_proc(1) == -1)
             {
                 set_brother(1, sfc_key_zero);
+                brother_ndx(1, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             }
             else if(neigh_gen(1) == generation())
             {
                 set_brother(1, neighbor(1));
+                brother_ndx(1, neighbor_ndx(1));
+                ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             }
             else if(neigh_gen(1) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(1));
+                EmTemp = ElemTable->lookup(neighbor(1));
                 assert(EmTemp);
                 set_brother(1, EmTemp->father());
+                brother_ndx(1, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             if(neigh_proc(2) == -1)
             {
                 set_brother(3, sfc_key_zero);
+                brother_ndx(3, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(3)==ElemTable->lookup_ndx(brother(3)));
             }
             else if(neigh_gen(2) == generation())
             {
                 set_brother(3, neighbor(2));
+                brother_ndx(3, neighbor_ndx(2));
+                ASSERT3(brother_ndx(3)==ElemTable->lookup_ndx(brother(3)));
             }
             else if(neigh_gen(2) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(2));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(2));
                 assert(EmTemp);
                 set_brother(3, EmTemp->father());
+                brother_ndx(3, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(3)==ElemTable->lookup_ndx(brother(3)));
             }
             else
-                assert(0);
+            {
+                ASSERT3(0);
+            }
             break;
         case 1:
             set_brother(1, key());
+            brother_ndx(1, ndx());
+            ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             if(neigh_proc(3) == -1)
             {
                 set_brother(0, sfc_key_zero);
+                brother_ndx(0, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             }
             else if(neigh_gen(3) == generation())
             {
                 set_brother(0, neighbor(3));
+                brother_ndx(0, neighbor_ndx(3));
+                ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             }
             else if(neigh_gen(3) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(3));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(3));
                 assert(EmTemp);
                 set_brother(0, EmTemp->father());
+                brother_ndx(0, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             if(neigh_proc(2) == -1)
             {
                 set_brother(2, sfc_key_zero);
+                brother_ndx(2, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             }
             else if(neigh_gen(2) == generation())
             {
                 set_brother(2, neighbor(2));
+                brother_ndx(2, neighbor_ndx(2));
+                ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             }
             else if(neigh_gen(2) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(2));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(2));
                 assert(EmTemp);
                 set_brother(2, EmTemp->father());
+                brother_ndx(2, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             break;
         case 2:
             set_brother(2, key());
+            brother_ndx(2, ndx());
+            ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             if(neigh_proc(0) == -1)
             {
                 set_brother(1, sfc_key_zero);
+                brother_ndx(1, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             }
             else if(neigh_gen(0) == generation())
             {
                 set_brother(1, neighbor(0));
+                brother_ndx(1, neighbor_ndx(0));
+                ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             }
             else if(neigh_gen(0) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(0));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(0));
                 assert(EmTemp);
                 set_brother(1, EmTemp->father());
+                brother_ndx(1, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(1)==ElemTable->lookup_ndx(brother(1)));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             if(neigh_proc(3) == -1)
             {
                 set_brother(3, sfc_key_zero);
+                brother_ndx(3, ti_ndx_doesnt_exist);
             }
             else if(neigh_gen(3) == generation())
             {
                 set_brother(3, neighbor(3));
+                brother_ndx(3, neighbor_ndx(3));
             }
             else if(neigh_gen(3) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(3));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(3));
                 assert(EmTemp);
                 set_brother(3, EmTemp->father());
+                brother_ndx(3, ElemTable->lookup_ndx(EmTemp->father()));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             break;
         case 3:
             set_brother(3, key());
+            brother_ndx(3, ndx());
+            ASSERT3(brother_ndx(3)==ElemTable->lookup_ndx(brother(3)));
             if(neigh_proc(0) == -1)
             {
                 set_brother(0, sfc_key_zero);
+                brother_ndx(0, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             }
             else if(neigh_gen(0) == generation())
             {
                 set_brother(0, neighbor(0));
+                brother_ndx(0, neighbor_ndx(0));
+                ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             }
             else if(neigh_gen(0) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(0));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(0));
                 assert(EmTemp);
                 set_brother(0, EmTemp->father());
+                brother_ndx(0, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(0)==ElemTable->lookup_ndx(brother(0)));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             if(neigh_proc(1) == -1)
             {
                 set_brother(2, sfc_key_zero);
+                brother_ndx(2, ti_ndx_doesnt_exist);
+                ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             }
             else if(neigh_gen(1) == generation())
             {
                 set_brother(2, neighbor(1));
+                brother_ndx(2, neighbor_ndx(1));
+                ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             }
             else if(neigh_gen(1) == generation() + 1)
             {
-                EmTemp = (Element*) El_Table->lookup(neighbor(1));
+                EmTemp = (Element*) ElemTable->lookup(neighbor(1));
                 assert(EmTemp);
                 set_brother(2, EmTemp->father());
+                brother_ndx(2, ElemTable->lookup_ndx(EmTemp->father()));
+                ASSERT3(brother_ndx(2)==ElemTable->lookup_ndx(brother(2)));
             }
             else
             {
-                assert(0);
+                ASSERT3(0);
             }
             break;
     }
     
     find_positive_x_side(NodeTable);  //also inserts the coordinates
     calculate_dx(NodeTable);
-    find_opposite_brother(El_Table);
+    find_opposite_brother(ElemTable);
     
     calc_topo_data(matprops_ptr);
     calc_gravity_vector(matprops_ptr);
-    calc_d_gravity(El_Table);
+    calc_d_gravity(ElemTable);
     for(i = 0; i < NUM_STATE_VARS; i++)
     {
         state_vars(i, 0.);
@@ -3748,13 +3846,14 @@ void Element::calc_which_son()
 
 //should be full proof way to get key of opposite brother, 
 //as long as you know your own coord, dx, and which_son
-void Element::find_opposite_brother(ElementsHashTable* El_Table)
+void Element::find_opposite_brother(ElementsHashTable* ElemTable)
 {
     
     if(opposite_brother_flag() == 1)
         return;
     
     set_brother((which_son() + 2) % 4, sfc_key_zero);
+    brother_ndx((which_son() + 2) % 4, ti_ndx_doesnt_exist);
 
     SFC_Key nullkey = 0;
 
@@ -3767,18 +3866,22 @@ void Element::find_opposite_brother(ElementsHashTable* El_Table)
         unsigned nkey = KEYLENGTH;
         
         if((which_son() == 0) || (which_son() == 3))
-            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) + dx(0) - *(El_Table->get_Xrange() + 0));
+            bro_norm_coord[0] = ElemTable->get_invdxrange() * (coord(0) + dx(0) - *(ElemTable->get_Xrange() + 0));
         else
-            bro_norm_coord[0] = El_Table->get_invdxrange() * (coord(0) - dx(0) - *(El_Table->get_Xrange() + 0));
+            bro_norm_coord[0] = ElemTable->get_invdxrange() * (coord(0) - dx(0) - *(ElemTable->get_Xrange() + 0));
         
         if((which_son() == 0) || (which_son() == 1))
-            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) + dx(1) - *(El_Table->get_Yrange() + 0));
+            bro_norm_coord[1] = ElemTable->get_invdyrange() * (coord(1) + dx(1) - *(ElemTable->get_Yrange() + 0));
         else
-            bro_norm_coord[1] = El_Table->get_invdyrange() * (coord(1) - dx(1) - *(El_Table->get_Yrange() + 0));
+            bro_norm_coord[1] = ElemTable->get_invdyrange() * (coord(1) - dx(1) - *(ElemTable->get_Yrange() + 0));
         
         fhsfc2d_(bro_norm_coord, &nkey, oldkey);
         set_brother((which_son() + 2) % 4,sfc_key_from_oldkey(oldkey));
         
+        brother_ndx((which_son() + 2) % 4,ElemTable->lookup_ndx(brother((which_son() + 2) % 4)));
+
+        ASSERT2(brother_ndx((which_son() + 2) % 4)==ElemTable->lookup_ndx(brother((which_son() + 2) % 4)));
+
         set_opposite_brother_flag(1);
     }
     
@@ -4646,9 +4749,13 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 void Element::init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
     set_father(sfc_key_zero);
+    father_ndx(ti_ndx_doesnt_exist);
+
     for(int i = 0; i < 4; i++){
         set_brother(i, sfc_key_zero);
+        brother_ndx(i, ti_ndx_doesnt_exist);
         set_son(i, sfc_key_zero);
+        son_ndx(i,ti_ndx_doesnt_exist);
     }
     set_lb_key(sfc_key_zero);
     

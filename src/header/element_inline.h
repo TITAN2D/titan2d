@@ -153,6 +153,13 @@ inline void Element::set_father(const SFC_Key &fatherin) {
     elementsHashTable->father_[ndx_] = fatherin;
 }
 
+inline const ti_ndx_t& Element::father_ndx() const {
+    return elementsHashTable->father_ndx_[ndx_];
+}
+inline void Element::father_ndx(const ti_ndx_t &fatherin) {
+    elementsHashTable->father_ndx_[ndx_] = fatherin;
+}
+
 //! return the element keys of this element's 4 sons, used during refinement
 
 inline const SFC_Key& Element::son(const int i) const {

@@ -119,9 +119,9 @@ protected:
     }
 
     //! constructor that creates a father element from its four sons during unrefinement
-    Element(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr)
+    Element(ti_ndx_t *sons_ndx, NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr)
     {
-        init(sons, NodeTable, El_Table, matprops_ptr);
+        init(sons_ndx, NodeTable, El_Table, matprops_ptr);
     }
 
     //! constructor that creates/restores a saved element during restart
@@ -144,6 +144,8 @@ public:
             elementType(ElementType::UnknownElementType);
 
         set_father(sfc_key_zero); //initialize the father key to zero
+        father_ndx(ti_ndx_doesnt_exist);
+
         for (int i = 0; i < NUM_STATE_VARS; i++) {
             state_vars(i, -1.0);
             Influx(i, 0.0);
@@ -193,7 +195,7 @@ public:
 
 
     //! constructor that creates a father element from its four sons during unrefinement
-    void init(Element *sons[], NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
+    void init(ti_ndx_t *sons_ndx, NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr);
 
     //! constructor that creates/restores a saved element during restart
     void init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid);
@@ -286,6 +288,9 @@ public:
     //! store the father's key in the "father" variable, the "father's" key is zero until an element has been unrefined (and has not yet been deleted) it is only used in unrefinement. The getfather() member function computes the father key from "which_son" and it's nodes and is totally unrelated to the father variable.
 
     void set_father(const SFC_Key &fatherin);
+
+    const ti_ndx_t& father_ndx() const;
+    void father_ndx(const ti_ndx_t &fatherin);
 
     //! return the element keys of this element's 4 sons, used during refinement
 

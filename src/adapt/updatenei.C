@@ -946,7 +946,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
             {
                 EmSonNdx[isonA] = ElemTable->son_ndx_[isonA][ifather];
                 EmSon[isonA]=&(ElemTable->elenode_[EmSonNdx[isonA]]);
-                ASSERT3(EmSonNdx[isonA] == ElemTable->lookup_ndx(ElemTable->son_[isonA][ifather]));
+                ASSERT2(EmSonNdx[isonA] == ElemTable->lookup_ndx(ElemTable->son_[isonA][ifather]));
             }
 
             for(ineigh = 0; ineigh < 8; ineigh++)
@@ -1047,13 +1047,13 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                                 //to show the old neighbor is the same as the newneighbor
                                 EmNeighNewNdx[0] = EmNeighOldNdx[0] = EmFather->neighbor_ndx(ineighother);
                                 EmNeighNew[0] = EmNeighOld[0] =  &(ElemTable->elenode_[EmNeighNewNdx[0]]);
-                                ASSERT3(EmNeighNewNdx[0] == ElemTable->lookup_ndx(EmFather->neighbor(ineighother)));
+                                ASSERT2(EmNeighNewNdx[0] == ElemTable->lookup_ndx(EmFather->neighbor(ineighother)));
                                 
                                 for(ineighme = 0; ineighme < 4; ineighme++)
                                     if(EmFather->key()==EmNeighNew[0]->neighbor(ineighme))
                                         break;
                                 
-                                ASSERT3(ineighme < 4);
+                                ASSERT2(ineighme < 4);
                                 ineighmep4 = ineighme + 4;
                                 
                                 EmSon[isonB]->set_neighbor(ineighm4, EmFather->neighbor(ineighother));
@@ -1099,7 +1099,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                                 //but better safe than sorry
                                 
                                 isonB = (isonA + 1) % 4;
-                                ASSERT3(EmSon[isonB]);
+                                ASSERT2(EmSon[isonB]);
                                 
                                 EmSon[isonA]->set_neighbor(ineighm4, EmFather->neighbor(ineigh));
                                 EmSon[isonA]->set_neighbor(ineighp4, EmFather->neighbor(ineigh));
@@ -1263,10 +1263,10 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
     for(ti_ndx_t ifather:allRefinement)
     {
         EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
-        ASSERT3(ElemTable->adapted_[ifather]==OLDFATHER); //sanity check
+        ASSERT2(ElemTable->adapted_[ifather]==OLDFATHER); //sanity check
         
         NdTempNdx = ElemTable->node_bubble_ndx_[ifather];
-        ASSERT3(NdTempNdx==NodeTable->lookup_ndx(ElemTable->key_[ifather]));
+        ASSERT2(NdTempNdx==NodeTable->lookup_ndx(ElemTable->key_[ifather]));
         NodeTable->info_[NdTempNdx]=CORNER;
         
         //These are my sons, I'm going to introduce them to my neighbors
@@ -1274,18 +1274,18 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         {
             EmSonNdx[isonA] = ElemTable->son_ndx_[isonA][ifather];
             EmSon[isonA]=&(ElemTable->elenode_[EmSonNdx[isonA]]);
-            ASSERT3(EmSonNdx[isonA] == ElemTable->lookup_ndx(ElemTable->son_[isonA][ifather]));
+            ASSERT2(EmSonNdx[isonA] == ElemTable->lookup_ndx(ElemTable->son_[isonA][ifather]));
 
             if(ElemTable->node_bubble_ndx_[EmSonNdx[isonA]]!=NodeTable->lookup_ndx(ElemTable->key_[EmSonNdx[isonA]]))
             {
                 printf("%d %d\n",ElemTable->node_bubble_ndx_[EmSonNdx[isonA]],NodeTable->lookup_ndx(ElemTable->key_[EmSonNdx[isonA]]));
             }
 
-            ASSERT3(ElemTable->node_bubble_ndx_[EmSonNdx[isonA]]==NodeTable->lookup_ndx(ElemTable->key_[EmSonNdx[isonA]]));
+            ASSERT2(ElemTable->node_bubble_ndx_[EmSonNdx[isonA]]==NodeTable->lookup_ndx(ElemTable->key_[EmSonNdx[isonA]]));
             NodeTable->info_[ElemTable->node_bubble_ndx_[EmSonNdx[isonA]]]=BUBBLE;
             
 
-            ASSERT3(ElemTable->node_key_ndx_[(isonA + 1) % 4 + 4][EmSonNdx[isonA]] ==\
+            ASSERT2(ElemTable->node_key_ndx_[(isonA + 1) % 4 + 4][EmSonNdx[isonA]] ==\
                     NodeTable->lookup_ndx(ElemTable->node_key_[(isonA + 1) % 4 + 4][EmSonNdx[isonA]]));
             NodeTable->info_[ElemTable->node_key_ndx_[(isonA + 1) % 4 + 4][EmSonNdx[isonA]]]=SIDE;
         }
@@ -1332,11 +1332,11 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                 //the information to send to the other proc.
                 
                 //knock knock, Hello Neighbors
-                ASSERT3(ElemTable->neighbor_ndx_[ineigh][ifather]==ElemTable->lookup_ndx(EmFather->neighbor(ineigh)));
+                ASSERT2(ElemTable->neighbor_ndx_[ineigh][ifather]==ElemTable->lookup_ndx(EmFather->neighbor(ineigh)));
                 EmNeighOldNdx[0] = ElemTable->neighbor_ndx_[ineigh][ifather];
                 EmNeighOld[0] = &(ElemTable->elenode_[EmNeighOldNdx[0]]);
                 
-                ASSERT3(ElemTable->neighbor_ndx_[ineighp4][ifather]==ElemTable->lookup_ndx(EmFather->neighbor(ineighp4)));
+                ASSERT2(ElemTable->neighbor_ndx_[ineighp4][ifather]==ElemTable->lookup_ndx(EmFather->neighbor(ineighp4)));
                 EmNeighOldNdx[1] = ElemTable->neighbor_ndx_[ineighp4][ifather];
                 EmNeighOld[1] = &(ElemTable->elenode_[EmNeighOldNdx[1]]);
 
@@ -1395,7 +1395,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                             
                             EmNeighNewNdx[0] = EmNeighOld[0]->son_ndx((ineighme + 1) % 4);
                             EmNeighNew[0]=&(ElemTable->elenode_[EmNeighNewNdx[0]]);
-                            ASSERT3(EmNeighNewNdx[0] == ElemTable->lookup_ndx(EmNeighOld[0]->son((ineighme + 1) % 4)));
+                            ASSERT2(EmNeighNewNdx[0] == ElemTable->lookup_ndx(EmNeighOld[0]->son((ineighme + 1) % 4)));
 
                             EmNeighNewNdx[1] = EmNeighOld[0]->son_ndx(ineighme);
                             EmNeighNew[1] = &(ElemTable->elenode_[EmNeighNewNdx[1]]);
@@ -1434,11 +1434,11 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                             {
                                 EmNeighNewNdx[0] = EmNeighOld[0]->son_ndx((ineighme + 1) % 4);
                                 EmNeighNew[0]=&(ElemTable->elenode_[EmNeighNewNdx[0]]);
-                                ASSERT3(EmNeighNewNdx[0] == ElemTable->lookup_ndx(EmNeighOld[0]->son((ineighme + 1) % 4)));
+                                ASSERT2(EmNeighNewNdx[0] == ElemTable->lookup_ndx(EmNeighOld[0]->son((ineighme + 1) % 4)));
                                 
                                 EmNeighNewNdx[1] = EmNeighOld[0]->son_ndx(ineighme);
                                 EmNeighNew[1] = &(ElemTable->elenode_[EmNeighNewNdx[1]]);
-                                ASSERT3(EmNeighNewNdx[1] == ElemTable->lookup_ndx(EmNeighOld[0]->son(ineighme)));
+                                ASSERT2(EmNeighNewNdx[1] == ElemTable->lookup_ndx(EmNeighOld[0]->son(ineighme)));
                             }
                             else
                             {
@@ -1450,11 +1450,11 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                             {
                                 EmNeighNewNdx[2] = EmNeighOld[1]->son_ndx((ineighme + 1) % 4);
                                 EmNeighNew[2] = &(ElemTable->elenode_[EmNeighNewNdx[2]]);
-                                ASSERT3(EmNeighNewNdx[2] == ElemTable->lookup_ndx(EmNeighOld[1]->son((ineighme + 1) % 4)));
+                                ASSERT2(EmNeighNewNdx[2] == ElemTable->lookup_ndx(EmNeighOld[1]->son((ineighme + 1) % 4)));
                                 
                                 EmNeighNewNdx[3] = EmNeighOld[1]->son_ndx(ineighme);
                                 EmNeighNew[3] = &(ElemTable->elenode_[EmNeighNewNdx[3]]);
-                                ASSERT3(EmNeighNewNdx[3] == ElemTable->lookup_ndx(EmNeighOld[1]->son(ineighme)));
+                                ASSERT2(EmNeighNewNdx[3] == ElemTable->lookup_ndx(EmNeighOld[1]->son(ineighme)));
                             }
                             else
                             {

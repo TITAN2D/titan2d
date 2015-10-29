@@ -265,7 +265,7 @@ void HAdapt::adapt(int h_count, double target)
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
 
-    ASSERT3(ElemTable->checkPointersToNeighbours("Prerefinement index check",false)==0);
+    ASSERT2(ElemTable->checkPointersToNeighbours("Prerefinement index check",false)==0);
 
     //find out primary refinements
     refine2(primaryRefinementsFinder);
@@ -418,8 +418,8 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
 
-    ElemTable->updatePointersToNeighbours();
-    ASSERT3(ElemTable->checkPointersToNeighbours("HAdapt::refine",false)==0);
+    //ElemTable->updatePointersToNeighbours();
+    ASSERT2(ElemTable->checkPointersToNeighbours("HAdapt::refine",false)==0);
 }
 
 #ifdef DISABLED

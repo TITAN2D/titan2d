@@ -370,10 +370,11 @@ Node* NodeHashTable::createAddNode(FILE* fp, MatProps* matprops_ptr) //for resta
 }
 void NodeHashTable::removeNode(Node* node)
 {
-	if(node->key()==65175920631581991ull)
-		printf("delete something");
     remove(node->key());
-    //delete node;
+}
+void NodeHashTable::removeNode(const ti_ndx_t ndx)
+{
+    remove(key_[ndx]);
 }
 void NodeHashTable::flushNodeTable()
 {
@@ -520,26 +521,48 @@ int ElementsHashTable::ckeckLocalElementsPointers(const char *prefix)
     return mismatch;
 }
 
-void ElementsHashTable::update_neighbours_ndx_on_ghosts()
+void ElementsHashTable::update_neighbours_ndx_on_ghosts(const bool check_neigh_proc)
 {
+    bool update=false;
+    int myid;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
     {
         if(status_[ndx]>=0)
         {
+            if(check_neigh_proc)
+            {
+                for(int ineigh = 0; ineigh < 8; ineigh++)
+                {
+                    if((neigh_proc_[ineigh][ndx] >= 0) && (neigh_proc_[ineigh][ndx] != myid))
+                    {
+                        update=true;
+                        break;
+                    }
+                }
+            }
             if(-6 < adapted_[ndx] && adapted_[ndx] < 0 )
+            {
+                update=true;
+            }
+
+            if(update)
             {
                 for (int j = 0; j < 8; j++) {
                     neighbor_ndx_[j][ndx]=lookup_ndx(neighbors_[j][ndx]);
                 }
-
+                for (int j = 0; j < 4; j++) {
+                    brothers_ndx_[j][ndx]=lookup_ndx(brothers_[j][ndx]);
+                }
+                for (int j = 0; j < 4; j++) {
+                    son_ndx_[j][ndx]=lookup_ndx(son_[j][ndx]);
+                }
                 for (int j = 0; j < 8; j++) {
                     node_key_ndx_[j][ndx]=NodeTable->lookup_ndx(node_key_[j][ndx]);
                 }
                 node_bubble_ndx_[ndx] = NodeTable->lookup_ndx(key_[ndx]);
 
-                for (int j = 0; j < 4; j++) {
-                    brothers_ndx_[j][ndx]=NodeTable->lookup_ndx(brothers_[j][ndx]);
-                }
+
 
                 //now the neighbours
                 for (int i = 0; i < 8; i++)
@@ -548,21 +571,40 @@ void ElementsHashTable::update_neighbours_ndx_on_ghosts()
                     for (int j = 0; j < 8; j++) {
                         neighbor_ndx_[j][ndx2]=lookup_ndx(neighbors_[j][ndx2]);
                     }
-
+                    for (int j = 0; j < 4; j++) {
+                        brothers_ndx_[j][ndx2]=lookup_ndx(brothers_[j][ndx2]);
+                    }
+                    for (int j = 0; j < 4; j++) {
+                        son_ndx_[j][ndx2]=lookup_ndx(son_[j][ndx2]);
+                    }
                     for (int j = 0; j < 8; j++) {
                         node_key_ndx_[j][ndx2]=NodeTable->lookup_ndx(node_key_[j][ndx2]);
                     }
                     node_bubble_ndx_[ndx2] = NodeTable->lookup_ndx(key_[ndx2]);
-                    for (int j = 0; j < 4; j++) {
-                        brothers_ndx_[j][ndx2]=NodeTable->lookup_ndx(brothers_[j][ndx2]);
-                    }
+
                 }
             }
         }
     }
     return;
 }
+void ElementsHashTable::updateBrothersIndexes(const bool onlyForNewElements)
+{
+    ContentStatus lowestType=CS_Permanent;
+    if(onlyForNewElements)
+        lowestType=CS_Added;
 
+    for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
+    {
+        if(status_[ndx]>=lowestType)
+        {
+            for (int j = 0; j < 4; j++) {
+                brothers_ndx_[j][ndx]=lookup_ndx(brothers_[j][ndx]);
+            }
+        }
+    }
+    return;
+}
 void ElementsHashTable::updatePointersToNeighbours()
 {
     for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
@@ -570,7 +612,8 @@ void ElementsHashTable::updatePointersToNeighbours()
         if(status_[ndx]>=0)
         {
             //if(adapted_[ndx] > 0)
-            {                
+            {
+                //elements
                 for (int j = 0; j < 8; j++) {
                     ti_ndx_t neigh_ndx=lookup_ndx(neighbors_[j][ndx]);
                     neighbor_ndx_[j][ndx]=neigh_ndx;
@@ -580,7 +623,13 @@ void ElementsHashTable::updatePointersToNeighbours()
                     else
                         neighborPtr_[j][ndx] = nullptr;
                 }
-                
+                for (int j = 0; j < 4; j++) {
+                    brothers_ndx_[j][ndx]=lookup_ndx(brothers_[j][ndx]);
+                    son_ndx_[j][ndx]=lookup_ndx(son_[j][ndx]);
+                }
+                father_ndx_[ndx]=lookup_ndx(father_[ndx]);
+
+                //nodes
                 for (int j = 0; j < 8; j++) {
                     ti_ndx_t node_ndx=NodeTable->lookup_ndx(node_key_[j][ndx]);
                     node_key_ndx_[j][ndx]=node_ndx;
@@ -591,63 +640,123 @@ void ElementsHashTable::updatePointersToNeighbours()
                         node_keyPtr_[j][ndx] = nullptr;
                 }
                 node_bubble_ndx_[ndx] = NodeTable->lookup_ndx(key_[ndx]);
-
-                for (int j = 0; j < 4; j++) {
-                    brothers_ndx_[j][ndx]=NodeTable->lookup_ndx(brothers_[j][ndx]);
-                }
-
             }
         }
     }
     return;
 }
-void ElementsHashTable::checkPointersToNeighbours(const ti_ndx_t ndx, const bool checkPointers, int &count_ptr, int &count_elem_ndx,int &count_node_ndx)
+void ElementsHashTable::checkPointersToNeighbours(const ti_ndx_t ndx, int &count_elem_neigbours_ndx, int &count_elem_brothers_ndx, int &count_elem_sons_ndx, int &count_elem_father_ndx,
+        int &count_node_ndx, const bool checkPointers, int &count_ptr, const bool checkBrothers, int &count)
 {
     for (int j = 0; j < 8; j++) {
         ti_ndx_t neigh_ndx=lookup_ndx(neighbors_[j][ndx]);
         if(neighbor_ndx_[j][ndx]!=neigh_ndx)
-            ++count_elem_ndx;
+        {
+            if(count_elem_neigbours_ndx<10)
+                printf("==neighbor== ndx: %d status:%d neighbor_ndx[%d]:%d lookup(neighbor):%d status:%d key:%" PRIu64 "\n",
+                   ndx,status_[ndx],j,neighbor_ndx_[j][ndx],
+                   lookup_ndx(neighbors_[j][ndx]),
+                   status_[lookup_ndx(neighbors_[j][ndx])],
+                   neighbors_[j][ndx]);
+            ++count_elem_neigbours_ndx;
+            ++count;
+        }
 
         if(checkPointers)
         {
             if(ti_ndx_not_negative(neigh_ndx))
             {
-                count_ptr+=neighborPtr_[j][ndx] != &(elenode_[neigh_ndx]);
+                if(neighborPtr_[j][ndx] != &(elenode_[neigh_ndx]))
+                {
+                    ++count_ptr;
+                    ++count;
+                }
             }
             else
             {
-                count_ptr+=neighborPtr_[j][ndx] != nullptr;
+                if(neighborPtr_[j][ndx] != nullptr)
+                {
+                    ++count_ptr;
+                    ++count;
+                }
             }
         }
+    }
+    for (int j = 0; j < 4; j++)
+    {
+
+        if(checkBrothers && brothers_ndx_[j][ndx]!=lookup_ndx(brothers_[j][ndx]))
+        {
+            if(count_elem_brothers_ndx<10)
+                printf("==brothers== ndx: %d status:%d brothers_ndx[%d]:%d lookup(brother):%d status:%d key:%" PRIu64 "\n",
+                   ndx,status_[ndx],j,brothers_ndx_[j][ndx],
+                   lookup_ndx(brothers_[j][ndx]),
+                   status_[lookup_ndx(brothers_[j][ndx])],
+                   brothers_[j][ndx]);
+            ++count_elem_brothers_ndx;
+            ++count;
+        }
+        if(son_ndx_[j][ndx]!=lookup_ndx(son_[j][ndx]))
+        {
+            if(count_elem_sons_ndx<10)
+                printf("==sons== ndx: %d status:%d son_ndx[%d]:%d lookup(son):%d status:%d key:%" PRIu64 "\n",
+                   ndx,status_[ndx],j,son_ndx_[j][ndx],
+                   lookup_ndx(son_[j][ndx]),
+                   status_[lookup_ndx(son_[j][ndx])],
+                   son_[j][ndx]);
+            ++count_elem_sons_ndx;
+            ++count;
+        }
+    }
+    if(father_ndx_[ndx]!=lookup_ndx(father_[ndx]))
+    {
+        ++count_elem_father_ndx;
+        ++count;
     }
 
     for (int j = 0; j < 8; j++) {
         ti_ndx_t node_ndx=NodeTable->lookup_ndx(node_key_[j][ndx]);
         if(node_key_ndx_[j][ndx]!=node_ndx)
+        {
             ++count_node_ndx;
+            ++count;
+        }
 
         if(checkPointers)
         {
             if(ti_ndx_not_negative(node_ndx))
             {
-                count_ptr+=node_keyPtr_[j][ndx] != &(NodeTable->elenode_[node_ndx]);
+                if(node_keyPtr_[j][ndx] != &(NodeTable->elenode_[node_ndx]))
+                {
+                    ++count_ptr;
+                    ++count;
+                }
             }
             else
             {
-                count_ptr+=node_keyPtr_[j][ndx] != nullptr;
+                if(node_keyPtr_[j][ndx] != nullptr)
+                {
+                    ++count_ptr;
+                    ++count;
+                }
             }
         }
     }
-    count_node_ndx+=node_bubble_ndx_[ndx] != NodeTable->lookup_ndx(key_[ndx]);
-    for (int j = 0; j < 4; j++) {
-        count_elem_ndx+=brothers_ndx_[j][ndx]!=NodeTable->lookup_ndx(brothers_[j][ndx]);
+    if(node_bubble_ndx_[ndx] != NodeTable->lookup_ndx(key_[ndx]))
+    {
+        ++count_node_ndx;
+        ++count;
     }
 }
-int ElementsHashTable::checkPointersToNeighbours(const char *prefix,const bool checkPointers,const bool checkNewElements)
+int ElementsHashTable::checkPointersToNeighbours(const char *prefix,const bool checkPointers,const bool checkNewElements, const bool checkBrothers)
 {
     int count=0;
     int count_ptr = 0;
     int count_elem_ndx = 0;
+    int count_elem_neigbours_ndx = 0;
+    int count_elem_brothers_ndx = 0;
+    int count_elem_sons_ndx = 0;
+    int count_elem_father_ndx = 0;
     int count_node_ndx = 0;
     bool check_element;
     for(ti_ndx_t ndx = 0; ndx < size(); ndx++)
@@ -660,19 +769,21 @@ int ElementsHashTable::checkPointersToNeighbours(const char *prefix,const bool c
 
         if(check_element)
         {
-            checkPointersToNeighbours(ndx,checkPointers,count_ptr,count_elem_ndx,count_node_ndx);
+            checkPointersToNeighbours(ndx,count_elem_neigbours_ndx, count_elem_brothers_ndx, count_elem_sons_ndx,count_elem_father_ndx,count_node_ndx,checkPointers,count_ptr,checkBrothers, count);
         }
     }
-    count+=count_elem_ndx+count_node_ndx;
-    if(checkPointers)
-    {
-        count+=count_ptr;
-    }
+
     if(count> 0)
     {
-        printf("%s WARNING: neighbors nodes and elements pointers mismatch to key.\n", prefix);
+        count_elem_ndx=count_elem_neigbours_ndx+count_elem_brothers_ndx+count_elem_sons_ndx+count_elem_father_ndx;
+        printf("%s WARNING: neighbors nodes and elements pointers mismatch to key (totally %d).\n", prefix,count);
         if(checkPointers)printf("%s WARNING: %d mismatched pointers.\n", prefix, count_ptr);
         printf("%s WARNING: %d mismatched indexes to elements.\n", prefix, count_elem_ndx);
+        printf("%s WARNING: %d mismatched indexes to elements' neigbours.\n", prefix, count_elem_neigbours_ndx);
+        printf("%s WARNING: %d mismatched indexes to elements' brothers.\n", prefix, count_elem_brothers_ndx);
+        printf("%s WARNING: %d mismatched indexes to elements' sons.\n", prefix, count_elem_sons_ndx);
+        printf("%s WARNING: %d mismatched indexes to elements' fathers.\n", prefix, count_elem_father_ndx);
+
         printf("%s WARNING: %d mismatched indexes to nodes.\n", prefix, count_node_ndx);
     }
     return count_ptr+count_elem_ndx;
@@ -695,6 +806,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     for(int i=0;i<8;++i)neighborPtr_[i].push_back();
     for(int i=0;i<8;++i)neighbor_ndx_[i].push_back();
     father_.push_back();
+    father_ndx_.push_back();
     for(int i=0;i<4;++i)son_[i].push_back();
     for(int i=0;i<4;++i)son_ndx_[i].push_back();
     for(int i=0;i<8;++i)neigh_proc_[i].push_back();
@@ -795,11 +907,11 @@ ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, cons
                                   Awetfather, drypoint_in);
     return ndx;
 }
-Element* ElementsHashTable::generateAddElement(Element* sons[], NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr)
+ti_ndx_t ElementsHashTable::generateAddElement_ndx(ti_ndx_t *sons_ndx, MatProps *matprops_ptr)
 {
-    Element* elm=addElement(sons[2]->node_key(0));
-    elm->init(sons, NodeTable, El_Table, matprops_ptr);
-    return elm;
+    ti_ndx_t ndx=addElement_ndx(node_key_[0][sons_ndx[2]]);
+    elenode_[ndx].init(sons_ndx, NodeTable, this, matprops_ptr);
+    return ndx;
 }
 Element* ElementsHashTable::generateAddElement(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
@@ -835,6 +947,7 @@ void ElementsHashTable::flushElemTable()
     for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neighbor_ndx_[i].reorder(&(ndx_map[0]), size);
     father_.reorder(&(ndx_map[0]), size);
+    father_ndx_.reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<4;++i)son_ndx_[i].reorder(&(ndx_map[0]), size);
     for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);

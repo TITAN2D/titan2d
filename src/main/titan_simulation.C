@@ -497,7 +497,7 @@ void cxxTitanSinglePhase::run()
      for the colima hazard map runs, otherwise pass ifend() a constant
      valued */
 
-    ASSERT3(ElemTable->checkPointersToNeighbours("Prestep index check",false)==0);
+    ASSERT2(ElemTable->checkPointersToNeighbours("Prestep index check",false)==0);
 
     titanTimingsAlongSimulation.totalTime = MPI_Wtime();
     while (!(timeprops.ifend(0)) && !ifstop)
