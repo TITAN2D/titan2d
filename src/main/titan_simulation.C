@@ -418,7 +418,9 @@ void cxxTitanSinglePhase::run()
         ElemTable->updateNeighboursIndexes();
     }
     
-    HAdapt hadapt(ElemTable, NodeTable,&timeprops,matprops_ptr,5);
+    ElementsProperties ElemProp(ElemTable, NodeTable);
+
+    HAdapt hadapt(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr,5);
     HAdaptUnrefine Unrefine(ElemTable, NodeTable,&timeprops,matprops_ptr);
 
     /* for debug only, to check if exactly what's loaded will be saved again

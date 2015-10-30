@@ -903,7 +903,6 @@ protected:
 #endif
 };
 
-
 /*************************************************************************/
 
 //! The ElemPtrList class is basically just a "smart array" of pointers to Elements, by smart I mean it keeps track of its size and number of Elements in the list and expands/reallocates itself whenever you add an element ptr to the list when you've run out of space, it also keeps a record of the index of the first "new" element pointer you've added in the current series, which is useful for the intended purpose... ElemList was designed for use in refinement and unrefinement to replace fixed sized arrays (length=297200) of pointers to Elements.  The reason for this upgrade was it was causing valgrind to issue all kinds of warnings about the "client switching stacks" and "invalid write/read of size blah blah blah" because the stacksize was too large.  My 20061121 rewrite of hadapt.C and unrefine.C to make them "fast" caused this problem because I added a second (large) fixed sized array to both of them so I could reduce the number of hashtable scans by only revisiting the "new" additions to the array of pointers of Elements. --Keith wrote this on 20061124, i.e. the day after Thanksgiving, and I'm very thankful for having the inspiration to figure out the cause of valgrid warning

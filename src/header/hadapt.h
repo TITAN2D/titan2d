@@ -23,26 +23,30 @@
 class SeedRefinementsFinder
 {
 public:
-	virtual ~SeedRefinementsFinder(){};
+    SeedRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp);
+    ~SeedRefinementsFinder(){};
 	virtual void findSeedRefinements(vector<ti_ndx_t> &seedRefinement)=0;
+protected:
+	ElementsHashTable* ElemTable;
+	NodeHashTable* NodeTable;
+	ElementsProperties* ElemProp;
+
+    tivector<Element> &elements;
+    tivector<ContentStatus> &status;
+    tivector<int> &adapted;
+    tivector<int> &generation;
 };
 
 //!PrimaryRefinementsFinder
 class PrimaryRefinementsFinder:public SeedRefinementsFinder
 {
 public:
-	PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable);
+	PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp);
 	virtual ~PrimaryRefinementsFinder(){}
 	virtual void findSeedRefinements(vector<ti_ndx_t> &seedRefinement);
 public:
 	double geo_target;
 private:
-	ElementsHashTable* ElemTable;
-	NodeHashTable* NodeTable;
-	tivector<Element> &elements;
-	tivector<ContentStatus> &status;
-	tivector<int> &adapted;
-	tivector<int> &generation;
 	tivector<double> &el_error;
 
 	vector< vector<ti_ndx_t> > loc_SeedRefinement;
@@ -52,14 +56,10 @@ private:
 class BuferFirstLayerRefinementsFinder:public SeedRefinementsFinder
 {
 public:
-    BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable);
+    BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp);
     virtual ~BuferFirstLayerRefinementsFinder(){}
     virtual void findSeedRefinements(vector<ti_ndx_t> &seedRefinement);
 private:
-    ElementsHashTable* ElemTable;
-    tivector<Element> &elements;
-    tivector<ContentStatus> &status;
-
     vector< vector<ti_ndx_t> > loc_SeedRefinement;
 };
 
@@ -68,15 +68,10 @@ private:
 class BuferNextLayerRefinementsFinder:public SeedRefinementsFinder
 {
 public:
-    BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable);
+    BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp);
     virtual ~BuferNextLayerRefinementsFinder(){}
     virtual void findSeedRefinements(vector<ti_ndx_t> &seedRefinement);
 private:
-    ElementsHashTable* ElemTable;
-    NodeHashTable* NodeTable;
-    tivector<Element> &elements;
-    tivector<ContentStatus> &status;
-
     vector< vector<ti_ndx_t> > loc_SeedRefinement;
 };
 
@@ -87,11 +82,12 @@ class HAdapt
 public:
     ElementsHashTable* ElemTable;
     NodeHashTable* NodeTable;
+    ElementsProperties* ElemProp;
     MatProps* matprops_ptr;
     TimeProps* timeprops_ptr;
     int num_buffer_layer;
 public:
-    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer);
+    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer);
     void adapt(int h_count, double target);
     
     void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);

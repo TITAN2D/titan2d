@@ -4212,12 +4212,12 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
 
 int Element::if_pile_boundary(ElementsHashTable *ElemTable, double contour_height)
 {
-    
+
     int ineigh;
     Element* ElemNeigh;
-    
+
     assert(state_vars(0) >= 0.0);
-    
+
     if(state_vars(0) >= contour_height)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
@@ -4256,10 +4256,9 @@ int Element::if_pile_boundary(ElementsHashTable *ElemTable, double contour_heigh
                     return (1); //outside of pileheight contour line
             }
     }
-    
+
     return (0); //not on pileheight contour line
 }
-
 int Element::if_source_boundary(ElementsHashTable *ElemTable)
 {
     

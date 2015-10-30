@@ -511,4 +511,25 @@ public:
 
 extern ElementsHashTable *elementsHashTable;
 
+
+class ElementsProperties
+{
+public:
+    ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable);
+    int if_pile_boundary(ti_ndx_t ndx, double contour_height);
+    int if_source_boundary(ti_ndx_t ndx);
+    int if_first_buffer_boundary(ti_ndx_t ndx, double contour_height) const;
+protected:
+    ElementsHashTable *ElemTable;
+    NodeHashTable* NodeTable;
+
+    tivector<Element> &elements_;
+    tivector<ContentStatus> &status_;
+    tivector<int> &adapted_;
+    tivector<int> &generation_;
+    tivector<int> *neigh_proc_;
+    tivector<double> *state_vars_;
+    tivector<ti_ndx_t> *neighbor_ndx_;
+};
+
 #endif

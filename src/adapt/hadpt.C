@@ -52,17 +52,20 @@ extern void htflush(NodeHashTable*, NodeHashTable*, int);
 #define REFINE_THRESHOLD2 15*GEOFLOW_TINY
 #define REFINE_THRESHOLD  40*GEOFLOW_TINY
 
-PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable):
-    ElemTable(_ElemTable),
-    NodeTable(_NodeTable),
-    geo_target(0.0),
+SeedRefinementsFinder::SeedRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp):
+    ElemTable(_ElemTable), NodeTable(_NodeTable),ElemProp(_ElemProp),
     elements(ElemTable->elenode_),
     status(ElemTable->status_),
     adapted(ElemTable->adapted_),
-    generation(ElemTable->generation_),
+    generation(ElemTable->generation_)
+{
+}
+
+PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp):
+    SeedRefinementsFinder(_ElemTable,_NodeTable,_ElemProp),
+    geo_target(0.0),
     el_error(ElemTable->el_error_[0]),
     loc_SeedRefinement(threads_number)
-
 {
 }
 void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
@@ -84,11 +87,11 @@ void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinem
             if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
             {
                 if((el_error[ndx] > geo_target)
-                    || (elements[ndx].if_pile_boundary(ElemTable, GEOFLOW_TINY) > 0)
-                    || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
-                    || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-                    || (elements[ndx].if_pile_boundary(ElemTable, REFINE_THRESHOLD) > 0)
-                    || (elements[ndx].if_source_boundary(ElemTable) > 0) )
+                    || (ElemProp->if_pile_boundary(ndx, GEOFLOW_TINY) > 0)
+                    || (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD1) > 0)
+                    || (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD2) > 0)
+                    || (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD) > 0)
+                    || (ElemProp->if_source_boundary(ndx) > 0) )
                 {
                     loc_SeedRefinement[ithread].push_back(ndx);
                 }
@@ -97,10 +100,8 @@ void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinem
     }
     merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
 }
-BuferFirstLayerRefinementsFinder::BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable)
-    :ElemTable(_ElemTable),
-    elements(ElemTable->elenode_),
-    status(ElemTable->status_),
+BuferFirstLayerRefinementsFinder::BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp)
+    :SeedRefinementsFinder(_ElemTable,_NodeTable,_ElemProp),
     loc_SeedRefinement(threads_number)
 
 {
@@ -120,10 +121,10 @@ void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &see
         {
             if(status[ndx]>=0)
             {
-                if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) == 1)
-                   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1)== 1)
-                   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) == 1)
-                   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) == 1))
+                if(   (ElemProp->if_first_buffer_boundary(ndx, GEOFLOW_TINY) == 1)
+                   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD1)== 1)
+                   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD2) == 1)
+                   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD) == 1))
                 {
                     loc_SeedRefinement[ithread].push_back(ndx);
                 }
@@ -132,10 +133,8 @@ void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &see
     }
     merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
 }
-BuferNextLayerRefinementsFinder::BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable)
-    :ElemTable(_ElemTable),NodeTable(_NodeTable),
-    elements(ElemTable->elenode_),
-    status(ElemTable->status_),
+BuferNextLayerRefinementsFinder::BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp)
+    :SeedRefinementsFinder(_ElemTable,_NodeTable,_ElemProp),
     loc_SeedRefinement(threads_number)
 
 {
@@ -165,16 +164,17 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
     merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
 }
 
-HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):
+HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):
    TempList(_ElemTable, 384),
    ElemTable(_ElemTable),
    NodeTable(_NodeTable),
+   ElemProp(_ElemProp),
    matprops_ptr(_matprops),
    timeprops_ptr(_timeprops),
    num_buffer_layer(_num_buffer_layer),
-   primaryRefinementsFinder(ElemTable, NodeTable),
-   buferFirstLayerRefinementsFinder(ElemTable),
-   buferNextLayerRefinementsFinder(ElemTable, NodeTable)
+   primaryRefinementsFinder(_ElemTable, _NodeTable,_ElemProp),
+   buferFirstLayerRefinementsFinder(_ElemTable, _NodeTable,_ElemProp),
+   buferNextLayerRefinementsFinder(_ElemTable, _NodeTable, _ElemProp)
 {
 }
 
