@@ -35,10 +35,34 @@ ElementsProperties::ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTa
         neigh_proc_(ElemTable->neigh_proc_),
         state_vars_(ElemTable->state_vars_),
         Influx_(ElemTable->Influx_),
-        neighbor_ndx_(ElemTable->neighbor_ndx_)
+        neighbor_ndx_(ElemTable->neighbor_ndx_),
+        positive_x_side_(ElemTable->positive_x_side_),
+        node_refinementflux_(_NodeTable->refinementflux_),
+        node_key_ndx_(ElemTable->node_key_ndx_),
+        el_error_(ElemTable->el_error_),
+        dx_(ElemTable->dx_)
+
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+
+    //positive_x_side_
+
+    positive_x_side_xm[0] = 2;
+    positive_x_side_yp[0] = 1;
+    positive_x_side_ym[0] = 3;
+
+    positive_x_side_xm[1] = 3;
+    positive_x_side_yp[1] = 2;
+    positive_x_side_ym[1] = 0;
+
+    positive_x_side_xm[2] = 0;
+    positive_x_side_yp[2] = 3;
+    positive_x_side_ym[2] = 1;
+
+    positive_x_side_xm[3] = 1;
+    positive_x_side_yp[3] = 0;
+    positive_x_side_ym[3] = 2;
 }
 int ElementsProperties::if_pile_boundary(ti_ndx_t ndx, double contour_height)
 {
@@ -218,6 +242,66 @@ int ElementsProperties::if_next_buffer_boundary(ti_ndx_t ndx,  double contour_he
     return 0;
 }
 
+void ElementsProperties::calc_flux_balance(ti_ndx_t ndx)
+{
+    int i, j;
+    double flux[3] ={ 0.0, 0.0, 0.0 };
+    int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
+    xp = positive_x_side_[ndx];
+    xm = positive_x_side_xm[xp];
+    yp = positive_x_side_yp[xp];
+    ym = positive_x_side_ym[xp];
+/*
+    switch (positive_x_side_[ndx])
+    {
+        case 0:
+            xm = 2;
+            yp = 1;
+            ym = 3;
+            break;
+        case 1:
+            xm = 3;
+            yp = 2;
+            ym = 0;
+            break;
+        case 2:
+            xm = 0;
+            yp = 3;
+            ym = 1;
+            break;
+        case 3:
+            xm = 1;
+            yp = 0;
+            ym = 2;
+            break;
+    }*/
+    /*Node *nd_xp, *nd_xn, *nd_yp, *nd_yn;
+    nd_xp = (Node*) NodeTable->lookup(node_key(xp + 4));
+    nd_xn = (Node*) NodeTable->lookup(node_key(xm + 4));
+    nd_yp = (Node*) NodeTable->lookup(node_key(yp + 4));
+    nd_yn = (Node*) NodeTable->lookup(node_key(ym + 4));*/
+    ti_ndx_t nd_xp, nd_xn, nd_yp, nd_yn;
+    nd_xp = node_key_ndx_[xp + 4][ndx];
+    nd_xn = node_key_ndx_[xm + 4][ndx];
+    nd_yp = node_key_ndx_[yp + 4][ndx];
+    nd_yn = node_key_ndx_[ym + 4][ndx];
+    ASSERT3(ti_ndx_not_negative(nd_xp));
+    ASSERT3(ti_ndx_not_negative(nd_xn));
+    ASSERT3(ti_ndx_not_negative(nd_yp));
+    ASSERT3(ti_ndx_not_negative(nd_yn));
+
+    for(j = 0; j < 3; j++)
+        flux[j] = dabs(node_refinementflux_[j][nd_xp] - node_refinementflux_[j][nd_xn])
+                + dabs(node_refinementflux_[j][nd_yp] - node_refinementflux_[j][nd_yn]);
+
+    double el_error=0.0;
+    for(j = 0; j < 3; j++)
+        el_error+=flux[j];
+
+    el_error= 2.0 * el_error * el_error / (dx_[0][ndx] + dx_[1][ndx]) + WEIGHT_ADJUSTER; //W_A is so that elements with pile height = 0 have some weight.
+    el_error_[0][ndx]=el_error;
+    return;
+}
 
 /*! element_weight() cycles through the element Hashtable (listing of all
  *  elements) and for each element (that has not been refined this iteration
@@ -256,7 +340,7 @@ double ElementsProperties::element_weight()
             if(Curr_El->adapted_flag() > 0)
             {
                 //if this element doesn't belong on this processor don't involve!!!
-                Curr_El->calc_flux_balance(NodeTable);
+                calc_flux_balance(Curr_El->ndx());
                 //sub_weight[0] += *(Curr_El->get_el_error())+1.;
                 if(Curr_El->state_vars(0) > GEOFLOW_TINY)
                 {

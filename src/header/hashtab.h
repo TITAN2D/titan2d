@@ -523,6 +523,9 @@ public:
 
     //! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
     double element_weight();
+
+    //! this function is called in element_weight.C, it is used in computing the load balancing weight
+    void calc_flux_balance(ti_ndx_t ndx);
 protected:
     ElementsHashTable *ElemTable;
     NodeHashTable* NodeTable;
@@ -535,6 +538,16 @@ protected:
     tivector<double> *state_vars_;
     tivector<ti_ndx_t> *neighbor_ndx_;
     tivector<double> *Influx_;
+    tivector<int> &positive_x_side_;
+
+    tivector<double> *node_refinementflux_;
+    tivector<ti_ndx_t> *node_key_ndx_;
+    tivector<double> *el_error_;
+    tivector<double> *dx_;
+
+    int positive_x_side_xm[4];
+    int positive_x_side_yp[4];
+    int positive_x_side_ym[4];
 
     int myid;
     int numprocs;
