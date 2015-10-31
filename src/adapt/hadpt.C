@@ -70,8 +70,10 @@ PrimaryRefinementsFinder::PrimaryRefinementsFinder(ElementsHashTable* _ElemTable
 }
 void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
 {
+    PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
     //tisize_t elementsToRefine=0;
+    PROFILING1_START(pt_start);
     #pragma omp parallel
     {
         int ithread=omp_get_thread_num();
@@ -98,7 +100,11 @@ void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinem
             }
         }
     }
+    PROFILING1_STOPADD(PrimaryRefinementsFinder_findSeedRefinements_loop,pt_start);
+
+    PROFILING1_START(pt_start);
     merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
+    PROFILING1_STOPADD(PrimaryRefinementsFinder_findSeedRefinements_merge,pt_start);
 }
 BuferFirstLayerRefinementsFinder::BuferFirstLayerRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp)
     :SeedRefinementsFinder(_ElemTable,_NodeTable,_ElemProp),
@@ -108,7 +114,9 @@ BuferFirstLayerRefinementsFinder::BuferFirstLayerRefinementsFinder(ElementsHashT
 }
 void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
 {
+    PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
+    PROFILING1_START(pt_start);
     #pragma omp parallel
     {
         int ithread=omp_get_thread_num();
@@ -131,7 +139,11 @@ void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &see
             }
         }
     }
+    PROFILING1_STOPADD(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
+
+    PROFILING1_START(pt_start);
     merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
+    PROFILING1_STOPADD(BuferFirstLayerRefinementsFinder_findSeedRefinements_merge,pt_start);
 }
 BuferNextLayerRefinementsFinder::BuferNextLayerRefinementsFinder(ElementsHashTable* _ElemTable,NodeHashTable* _NodeTable, ElementsProperties* _ElemProp)
     :SeedRefinementsFinder(_ElemTable,_NodeTable,_ElemProp),
@@ -141,7 +153,9 @@ BuferNextLayerRefinementsFinder::BuferNextLayerRefinementsFinder(ElementsHashTab
 }
 void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
 {
+    PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
+    PROFILING1_START(pt_start);
     #pragma omp parallel
     {
         int ithread=omp_get_thread_num();
@@ -154,14 +168,19 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
         {
             if(status[ndx]>=0)
             {
-                if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable, REFINE_THRESHOLD) == 1)
+                if(ElemProp->if_next_buffer_boundary(ndx, REFINE_THRESHOLD) == 1)
                 {
                     loc_SeedRefinement[ithread].push_back(ndx);
                 }
             }
         }
     }
+    PROFILING1_STOPADD(BuferNextLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
+
+    PROFILING1_START(pt_start);
     merge_vectors_from_threads(seedRefinement,loc_SeedRefinement);
+    PROFILING1_STOPADD(BuferNextLayerRefinementsFinder_findSeedRefinements_merge,pt_start);
+
 }
 
 HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):
@@ -388,6 +407,9 @@ void HAdapt::adapt(int h_count, double target)
 }
 void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 {
+    //PROFILING1_DEFINE(pt_start);
+    //PROFILING1_START(pt_start);
+
     TIMING3_DEFINE(t_start3);
     //reset temporary arrays
     seedRefinement.resize(0);

@@ -519,6 +519,7 @@ public:
     int if_pile_boundary(ti_ndx_t ndx, double contour_height);
     int if_source_boundary(ti_ndx_t ndx);
     int if_first_buffer_boundary(ti_ndx_t ndx, double contour_height) const;
+    int if_next_buffer_boundary(ti_ndx_t ndx,  double contour_height);
 protected:
     ElementsHashTable *ElemTable;
     NodeHashTable* NodeTable;
@@ -530,6 +531,7 @@ protected:
     tivector<int> *neigh_proc_;
     tivector<double> *state_vars_;
     tivector<ti_ndx_t> *neighbor_ndx_;
+    tivector<double> *Influx_;
 };
 
 #endif

@@ -17,7 +17,14 @@
 #ifndef TITAN2D_UTILS_H
 #define TITAN2D_UTILS_H
 
-#include "stdio.h"
+#include <stdio.h>
+#include <time.h>
+#include <vector>
+#include <string>
+#include <chrono>
+#include <iostream>
+
+
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -174,11 +181,68 @@ public:
 extern TitanTimings titanTimings;
 extern TitanTimings titanTimingsAlongSimulation;
 
+typedef std::chrono::high_resolution_clock Clock;
+
+#define PROFILING1_DEFINE(t_start) Clock::time_point t_start
+#define PROFILING1_START(t_start) t_start=Clock::now();
+#define PROFILING1_STOP(where,t_start) titanProfiling.where=Clock::now()-t_start
+#define PROFILING1_STOPADD(where,t_start) titanProfiling.where+=Clock::now()-t_start
+#define IF_DEF_PROFILING1(statement) statement
+
+#define PROFILE_TIMINGS_PRINTING(variable) std::cout<<"  "<<#variable<<" "<<variable.count()<<" "<< std::chrono::duration<double, std::chrono::milliseconds::period>(variable).count() <<"\n"
 
 
+class TitanProfiling
+{
+public:
+    TitanProfiling()
+    {
+        zero=Clock::duration::zero();
+        reset();
+    }
+    ~TitanProfiling()
+    {
+    }
+    void print(const char *title = NULL)
+    {
+        if(title == NULL)
+        {
+            printf("\nTitan profiling, cycles, miliseconds:\n");
+        }
+        else
+        {
+            printf("%s\n", title);
+        }
+        PROFILE_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_loop);
+        PROFILE_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_merge);
+        PROFILE_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop);
+        PROFILE_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_merge);
+        PROFILE_TIMINGS_PRINTING(BuferNextLayerRefinementsFinder_findSeedRefinements_loop);
+        PROFILE_TIMINGS_PRINTING(BuferNextLayerRefinementsFinder_findSeedRefinements_merge);
+    }
+    void reset()
+    {
+        PrimaryRefinementsFinder_findSeedRefinements_loop=zero;
+        PrimaryRefinementsFinder_findSeedRefinements_merge=zero;
+        BuferFirstLayerRefinementsFinder_findSeedRefinements_loop=zero;
+        BuferFirstLayerRefinementsFinder_findSeedRefinements_merge=zero;
+        BuferNextLayerRefinementsFinder_findSeedRefinements_loop=zero;
+        BuferNextLayerRefinementsFinder_findSeedRefinements_merge=zero;
+    }
+public:
+    Clock::duration zero;
+
+    Clock::duration PrimaryRefinementsFinder_findSeedRefinements_loop;
+    Clock::duration PrimaryRefinementsFinder_findSeedRefinements_merge;
+    Clock::duration BuferFirstLayerRefinementsFinder_findSeedRefinements_loop;
+    Clock::duration BuferFirstLayerRefinementsFinder_findSeedRefinements_merge;
+    Clock::duration BuferNextLayerRefinementsFinder_findSeedRefinements_loop;
+    Clock::duration BuferNextLayerRefinementsFinder_findSeedRefinements_merge;
 
 
+};
 
+extern TitanProfiling titanProfiling;
 
 
 

@@ -39,6 +39,7 @@ int REFINE_LEVEL = 3;
 
 TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
+TitanProfiling titanProfiling;
 int threads_number;
 
 
@@ -747,6 +748,8 @@ void cxxTitanSinglePhase::run()
     TIMING1_STOP(totalTime, start);
     if(myid == 0)
         titanTimings.print();
+    if(myid == 0)
+        titanProfiling.print();
 
     MPI_Barrier(MPI_COMM_WORLD);
     
