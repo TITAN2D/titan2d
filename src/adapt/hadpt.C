@@ -78,12 +78,13 @@ void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinem
     {
         int ithread=omp_get_thread_num();
         loc_SeedRefinement[ithread].resize(0);
-        ti_ndx_t ndx_start=ithread*N/threads_number;
-        ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+        //ti_ndx_t ndx_start=ithread*N/threads_number;
+        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
 
         //@ElementsSingleLoop
-        //#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+        //for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=0;ndx<N;++ndx)
         {
             //-- this requirement is used to exclude the new elements
             if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
@@ -121,11 +122,11 @@ void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &see
     {
         int ithread=omp_get_thread_num();
         loc_SeedRefinement[ithread].resize(0);
-        ti_ndx_t ndx_start=ithread*N/threads_number;
-        ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+        //ti_ndx_t ndx_start=ithread*N/threads_number;
+        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
         //@ElementsSingleLoop
-        //#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=0;ndx<N;++ndx)
         {
             if(status[ndx]>=0)
             {
@@ -160,11 +161,11 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
     {
         int ithread=omp_get_thread_num();
         loc_SeedRefinement[ithread].resize(0);
-        ti_ndx_t ndx_start=ithread*N/threads_number;
-        ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+        //ti_ndx_t ndx_start=ithread*N/threads_number;
+        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
         //@ElementsSingleLoop
-        //#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=0;ndx<N;++ndx)
         {
             if(status[ndx]>=0)
             {
@@ -259,7 +260,7 @@ void HAdapt::adapt(int h_count, double target)
     
     // determine which elements to refine and flag them for refinement
     TIMING3_START(t_start3);
-    primaryRefinementsFinder.geo_target = element_weight(ElemTable, NodeTable, myid, numprocs);
+    primaryRefinementsFinder.geo_target = ElemProp->element_weight();
     TIMING3_STOPADD(elementWeightCalc,t_start3);
     
     int debug_ref_flag = 0;

@@ -520,6 +520,9 @@ public:
     int if_source_boundary(ti_ndx_t ndx);
     int if_first_buffer_boundary(ti_ndx_t ndx, double contour_height) const;
     int if_next_buffer_boundary(ti_ndx_t ndx,  double contour_height);
+
+    //! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
+    double element_weight();
 protected:
     ElementsHashTable *ElemTable;
     NodeHashTable* NodeTable;
@@ -532,6 +535,9 @@ protected:
     tivector<double> *state_vars_;
     tivector<ti_ndx_t> *neighbor_ndx_;
     tivector<double> *Influx_;
+
+    int myid;
+    int numprocs;
 };
 
 #endif

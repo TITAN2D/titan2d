@@ -37,7 +37,8 @@ ElementsProperties::ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTa
         Influx_(ElemTable->Influx_),
         neighbor_ndx_(ElemTable->neighbor_ndx_)
 {
-
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 }
 int ElementsProperties::if_pile_boundary(ti_ndx_t ndx, double contour_height)
 {
@@ -215,5 +216,71 @@ int ElementsProperties::if_next_buffer_boundary(ti_ndx_t ndx,  double contour_he
     }
 
     return 0;
+}
+
+
+/*! element_weight() cycles through the element Hashtable (listing of all
+ *  elements) and for each element (that has not been refined this iteration
+ *  and is not a ghost_element) calls Element member function
+ *  Element::calc_flux_balance() (which returns a double precision value
+ *  representing the weight that an element is assigned based on the
+ *  magnitude of its net mass/momentum fluxes). Note that this value is
+ *  adjusted to give non-zero weight even to elements with zero pile-heights
+ *  The cumulative weights (along with a count of the evaluated elements)
+ *  are stored in sub_weight[]; based on this, the return value for this
+ *  function is calculated and stored in global_weight[] (i.e. the sum of
+ *  sub_weight[] from all processors).
+ */
+double ElementsProperties::element_weight()
+{
+    int i, j, k, counter;
+    double tiny = GEOFLOW_TINY;
+    int el_counter = 0;
+    double evalue = 1;
+    double sub_weight[2] =
+    { 0, 0 }; // second number is to keep track of the number of objects
+
+    //-------------------go through all the elements of the subdomain and
+    //-------------------find the edge states
+
+    int no_of_buckets = ElemTable->get_no_of_buckets();
+    vector<HashEntryLine> &bucket=ElemTable->bucket;
+    tivector<Element> &elenode_=ElemTable->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        {
+            Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(Curr_El->adapted_flag() > 0)
+            {
+                //if this element doesn't belong on this processor don't involve!!!
+                Curr_El->calc_flux_balance(NodeTable);
+                //sub_weight[0] += *(Curr_El->get_el_error())+1.;
+                if(Curr_El->state_vars(0) > GEOFLOW_TINY)
+                {
+                    sub_weight[1] += 1;
+                    sub_weight[0] += Curr_El->el_error(0);
+                }
+                else if(Curr_El->adapted_flag() == BUFFER)
+                {
+                    sub_weight[1] += 0.1;
+                    sub_weight[0] += Curr_El->el_error(0) * 0.1;
+                }
+            }
+        }
+    }
+
+    double global_weight[2];
+    i = MPI_Allreduce(sub_weight, global_weight, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    //global_weight[0] = (global_weight[0]-global_weight[1])/global_weight[1];
+    if(global_weight[1] > 0.0)
+        global_weight[0] = (global_weight[0]) / global_weight[1]; //to protect from division by zero
+    else
+        global_weight[0] = 1.0; //just to make it nonzero
+
+    return global_weight[0];
 }
 

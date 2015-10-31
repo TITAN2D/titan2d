@@ -41,8 +41,6 @@ void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable
 //! this function is legacy, the prototype exists but the function is not defined
 void checknodesol(NodeHashTable*);
 
-//! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
-double element_weight(ElementsHashTable* El_Table, NodeHashTable*, int myid, int nump);
 
 //! This function calculates the vast majority of statistics used for output, including most of what appears in output_summary.######, the friction body forces however are not calculated in here, Keith wrote this to replace calc_volume()
 void calc_stats(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
