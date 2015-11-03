@@ -104,6 +104,8 @@ public:
     virtual void run();
     virtual void input_summary();
 
+
+
     //!>Piles
     PileProps pileprops_single_phase;
 
@@ -144,6 +146,11 @@ protected:
      * refinement and unrefinement would otherwise occur.
      */
     void init_piles();
+
+    //! this function implements 1 time step which consists of (by calling other functions) computing spatial derivatives of state variables, computing k active/passive and wave speeds and therefore timestep size, does a finite difference predictor step, followed by a finite volume corrector step, and lastly computing statistics from the current timestep's data.
+    void step(MatProps* matprops_ptr,
+              TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
+              int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag);
 
 };
 

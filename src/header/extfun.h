@@ -43,11 +43,6 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
 //! only used in debugging
 void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *timeprops_ptr);
 
-//! this function implements 1 time step which consists of (by calling other functions) computing spatial derivatives of state variables, computing k active/passive and wave speeds and therefore timestep size, does a finite difference predictor step, followed by a finite volume corrector step, and lastly computing statistics from the current timestep's data.
-void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
-          TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
-          int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag);
-
 //! this function deletes unused elements and nodes, this is called durring grid adaptation in hadpt.C
 void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid);
 //! this function is used for dynamic replacement of a GIS digital elevation map, for example, when you're running a large simulation on multiple processors about a real life scenario you're expecting to occur soon and a channel collapses.  If in the simulation the flow has not yet a gotten to the channel this could allow you to replace the DEM with another one in which the channel has collapsed and continue running the simulation without having to restart from the beginning.  while this code updates the map, the logic and external programs used to in real time decide if the map should be updated have not been fully developed, this is the damd (data manager daemon, area of research in which Dr. Matt Jones is Participating).

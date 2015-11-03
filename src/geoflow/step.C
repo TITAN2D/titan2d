@@ -23,7 +23,7 @@
 #define APPLY_BC
 
 #include "../header/titan2d_utils.h"
-
+#include "../header/titan_simulation.h"
 #include "../header/outline.h"
 
 //dUdx[0] dh_dx
@@ -235,43 +235,48 @@ void predict2ph(Element *Elm, const double *dUdx, const double *dUdy,
 }
 
 
-void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int nump, MatProps* matprops_ptr,
+void cxxTitanSinglePhase::step(MatProps* matprops_ptr,
           TimeProps* timeprops_ptr, PileProps *pileprops_ptr, FluxProps *fluxprops, StatProps* statprops_ptr,
           int* order_flag, OutLine* outline_ptr, DischargePlanes* discharge, int adaptflag)
 {
-    double t_start,t_start2;
+    TIMING1_DEFINE(t_start);
+    TIMING1_DEFINE(t_start2);
+
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
     
     /*El_Table->updateAllEntries();
      El_Table->updateAllLocalEntries();
      update_elements_pointers(El_Table, NodeTable);*/
 
-    ASSERT3(El_Table->checkPointersToNeighbours("check_elements_pointers_StepStart")==0);
-    ASSERT3(El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart")==0);
+    ASSERT3(ElemTable->checkPointersToNeighbours("check_elements_pointers_StepStart")==0);
+    ASSERT3(ElemTable->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepStart")==0);
     
     /* 
      * PREDICTOR-CORRECTED based on Davis' Simplified Godunov Method 
      */
 
     /* pass off proc data here (really only need state_vars for off-proc neighbors) */
-    move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
-    
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     
-    t_start = MPI_Wtime();
-    slopes(El_Table, NodeTable, matprops_ptr);
-    titanTimings.slopesCalcTime += MPI_Wtime() - t_start;
-    titanTimingsAlongSimulation.slopesCalcTime += MPI_Wtime() - t_start;
+    TIMING1_START(t_start);
+    slopes(ElemTable, NodeTable, matprops_ptr);
+    TIMING1_STOPADD(slopesCalcTime, t_start);
+    PROFILING3_STOPADD_RESTART(step_slopesCalc,pt_start);
 
     // get coefficients, eigenvalues, hmax and calculate the time step 
-    double dt = get_coef_and_eigen(elementType, El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 0);
-    //printf("step(): iter=%d %g+",timeprops_ptr->iter,timeprops_ptr->time);
+    double dt = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 0);
+    PROFILING3_STOPADD_RESTART(step_get_coef_and_eigen,pt_start);
     
     timeprops_ptr->incrtime(&dt); //also reduces dt if necessary
-    //printf("step: oldtime+%g=%g\n",dt,timeprops_ptr->time);
+    PROFILING3_STOPADD_RESTART(step_other,pt_start);
     
     // assign influxes and then if any new sources are activating in current time step refine and re-mark cells 
-    adapt_fluxsrc_region(El_Table, NodeTable, matprops_ptr, pileprops_ptr, fluxprops, timeprops_ptr, dt, myid,
+    adapt_fluxsrc_region(ElemTable, NodeTable, matprops_ptr, pileprops_ptr, fluxprops, timeprops_ptr, dt, myid,
                          adaptflag);
+    PROFILING3_STOPADD_RESTART(step_adapt_fluxsrc_region,pt_start);
     
     int i;
     Element* Curr_El;
@@ -290,7 +295,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
     /*
      *  predictor step
      */
-    t_start = MPI_Wtime();
+    TIMING1_START(t_start);
     int j, k, counter;
     double tiny = GEOFLOW_TINY;
     double flux_src_coef = 0;
@@ -303,9 +308,11 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
     int IF_STOPPED;
     double curr_time, influx[3]; //VxVy[2];
 
-    int Nelms = El_Table->getNumberOfLocalElements();
-    Element** Elms = (Element**) El_Table->getLocalElementsValues();
-    //Node* nd;
+    int Nelms = ElemTable->getNumberOfLocalElements();
+    Element** Elms = (Element**) ElemTable->getLocalElementsValues();
+
+
+    PROFILING3_STOPADD_RESTART(step_other,pt_start);
 //#pragma omp parallel for                                                \
 //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
     for(i = 0; i < Nelms; i++)
@@ -338,19 +345,6 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
         flux_src_coef = 0;
         curr_time = (timeprops_ptr->cur_time) * (timeprops_ptr->TIME_SCALE);
         
-        /*
-         double influx[3];
-
-         influx[0]=*(Curr_El->get_influx()+0);
-         influx[1]=*(Curr_El->get_influx()+1);
-         influx[2]=*(Curr_El->get_influx()+2);
-
-         if((timeprops_ptr->timesec()>30.0)&&
-         (influx[0]>0.0)){
-         printf("flux not zeroed 30 seconds\n");
-         assert(0);
-         }
-         */
 
         //VxVy[2];
         if(Curr_El->state_vars(0) > GEOFLOW_TINY)
@@ -369,20 +363,14 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
         double gravity[3]{Curr_El->gravity(0),Curr_El->gravity(1),Curr_El->gravity(2)};
         double d_gravity[3]{Curr_El->d_gravity(0),Curr_El->d_gravity(1),Curr_El->d_gravity(2)};
         
+        //PROFILING3_STOPADD_RESTART(step_other,pt_start);
+
         if(elementType == ElementType::TwoPhases)
         {
             //nothing there
-            /*predict2ph(Curr_El, d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
-                     tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
-                     matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
-                     d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);*/
         }
         if(elementType == ElementType::SinglePhase)
         {
-            /*predict_(Curr_El->get_state_vars(), d_uvec, (d_uvec + NUM_STATE_VARS), Curr_El->get_prev_state_vars(),
-                     &tiny, Curr_El->get_kactxy(), &dt2, Curr_El->get_gravity(), Curr_El->get_curvature(),
-                     &(matprops_ptr->bedfrict[Curr_El->material()]), &(matprops_ptr->intfrict),
-                     Curr_El->get_d_gravity(), &(matprops_ptr->frict_tiny), order_flag, VxVy, &IF_STOPPED, influx);*/
             
             predict(Curr_El, 
                     Curr_El->dh_dx(), Curr_El->dhVx_dx(), Curr_El->dhVy_dx(), 
@@ -391,8 +379,7 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                     matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                     d_gravity, matprops_ptr->frict_tiny, *order_flag, VxVy, IF_STOPPED, influx);
         }
-
-        
+        //PROFILING3_STOPADD_RESTART(step_predict,pt_start);
 
         /* apply bc's */
 #ifdef APPLY_BC
@@ -401,48 +388,55 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                 for(k = 0; k < NUM_STATE_VARS; k++)
                     Curr_El->state_vars(k,0.0);
 #endif
+        //PROFILING3_STOPADD_RESTART(step_apply_bc,pt_start);
         
     }
-    titanTimings.predictorStepTime += MPI_Wtime() - t_start;
-    titanTimingsAlongSimulation.predictorStepTime += MPI_Wtime() - t_start;
+    PROFILING3_STOPADD_RESTART(step_predict,pt_start);
+    TIMING1_STOPADD(predictorStepTime, t_start);
     /* finished predictor step */
 
     /* really only need to share dudx, state_vars, and kactxy */
-    move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    PROFILING3_STOPADD_RESTART(step_other,pt_start);
     
     /* calculate the slopes for the new (half-time step) state variables */
-    t_start = MPI_Wtime();
-    slopes(El_Table, NodeTable, matprops_ptr);
-
+    TIMING1_START(t_start);
+    slopes(ElemTable, NodeTable, matprops_ptr);
+    TIMING1_STOPADD(slopesCalcTime, t_start);
+    PROFILING3_STOPADD_RESTART(step_slopesCalc,pt_start);
     // in TWO PHASES #endif  //SECOND_ORDER
 
 
     
     /* really only need to share dudx, state_vars, and kactxy */
-    move_data(nump, myid, El_Table, NodeTable, timeprops_ptr);
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    PROFILING3_STOPADD_RESTART(step_other,pt_start);
     
     /* calculate kact/pass */
-    double dt_not_used = get_coef_and_eigen(elementType, El_Table, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 1);
-    
+    double dt_not_used = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops, timeprops_ptr, 1);
+    PROFILING3_STOPADD_RESTART(step_get_coef_and_eigen,pt_start);
     /*
      * calculate edge states
      */
     double outflow = 0.0;  //shouldn't need the =0.0 assignment but just being cautious.
     //printf("step: before calc_edge_states\n"); fflush(stdout);
-    calc_edge_states(El_Table, NodeTable, matprops_ptr, timeprops_ptr, myid, order_flag, &outflow);
+    calc_edge_states(ElemTable, NodeTable, matprops_ptr, timeprops_ptr, myid, order_flag, &outflow);
+    PROFILING3_STOPADD_RESTART(step_calc_edge_states,pt_start);
+
     outflow *= dt;
     //printf("step: after calc_edge_states\n"); fflush(stdout);
     
     /*
      * corrector step and b.c.s
      */
-    t_start = MPI_Wtime();
+    TIMING1_START(t_start);
     //for comparison of magnitudes of forces in slumping piles
     double forceint = 0.0, elemforceint;
     double forcebed = 0.0, elemforcebed;
     double eroded = 0.0, elemeroded;
     double deposited = 0.0, elemdeposited;
     double realvolume = 0.0;
+    PROFILING3_STOPADD_RESTART(step_other,pt_start);
     
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
@@ -460,10 +454,11 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                 Curr_El->update_prev_state_vars();
 
         }
+        //PROFILING3_STOPADD_RESTART(step_other,pt_start);
         void *Curr_El_out = (void *) Curr_El;
-        correct(elementType, NodeTable, El_Table, dt, matprops_ptr, fluxprops, timeprops_ptr, Curr_El_out, &elemforceint,
+        correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops, timeprops_ptr, Curr_El_out, &elemforceint,
                 &elemforcebed, &elemeroded, &elemdeposited);
-        
+        //PROFILING3_STOPADD_RESTART(step_corrector,pt_start);
         forceint += fabs(elemforceint);
         forcebed += fabs(elemforcebed);
         realvolume += dx * dy * Curr_El->state_vars(0);
@@ -476,65 +471,28 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
                 for(k = 0; k < NUM_STATE_VARS; k++)
                     Curr_El->state_vars(k, 0.0);
 #endif
+        //PROFILING3_STOPADD_RESTART(step_apply_bc,pt_start);
     }
-    t_start2=MPI_Wtime();
-    outline_ptr->update(El_Table, NodeTable);
-   /* for(i = 0; i < Nelms; i++)
-    {
-        Curr_El = Elms[i];
-        double dx = Curr_El->dx(0);
-        double dy = Curr_El->dx(1);
-        //update the record of maximum pileheight in the area covered by this element
-        double hheight = Curr_El->state_vars(0);
-        //if (hheight > 0 && hheight < 0)
-        //	;
-        
-#ifdef MAX_DEPTH_MAP
-        double momenta[4];
-        if(elementType == ElementType::TwoPhases)
-        {
-            momenta[0]=Curr_El->state_vars(2);
-            momenta[1]=Curr_El->state_vars(3);
-            momenta[2]=Curr_El->state_vars(4);
-            momenta[3]=Curr_El->state_vars(5);
-        }
-        if(elementType == ElementType::SinglePhase)
-        {
-            momenta[0]=Curr_El->state_vars(1);
-            momenta[1]=Curr_El->state_vars(2);
-        }
+    TIMING1_STOPADD(correctorStepTime,t_start);
+    PROFILING3_STOPADD_RESTART(step_corrector,pt_start);
+    TIMING1_START(t_start2);
+    outline_ptr->update(ElemTable, NodeTable);
+    TIMING1_STOPADD(outlineStepTime,t_start2);
+    PROFILING3_STOPADD_RESTART(step_outline,pt_start);
 
-        outline_ptr->update(Curr_El->coord(0) - 0.5 * dx, Curr_El->coord(0) + 0.5 * dx, Curr_El->coord(1) - 0.5 * dy,
-                            Curr_El->coord(1) + 0.5 * dy, hheight, momenta);
 
-#endif
-    }*/
-    titanTimings.outlineStepTime += MPI_Wtime() - t_start2;
-    titanTimingsAlongSimulation.outlineStepTime += MPI_Wtime() - t_start2;
-   /* for(i = 0; i < Nelms; i++)
-    {
-        Curr_El = Elms[i];
-#ifdef APPLY_BC
-        for(j = 0; j < 4; j++)
-            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
-                for(k = 0; k < NUM_STATE_VARS; k++)
-                    Curr_El->state_vars(k, 0.0);
-#endif
-        
-    }*/
-    titanTimings.correctorStepTime += MPI_Wtime() - t_start;
-    titanTimingsAlongSimulation.correctorStepTime += MPI_Wtime() - t_start;
     //update the orientation of the "dryline" (divides partially wetted cells
     //into wet and dry parts solely based on which neighbors currently have 
     //pileheight greater than GEOFLOW_TINY
     for(i = 0; i < Nelms; i++)
     {
-        Elms[i]->calc_wet_dry_orient(El_Table);
+        Elms[i]->calc_wet_dry_orient(ElemTable);
     }
+    PROFILING3_STOPADD_RESTART(step_calc_wet_dry_orient,pt_start);
     
     /* finished corrector step */
 
-    calc_stats(elementType, El_Table, NodeTable, myid, matprops_ptr, timeprops_ptr, statprops_ptr, discharge, dt);
+    calc_stats(elementType, ElemTable, NodeTable, myid, matprops_ptr, timeprops_ptr, statprops_ptr, discharge, dt);
     
     double tempin[6], tempout[6];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
@@ -558,10 +516,8 @@ void step(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* No
     statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
     statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
     
-#ifdef DEBUG_EXTRA_CHECKING
-    El_Table->checkPointersToNeighbours("check_elements_pointers_StepEnd");
-    El_Table->ckeckLocalElementsPointers("ckeckAllLocalEntriesPointers_StepEnd");
-#endif
+    PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
+
     return;
 }
 

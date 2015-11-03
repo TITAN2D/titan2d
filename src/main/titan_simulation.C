@@ -560,7 +560,7 @@ void cxxTitanSinglePhase::run()
         TIMING1_STOPADD(meshAdaptionTime, t_start);
 
         TIMING1_START(t_start);
-        step(elementType,ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
+        step(matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
              &order, &outline, &discharge_planes, adapt);
         TIMING1_STOPADD(stepTime, t_start);
 

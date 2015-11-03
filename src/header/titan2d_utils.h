@@ -244,6 +244,18 @@ public:
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_allrefine_buffer_handling);
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_htflush2);
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_epilog);
+
+        PROFILE3_TIMINGS_PRINTING(step_other);
+        PROFILE3_TIMINGS_PRINTING(step_slopesCalc);
+        PROFILE3_TIMINGS_PRINTING(step_get_coef_and_eigen);
+        PROFILE3_TIMINGS_PRINTING(step_adapt_fluxsrc_region);
+        PROFILE3_TIMINGS_PRINTING(step_predict);
+        PROFILE3_TIMINGS_PRINTING(step_apply_bc);
+        PROFILE3_TIMINGS_PRINTING(step_corrector);
+        PROFILE3_TIMINGS_PRINTING(step_calc_edge_states);
+        PROFILE3_TIMINGS_PRINTING(step_outline);
+        PROFILE3_TIMINGS_PRINTING(step_calc_wet_dry_orient);
+        PROFILE3_TIMINGS_PRINTING(step_calc_stats);
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
     }
@@ -263,6 +275,18 @@ public:
         IF_DEF_PROFILING3(HAdapt_adapt_allrefine_buffer_handling=zero);
         IF_DEF_PROFILING3(HAdapt_adapt_htflush2=zero);
         IF_DEF_PROFILING3(HAdapt_adapt_epilog=zero);
+
+        IF_DEF_PROFILING3(step_other=zero);
+        IF_DEF_PROFILING3(step_slopesCalc=zero);
+        IF_DEF_PROFILING3(step_get_coef_and_eigen=zero);
+        IF_DEF_PROFILING3(step_adapt_fluxsrc_region=zero);
+        IF_DEF_PROFILING3(step_predict=zero);
+        IF_DEF_PROFILING3(step_apply_bc=zero);
+        IF_DEF_PROFILING3(step_corrector=zero);
+        IF_DEF_PROFILING3(step_calc_edge_states=zero);
+        IF_DEF_PROFILING3(step_outline=zero);
+        IF_DEF_PROFILING3(step_calc_wet_dry_orient=zero);
+        IF_DEF_PROFILING3(step_calc_stats=zero);
         //IF_DEF_PROFILING1(=zero);
         //IF_DEF_PROFILING3(=zero);
     }
@@ -283,6 +307,18 @@ public:
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_allrefine_buffer_handling);
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_htflush2);
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_epilog);
+
+    IF_DEF_PROFILING3(Clock::duration step_other);
+    IF_DEF_PROFILING3(Clock::duration step_slopesCalc);
+    IF_DEF_PROFILING3(Clock::duration step_get_coef_and_eigen);
+    IF_DEF_PROFILING3(Clock::duration step_adapt_fluxsrc_region);
+    IF_DEF_PROFILING3(Clock::duration step_predict);
+    IF_DEF_PROFILING3(Clock::duration step_apply_bc);
+    IF_DEF_PROFILING3(Clock::duration step_corrector);
+    IF_DEF_PROFILING3(Clock::duration step_calc_edge_states);
+    IF_DEF_PROFILING3(Clock::duration step_outline);
+    IF_DEF_PROFILING3(Clock::duration step_calc_wet_dry_orient);
+    IF_DEF_PROFILING3(Clock::duration step_calc_stats);
 
 
     //IF_DEF_PROFILING1(Clock::duration );
