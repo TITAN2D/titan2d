@@ -23,11 +23,11 @@
 
 #include "../header/hpfem.h"
 
-#define APPLY_BC
-
 #include "../header/titan2d_utils.h"
 #include "../header/titan_simulation.h"
 #include "../header/outline.h"
+
+
 
 
 
@@ -68,10 +68,6 @@ void predict(Element *Elm,
 
     //TEST********** order_flag = 1
     //     write(*,*) "order_flag in predict=", order_flag
-
-    Elm->prev_state_vars(0, Elm->state_vars(0));
-    Elm->prev_state_vars(1, Elm->state_vars(1));
-    Elm->prev_state_vars(2, Elm->state_vars(2));
 
     if (IF_STOPPED == 2) {
         VxVy[0] = 0.0;
@@ -270,8 +266,6 @@ Integrator::~Integrator()
 }
 void Integrator::predictor()
 {
-    int Nelms = ElemTable->getNumberOfLocalElements();
-    Element** Elms = (Element**) ElemTable->getLocalElementsValues();
     /* mdj 2007-04 */
     int IF_STOPPED;
     double curr_time, influx[3];
@@ -281,10 +275,10 @@ void Integrator::predictor()
     Element* Curr_El;
     //#pragma omp parallel for                                                \
     //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
-    for(int i = 0; i < Nelms; i++)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
-
-        Curr_El = Elms[i];
+        Curr_El = &(elements_[ndx]);
+        elements_[ndx].update_prev_state_vars();
 
         influx[0] = Curr_El->Influx(0);
         influx[1] = Curr_El->Influx(1);
@@ -318,8 +312,6 @@ void Integrator::predictor()
         double gravity[3]{Curr_El->gravity(0),Curr_El->gravity(1),Curr_El->gravity(2)};
         double d_gravity[3]{Curr_El->d_gravity(0),Curr_El->d_gravity(1),Curr_El->d_gravity(2)};
 
-        //PROFILING3_STOPADD_RESTART(step_other,pt_start);
-
         if(elementType == ElementType::TwoPhases)
         {
             //nothing there
@@ -334,25 +326,16 @@ void Integrator::predictor()
                     matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                     d_gravity, matprops_ptr->frict_tiny, order, VxVy, IF_STOPPED, influx);
         }
-        //PROFILING3_STOPADD_RESTART(step_predict,pt_start);
 
-        /* apply bc's */
-//#ifdef APPLY_BC
+        // apply bc's
         for(int j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     Curr_El->state_vars(k,0.0);
-//#endif
-        //PROFILING3_STOPADD_RESTART(step_apply_bc,pt_start);
-
     }
-
 }
 void Integrator::corrector()
 {
-    int Nelms = ElemTable->getNumberOfLocalElements();
-    Element** Elms = (Element**) ElemTable->getLocalElementsValues();
-
     Element* Curr_El;
 
     //for comparison of magnitudes of forces in slumping piles
@@ -371,44 +354,41 @@ void Integrator::corrector()
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
-    for(int i = 0; i < Nelms; i++)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
-        Curr_El = Elms[i];
+        Curr_El = &(elements_[ndx]);
         double dx = Curr_El->dx(0);
         double dy = Curr_El->dx(1);
-        if(elementType == ElementType::TwoPhases)
-        {
-            // if calculations are first-order, predict is never called
-            // ... so we need to update prev_states
-            if(order == 1)
-                Curr_El->update_prev_state_vars();
 
-        }
-        //PROFILING3_STOPADD_RESTART(step_other,pt_start);
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+            elements_[ndx].update_prev_state_vars();
+
         void *Curr_El_out = (void *) Curr_El;
         correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, Curr_El_out, &elemforceint,
                 &elemforcebed, &elemeroded, &elemdeposited);
-        //PROFILING3_STOPADD_RESTART(step_corrector,pt_start);
+
         forceint += fabs(elemforceint);
         forcebed += fabs(elemforcebed);
         realvolume += dx * dy * Curr_El->state_vars(0);
         eroded += elemeroded;
         deposited += elemdeposited;
 
-//#ifdef APPLY_BC
+        // apply bc's
         for(int j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     Curr_El->state_vars(k, 0.0);
-//#endif
-        //PROFILING3_STOPADD_RESTART(step_apply_bc,pt_start);
     }
 
 }
 void Integrator::step()
 {
-    ASSERT2(ElemTable->all_permanent());
-    ASSERT2(NodeTable->all_permanent());
+    assert(ElemTable->all_elenodes_are_permanent);
+    assert(NodeTable->all_elenodes_are_permanent);
+
+    ASSERT2(ElemTable->check_that_all_elenodes_are_permanent());
+    ASSERT2(NodeTable->check_that_all_elenodes_are_permanent());
     ASSERT3(ElemTable->checkPointersToNeighbours("check_elements_pointers_StepStart")==0);
 
     TIMING1_DEFINE(t_start);
@@ -453,9 +433,10 @@ void Integrator::step()
      */
     TIMING1_START(t_start);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
+
     //-------------------go through all the elements of the subdomain and
     //-------------------calculate the state variables at time .5*delta_t
-    predictor();
+    if(order==1)predictor();
     PROFILING3_STOPADD_RESTART(step_predict,pt_start);
     TIMING1_STOPADD(predictorStepTime, t_start);
     /* finished predictor step */
@@ -499,6 +480,9 @@ void Integrator::step()
     corrector();
     TIMING1_STOPADD(correctorStepTime,t_start);
     PROFILING3_STOPADD_RESTART(step_corrector,pt_start);
+
+
+    //statistics, etc.
     TIMING1_START(t_start2);
     outline_ptr->update(ElemTable, NodeTable);
     TIMING1_STOPADD(outlineStepTime,t_start2);
@@ -508,11 +492,9 @@ void Integrator::step()
     //update the orientation of the "dryline" (divides partially wetted cells
     //into wet and dry parts solely based on which neighbors currently have
     //pileheight greater than GEOFLOW_TINY
-    int Nelms = ElemTable->getNumberOfLocalElements();
-    Element** Elms = (Element**) ElemTable->getLocalElementsValues();
-    for(i = 0; i < Nelms; i++)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
-        Elms[i]->calc_wet_dry_orient(ElemTable);
+        elements_[ndx].calc_wet_dry_orient(ElemTable);
     }
     PROFILING3_STOPADD_RESTART(step_calc_wet_dry_orient,pt_start);
 
@@ -547,10 +529,162 @@ void Integrator::step()
     return;
 }
 Integrator_SinglePhase_CoulombMat_FirstOrder::Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
-        Integrator(_titanSimulation)
+        Integrator(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2])
 {
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
+
+}
+void Integrator_SinglePhase_CoulombMat_FirstOrder::predictor()
+{
+}
+
+
+void correct1ph(Element *Elm, const double *fluxxp,
+        const double *fluxyp, const double *fluxxm, const double *fluxym,
+        const double tiny, const double dtdx, const double dtdy, const double dt,
+        const double dh_dx, const double dhVy_dx,
+        const double dh_dy, const double dhVx_dy,
+        const double xslope, const double yslope,
+        const double curv_x, const double curv_y, const double intfrictang,
+        const double bedfrictang, const double *g, const double kactxy,
+        const double *dgdx, const double frict_tiny, double &forceint,
+        double &forcebed, const int DO_EROSION, double &eroded,
+        const double *VxVy, const int IF_STOPPED);
+void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
+{
+    Element* Curr_El;
+
+    //for comparison of magnitudes of forces in slumping piles
+    forceint = 0.0;
+    forcebed = 0.0;
+    eroded = 0.0;
+    deposited = 0.0;
+    realvolume = 0.0;
+
+    double elemforceint;
+    double elemforcebed;
+    double elemeroded;
+    double elemdeposited;
+
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+            elements_[ndx].update_prev_state_vars();
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = elements_[ndx].positive_x_side();
+        int yp = (xp + 1) % 4, xm = (xp + 2) % 4, ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
+        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+    #ifdef DO_EROSION
+        int do_erosion=1;
+    #else
+        int do_erosion = 0;
+    #endif
+
+    #ifdef STOPCRIT_CHANGE_SOURCE
+        int IF_STOPPED=stoppedflags_[ndx];
+    #else
+        int IF_STOPPED = !(!stoppedflags_[ndx]);
+    #endif
+
+        double gravity[3]{gravity_[0][ndx],gravity_[1][ndx],gravity_[2][ndx]};
+        double d_gravity[3]{d_gravity_[0][ndx],d_gravity_[1][ndx],d_gravity_[2][ndx]};
+
+
+
+        double VxVy[2];
+        if(h[ndx] > tiny)
+        {
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+
+
+        correct1ph(&(elements_[ndx]), fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
+                elements_[ndx].dh_dx(), elements_[ndx].dhVy_dx(),
+                elements_[ndx].dh_dy(), elements_[ndx].dhVx_dy(),
+                elements_[ndx].zeta(0), elements_[ndx].zeta(1), elements_[ndx].curvature(0),elements_[ndx].curvature(1), matprops_ptr->intfrict,
+                elements_[ndx].effect_bedfrict(), gravity, elements_[ndx].effect_kactxy(0), d_gravity, matprops_ptr->frict_tiny, elemforceint, elemforcebed,
+                do_erosion, elemeroded, VxVy, IF_STOPPED);
+
+        elemforceint *= dxdy;
+        elemforcebed *= dxdy;
+        elemeroded *= dxdy;
+
+
+        if(elements_[ndx].stoppedflags() == 2)
+            elemdeposited = elements_[ndx].h() * dxdy;
+        else
+            elemdeposited = 0.0;
+
+        if(elements_[ndx].stoppedflags())
+            elemeroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        forceint += fabs(elemforceint);
+        forcebed += fabs(elemforcebed);
+        realvolume += dxdy * h[ndx];
+        eroded += elemeroded;
+        deposited += elemdeposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx];
+    }
 
 }
 /***********************************************************************/
@@ -890,3 +1024,121 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
     return;
 }
 
+void Integrator_Legacy::predictor()
+{
+    /* mdj 2007-04 */
+    int IF_STOPPED;
+    double curr_time, influx[3];
+    double VxVy[2];
+    double dt2 = .5 * dt; // dt2 is set as dt/2 !
+
+    Element* Curr_El;
+    //#pragma omp parallel for                                                \
+    //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        Curr_El = &(elements_[ndx]);
+        elements_[ndx].update_prev_state_vars();
+
+        influx[0] = Curr_El->Influx(0);
+        influx[1] = Curr_El->Influx(1);
+        influx[2] = Curr_El->Influx(2);
+
+        //note, now there is no check for fluxes from non-local elements
+        if(!(influx[0] >= 0.0))
+        {
+            printf("negative influx=%g\n", influx[0]);
+            assert(0);
+        }
+
+        // -- calc contribution of flux source
+        curr_time = (timeprops_ptr->cur_time) * (timeprops_ptr->TIME_SCALE);
+
+
+        //VxVy[2];
+        if(Curr_El->state_vars(0) > GEOFLOW_TINY)
+        {
+            VxVy[0] = Curr_El->state_vars(1) / Curr_El->state_vars(0);
+            VxVy[1] = Curr_El->state_vars(2) / Curr_El->state_vars(0);
+        }
+        else
+            VxVy[0] = VxVy[1] = 0.0;
+
+#ifdef STOPCRIT_CHANGE_SOURCE
+        IF_STOPPED=Curr_El->stoppedflags();
+#else
+        IF_STOPPED = !(!(Curr_El->stoppedflags()));
+#endif
+        double gravity[3]{Curr_El->gravity(0),Curr_El->gravity(1),Curr_El->gravity(2)};
+        double d_gravity[3]{Curr_El->d_gravity(0),Curr_El->d_gravity(1),Curr_El->d_gravity(2)};
+
+        if(elementType == ElementType::TwoPhases)
+        {
+            //nothing there
+        }
+        if(elementType == ElementType::SinglePhase)
+        {
+
+            predict(Curr_El,
+                    Curr_El->dh_dx(), Curr_El->dhVx_dx(), Curr_El->dhVy_dx(),
+                    Curr_El->dh_dy(), Curr_El->dhVx_dy(), Curr_El->dhVy_dy(),
+                    tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
+                    matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
+                    d_gravity, matprops_ptr->frict_tiny, order, VxVy, IF_STOPPED, influx);
+        }
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    Curr_El->state_vars(k,0.0);
+    }
+}
+void Integrator_Legacy::corrector()
+{
+    Element* Curr_El;
+
+    //for comparison of magnitudes of forces in slumping piles
+    forceint = 0.0;
+    forcebed = 0.0;
+    eroded = 0.0;
+    deposited = 0.0;
+    realvolume = 0.0;
+
+    double elemforceint;
+    double elemforcebed;
+    double elemeroded;
+    double elemdeposited;
+
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        Curr_El = &(elements_[ndx]);
+        double dx = Curr_El->dx(0);
+        double dy = Curr_El->dx(1);
+
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+            elements_[ndx].update_prev_state_vars();
+
+        void *Curr_El_out = (void *) Curr_El;
+        correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, Curr_El_out, &elemforceint,
+                &elemforcebed, &elemeroded, &elemdeposited);
+
+        forceint += fabs(elemforceint);
+        forcebed += fabs(elemforcebed);
+        realvolume += dx * dy * Curr_El->state_vars(0);
+        eroded += elemeroded;
+        deposited += elemdeposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    Curr_El->state_vars(k, 0.0);
+    }
+
+}

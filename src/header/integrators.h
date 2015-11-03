@@ -87,8 +87,40 @@ class Integrator_SinglePhase_CoulombMat_FirstOrder:public Integrator
 public:
     Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
 
-    //! Perform one integration step
-    //virtual void step();
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+};
+
+/**
+ * Good starting point for porting old fortran routine with predictor/corrector
+ */
+class Integrator_Legacy:public Integrator
+{
+public:
+    Integrator(cxxTitanSinglePhase *_titanSimulation);
+    virtual ~Integrator();
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
 };
 
 #endif

@@ -428,13 +428,13 @@ void cxxTitanSinglePhase::run()
     FREE_VAR_IF_NOT_NULLPTR(integrator);
     if(elementType == ElementType::TwoPhases)
     {
-        if(order==1)
-                    integrator=new Integrator(this);
+        if(order==1)integrator=new Integrator(this);
     }
     if(elementType == ElementType::SinglePhase)
     {
-        if(order==1)
-            integrator=new Integrator_SinglePhase_CoulombMat_FirstOrder(this);
+        if(order==1)integrator=new Integrator_SinglePhase_CoulombMat_FirstOrder(this);
+        if(order==2)integrator=new Integrator(this);
+
     }
     assert(integrator!=nullptr);
 

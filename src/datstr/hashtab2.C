@@ -68,6 +68,8 @@ HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double 
     invdxrange = 1.0 / (Xrange[1] - Xrange[0]);
     invdyrange = 1.0 / (Yrange[1] - Yrange[0]);
     
+    all_elenodes_are_permanent=false;
+
     //Keith made this change 20061109; and made hash an inline function
         /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
          return (((int) ((key[0]*doublekeyrange[1]+key[1])/
@@ -165,6 +167,7 @@ ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& keyi)
     if(ti_ndx_not_negative(ndx))
         return ndx;
     
+    all_elenodes_are_permanent=false;
     int entry = hash(keyi);
     int entry_size = bucket[entry].key.size();
 
@@ -224,10 +227,11 @@ void HashTable<T>::remove(const SFC_Key& keyi)
         bucket[entry].ndx.erase(bucket[entry].ndx.begin() + bucket_entry_ndx);
     }
     ENTRIES-=1;
+    all_elenodes_are_permanent=false;
 }
 
 template <typename T>
-bool HashTable<T>::all_permanent()
+bool HashTable<T>::check_that_all_elenodes_are_permanent()
 {
     bool results=true;
     for(int i = 0; i < status_.size(); i++)
@@ -295,6 +299,8 @@ void HashTable<T>::flushTable()
             bucket[entry].ndx[i]=ndx_map_old[bucket[entry].ndx[i]];
         }
     }
+
+    all_elenodes_are_permanent=true;
 }
 template <typename T>
 void HashTable<T>::reserve_base(const tisize_t new_reserve_size)
@@ -1183,13 +1189,18 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 generation_(ElemTable->generation_),
                 neigh_proc_(ElemTable->neigh_proc_),
                 state_vars_(ElemTable->state_vars_),
+                stoppedflags_(ElemTable->stoppedflags_),
+                d_gravity_(ElemTable->d_gravity_),
+                gravity_(ElemTable->gravity_),
                 Influx_(ElemTable->Influx_),
                 neighbor_ndx_(ElemTable->neighbor_ndx_),
                 positive_x_side_(ElemTable->positive_x_side_),
-                node_refinementflux_(_NodeTable->refinementflux_),
                 node_key_ndx_(ElemTable->node_key_ndx_),
                 el_error_(ElemTable->el_error_),
-                dx_(ElemTable->dx_)
+                dx_(ElemTable->dx_),
+                node_refinementflux_(_NodeTable->refinementflux_),
+                node_flux_(_NodeTable->flux_)
+
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);

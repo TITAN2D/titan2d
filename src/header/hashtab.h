@@ -179,7 +179,13 @@ public:
     tisize_t size() const{return elenode_.size();}
 
 
-    bool all_permanent();
+    bool check_that_all_elenodes_are_permanent();
+
+    /** flag which indicates that all elements or nodes have status CS_Permanent.
+     *  Should be checked in all method which use loops over elements without status checking,
+     *  this should be true outside of initiation and adaption
+     */
+    bool all_elenodes_are_permanent;
 protected:
     void reserve_base(const tisize_t new_reserve_size);
     void reserve_at_least_base(const tisize_t new_reserve_size);
@@ -541,11 +547,17 @@ public:
     tivector<ti_ndx_t> *neighbor_ndx_;
     tivector<double> *Influx_;
     tivector<int> &positive_x_side_;
+    tivector<int> &stoppedflags_;
+    tivector<double> *gravity_;
+    tivector<double> *d_gravity_;
 
-    tivector<double> *node_refinementflux_;
+
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;
     tivector<double> *dx_;
+
+    tivector<double> *node_refinementflux_;
+    tivector<double> *node_flux_;
 
     int myid;
     int numprocs;
