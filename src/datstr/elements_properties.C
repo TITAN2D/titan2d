@@ -25,23 +25,7 @@
 
 
 ElementsProperties::ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
-        ElemTable(_ElemTable),
-        NodeTable(_NodeTable),
-
-        elements_(ElemTable->elenode_),
-        status_(ElemTable->status_),
-        adapted_(ElemTable->adapted_),
-        generation_(ElemTable->generation_),
-        neigh_proc_(ElemTable->neigh_proc_),
-        state_vars_(ElemTable->state_vars_),
-        Influx_(ElemTable->Influx_),
-        neighbor_ndx_(ElemTable->neighbor_ndx_),
-        positive_x_side_(ElemTable->positive_x_side_),
-        node_refinementflux_(_NodeTable->refinementflux_),
-        node_key_ndx_(ElemTable->node_key_ndx_),
-        el_error_(ElemTable->el_error_),
-        dx_(ElemTable->dx_)
-
+    EleNodeRef(_ElemTable,_NodeTable)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);

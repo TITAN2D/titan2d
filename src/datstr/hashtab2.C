@@ -1160,3 +1160,25 @@ void ElementsHashTable::reserve_at_least(const tisize_t new_reserve_size)
     for(int i=0;i<2;++i)drypoint_[i].reserve_at_least(new_reserve_size);
     Swet_.reserve_at_least(new_reserve_size);
 }
+
+EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
+                ElemTable(_ElemTable),
+                NodeTable(_NodeTable),
+
+                elements_(ElemTable->elenode_),
+                status_(ElemTable->status_),
+                adapted_(ElemTable->adapted_),
+                generation_(ElemTable->generation_),
+                neigh_proc_(ElemTable->neigh_proc_),
+                state_vars_(ElemTable->state_vars_),
+                Influx_(ElemTable->Influx_),
+                neighbor_ndx_(ElemTable->neighbor_ndx_),
+                positive_x_side_(ElemTable->positive_x_side_),
+                node_refinementflux_(_NodeTable->refinementflux_),
+                node_key_ndx_(ElemTable->node_key_ndx_),
+                el_error_(ElemTable->el_error_),
+                dx_(ElemTable->dx_)
+{
+
+}
+

@@ -21,6 +21,8 @@
 #include <vector>
 #include "../gisapi/GisApi.h"
 
+#include "integrators.h"
+
 #include "properties.h"
 
 class ElementsHashTable;

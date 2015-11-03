@@ -19,12 +19,15 @@
 # include <config.h>
 #endif
 
+#include "../header/integrators.h"
+
 #include "../header/hpfem.h"
 #define APPLY_BC
 
 #include "../header/titan2d_utils.h"
 #include "../header/titan_simulation.h"
 #include "../header/outline.h"
+
 
 //dUdx[0] dh_dx
 //dUdx[1] dhVx_dx

@@ -518,22 +518,15 @@ public:
 
 extern ElementsHashTable *elementsHashTable;
 
-
-class ElementsProperties
+/**
+ * Convenience base class to inherit references to ElementsHashTable and NodeHashTable
+ */
+class EleNodeRef
 {
 public:
-    ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable);
-    int if_pile_boundary(ti_ndx_t ndx, double contour_height);
-    int if_source_boundary(ti_ndx_t ndx);
-    int if_first_buffer_boundary(ti_ndx_t ndx, double contour_height) const;
-    int if_next_buffer_boundary(ti_ndx_t ndx,  double contour_height);
+    EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable);
 
-    //! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
-    double element_weight();
-
-    //! this function is called in element_weight.C, it is used in computing the load balancing weight
-    void calc_flux_balance(ti_ndx_t ndx);
-protected:
+public:
     ElementsHashTable *ElemTable;
     NodeHashTable* NodeTable;
 
@@ -551,6 +544,23 @@ protected:
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;
     tivector<double> *dx_;
+};
+
+class ElementsProperties:public EleNodeRef
+{
+public:
+    ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable);
+    int if_pile_boundary(ti_ndx_t ndx, double contour_height);
+    int if_source_boundary(ti_ndx_t ndx);
+    int if_first_buffer_boundary(ti_ndx_t ndx, double contour_height) const;
+    int if_next_buffer_boundary(ti_ndx_t ndx,  double contour_height);
+
+    //! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
+    double element_weight();
+
+    //! this function is called in element_weight.C, it is used in computing the load balancing weight
+    void calc_flux_balance(ti_ndx_t ndx);
+
 
     int positive_x_side_xm[4];
     int positive_x_side_yp[4];
