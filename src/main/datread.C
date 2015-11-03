@@ -120,6 +120,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     }
     
     *NodeTable = new NodeHashTable(doublekeyrange, NODE_TABLE_SIZE, XRange, YRange);
+    (*NodeTable)->reserve_at_least(Node_Num);
     
     for(i = 0; i < Node_Num; i++)
     {
@@ -166,6 +167,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
 
     *ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, XRange, YRange, *NodeTable);
+    (*ElemTable)->reserve_at_least(Node_Num);
     for(int ielem = 0; ielem < Elem_Num; ielem++)
     {
         

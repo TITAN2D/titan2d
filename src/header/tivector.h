@@ -146,7 +146,7 @@ public:
     tisize_t reserved_size_old_;
     T *array_old_;
 public:
-    tivector(tisize_t reserved_size=1000000){
+    tivector(tisize_t reserved_size=10240){//000000
         size_=0;
         size_old_=0;
         reserved_size_=reserved_size;
@@ -193,6 +193,44 @@ public:
                 memcpy(array_, array_old_, sizeof(T)*size_old_);
         }
         size_=new_size;
+    }
+    void reserve(const size_t new_reserve_size, const bool movecontent=true)
+    {
+        if(new_reserve_size<size_)return;
+        if(new_reserve_size<reserved_size_)return;
+
+        //move to array_old_
+        delete [] array_old_;
+        size_old_=size_;
+        reserved_size_old_=reserved_size_;
+        array_old_=array_;
+
+        //allocate new
+        reserved_size_=2*(new_reserve_size/reserved_size_+1)*reserved_size_;
+        array_=new T[reserved_size_];
+
+        if(movecontent)
+            memcpy(array_, array_old_, sizeof(T)*size_old_);
+        //size_=size_old_;
+    }
+    void reserve_at_least(const size_t new_reserve_size, const bool movecontent=true)
+    {
+        if(new_reserve_size<size_)return;
+        if(new_reserve_size<reserved_size_)return;
+
+        //move to array_old_
+        delete [] array_old_;
+        size_old_=size_;
+        reserved_size_old_=reserved_size_;
+        array_old_=array_;
+
+        //allocate new
+        reserved_size_=2*(new_reserve_size/reserved_size_)*reserved_size_;
+        array_=new T[reserved_size_];
+
+        if(movecontent)
+            memcpy(array_, array_old_, sizeof(T)*size_old_);
+        //size_=size_old_;
     }
     void insert(ti_ndx_t pos){
         assert(pos<=size_);

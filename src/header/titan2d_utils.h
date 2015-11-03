@@ -189,7 +189,24 @@ typedef std::chrono::high_resolution_clock Clock;
 #define PROFILING1_STOPADD(where,t_start) titanProfiling.where+=Clock::now()-t_start
 #define IF_DEF_PROFILING1(statement) statement
 
-#define PROFILE_TIMINGS_PRINTING(variable) std::cout<<"  "<<#variable<<" "<<variable.count()<<" "<< std::chrono::duration<double, std::chrono::milliseconds::period>(variable).count() <<"\n"
+#define PROFILE1_TIMINGS_PRINTING(variable) std::cout<<"  "<<#variable<<" "<<variable.count()<<" "<< std::chrono::duration<double, std::chrono::milliseconds::period>(variable).count() <<"\n"
+
+#define PROFILING2_DEFINE(t_start) Clock::time_point t_start
+#define PROFILING2_START(t_start) t_start=Clock::now();
+#define PROFILING2_STOP(where,t_start) titanProfiling.where=Clock::now()-t_start
+#define PROFILING2_STOPADD(where,t_start) titanProfiling.where+=Clock::now()-t_start
+#define IF_DEF_PROFILING2(statement) statement
+
+#define PROFILE2_TIMINGS_PRINTING(variable) std::cout<<"  "<<#variable<<" "<<variable.count()<<" "<< std::chrono::duration<double, std::chrono::milliseconds::period>(variable).count() <<"\n"
+
+#define PROFILING3_DEFINE(t_start) Clock::time_point t_start
+#define PROFILING3_START(t_start) t_start=Clock::now()
+#define PROFILING3_STOP(where,t_start) titanProfiling.where=Clock::now()-t_start
+#define PROFILING3_STOPADD(where,t_start) titanProfiling.where+=Clock::now()-t_start
+#define PROFILING3_STOPADD_RESTART(where,t_start) titanProfiling.where+=Clock::now()-t_start;t_start=Clock::now();
+#define IF_DEF_PROFILING3(statement) statement
+
+#define PROFILE3_TIMINGS_PRINTING(variable) std::cout<<"  "<<#variable<<" "<<variable.count()<<" "<< std::chrono::duration<double, std::chrono::milliseconds::period>(variable).count() <<"\n"
 
 
 class TitanProfiling
@@ -213,33 +230,63 @@ public:
         {
             printf("%s\n", title);
         }
-        PROFILE_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_loop);
-        PROFILE_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_merge);
-        PROFILE_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop);
-        PROFILE_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_merge);
-        PROFILE_TIMINGS_PRINTING(BuferNextLayerRefinementsFinder_findSeedRefinements_loop);
-        PROFILE_TIMINGS_PRINTING(BuferNextLayerRefinementsFinder_findSeedRefinements_merge);
+        PROFILE1_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_loop);
+        PROFILE1_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_merge);
+        PROFILE1_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop);
+        PROFILE1_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_merge);
+        PROFILE1_TIMINGS_PRINTING(BuferNextLayerRefinementsFinder_findSeedRefinements_loop);
+        PROFILE1_TIMINGS_PRINTING(BuferNextLayerRefinementsFinder_findSeedRefinements_merge);
+
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_prolog);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_element_weight);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_reset_adapt);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_allrefine);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_allrefine_buffer_handling);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_htflush2);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_epilog);
+        //PROFILE1_TIMINGS_PRINTING();
+        //PROFILE3_TIMINGS_PRINTING();
     }
     void reset()
     {
-        PrimaryRefinementsFinder_findSeedRefinements_loop=zero;
-        PrimaryRefinementsFinder_findSeedRefinements_merge=zero;
-        BuferFirstLayerRefinementsFinder_findSeedRefinements_loop=zero;
-        BuferFirstLayerRefinementsFinder_findSeedRefinements_merge=zero;
-        BuferNextLayerRefinementsFinder_findSeedRefinements_loop=zero;
-        BuferNextLayerRefinementsFinder_findSeedRefinements_merge=zero;
+        IF_DEF_PROFILING1(PrimaryRefinementsFinder_findSeedRefinements_loop=zero);
+        IF_DEF_PROFILING1(PrimaryRefinementsFinder_findSeedRefinements_merge=zero);
+        IF_DEF_PROFILING1(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop=zero);
+        IF_DEF_PROFILING1(BuferFirstLayerRefinementsFinder_findSeedRefinements_merge=zero);
+        IF_DEF_PROFILING1(BuferNextLayerRefinementsFinder_findSeedRefinements_loop=zero);
+        IF_DEF_PROFILING1(BuferNextLayerRefinementsFinder_findSeedRefinements_merge=zero);
+
+        IF_DEF_PROFILING3(HAdapt_adapt_prolog=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_element_weight=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_reset_adapt=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_allrefine=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_allrefine_buffer_handling=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_htflush2=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_epilog=zero);
+        //IF_DEF_PROFILING1(=zero);
+        //IF_DEF_PROFILING3(=zero);
     }
 public:
     Clock::duration zero;
 
-    Clock::duration PrimaryRefinementsFinder_findSeedRefinements_loop;
-    Clock::duration PrimaryRefinementsFinder_findSeedRefinements_merge;
-    Clock::duration BuferFirstLayerRefinementsFinder_findSeedRefinements_loop;
-    Clock::duration BuferFirstLayerRefinementsFinder_findSeedRefinements_merge;
-    Clock::duration BuferNextLayerRefinementsFinder_findSeedRefinements_loop;
-    Clock::duration BuferNextLayerRefinementsFinder_findSeedRefinements_merge;
+    IF_DEF_PROFILING1(Clock::duration PrimaryRefinementsFinder_findSeedRefinements_loop);
+    IF_DEF_PROFILING1(Clock::duration PrimaryRefinementsFinder_findSeedRefinements_merge);
+    IF_DEF_PROFILING1(Clock::duration BuferFirstLayerRefinementsFinder_findSeedRefinements_loop);
+    IF_DEF_PROFILING1(Clock::duration BuferFirstLayerRefinementsFinder_findSeedRefinements_merge);
+    IF_DEF_PROFILING1(Clock::duration BuferNextLayerRefinementsFinder_findSeedRefinements_loop);
+    IF_DEF_PROFILING1(Clock::duration BuferNextLayerRefinementsFinder_findSeedRefinements_merge);
+
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_prolog);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_element_weight);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_reset_adapt);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_allrefine);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_allrefine_buffer_handling);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_htflush2);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_epilog);
 
 
+    //IF_DEF_PROFILING1(Clock::duration );
+    //IF_DEF_PROFILING3(Clock::duration );
 };
 
 extern TitanProfiling titanProfiling;

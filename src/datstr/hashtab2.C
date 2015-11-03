@@ -44,7 +44,7 @@ NodeHashTable *nodeHashTable;
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double YR[],tisize_t reserved_size)
-: key_(reserved_size),status_(reserved_size),elenode_(reserved_size)
+: elenode_(reserved_size)
 {
     int i;
 
@@ -284,6 +284,20 @@ void HashTable<T>::flushTable()
         }
     }
 }
+template <typename T>
+void HashTable<T>::reserve_base(const tisize_t new_reserve_size)
+{
+    key_.reserve(new_reserve_size);
+    elenode_.reserve(new_reserve_size);
+    status_.reserve(new_reserve_size);
+}
+template <typename T>
+void HashTable<T>::reserve_at_least_base(const tisize_t new_reserve_size)
+{
+    key_.reserve_at_least(new_reserve_size);
+    elenode_.reserve_at_least(new_reserve_size);
+    status_.reserve_at_least(new_reserve_size);
+}
 ////////////////////////////////////////////////////////////////////////////////
 NodeHashTable::NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
     :HashTable<Node>(doublekeyrangein, size, XR, YR,node_reserved_size)
@@ -399,7 +413,14 @@ void NodeHashTable::flushNodeTable()
     titanTimings.flushNodeTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushNodeTableTime += MPI_Wtime() - t_start;
 }
-
+void NodeHashTable::reserve(const tisize_t new_reserve_size)
+{
+    reserve_base(new_reserve_size);
+}
+void NodeHashTable::reserve_at_least(const tisize_t new_reserve_size)
+{
+    reserve_at_least_base(new_reserve_size);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable)
@@ -1016,4 +1037,126 @@ void ElementsHashTable::flushElemTable()
     updateLocalElements();
     titanTimings.flushElemTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushElemTableTime += MPI_Wtime() - t_start;
+}
+void ElementsHashTable::reserve(const tisize_t new_reserve_size)
+{
+    reserve_base(new_reserve_size);
+
+    myprocess_.reserve(new_reserve_size);
+    generation_.reserve(new_reserve_size);
+    opposite_brother_flag_.reserve(new_reserve_size);
+    material_.reserve(new_reserve_size); /*! ! ! THE MAT. FLAG ! ! !*/
+    lb_weight_.reserve(new_reserve_size);
+    lb_key_.reserve(new_reserve_size);
+    for(int i=0;i<8;++i)node_key_[i].reserve(new_reserve_size);
+    for(int i=0;i<8;++i)node_keyPtr_[i].reserve(new_reserve_size);
+    for(int i=0;i<8;++i)node_key_ndx_[i].reserve(new_reserve_size);
+    node_bubble_ndx_.reserve(new_reserve_size);
+    for(int i=0;i<8;++i)neighbors_[i].reserve(new_reserve_size);
+    for(int i=0;i<8;++i)neighborPtr_[i].reserve(new_reserve_size);
+    for(int i=0;i<8;++i)neighbor_ndx_[i].reserve(new_reserve_size);
+    father_.reserve(new_reserve_size);
+    father_ndx_.reserve(new_reserve_size);
+    for(int i=0;i<4;++i)son_[i].reserve(new_reserve_size);
+    for(int i=0;i<4;++i)son_ndx_[i].reserve(new_reserve_size);
+    for(int i=0;i<8;++i)neigh_proc_[i].reserve(new_reserve_size);
+    for(int i=0;i<8;++i)neigh_gen_[i].reserve(new_reserve_size);
+    bcptr_.reserve(new_reserve_size);
+    ndof_.reserve(new_reserve_size);
+    no_of_eqns_.reserve(new_reserve_size);
+    for(int i=0;i<EQUATIONS;++i)el_error_[i].reserve(new_reserve_size);
+    for(int i=0;i<EQUATIONS;++i)el_solution_[i].reserve(new_reserve_size);
+    refined_.reserve(new_reserve_size);
+    adapted_.reserve(new_reserve_size);
+    which_son_.reserve(new_reserve_size);
+    new_old_.reserve(new_reserve_size);
+    for(int i=0;i<4;++i)brothers_[i].reserve(new_reserve_size);
+    for(int i=0;i<4;++i)brothers_ndx_[i].reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)coord_[i].reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)elm_loc_[i].reserve(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reserve(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reserve(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reserve(new_reserve_size);
+    shortspeed_.reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)dx_[i].reserve(new_reserve_size);
+    positive_x_side_.reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)kactxy_[i].reserve(new_reserve_size);
+    elevation_.reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)zeta_[i].reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)curvature_[i].reserve(new_reserve_size);
+    for(int i=0;i<3;++i)gravity_[i].reserve(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)d_gravity_[i].reserve(new_reserve_size);
+    stoppedflags_.reserve(new_reserve_size);
+    effect_bedfrict_.reserve(new_reserve_size);
+    effect_tanbedfrict_.reserve(new_reserve_size);
+    for(int i=0;i<2;++i)effect_kactxy_[i].reserve(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reserve(new_reserve_size);
+    ithelem_.reserve(new_reserve_size);
+    iwetnode_.reserve(new_reserve_size);
+    Awet_.reserve(new_reserve_size);
+    for(int i=0;i<2;++i)drypoint_[i].reserve(new_reserve_size);
+    Swet_.reserve(new_reserve_size);
+}
+void ElementsHashTable::reserve_at_least(const tisize_t new_reserve_size)
+{
+    reserve(new_reserve_size);
+    return;
+    reserve_at_least_base(new_reserve_size);
+
+    myprocess_.reserve_at_least(new_reserve_size);
+    generation_.reserve_at_least(new_reserve_size);
+    opposite_brother_flag_.reserve_at_least(new_reserve_size);
+    material_.reserve_at_least(new_reserve_size); /*! ! ! THE MAT. FLAG ! ! !*/
+    lb_weight_.reserve_at_least(new_reserve_size);
+    lb_key_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)node_key_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)node_keyPtr_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)node_key_ndx_[i].reserve_at_least(new_reserve_size);
+    node_bubble_ndx_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)neighbors_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)neighborPtr_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)neighbor_ndx_[i].reserve_at_least(new_reserve_size);
+    father_.reserve_at_least(new_reserve_size);
+    father_ndx_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<4;++i)son_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<4;++i)son_ndx_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)neigh_proc_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<8;++i)neigh_gen_[i].reserve_at_least(new_reserve_size);
+    bcptr_.reserve_at_least(new_reserve_size);
+    ndof_.reserve_at_least(new_reserve_size);
+    no_of_eqns_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<EQUATIONS;++i)el_error_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<EQUATIONS;++i)el_solution_[i].reserve_at_least(new_reserve_size);
+    refined_.reserve_at_least(new_reserve_size);
+    adapted_.reserve_at_least(new_reserve_size);
+    which_son_.reserve_at_least(new_reserve_size);
+    new_old_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<4;++i)brothers_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<4;++i)brothers_ndx_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)coord_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)elm_loc_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reserve_at_least(new_reserve_size);
+    shortspeed_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)dx_[i].reserve_at_least(new_reserve_size);
+    positive_x_side_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)kactxy_[i].reserve_at_least(new_reserve_size);
+    elevation_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)zeta_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)curvature_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<3;++i)gravity_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<DIMENSION;++i)d_gravity_[i].reserve_at_least(new_reserve_size);
+    stoppedflags_.reserve_at_least(new_reserve_size);
+    effect_bedfrict_.reserve_at_least(new_reserve_size);
+    effect_tanbedfrict_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<2;++i)effect_kactxy_[i].reserve_at_least(new_reserve_size);
+    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reserve_at_least(new_reserve_size);
+    ithelem_.reserve_at_least(new_reserve_size);
+    iwetnode_.reserve_at_least(new_reserve_size);
+    Awet_.reserve_at_least(new_reserve_size);
+    for(int i=0;i<2;++i)drypoint_[i].reserve_at_least(new_reserve_size);
+    Swet_.reserve_at_least(new_reserve_size);
 }

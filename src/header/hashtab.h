@@ -177,7 +177,11 @@ public:
     void print_out(int) const {}
     
     tisize_t size() const{return elenode_.size();}
+
+
 protected:
+    void reserve_base(const tisize_t new_reserve_size);
+    void reserve_at_least_base(const tisize_t new_reserve_size);
     void flushTable();//actually delete, removed nodes and rearrange added (sort according to keys)
     //!temporary arrays used in flush()
     vector<ti_ndx_t> ndx_map;
@@ -189,7 +193,7 @@ template class HashTable<Element>;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-constexpr tisize_t elem_reserved_size=1000000;
+constexpr tisize_t elem_reserved_size=1024000;
 constexpr tisize_t node_reserved_size=elem_reserved_size*9;
 
 class NodeHashTable: public HashTable<Node>
@@ -212,6 +216,8 @@ public:
 
     Node& node(const ti_ndx_t ndx){return elenode_[ndx];}
     void flushNodeTable();
+    void reserve(const tisize_t new_reserve_size);
+    void reserve_at_least(const tisize_t new_reserve_size);
 private:
      Node* addNode(const SFC_Key& keyi);
      ti_ndx_t addNode_ndx(const SFC_Key& keyi);
@@ -320,7 +326,8 @@ public:
     void removeElement(Element* elm);
     
     void flushElemTable();
-    
+    void reserve(const tisize_t new_reserve_size);
+    void reserve_at_least(const tisize_t new_reserve_size);
 
     Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
     Element* elemPtr(const ti_ndx_t ndx){return elenode_.array_+ndx;}

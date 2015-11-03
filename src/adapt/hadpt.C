@@ -194,7 +194,8 @@ HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, Element
    num_buffer_layer(_num_buffer_layer),
    primaryRefinementsFinder(_ElemTable, _NodeTable,_ElemProp),
    buferFirstLayerRefinementsFinder(_ElemTable, _NodeTable,_ElemProp),
-   buferNextLayerRefinementsFinder(_ElemTable, _NodeTable, _ElemProp)
+   buferNextLayerRefinementsFinder(_ElemTable, _NodeTable, _ElemProp),
+   loc_SeedRefinement(threads_number)
 {
 }
 
@@ -219,6 +220,9 @@ void HAdapt::adapt(int h_count, double target)
  *------------------------------------------------------*/
 
 {
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_DEFINE(pt_start2);
+    PROFILING3_START(pt_start);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     
@@ -258,11 +262,15 @@ void HAdapt::adapt(int h_count, double target)
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     
+    PROFILING3_STOPADD_RESTART(HAdapt_adapt_prolog,pt_start);
+
     // determine which elements to refine and flag them for refinement
     TIMING3_START(t_start3);
     primaryRefinementsFinder.geo_target = ElemProp->element_weight();
     TIMING3_STOPADD(elementWeightCalc,t_start3);
     
+    PROFILING3_STOPADD_RESTART(HAdapt_adapt_element_weight,pt_start);
+
     int debug_ref_flag = 0;
     
     //@initElemTableRef
@@ -287,9 +295,14 @@ void HAdapt::adapt(int h_count, double target)
 
     ASSERT2(ElemTable->checkPointersToNeighbours("Prerefinement index check",false)==0);
 
+
+    PROFILING3_STOPADD_RESTART(HAdapt_adapt_reset_adapt,pt_start);
+
     //find out primary refinements
     refine2(primaryRefinementsFinder);
     
+    PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine,pt_start);
+
     /*************************************************************************/
     /* Add an num_buffer_layer wide buffer layer around the pile/mass-source */
     /*************************************************************************/
@@ -298,21 +311,25 @@ void HAdapt::adapt(int h_count, double target)
         //refine where necessary before placing the innermost buffer layer
         refine2(buferFirstLayerRefinementsFinder);
         
+        PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine,pt_start);
+
         //mark the elements in the innermost buffer layer as the BUFFER layer
-        //@ElementsBucketDoubleLoop2_OrderDontMatter
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        //@ElementsSingleLoopNoStatusCheck
+        #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
         {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+           if(status[ndx] >=0 &&
+                   ((ElemProp->if_first_buffer_boundary(ndx, GEOFLOW_TINY) > 0)
+				   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD1) > 0)
+				   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD2) > 0)
+				   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD) > 0)))
             {
-            	ti_ndx_t ndx=bucket[ibuck].ndx[ielm];
-            	if(   (elements[ndx].if_first_buffer_boundary(ElemTable, GEOFLOW_TINY) > 0)
-				   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD1) > 0)
-				   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD2) > 0)
-				   || (elements[ndx].if_first_buffer_boundary(ElemTable, REFINE_THRESHOLD) > 0))
             		adapted[ndx]=BUFFER;
             }
         }
         move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
+        PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine_buffer_handling,pt_start);
 
         //increase the width of the buffer layer by one element at a time
         //until it's num_buffer_layer Elements wide
@@ -320,38 +337,43 @@ void HAdapt::adapt(int h_count, double target)
         {
             //refine where necessary before placing the next buffer layer
 			refine2(buferNextLayerRefinementsFinder);
-            
-            //move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr,timeprops_ptr);
-            if((myid == TARGETPROC))
-            {      //&&(timeprops_ptr->iter==354)){
-                AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, 0.0);
-                printf("After fourth AssertMeshErrorFree\n");
-            }
+
+			PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine,pt_start);
             
             //mark the elements just outside the buffer layer as the NEWBUFFER layer
             //reset temporary arrays
-            seedRefinement.resize(0);
-            //@ElementsBucketDoubleLoop2_OrderDontMatter
-			for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-			{
-				for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-				{
-					ti_ndx_t ndx=bucket[ibuck].ndx[ielm];
-					if(elements[ndx].if_next_buffer_boundary(ElemTable, NodeTable,REFINE_THRESHOLD)> 0)
-						seedRefinement.push_back(ndx);
+            //seedRefinement.resize(0);
+            //remark the NEWBUFFER elements as BUFFER element (move them from NEWBUFFER to BUFFER)
+            //@ElementsSingleLoopNoStatusCheck
+            #pragma omp parallel
+            {
+                int ithread=omp_get_thread_num();
+                loc_SeedRefinement[ithread].resize(0);
+                #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+                for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
+                {
+                   if(status[ndx] >=0 && ElemProp->if_next_buffer_boundary(ndx,REFINE_THRESHOLD)> 0)
+                   {
+                            //adapted[ndx]=BUFFER;
+                       loc_SeedRefinement[ithread].push_back(ndx);
 
-				}
-			}
-			//remark the NEWBUFFER elements as BUFFER element (move them from NEWBUFFER to BUFFER)
-			for(ti_ndx_t ndx2:seedRefinement)
-				adapted[ndx2]=BUFFER;
+                    }
+                }
+                #pragma omp barrier
+                for(ti_ndx_t ndx2:loc_SeedRefinement[ithread])
+                    adapted[ndx2]=BUFFER;
+            }
 			move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+			PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine_buffer_handling,pt_start);
         }
     }
     
 
+
     htflush(ElemTable, NodeTable, 2);
     
+    PROFILING3_STOPADD_RESTART(HAdapt_adapt_htflush2,pt_start);
+
     TIMING3_START(t_start3);
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -403,6 +425,8 @@ void HAdapt::adapt(int h_count, double target)
     }
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
+    PROFILING3_STOPADD_RESTART(HAdapt_adapt_epilog,pt_start);
     TIMING3_STOPADD(refinementsPostProc,t_start3);
     return;
 }
@@ -429,6 +453,8 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 
     //do refinements
     TIMING3_START(t_start3);
+    ElemTable->reserve_at_least(ElemTable->size()+4*seedRefinement.size());
+    NodeTable->reserve_at_least(NodeTable->size()+12*seedRefinement.size());
     refineElements(allRefinement);
     TIMING3_STOPADD(refineElements,t_start3);
 

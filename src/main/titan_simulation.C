@@ -388,11 +388,11 @@ void cxxTitanSinglePhase::run()
 
 
 
-    int result;
+    int result=0;
 
     //check if restart is available
-    result=loadrun(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
-                  &statprops, &discharge_planes, &outline);
+    //result=loadrun(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
+    //              &statprops, &discharge_planes, &outline);
 
     if(result==0)
         Read_grid(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &outline);

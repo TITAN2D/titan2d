@@ -122,6 +122,7 @@ private:
     //temporary arrays used during refinement
     vector<int> set_for_refinement;
     vector<ti_ndx_t> seedRefinement;
+    vector< vector<ti_ndx_t> > loc_SeedRefinement;
     vector<ti_ndx_t> allRefinement;
 
 private:
