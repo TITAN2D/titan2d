@@ -2715,7 +2715,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 }
 
 //note z is not "z" but either x or y
-void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int order_flag, int dir,
+void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, const int order_flag, int dir,
                        double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element *EmNeigh, double dt)
 {
     double dz = 0.0;
@@ -2821,7 +2821,7 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
 }
 
 void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
-                               int* order_flag, double *outflow)
+                               const int order_flag, double *outflow)
 {
     Node *np, *np1, *np2, *nm, *nm1, *nm2;
     Element *elm1, *elm2;
@@ -2864,8 +2864,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             elm1 = getNeighborPtr(zp); //(Element*) El_Table->lookup(&neighbor(zp)[0]);
             assert(elm1);
             
-            zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
-            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
+            zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm1, dt);
+            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv1, hrfv1, this, dt);
             
             riemannflux(elm1->elementType(),hfv, hfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
@@ -2874,8 +2874,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             
             elm2 = getNeighborPtr(zp + 4); //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
             assert(elm2);
-            zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
-            elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv2, hrfv2, this, dt);
+            zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm2, dt);
+            elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv2, hrfv2, this, dt);
             
             //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
             if(neigh_proc(zp + 4) == myid)
@@ -2913,8 +2913,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             elm1 = getNeighborPtr(zp); //(Element*) El_Table->lookup(&neighbor(zp)[0]);
             assert(elm1);
             
-            zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm1, dt);
-            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv1, hrfv1, this, dt);
+            zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm1, dt);
+            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv1, hrfv1, this, dt);
             
             riemannflux(elm1->elementType(),hfv, hfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
@@ -2968,8 +2968,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm2 = elm1->getNeighborPtr((zelmpos + 4) % 8); //(Element*) El_Table->lookup(&elm1->neighbor[(zelmpos + 4) % 8][0]);
                 assert(elm2);
                 
-                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, elm2, dt);
-                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv2, hrfv2, elm1, dt);
+                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv1, hrfv1, elm2, dt);
+                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv2, hrfv2, elm1, dt);
                 
                 if(elm1->neigh_proc((zelmpos + 4) % 8) == myid)
                 {
@@ -3030,8 +3030,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm2 = getNeighborPtr(zp + 4); //(Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
                 assert(elm2);
                 
-                zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv, hrfv, elm2, dt);
-                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv2, hrfv2, this, dt);
+                zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm2, dt);
+                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv2, hrfv2, this, dt);
                 
                 if(neigh_proc(zp + 4) == myid)
                 {
@@ -3143,8 +3143,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm1 = getNeighborPtr(zm); //(Element*) El_Table->lookup(&neighbor(zm)[0]);
                 assert(elm1);
                 
-                zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm1, dt);
-                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv1, hrfv1, this, dt);
+                zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv, hrfv, elm1, dt);
+                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv1, hrfv1, this, dt);
                 riemannflux(elm1->elementType(),hfv1, hfv, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm->flux(i,flux[i]);
                 riemannflux(elm1->elementType(),hrfv1, hrfv, flux);
@@ -3153,8 +3153,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm2 = getNeighborPtr(zm + 4); //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
                 assert(elm2);
                 
-                zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side + 2, hfv, hrfv, elm2, dt);
-                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, *order_flag, side, hfv2, hrfv2, this, dt);
+                zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv, hrfv, elm2, dt);
+                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv2, hrfv2, this, dt);
                 
                 //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
                 if(neigh_proc(zm + 4) == myid)

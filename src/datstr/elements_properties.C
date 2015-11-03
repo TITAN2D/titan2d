@@ -27,9 +27,6 @@
 ElementsProperties::ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     EleNodeRef(_ElemTable,_NodeTable)
 {
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-
     //positive_x_side_
 
     positive_x_side_xm[0] = 2;

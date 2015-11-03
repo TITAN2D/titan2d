@@ -391,6 +391,6 @@ void merge_vectors_from_threads(vector<T> &where, const vector< vector<T> > &wha
 #endif
 
 
-
+#define FREE_VAR_IF_NOT_NULLPTR(variable) if(variable!=nullptr){delete variable;variable=nullptr;}
 
 #endif

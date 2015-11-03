@@ -54,7 +54,8 @@ int threads_number;
 int NUM_STATE_VARS;
 bool SHORTSPEED;
 
-cxxTitanSimulation::cxxTitanSimulation()
+cxxTitanSimulation::cxxTitanSimulation():
+        integrator(nullptr)
 {
     elementType=ElementType::UnknownElementType;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -64,7 +65,7 @@ cxxTitanSimulation::cxxTitanSimulation()
 }
 cxxTitanSimulation::~cxxTitanSimulation()
 {
-
+    FREE_VAR_IF_NOT_NULLPTR(integrator);
 }
 void cxxTitanSimulation::run()
 {
@@ -424,6 +425,19 @@ void cxxTitanSinglePhase::run()
     HAdapt hadapt(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr,5);
     HAdaptUnrefine Unrefine(ElemTable, NodeTable,&timeprops,matprops_ptr);
 
+    FREE_VAR_IF_NOT_NULLPTR(integrator);
+    if(elementType == ElementType::TwoPhases)
+    {
+        if(order==1)
+                    integrator=new Integrator(this);
+    }
+    if(elementType == ElementType::SinglePhase)
+    {
+        if(order==1)
+            integrator=new Integrator_SinglePhase_CoulombMat_FirstOrder(this);
+    }
+    assert(integrator!=nullptr);
+
     /* for debug only, to check if exactly what's loaded will be saved again
      by doing a diff on the files.
      saverun(&BT_Node_Ptr, myid, numprocs, &BT_Elem_Ptr,
@@ -560,8 +574,9 @@ void cxxTitanSinglePhase::run()
         TIMING1_STOPADD(meshAdaptionTime, t_start);
 
         TIMING1_START(t_start);
-        step(matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
-             &order, &outline, &discharge_planes, adapt);
+        integrator->step();
+        //step(matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
+        //     &order, &outline, &discharge_planes, adapt);
         TIMING1_STOPADD(stepTime, t_start);
 
         TIMING1_START(t_start);

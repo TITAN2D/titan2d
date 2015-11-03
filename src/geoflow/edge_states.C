@@ -30,7 +30,7 @@
  *  GIS map).  Also, the elements are checked for multiple pile-height values 
  */
 void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
-                      int myid, int* order_flag, double *outflow)
+                      int myid, const int order_flag, double *outflow)
 {
     int i, j, k, counter;
     double tiny = GEOFLOW_TINY;

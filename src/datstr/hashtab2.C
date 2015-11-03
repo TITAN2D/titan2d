@@ -225,6 +225,18 @@ void HashTable<T>::remove(const SFC_Key& keyi)
     }
     ENTRIES-=1;
 }
+
+template <typename T>
+bool HashTable<T>::all_permanent()
+{
+    bool results=true;
+    for(int i = 0; i < status_.size(); i++)
+    {
+        results=results && (status_[i]==CS_Permanent);
+
+    }
+    return results;
+}
 template <typename T>
 void HashTable<T>::flushTable()
 {
@@ -1179,6 +1191,7 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 el_error_(ElemTable->el_error_),
                 dx_(ElemTable->dx_)
 {
-
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 }
 

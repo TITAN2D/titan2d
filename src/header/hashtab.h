@@ -179,6 +179,7 @@ public:
     tisize_t size() const{return elenode_.size();}
 
 
+    bool all_permanent();
 protected:
     void reserve_base(const tisize_t new_reserve_size);
     void reserve_at_least_base(const tisize_t new_reserve_size);
@@ -331,6 +332,7 @@ public:
 
     Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
     Element* elemPtr(const ti_ndx_t ndx){return elenode_.array_+ndx;}
+
 private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);
@@ -544,6 +546,9 @@ public:
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;
     tivector<double> *dx_;
+
+    int myid;
+    int numprocs;
 };
 
 class ElementsProperties:public EleNodeRef
@@ -566,8 +571,7 @@ public:
     int positive_x_side_yp[4];
     int positive_x_side_ym[4];
 
-    int myid;
-    int numprocs;
+
 };
 
 #endif
