@@ -277,6 +277,8 @@ void Integrator::predictor()
     //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
+    	if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+    
         Curr_El = &(elements_[ndx]);
         elements_[ndx].update_prev_state_vars();
 
@@ -356,6 +358,8 @@ void Integrator::corrector()
     //             results
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+
         Curr_El = &(elements_[ndx]);
         double dx = Curr_El->dx(0);
         double dy = Curr_El->dx(1);
@@ -494,6 +498,7 @@ void Integrator::step()
     //pileheight greater than GEOFLOW_TINY
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
+    	if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
         elements_[ndx].calc_wet_dry_orient(ElemTable);
     }
     PROFILING3_STOPADD_RESTART(step_calc_wet_dry_orient,pt_start);
@@ -528,32 +533,33 @@ void Integrator::step()
 
     return;
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_CoulombMat_FirstOrder::Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
         Integrator(_titanSimulation),
         h(state_vars_[0]),
         hVx(state_vars_[1]),
-        hVy(state_vars_[2])
+        hVy(state_vars_[2]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
 {
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
 
+    threshold = 1.0E-02;
+    erosion_rate = 0.1;
+    do_erosion = 0;
 }
+
 void Integrator_SinglePhase_CoulombMat_FirstOrder::predictor()
 {
 }
 
 
-void correct1ph(Element *Elm, const double *fluxxp,
-        const double *fluxyp, const double *fluxxm, const double *fluxym,
-        const double tiny, const double dtdx, const double dtdy, const double dt,
-        const double dh_dx, const double dhVy_dx,
-        const double dh_dy, const double dhVx_dy,
-        const double xslope, const double yslope,
-        const double curv_x, const double curv_y, const double intfrictang,
-        const double bedfrictang, const double *g, const double kactxy,
-        const double *dgdx, const double frict_tiny, double &forceint,
-        double &forcebed, const int DO_EROSION, double &eroded,
-        const double *VxVy, const int IF_STOPPED);
+
 void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
 {
     Element* Curr_El;
@@ -570,23 +576,38 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
     double elemeroded;
     double elemdeposited;
 
+    double intfrictang=matprops_ptr->intfrict;
+    double frict_tiny=matprops_ptr->frict_tiny;
+    double sin_intfrictang=sin(intfrictang);
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+    tivector<double> *dgdx=d_gravity_;
+    tivector<double> &kactxy=effect_kactxy_[0];
+    tivector<double> &bedfrictang=effect_bedfrict_;
 
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
         //if first order states was not updated as there is no predictor
         if(order==1)
-            elements_[ndx].update_prev_state_vars();
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
 
-        int xp = elements_[ndx].positive_x_side();
-        int yp = (xp + 1) % 4, xm = (xp + 2) % 4, ym = (xp + 3) % 4;
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
 
         int ivar, j, k;
 
@@ -619,21 +640,13 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
 
-    #ifdef DO_EROSION
-        int do_erosion=1;
-    #else
-        int do_erosion = 0;
-    #endif
-
+#ifdef STOPPED_FLOWS
     #ifdef STOPCRIT_CHANGE_SOURCE
         int IF_STOPPED=stoppedflags_[ndx];
     #else
         int IF_STOPPED = !(!stoppedflags_[ndx]);
     #endif
-
-        double gravity[3]{gravity_[0][ndx],gravity_[1][ndx],gravity_[2][ndx]};
-        double d_gravity[3]{d_gravity_[0][ndx],d_gravity_[1][ndx],d_gravity_[2][ndx]};
-
+#endif
 
 
         double VxVy[2];
@@ -650,24 +663,197 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
         elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
 
-        correct1ph(&(elements_[ndx]), fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
-                elements_[ndx].dh_dx(), elements_[ndx].dhVy_dx(),
-                elements_[ndx].dh_dy(), elements_[ndx].dhVx_dy(),
-                elements_[ndx].zeta(0), elements_[ndx].zeta(1), elements_[ndx].curvature(0),elements_[ndx].curvature(1), matprops_ptr->intfrict,
-                elements_[ndx].effect_bedfrict(), gravity, elements_[ndx].effect_kactxy(0), d_gravity, matprops_ptr->frict_tiny, elemforceint, elemforcebed,
-                do_erosion, elemeroded, VxVy, IF_STOPPED);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector itself
+
+
+
+        double speed;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedmax, forcebedequil, forcegrav;
+        double unitvx, unitvy;
+        double tanbed;
+        double Ustore[3];
+
+        double h_inv;
+        double sgn_dudy, sgn_dvdx, tmp;
+        double es, totalShear;
+
+
+        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
+
+        Ustore[0] = prev_state_vars_[0][ndx]
+                - dtdx * (fluxxp[0] - fluxxm[0])
+                - dtdy * (fluxyp[0] - fluxym[0])
+                + dt * Influx_[0][ndx];
+        Ustore[0] = c_dmax1(Ustore[0], 0.0);
+
+        Ustore[1] = prev_state_vars_[1][ndx]
+                - dtdx * (fluxxp[1] - fluxxm[1])
+                - dtdy * (fluxyp[1] - fluxym[1])
+                + dt * Influx_[1][ndx];
+
+        Ustore[2] = prev_state_vars_[2][ndx]
+                - dtdx * (fluxxp[2] - fluxxm[2])
+                - dtdy * (fluxyp[2] - fluxym[2])
+                + dt * Influx_[2][ndx];
+
+        // initialize to zero
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        eroded = 0.0;
+
+        if(h[ndx] > tiny)
+        {
+            // S terms
+            // here speed is speed squared
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            tanbed = tan(bedfrictang[ndx]);
+            h_inv = 1.0 / h[ndx];
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // x direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the x direction
+            forcegrav = g[0][ndx] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVx_dy[ndx] - VxVy[0] * dh_dy[ndx]);
+            sgn_dudy = sgn_tiny(tmp, frict_tiny);
+            forceintx = sgn_dudy * h[ndx]* kactxy[ndx] * (g[2][ndx] * dh_dy[ndx] + dgdx[1][ndx] * h[ndx]) * sin_intfrictang;
+
+            // the bed friction force for fast moving flow
+            forcebedx = unitvx * c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0) * tanbed;
+#ifdef STOPPED_FLOWS
+            if (IF_STOPPED == 2 && 1 == 0) {
+                // the bed friction force for stopped or nearly stopped flow
+
+                // the static friction force is LESS THAN or equal to the friction
+                // coefficient times the normal force but it can NEVER exceed the
+                // NET force it is opposing
+
+                // maximum friction force the bed friction can support
+                forcebedmax = g[2][ndx] * h[ndx] * tanbed;
+
+                // the NET force the bed friction force is opposing
+                forcebedequil = forcegrav - forceintx;
+                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
+
+                // the "correct" stopped or nearly stopped flow bed friction force
+                // (this force is not entirely "correct" it will leave a "negligible"
+                // (determined by stopping criteria) amount of momentum in the cell
+                forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
+                // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
+
+                // not really 1 but this makes friction statistics accurate
+                unitvx = 1.0;
+                // else
+
+            }
+#endif
+            Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx - forceintx);
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // y direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the y direction
+            forcegrav = g[1][ndx] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVy_dx[ndx] - VxVy[1] * dh_dx[ndx]);
+            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
+            forceinty = sgn_dvdx * h[ndx] * kactxy[ndx] * (g[2][ndx] * dh_dx[ndx] + dgdx[0][ndx] * h[ndx]) * sin_intfrictang;
+
+            // the bed friction force for fast moving flow
+            forcebedy = unitvy * c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0) * tanbed;
+#ifdef STOPPED_FLOWS
+            if (IF_STOPPED == 2 && 1 == 0) {
+                // the bed friction force for stopped or nearly stopped flow
+
+                // the NET force the bed friction force is opposing
+                forcebedequil = forcegrav - forceinty;
+                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dy
+
+                // the "correct" stopped or nearly stopped flow bed friction force
+                // (this force is not entirely "correct" it will leave a "negligible"
+                // (determined by stopping criteria) amount of momentum in the cell
+                forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedy) + fabs(forcebedequil)));
+
+                // not really 1 but this makes friction statistics accurate
+                unitvy = 1.0;
+                //    else
+            }
+#endif
+            Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy - forceinty);
+
+#ifdef STOPPED_FLOWS
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // (erosion terms) this is Camil's logic, Keith changed some variable
+            //names for clarity
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            if ((false) && (do_erosion != 0) && (IF_STOPPED == 0)) {
+                totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
+                if ((totalShear > threshold) && (h[ndx] > 0.004)) {
+
+                    es = erosion_rate * sqrt(fabs(totalShear - threshold));
+                    eroded = dt*es;
+                    Ustore[0] = Ustore[0] + eroded;
+                    Ustore[1] = Ustore[1] + eroded * VxVy[0];
+                    Ustore[2] = Ustore[2] + eroded * VxVy[1];
+                    //write (*,*) 'Doing Keith Erosion Model'
+                }
+            }
+#endif
+            if ((do_erosion != 0) && (h[ndx] > threshold)) {
+                es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+                Ustore[0] = Ustore[0] + dt * es;
+                Ustore[1] = Ustore[1] + dt * es * Ustore[1];
+                Ustore[2] = Ustore[2] + dt * es * Ustore[2];
+                //write (*,*) 'Doing Camil Erosion Model'
+            }
+
+        }
+
+
+        // computation of magnitude of friction forces for statistics
+        forceint = unitvx * forceintx + unitvy*forceinty;
+        forcebed = unitvx * forcebedx + unitvy*forcebedy;
+
+        // update the state variables
+        h[ndx]=Ustore[0];
+        hVx[ndx]=Ustore[1];
+        hVy[ndx]=Ustore[2];
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         elemforceint *= dxdy;
         elemforcebed *= dxdy;
         elemeroded *= dxdy;
 
 
-        if(elements_[ndx].stoppedflags() == 2)
-            elemdeposited = elements_[ndx].h() * dxdy;
+        if(stoppedflags_[ndx] == 2)
+            elemdeposited = h[ndx] * dxdy;
         else
             elemdeposited = 0.0;
 
-        if(elements_[ndx].stoppedflags())
+        if(stoppedflags_[ndx])
             elemeroded = 0.0;
 
         elements_[ndx].calc_shortspeed(1.0 / dt);
@@ -683,7 +869,7 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx];
+                    state_vars_[k][ndx]=0.0;
     }
 
 }
@@ -1024,6 +1210,126 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
     return;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef 0
+//! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
+extern "C" void predict_1ph_coul_(double *Uvec, double *dUdx, double *dUdy,
+        double *Uprev, double *tiny, double *kactxy,
+        double *dt2, double *g, double *curv,
+        double *bedfrictang, double *intfrictang,
+        double *dgdx, double *frict_tiny, int *order_flag,
+        double *VxVy, int *if_stopped, double *fluxcoef);
+
+//! the actual corrector timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
+extern "C" void correct_1ph_coul_(double *Uvec, double *Uprev, double *fluxxp,
+        double *fluxyp, double *fluxxm, double *fluxym,
+        double *tiny, double *dtdx, double *dtdy, double *dt,
+        double *dUdx, double *dUdy, double *xslope,
+        double *yslope, double *curv, double *intfrictang,
+        double *bedfrictang, double *g, double *kactxy,
+        double *dgdx, double *frict_tiny, double *forceint,
+        double *forcebed, int *do_erosion, double *eroded,
+        double *VxVy, int *if_stopped, double *fluxcoef);
+
+
+void correct_legacy_c_call(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr,
+    FluxProps *fluxprops, TimeProps *timeprops, Element *EmTemp, double *forceint, double *forcebed,
+    double *eroded, double *deposited)
+{
+    double dx[2] = {EmTemp->dx(0),EmTemp->dx(1)};
+    double dtdx = dt / dx[0];
+    double dtdy = dt / dx[1];
+
+    double tiny = GEOFLOW_TINY;
+    int xp = EmTemp->positive_x_side();
+    int yp = (xp + 1) % 4, xm = (xp + 2) % 4, ym = (xp + 3) % 4;
+
+    int ivar, j, k;
+
+    double fluxxp[3], fluxyp[3], fluxxm[3], fluxym[3];
+
+    Node** nodes=EmTemp->getNodesPtrs();
+
+    Node* nxp = nodes[xp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xp + 4) * 2);
+    for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+        fluxxp[ivar] = nxp->flux[ivar];
+
+    Node* nyp = nodes[yp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (yp + 4) * 2);
+    for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+        fluxyp[ivar] = nyp->flux[ivar];
+
+    Node* nxm = nodes[xm+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xm + 4) * 2);
+    for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+        fluxxm[ivar] = nxm->flux[ivar];
+
+    Node* nym = nodes[ym+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (ym + 4) * 2);
+    for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+        fluxym[ivar] = nym->flux[ivar];
+
+    /* the values being passed to correct are for a SINGLE element, NOT a
+     region, as such the only change that having variable bedfriction
+     requires is to pass the bedfriction angle for the current element
+     rather than the only bedfriction
+
+     I wonder if this is legacy code, it seems odd that it is only called
+     for the SUN Operating System zee ../geoflow/correct.f */
+
+#ifdef DO_EROSION
+    int do_erosion=1;
+#else
+    int do_erosion = 0;
+#endif
+
+#ifdef STOPCRIT_CHANGE_SOURCE
+    int IF_STOPPED=EmTemp->get_stoppedflags();
+#else
+    int IF_STOPPED = !(!EmTemp->get_stoppedflags());
+
+    double *state_vars = EmTemp->get_state_vars();
+    double *prev_state_vars = EmTemp->get_prev_state_vars();
+    double *d_state_vars = EmTemp->get_d_state_vars();
+    double *gravity = EmTemp->get_gravity();
+    double *d_gravity = EmTemp->get_d_gravity();
+    double *zeta = EmTemp->get_zeta();
+    double *curvature = EmTemp->get_curvature();
+    double effect_bedfrict = EmTemp->get_effect_bedfrict();
+    double *effect_kactxy = EmTemp->get_effect_kactxy();
+    double *Influx = EmTemp->get_influx();
+
+    double VxVy[2];
+    if (state_vars[0] > GEOFLOW_TINY) {
+        VxVy[0] = state_vars[1] / state_vars[0];
+        VxVy[1] = state_vars[2] / state_vars[0];
+    } else {
+        VxVy[0] = VxVy[1] = 0.0;
+    }
+
+    EmTemp->convect_dryline(VxVy, dt); //this is necessary
+
+    correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt,
+        d_state_vars, (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature,
+        &(matprops_ptr->intfrict), &effect_bedfrict, gravity, effect_kactxy, d_gravity,
+        &(matprops_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, VxVy, &IF_STOPPED,
+        Influx);
+
+    *forceint *= dx[0] * dx[1];
+    *forcebed *= dx[0] * dx[1];
+    *eroded *= dx[0] * dx[1];
+
+#endif
+
+    if (EmTemp->get_stoppedflags() == 2)
+        *deposited = state_vars[0] * dx[0] * dx[1];
+    else
+        *deposited = 0.0;
+
+    if (EmTemp->get_stoppedflags())
+        *eroded = 0.0;
+
+    EmTemp->calc_shortspeed(1.0 / dt);
+
+    return;
+}
 void Integrator_Legacy::predictor()
 {
     /* mdj 2007-04 */
@@ -1142,3 +1448,4 @@ void Integrator_Legacy::corrector()
     }
 
 }
+#endif

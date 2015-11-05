@@ -173,7 +173,7 @@ c     update the state variables
 
 
 C***********************************************************************
-      subroutine correct(Uvec,Uprev,fluxxp,fluxyp, fluxxm, fluxym,
+      subroutine correct_1ph_coul(Uvec,Uprev,fluxxp,fluxyp, fluxxm, fluxym,
      1     tiny,dtdx,dtdy,dt,dUdx,dUdy,xslope,yslope,
      2     curv, intfrictang, bedfrictang,g,kactxy, dgdx,
      3     frict_tiny,forceint,forcebed,DO_EROSION,eroded, VxVy,

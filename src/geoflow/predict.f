@@ -16,7 +16,7 @@ C* $Id: predict.f 143 2007-06-25 17:58:08Z dkumar $
 C*
 
 C***********************************************************************
-      subroutine predict(Uvec,dUdx,dUdy,Uprev,tiny,kactxy,dt2, g, 
+      subroutine predict_1ph_coul(Uvec,dUdx,dUdy,Uprev,tiny,kactxy,dt2, g,
      1     curv, bedfrictang, intfrictang,
      2     dgdx, frict_tiny, order_flag, VxVyB, 
      3     IF_STOPPED,fluxsrc)

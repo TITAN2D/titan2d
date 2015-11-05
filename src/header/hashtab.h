@@ -544,13 +544,18 @@ public:
     tivector<int> &generation_;
     tivector<int> *neigh_proc_;
     tivector<double> *state_vars_;
+    tivector<double> *prev_state_vars_;
+    tivector<double> *d_state_vars_;
     tivector<ti_ndx_t> *neighbor_ndx_;
     tivector<double> *Influx_;
     tivector<int> &positive_x_side_;
     tivector<int> &stoppedflags_;
     tivector<double> *gravity_;
     tivector<double> *d_gravity_;
-
+    tivector<double> *zeta_;
+    tivector<double> *curvature_;
+    tivector<double> &effect_bedfrict_;
+    tivector<double> *effect_kactxy_;
 
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;

@@ -97,21 +97,33 @@ protected:
      */
     virtual void corrector();
 
+public:
+    double threshold;
+    double erosion_rate;
+    int do_erosion;
 protected:
     //!properly named references
     tivector<double> &h;
     tivector<double> &hVx;
     tivector<double> &hVy;
-};
 
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
+
+};
+#ifdef 0
 /**
  * Good starting point for porting old fortran routine with predictor/corrector
  */
 class Integrator_Legacy:public Integrator
 {
 public:
-    Integrator(cxxTitanSinglePhase *_titanSimulation);
-    virtual ~Integrator();
+    Integrator_Legacy(cxxTitanSinglePhase *_titanSimulation);
+    virtual ~Integrator_Legacy();
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -122,5 +134,6 @@ protected:
      */
     virtual void corrector();
 };
+#endif
 
 #endif
