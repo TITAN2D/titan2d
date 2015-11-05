@@ -571,10 +571,10 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
     deposited = 0.0;
     realvolume = 0.0;
 
-    double elemforceint;
-    double elemforcebed;
-    double elemeroded;
-    double elemdeposited;
+    double elem_forceint;
+    double elem_forcebed;
+    double elem_eroded;
+    double elem_deposited;
 
     double intfrictang=matprops_ptr->intfrict;
     double frict_tiny=matprops_ptr->frict_tiny;
@@ -706,7 +706,7 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
         forcebedy = 0.0;
         unitvx = 0.0;
         unitvy = 0.0;
-        eroded = 0.0;
+        elem_eroded = 0.0;
 
         if(h[ndx] > tiny)
         {
@@ -813,10 +813,10 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
                 if ((totalShear > threshold) && (h[ndx] > 0.004)) {
 
                     es = erosion_rate * sqrt(fabs(totalShear - threshold));
-                    eroded = dt*es;
-                    Ustore[0] = Ustore[0] + eroded;
-                    Ustore[1] = Ustore[1] + eroded * VxVy[0];
-                    Ustore[2] = Ustore[2] + eroded * VxVy[1];
+                    elem_eroded = dt*es;
+                    Ustore[0] = Ustore[0] + elem_eroded;
+                    Ustore[1] = Ustore[1] + elem_eroded * VxVy[0];
+                    Ustore[2] = Ustore[2] + elem_eroded * VxVy[1];
                     //write (*,*) 'Doing Keith Erosion Model'
                 }
             }
@@ -833,8 +833,8 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
 
 
         // computation of magnitude of friction forces for statistics
-        forceint = unitvx * forceintx + unitvy*forceinty;
-        forcebed = unitvx * forcebedx + unitvy*forcebedy;
+        elem_forceint = unitvx * forceintx + unitvy*forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
 
         // update the state variables
         h[ndx]=Ustore[0];
@@ -843,27 +843,27 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        elemforceint *= dxdy;
-        elemforcebed *= dxdy;
-        elemeroded *= dxdy;
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
 
 
         if(stoppedflags_[ndx] == 2)
-            elemdeposited = h[ndx] * dxdy;
+            elem_deposited = h[ndx] * dxdy;
         else
-            elemdeposited = 0.0;
+            elem_deposited = 0.0;
 
         if(stoppedflags_[ndx])
-            elemeroded = 0.0;
+            elem_eroded = 0.0;
 
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        forceint += fabs(elemforceint);
-        forcebed += fabs(elemforcebed);
+        forceint += fabs(elem_forceint);
+        forcebed += fabs(elem_forcebed);
         realvolume += dxdy * h[ndx];
-        eroded += elemeroded;
-        deposited += elemdeposited;
+        eroded += elem_eroded;
+        deposited += elem_deposited;
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -873,6 +873,348 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
     }
 
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_SinglePhase_Vollmey_FirstOrder::Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+        Integrator_SinglePhase_CoulombMat_FirstOrder(_titanSimulation)
+{
+    assert(elementType==ElementType::SinglePhase);
+    assert(order==1);
+
+    mu = 0.5;
+    xi = 120.0;
+    xi = xi/9.8;
+}
+
+void Integrator_SinglePhase_Vollmey_FirstOrder::predictor()
+{
+}
+
+void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
+{
+    printf("Integrator_SinglePhase_Vollmey_FirstOrder\n");
+
+    //for comparison of magnitudes of forces in slumping piles
+    forceint = 0.0;
+    forcebed = 0.0;
+    eroded = 0.0;
+    deposited = 0.0;
+    realvolume = 0.0;
+
+    double elem_forceint;
+    double elem_forcebed;
+    double elem_eroded;
+    double elem_deposited;
+
+    double intfrictang=matprops_ptr->intfrict;
+    double frict_tiny=matprops_ptr->frict_tiny;
+    double sin_intfrictang=sin(intfrictang);
+
+    double inv_xi= 1.0/xi;
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+    tivector<double> *dgdx=d_gravity_;
+    tivector<double> &kactxy=effect_kactxy_[0];
+    tivector<double> &bedfrictang=effect_bedfrict_;
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
+        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+#ifdef STOPPED_FLOWS
+    #ifdef STOPCRIT_CHANGE_SOURCE
+        int IF_STOPPED=stoppedflags_[ndx];
+    #else
+        int IF_STOPPED = !(!stoppedflags_[ndx]);
+    #endif
+#endif
+
+
+        double VxVy[2];
+        if(h[ndx] > tiny)
+        {
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector itself
+        double speed;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedmax, forcebedequil;
+        double forcegravx,forcegravy;
+        double forcecolumbfrictx,forcecolumbfricty;
+        double forceturbulencex,forceturbulencey;
+        double unitvx, unitvy;
+        double tanbed;
+        double Ustore[3];
+
+        double h_inv;
+        double sgn_dudy, sgn_dvdx, tmp;
+        double es, totalShear;
+
+        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
+
+        Ustore[0] = prev_state_vars_[0][ndx]
+                - dtdx * (fluxxp[0] - fluxxm[0])
+                - dtdy * (fluxyp[0] - fluxym[0])
+                + dt * Influx_[0][ndx];
+        Ustore[0] = c_dmax1(Ustore[0], 0.0);
+
+        Ustore[1] = prev_state_vars_[1][ndx]
+                - dtdx * (fluxxp[1] - fluxxm[1])
+                - dtdy * (fluxyp[1] - fluxym[1])
+                + dt * Influx_[1][ndx];
+
+        Ustore[2] = prev_state_vars_[2][ndx]
+                - dtdx * (fluxxp[2] - fluxxm[2])
+                - dtdy * (fluxyp[2] - fluxym[2])
+                + dt * Influx_[2][ndx];
+
+        // initialize to zero
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        elem_eroded = 0.0;
+
+        //     xi and mu should be given as inputs by user
+        //     mu = 0.5
+        //     xi = 120.d0
+        //     xi = xi/9.8
+        //     inv_xi= 1.d0/xi
+
+
+        if(h[ndx] > tiny)
+        {
+            // S terms
+            // here speed is speed squared
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            tanbed = tan(bedfrictang[ndx]);
+            h_inv = 1.0 / h[ndx];
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // x direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the x direction
+            forcegravx=g[0][ndx] * h[ndx];
+
+            //the coulomb friction type force
+
+            forcecolumbfrictx= unitvx*mu*g[2][ndx] * h[ndx];
+
+            //the turbulent type force for fast moving flow
+
+            forceturbulencex= unitvx*g[0][ndx]*speed*speed*inv_xi;
+
+
+#ifdef STOPPED_FLOWS
+            if (IF_STOPPED == 2 && 1 == 0) {
+                // the bed friction force for stopped or nearly stopped flow
+
+                // the static friction force is LESS THAN or equal to the friction
+                // coefficient times the normal force but it can NEVER exceed the
+                // NET force it is opposing
+
+                // maximum friction force the bed friction can support
+                forcebedmax = g[2][ndx] * h[ndx] * tanbed;
+
+                // the NET force the bed friction force is opposing
+                forcebedequil = forcegrav - forceintx;
+                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
+
+                // the "correct" stopped or nearly stopped flow bed friction force
+                // (this force is not entirely "correct" it will leave a "negligible"
+                // (determined by stopping criteria) amount of momentum in the cell
+                forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
+                // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
+
+                // not really 1 but this makes friction statistics accurate
+                unitvx = 1.0;
+                // else
+
+            }
+#endif
+            Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forceintx - forceturbulencex);
+
+
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // y direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the y direction
+            forcegravy = g[1][ndx] * h[ndx];
+
+            // the coulomb friction type force
+            forcecolumbfricty = unitvy * mu * g[2][ndx] * h[ndx];
+
+            // the turbulent type force for fast moving flow
+            forceturbulencey = unitvy * g[1][ndx] * (speed * speed) * inv_xi;
+
+#ifdef STOPPED_FLOWS
+            if (IF_STOPPED == 2 && 1 == 0) {
+                // the bed friction force for stopped or nearly stopped flow
+
+                // the NET force the bed friction force is opposing
+                forcebedequil = forcegrav - forceinty;
+                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dy
+
+                // the "correct" stopped or nearly stopped flow bed friction force
+                // (this force is not entirely "correct" it will leave a "negligible"
+                // (determined by stopping criteria) amount of momentum in the cell
+                forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedy) + fabs(forcebedequil)));
+
+                // not really 1 but this makes friction statistics accurate
+                unitvy = 1.0;
+                //    else
+            }
+#endif
+            Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forceinty - forceturbulencey);
+
+#ifdef STOPPED_FLOWS
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // (erosion terms) this is Camil's logic, Keith changed some variable
+            //names for clarity
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            if ((false) && (do_erosion != 0) && (IF_STOPPED == 0)) {
+                totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
+                if ((totalShear > threshold) && (h[ndx] > 0.004)) {
+
+                    es = erosion_rate * sqrt(fabs(totalShear - threshold));
+                    elem_eroded = dt*es;
+                    Ustore[0] = Ustore[0] + elem_eroded;
+                    Ustore[1] = Ustore[1] + elem_eroded * VxVy[0];
+                    Ustore[2] = Ustore[2] + elem_eroded * VxVy[1];
+                    //write (*,*) 'Doing Keith Erosion Model'
+                }
+            }
+#endif
+            if ((do_erosion != 0) && (h[ndx] > threshold)) {
+                es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+                Ustore[0] = Ustore[0] + dt * es;
+                Ustore[1] = Ustore[1] + dt * es * Ustore[1];
+                Ustore[2] = Ustore[2] + dt * es * Ustore[2];
+                //write (*,*) 'Doing Camil Erosion Model'
+            }
+
+        }
+
+        // computation of magnitude of friction forces for statistics
+        elem_forceint = unitvx * forceintx + unitvy*forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
+
+        // update the state variables
+        h[ndx]=Ustore[0];
+        hVx[ndx]=Ustore[1];
+        hVy[ndx]=Ustore[2];
+
+        //end of correct
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
+
+
+        if(stoppedflags_[ndx] == 2)
+            elem_deposited = h[ndx] * dxdy;
+        else
+            elem_deposited = 0.0;
+
+        if(stoppedflags_[ndx])
+            elem_eroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        forceint += fabs(elem_forceint);
+        forcebed += fabs(elem_forcebed);
+        realvolume += dxdy * h[ndx];
+        eroded += elem_eroded;
+        deposited += elem_deposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
+
+}
+
 /***********************************************************************/
 /* calc_volume():                                                      */
 /* calculates volume to verify mass conservation                       */
