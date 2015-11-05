@@ -80,12 +80,12 @@ protected:
 };
 
 /**
- * First order integrator for single phase and Coulomb material model
+ * Base class for SinglePhase Integrators
  */
-class Integrator_SinglePhase_CoulombMat_FirstOrder:public Integrator
+class Integrator_SinglePhase:public Integrator
 {
 public:
-    Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+    Integrator_SinglePhase(cxxTitanSinglePhase *_titanSimulation);
 
 protected:
     /**
@@ -116,10 +116,30 @@ protected:
 
 };
 
+
+/**
+ * First order integrator for single phase and Coulomb material model
+ */
+class Integrator_SinglePhase_CoulombMat_FirstOrder:public Integrator_SinglePhase
+{
+public:
+    Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+};
+
 /**
  * First order integrator for single phase and Vollmey material model
  */
-class Integrator_SinglePhase_Vollmey_FirstOrder:public Integrator_SinglePhase_CoulombMat_FirstOrder
+class Integrator_SinglePhase_Vollmey_FirstOrder:public Integrator_SinglePhase
 {
 public:
     Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
@@ -141,7 +161,7 @@ public:
 /**
  * First order integrator for single phase and Pouliquen material model
  */
-class Integrator_SinglePhase_Pouliquen_FirstOrder:public Integrator_SinglePhase_CoulombMat_FirstOrder
+class Integrator_SinglePhase_Pouliquen_FirstOrder:public Integrator_SinglePhase
 {
 public:
     Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
@@ -165,7 +185,7 @@ public:
 /**
  * First order integrator for single phase and Vollmey material model
  */
-class Integrator_SinglePhase_Maeno_FirstOrder:public Integrator_SinglePhase_CoulombMat_FirstOrder
+class Integrator_SinglePhase_Maeno_FirstOrder:public Integrator_SinglePhase
 {
 public:
     Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSinglePhase *_titanSimulation);

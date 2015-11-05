@@ -534,7 +534,7 @@ void Integrator::step()
     return;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_CoulombMat_FirstOrder::Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+Integrator_SinglePhase::Integrator_SinglePhase(cxxTitanSinglePhase *_titanSimulation):
         Integrator(_titanSimulation),
         h(state_vars_[0]),
         hVx(state_vars_[1]),
@@ -547,11 +547,26 @@ Integrator_SinglePhase_CoulombMat_FirstOrder::Integrator_SinglePhase_CoulombMat_
         dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
 {
     assert(elementType==ElementType::SinglePhase);
-    assert(order==1);
 
     threshold = 1.0E-02;
     erosion_rate = 0.1;
     do_erosion = 0;
+}
+
+void Integrator_SinglePhase::predictor()
+{
+}
+
+void Integrator_SinglePhase::corrector()
+{
+
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_SinglePhase_CoulombMat_FirstOrder::Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation)
+{
+    assert(elementType==ElementType::SinglePhase);
+    assert(order==1);
 }
 
 void Integrator_SinglePhase_CoulombMat_FirstOrder::predictor()
@@ -876,7 +891,7 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Vollmey_FirstOrder::Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
-        Integrator_SinglePhase_CoulombMat_FirstOrder(_titanSimulation)
+        Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
@@ -1214,7 +1229,7 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Pouliquen_FirstOrder::Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
-        Integrator_SinglePhase_CoulombMat_FirstOrder(_titanSimulation)
+        Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
@@ -1565,7 +1580,7 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Maeno_FirstOrder::Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
-        Integrator_SinglePhase_CoulombMat_FirstOrder(_titanSimulation)
+        Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
