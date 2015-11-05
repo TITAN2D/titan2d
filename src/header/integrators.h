@@ -138,6 +138,30 @@ public:
     double xi;
 };
 
+/**
+ * First order integrator for single phase and Vollmey material model
+ */
+class Integrator_SinglePhase_Pouliquen_FirstOrder:public Integrator_SinglePhase_CoulombMat_FirstOrder
+{
+public:
+    Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+public:
+    double phi1;
+    double phi2;
+    double partdiam;
+    double I_O;
+};
+
 #ifdef 0
 /**
  * Good starting point for porting old fortran routine with predictor/corrector
