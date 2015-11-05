@@ -434,8 +434,8 @@ void cxxTitanSinglePhase::run()
     {
         //if(order==1)integrator=new Integrator_SinglePhase_Vollmey_FirstOrder(this);
         //if(order==1)integrator=new Integrator_SinglePhase_Pouliquen_FirstOrder(this);
-        if(order==1)integrator=new Integrator_SinglePhase_Maeno_FirstOrder(this);
-        //if(order==1)integrator=new Integrator_SinglePhase_CoulombMat_FirstOrder(this);
+        //if(order==1)integrator=new Integrator_SinglePhase_Maeno_FirstOrder(this);
+        if(order==1)integrator=new Integrator_SinglePhase_CoulombMat_FirstOrder(this);
         if(order==2)integrator=new Integrator(this);
 
     }
