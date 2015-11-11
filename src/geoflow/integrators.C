@@ -261,7 +261,7 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     realvolume = 0.0;
 
 
-    int_frict = 0.0;
+    int_frict = 37.0;
     frict_tiny = 0.1;
 
     order=1;
@@ -292,7 +292,9 @@ bool Integrator::unscale()
 }
 void Integrator::print0(int spaces)
 {
-    printf("%*cIntegrator\n", spaces,' ');
+    printf("%*cIntegrator base\n", spaces,' ');
+    printf("%*corder: %d\n", spaces+4,' ',order);
+    printf("%*cfrict_tiny: %.3f\n", spaces+4,' ',frict_tiny);
 }
 void Integrator::predictor()
 {
@@ -604,7 +606,12 @@ Integrator_SinglePhase_Coulomb_FirstOrder::Integrator_SinglePhase_Coulomb_FirstO
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
 }
-
+void Integrator_SinglePhase_Coulomb_FirstOrder::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, Coulomb model\n", spaces,' ');
+    printf("%*cint_frict:%.3f\n", spaces+4,' ',scaled?int_frict*180.0/PI:int_frict);
+    Integrator_SinglePhase::print0(spaces+4);
+}
 void Integrator_SinglePhase_Coulomb_FirstOrder::predictor()
 {
 }
@@ -934,9 +941,32 @@ Integrator_SinglePhase_Vollmey_FirstOrder::Integrator_SinglePhase_Vollmey_FirstO
 
     mu = 0.5;
     xi = 120.0;
-    xi = xi/9.8;
 }
-
+bool Integrator_SinglePhase_Vollmey_FirstOrder::scale()
+{
+    if(Integrator_SinglePhase::scale())
+    {
+        xi = xi/scale_.gravity;
+        return true;
+    }
+    return false;
+}
+bool Integrator_SinglePhase_Vollmey_FirstOrder::unscale()
+{
+    if(Integrator_SinglePhase::unscale())
+    {
+        xi = xi*scale_.gravity;
+        return true;
+    }
+    return false;
+}
+void Integrator_SinglePhase_Vollmey_FirstOrder::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, Vollmey model, first order\n", spaces,' ');
+    printf("%*cmu:%.3f\n", spaces+4,' ',mu);
+    printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
+    Integrator_SinglePhase::print0(spaces+4);
+}
 void Integrator_SinglePhase_Vollmey_FirstOrder::predictor()
 {
 }
@@ -1266,10 +1296,40 @@ Integrator_SinglePhase_Pouliquen_FirstOrder::Integrator_SinglePhase_Pouliquen_Fi
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
 
-    phi1=0.41887902;
-    phi2=0.523598776;
+    phi1=24.0;//in degrees, will convert to rad on scale (0.41887902 rad);
+    phi2=30.0;//in degrees, will convert to rad on scale (0.523598776 rad);
     partdiam=1.0E-4;
     I_O=0.3;
+}
+
+bool Integrator_SinglePhase_Pouliquen_FirstOrder::scale()
+{
+    if(Integrator_SinglePhase::scale())
+    {
+        phi1*=PI/180.0;
+        phi2*=PI/180.0;
+        return true;
+    }
+    return false;
+}
+bool Integrator_SinglePhase_Pouliquen_FirstOrder::unscale()
+{
+    if(Integrator_SinglePhase::unscale())
+    {
+        phi1*=180.0/PI;
+        phi2*=180.0/PI;
+        return true;
+    }
+    return false;
+}
+void Integrator_SinglePhase_Pouliquen_FirstOrder::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, Pouliquen model, first order\n", spaces,' ');
+    printf("%*cphi1:%.3f\n", spaces+4,' ',scaled?phi1*180.0/PI:phi1);
+    printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
+    printf("%*cpartdiam:%.3e\n", spaces+4,' ',partdiam);
+    printf("%*cI_O:%.3f\n", spaces+4,' ',I_O);
+    Integrator_SinglePhase::print0(spaces+4);
 }
 
 void Integrator_SinglePhase_Pouliquen_FirstOrder::predictor()
@@ -1618,7 +1678,35 @@ Integrator_SinglePhase_Maeno_FirstOrder::Integrator_SinglePhase_Maeno_FirstOrder
     partdiam=1.0E-4;
     I_not=0.3;
 }
-
+bool Integrator_SinglePhase_Maeno_FirstOrder::scale()
+{
+    if(Integrator_SinglePhase::scale())
+    {
+        phis*=PI/180.0;
+        phi2*=PI/180.0;
+        return true;
+    }
+    return false;
+}
+bool Integrator_SinglePhase_Maeno_FirstOrder::unscale()
+{
+    if(Integrator_SinglePhase::unscale())
+    {
+        phis*=180.0/PI;
+        phi2*=180.0/PI;
+        return true;
+    }
+    return false;
+}
+void Integrator_SinglePhase_Maeno_FirstOrder::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, Maeno model, first order\n", spaces,' ');
+    printf("%*cphis:%.3f\n", spaces+4,' ',scaled?phis*180.0/PI:phis);
+    printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
+    printf("%*cpartdiam:%.3e\n", spaces+4,' ',partdiam);
+    printf("%*cI_not:%.3f\n", spaces+4,' ',I_not);
+    Integrator_SinglePhase::print0(spaces+4);
+}
 void Integrator_SinglePhase_Maeno_FirstOrder::predictor()
 {
 }
@@ -1947,12 +2035,59 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_TwoPhase::Integrator_TwoPhase(cxxTitanSimulation *_titanSimulation):
+Integrator_TwoPhases::Integrator_TwoPhases(cxxTitanSimulation *_titanSimulation):
         Integrator(_titanSimulation)
 {
     assert(elementType==ElementType::TwoPhases);
-    assert(order==1||order==2);
 }
+
+void Integrator_TwoPhases::predictor()
+{
+}
+
+void Integrator_TwoPhases::corrector()
+{
+
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_TwoPhases_Coulomb::Integrator_TwoPhases_Coulomb(cxxTitanSimulation *_titanSimulation):
+        Integrator_TwoPhases(_titanSimulation)
+{
+    assert(elementType==ElementType::TwoPhases);
+    assert(order==1);
+
+
+}
+bool Integrator_TwoPhases_Coulomb::scale()
+{
+    if(Integrator_TwoPhases::scale())
+    {
+        //anything to scale?
+        return true;
+    }
+    return false;
+}
+bool Integrator_TwoPhases_Coulomb::unscale()
+{
+    if(Integrator_TwoPhases::unscale())
+    {
+        //anything to unscale?
+        return true;
+    }
+    return false;
+}
+void Integrator_TwoPhases_Coulomb::print0(int spaces)
+{
+    printf("%*cIntegrator: two phases, Coulomb model, first order\n", spaces,' ');
+    //printf("%*cmu:%.3f\n", spaces+4,' ',mu);
+    //printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
+    Integrator_TwoPhases::print0(spaces+4);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 /***********************************************************************/
 /* calc_volume():                                                      */
 /* calculates volume to verify mass conservation                       */

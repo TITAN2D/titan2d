@@ -804,6 +804,7 @@ void cxxTitanSimulation::input_summary()
         get_pileprops()->print0();
         get_fluxprops()->print0();
         get_discharge_planes()->print0();
+        get_integrator()->print0();
         get_matprops()->print0();
     }
     MPI_Barrier(MPI_COMM_WORLD);

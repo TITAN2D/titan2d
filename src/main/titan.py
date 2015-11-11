@@ -84,8 +84,8 @@ class TitanSimulationBase(object):
             'allParameters':('order','phi1','phi2','partdiam','I_O'), 
             'defaultParameters':{
                 'order':'First',
-                'phi1':0.41887902,
-                'phi2':0.523598776,
+                'phi1':24.0,
+                'phi2':30.0,
                 'partdiam':1.0E-4,
                 'I_O':0.3
             },
@@ -99,8 +99,8 @@ class TitanSimulationBase(object):
             'allParameters':('order','phis', 'phi2','partdiam', 'I_not'),
             'defaultParameters':{
                 'order':'First',
-                'phis':0.41887902,
-                'phi2':0.523598776,
+                'phis':24.0,
+                'phi2':30.0,
                 'partdiam':1.0E-4,
                 'I_not':0.3
             },
@@ -116,7 +116,7 @@ class TitanSimulationBase(object):
             'elementType':ElementType_TwoPhases,
             'integrators':[{
                     'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1],
-                    'constructor':Integrator_TwoPhase
+                    'constructor':Integrator_TwoPhases_Coulomb
             }]
         }
     }

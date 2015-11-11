@@ -30,7 +30,7 @@ class cxxTitanSimulation;
  * from the current timestep's data.
  *
  */
-class Integrator:public EleNodeRef,TiScalableObject
+class Integrator:public EleNodeRef,public TiScalableObject
 {
 public:
     friend class cxxTitanSimulation;
@@ -141,6 +141,7 @@ class Integrator_SinglePhase_Coulomb_FirstOrder:public Integrator_SinglePhase
 public:
     Integrator_SinglePhase_Coulomb_FirstOrder(cxxTitanSimulation *_titanSimulation);
 
+    virtual void print0(int spaces=0);
 protected:
 
     /**
@@ -162,6 +163,10 @@ class Integrator_SinglePhase_Vollmey_FirstOrder:public Integrator_SinglePhase
 {
 public:
     Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -184,6 +189,10 @@ class Integrator_SinglePhase_Pouliquen_FirstOrder:public Integrator_SinglePhase
 {
 public:
     Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -208,6 +217,10 @@ class Integrator_SinglePhase_Maeno_FirstOrder:public Integrator_SinglePhase
 {
 public:
     Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -228,11 +241,34 @@ public:
 /**
  * Base class for SinglePhase Integrators
  */
-class Integrator_TwoPhase:public Integrator
+class Integrator_TwoPhases:public Integrator
 {
 public:
-    Integrator_TwoPhase(cxxTitanSimulation *_titanSimulation);
+    Integrator_TwoPhases(cxxTitanSimulation *_titanSimulation);
 
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+};
+
+/**
+ * class for Two Phases Coulomb Integrator
+ */
+class Integrator_TwoPhases_Coulomb:public Integrator_TwoPhases
+{
+public:
+    Integrator_TwoPhases_Coulomb(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
 protected:
     /**
      * Predictor step for second order of nothing for first order
