@@ -66,9 +66,6 @@ public:
      * nonzero 4th bit of viz_flag means output grass_sites files
      */
     int vizoutput;
-    //! order == 1 means use first order method
-    //! order == 2 means use second order method
-    int order;
 
 
 

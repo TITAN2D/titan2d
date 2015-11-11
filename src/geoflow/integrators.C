@@ -246,7 +246,6 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     outline_ptr(_titanSimulation->get_outline()),
     discharge_ptr(_titanSimulation->get_discharge_planes()),
     elementType(_titanSimulation->get_element_type()),
-    order(_titanSimulation->order),
     adapt(_titanSimulation->adapt),
     TiScalableObject(_titanSimulation->scale_)
 {
@@ -264,6 +263,8 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
 
     int_frict = 0.0;
     frict_tiny = 0.1;
+
+    order=1;
 }
 Integrator::~Integrator()
 {

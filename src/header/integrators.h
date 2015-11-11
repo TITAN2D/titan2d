@@ -45,6 +45,15 @@ public:
     virtual bool unscale();
     virtual void print0(int spaces=0);
 
+public:
+    //!internal friction for Coulomb model, some other function uses it for other models after cleaning
+    //!up it should be only in Coulomb models
+    double int_frict;
+    double frict_tiny;
+    //! order == 1 means use first order method
+    //! order == 2 means use second order method
+    int order;
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -57,7 +66,6 @@ protected:
 
 protected:
     //!references to members of other classes
-    int &order;
     const ElementType &elementType;
 
     TimeProps *timeprops_ptr;
@@ -84,9 +92,7 @@ protected:
     double eroded;
     double deposited;
     double realvolume;
-public:
-    double int_frict;
-    double frict_tiny;
+
 };
 
 /**

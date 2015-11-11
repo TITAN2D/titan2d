@@ -476,7 +476,7 @@ void cxxTitanSimulation::run()
                    matprops_ptr->bedfrict[imat] * 180.0 / PI);
 
         printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", integrator->int_frict * 180.0 / PI,
-               scale_.epsilon, order);
+               scale_.epsilon, integrator->order);
         printf("REFINE_LEVEL=%d\n", REFINE_LEVEL);
     }
 
@@ -609,7 +609,7 @@ void cxxTitanSimulation::run()
          * save a restart file
          */
         if(timeprops.ifsave())
-            saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, order,
+            saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
                     &statprops, &discharge_planes, &outline, &savefileflag);
 
         /*
@@ -698,7 +698,7 @@ void cxxTitanSimulation::run()
      * save a restart file
      */
 
-    saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, order,
+    saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
             &statprops, &discharge_planes, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
 

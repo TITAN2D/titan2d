@@ -53,35 +53,37 @@ class TitanSimulationBase(object):
     
     possible_internal_mat_models={
         'Coulomb':{
-            'allParameters':('int_frict',), 
-            'defaultParameters':{'int_frict':37.0},
+            'allParameters':('order','int_frict'),
+            'defaultParameters':{'order':'First','int_frict':37.0},
             'elementType':ElementType_SinglePhase,
             'integrators':[
                 {
-                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1],
                     'constructor':Integrator_SinglePhase_Coulomb_FirstOrder
                 },
                 {
-                    'conditions' :[lambda tsim: tsim.sim.order==1 or tsim.sim.order==2],
+                    'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1 or model_parameters['order']==2],
                     'constructor':Integrator
                 }
             ]
         },
         'Vollmey':{
-            'allParameters':('mu','xi'), 
+            'allParameters':('order','mu','xi'), 
             'defaultParameters':{
+                'order':'First',
                 'mu' : 0.5,
                 'xi' : 120.0
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
-                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1],
                     'constructor':Integrator_SinglePhase_Vollmey_FirstOrder
             }]
         },
         'Pouliquen':{
-            'allParameters':('phi1','phi2','partdiam','I_O'), 
+            'allParameters':('order','phi1','phi2','partdiam','I_O'), 
             'defaultParameters':{
+                'order':'First',
                 'phi1':0.41887902,
                 'phi2':0.523598776,
                 'partdiam':1.0E-4,
@@ -89,13 +91,14 @@ class TitanSimulationBase(object):
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
-                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1],
                     'constructor':Integrator_SinglePhase_Pouliquen_FirstOrder
             }]
         },
         'Maeno':{
-            'allParameters':('phis', 'phi2','partdiam', 'I_not'),
+            'allParameters':('order','phis', 'phi2','partdiam', 'I_not'),
             'defaultParameters':{
+                'order':'First',
                 'phis':0.41887902,
                 'phi2':0.523598776,
                 'partdiam':1.0E-4,
@@ -103,16 +106,16 @@ class TitanSimulationBase(object):
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
-                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1],
                     'constructor':Integrator_SinglePhase_Maeno_FirstOrder
             }],
         },
         'TwoPhases_Coulomb':{
-            'allParameters':('int_frict',), 
-            'defaultParameters':{'int_frict':37.0},
+            'allParameters':('order','int_frict',), 
+            'defaultParameters':{'order':'First','int_frict':37.0},
             'elementType':ElementType_TwoPhases,
             'integrators':[{
-                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1],
                     'constructor':Integrator_TwoPhase
             }]
         }
@@ -148,7 +151,6 @@ class TitanSimulation(TitanSimulationBase):
                  adapt=False,
                  short_speed=False,
                  vizoutput="tecplotxxxx.tec",
-                 order='First',
                  edge_height=None,
                  test_height=None,
                  test_location=None,
@@ -222,11 +224,6 @@ class TitanSimulation(TitanSimulationBase):
         else:
             raise ValueError("Unknown vizoutput "+str(vizoutput)+". Possible formats: "+str(possible_vizoutputs.keys()))
         
-        #First/Second Order Method
-        if order in TitanSimulation.possible_orders:
-            self.sim.order = TitanSimulation.possible_orders[order]
-        else:
-            raise ValueError("Unknown order "+str(order)+". Possible formats: "+str(possible_orders.keys()))
         
         #Test if flow reaches height [m] ...
         if edge_height == None:
@@ -349,6 +346,12 @@ class TitanSimulation(TitanSimulationBase):
             if key not in model_parameters:
                 raise ValueError("Parameter '"+str(key)+"' is not set for "+str(model)+" model!")
         
+        #First/Second Order Method
+        if model_parameters['order'] in TitanSimulation.possible_orders:
+            model_parameters['order'] = TitanSimulation.possible_orders[model_parameters['order']]
+        else:
+            raise ValueError("Unknown order "+str(model_parameters['order'])+". Possible formats: "+str(possible_orders.keys()))
+        
         #find integrator        
         if integrator==None:
             integrators=TitanSimulationBase.possible_internal_mat_models[model]['integrators']
@@ -358,7 +361,7 @@ class TitanSimulation(TitanSimulationBase):
                 does_feat=True
                 msg+="Testing: "+desc['constructor'].__name__+"\n"
                 for cond in desc['conditions']:
-                    cond_result=cond(self)
+                    cond_result=cond(self,model_parameters)
                     msg+="  "+inspect.getsource(cond).strip()+" ===>"+str(cond_result)+"\n"
                     does_feat=does_feat and cond_result
                 if does_feat:
