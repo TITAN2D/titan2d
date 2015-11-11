@@ -28,214 +28,6 @@
 #include "../header/outline.h"
 
 
-
-
-
-//dUdx[0] dh_dx
-//dUdx[1] dhVx_dx
-//dUdx[2] dhVy_dx
-//dUdy[0] dh_dy
-//dUdy[1] dhVx_dy
-//dUdy[2] dhVy_dy
-
-//! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-void predict(Element *Elm,
-        const double dh_dx, const double dhVx_dx, const double dhVy_dx,
-        const double dh_dy, const double dhVx_dy, const double dhVy_dy,
-        const double tiny, const double kactx,
-        const double dt2, const double *g, const double curv_x, const double curv_y,
-        const double bedfrictang, const double intfrictang,
-        const double *dgdx, const double frict_tiny, const int order_flag,
-        double *VxVy, const int IF_STOPPED, double *fluxsrc)
-{
-    //NOTE:  d(g[2]*Elm->state_vars(0))/dx is approximated by g[2]*dUvec[0]/dx !!!
-    double c_sq;
-    double h_inv;
-    double tanbed;
-    double VxVyS[2];
-    double VxVyB[2];
-    double unitvx, unitvy;
-    double tmp, sgn_dudy,sgn_dvdx;
-    double forcegrav;
-    double forceintx,forceinty, forcebedx,forcebedy;
-    double forcebedequil, forcebedmax;
-    double speed;
-    //    curv := inverse of radius of curvature = second derivative of
-    //    position normal to tangent with respect to distance along tangent,
-    //    if dz/dx=0 curve=d2z/dx2, otherwise rotate coordinate system so
-    //    dz/dx=0, that is mathematical definition of curvature I believe
-    //    laercio returns d2z/dx2 whether or not dz/dx=0 in his GIS functions
-
-    //TEST********** order_flag = 1
-    //     write(*,*) "order_flag in predict=", order_flag
-
-    if (IF_STOPPED == 2) {
-        VxVy[0] = 0.0;
-        VxVy[1] = 0.0;
-        VxVyS[0] = 0.0;
-        VxVyS[1] = 0.0;
-    }
-    else {
-        VxVy[0] = VxVyB[0];
-        //Elm->state_vars(1)/Elm->state_vars(0);
-        VxVy[1] = VxVyB[1];
-        //Elm->state_vars(2)/Elm->state_vars(0);
-        VxVyS[0] = VxVyB[0];
-        VxVyS[1] = VxVyB[1];
-    }
-
-    if (order_flag == 2) {
-
-        c_sq = kactx * g[2] * Elm->state_vars(0);
-        //h_inv := 1/Elm->state_vars(0)
-
-        Elm->state_vars(0, Elm->state_vars(0) - dt2 * (dhVx_dx + dhVy_dy + fluxsrc[0]));
-        Elm->state_vars(0, c_dmax1(Elm->state_vars(0), 0.0));
-
-        //dF/dU, dG/dU and S terms if Elm->state_vars(0) > TINY !
-        if (Elm->prev_state_vars(0) > tiny) {
-            h_inv = 1.0 / Elm->prev_state_vars(0);
-            tanbed = tan(bedfrictang);
-
-            //here speed is speed squared
-            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
-            if (speed > 0.0) {
-                //here speed is speed
-                speed = sqrt(speed);
-                unitvx = VxVy[0] / speed;
-                unitvy = VxVy[1] / speed;
-            }
-            else {
-                unitvx = 0.0;
-                unitvy = 0.0;
-            }
-
-            //dnorm=dsqrt(Uprev[1]**2+Uprev[2]**2+tiny**2)
-
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //****** X-dir ******
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // dF/dU and dG/dU terms
-            Elm->state_vars(1, Elm->state_vars(1) -
-                    dt2 * ((c_sq - VxVy[0] * VxVy[0]) * dh_dx +
-                    2.0 * VxVy[0] * dhVx_dx -
-                    VxVy[0] * VxVy[1] * dh_dy +
-                    VxVy[1] * dhVx_dy +
-                    VxVy[0] * dhVy_dy +
-                    fluxsrc[1]));
-
-            // x direction source terms
-
-            // the gravity force in the x direction
-            forcegrav = g[0] * Elm->state_vars(0);
-
-            // the internal friction force
-            tmp = h_inv * (dhVx_dy - VxVyS[0] * dh_dy);
-            sgn_dudy = sgn_tiny(tmp, frict_tiny);
-            forceintx = sgn_dudy * Elm->state_vars(0) * kactx * (g[2] * dh_dy + dgdx[1] * Elm->state_vars(0)) * sin(intfrictang);
-
-            // the bed friction force for fast moving flow
-            forcebedx = unitvx * c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[0] * Elm->state_vars(1) * curv_x, 0.0) * tanbed;
-
-            if (IF_STOPPED == 2 && 1 == 0) {
-                //the bed friction force for stopped or nearly stopped flow
-
-                //the static friction force is LESS THAN or equal to the friction
-                //coefficient times the normal force but it can NEVER exceed the
-                //NET force it is opposing
-
-                //maximum friction force the bed friction can support
-                forcebedmax = c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[0] * Elm->state_vars(1) * curv_x, 0.0) * tanbed;
-
-                //     the NET force the bed friction force is opposing
-                forcebedequil = forcegrav - forceintx;
-                //                   -kactxy*g[2]*Elm->state_vars(0)*dh_dx
-
-
-                // the "correct" stopped or nearly stopped flow bed friction force
-                // (this force is not entirely "correct" it will leave a "negligible"
-                // (determined by stopping criteria) amount of momentum in the cell
-                forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax,
-                        dabs(forcebedx) + dabs(forcebedequil)));
-                //  forcebedx=
-                //                   sgn(forcebed2,dmin1(forcebed1,dabs(forcebed2)))
-                //            else
-            }
-
-            // all the x source terms
-            Elm->state_vars(1, Elm->state_vars(1) + dt2 * (forcegrav - forcebedx - forceintx));
-            //            write(*,*) 'int', forceintx, 'bed', forcebedx
-
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //****** Y-dir ******
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //dF/dU and dG/dU terms
-            Elm->state_vars(2, Elm->state_vars(2) -
-                    dt2 * ((c_sq - VxVy[1] * VxVy[1]) * dh_dy +
-                    2.0 * VxVy[1] * dhVy_dy -
-                    VxVy[0] * VxVy[1] * dh_dx +
-                    VxVy[1] * dhVx_dx +
-                    VxVy[0] * dhVy_dx +
-                    fluxsrc[2]));
-
-            //the gravity force in the y direction
-            forcegrav = g[1] * Elm->state_vars(0);
-
-            //the internal friction force
-            tmp = h_inv * (dhVy_dx - VxVyS[1] * dh_dx);
-            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
-            forceinty = sgn_dvdx * Elm->state_vars(0) * kactx * (g[2] *
-                    dh_dx + dgdx[0] * Elm->state_vars(0)) * sin(intfrictang);
-
-            //the bed friction force for fast moving flow
-            forcebedy = unitvy *
-                    c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[1] * Elm->state_vars(2) * curv_y, 0.0)
-                    * tan(bedfrictang);
-
-            if (IF_STOPPED == 2 && 1 == 0) {
-                //the bed friction force for stopped or nearly stopped flow
-
-                forcebedmax =
-                        c_dmax1(g[2] * Elm->state_vars(0) + VxVyS[1] * Elm->state_vars(2) * curv_y, 0.0)
-                        * tanbed;
-
-                //the NET force the bed friction force is opposing
-                forcebedequil = forcegrav
-                        //     $              -kactxy*g[2]*Elm->state_vars(0)*dh_dy
-                        - forceinty;
-
-                //the "correct" stopped or nearly stopped flow bed friction force
-                //(this force is not entirely "correct" it will leave a "negligible"
-                //(determined by stopping criteria) amount of momentum in the cell
-                forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax,
-                        fabs(forcebedy) + fabs(forcebedequil)));
-
-                //          forcebedy=sgn(forcebed2,dmin1(forcebed1,dabs(forcebed2)))
-                //           else
-            }
-
-            // all the y source terms
-            Elm->state_vars(2, Elm->state_vars(2) + dt2 * (forcegrav - forcebedy - forceinty));
-
-        }
-    }
-}
-//! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-void predict2ph(Element *Elm, const double *dUdx, const double *dUdy,
-        double *Uprev, const double tiny, const double kactx,
-        const double dt2, const double *g, const double curv_x, const double curv_y,
-        const double bedfrictang, const double intfrictang,
-        const double *dgdx, const double frict_tiny, const int order_flag,
-        double *VxVy, const int IF_STOPPED, double *fluxsrc)
-/*void predict(double *Uvec,dUdx,dUdy,Uprev,tiny,kactxy,dt2, g,
-          curv, bedfrictang, intfrictang,
-          dgdx, frict_tiny, order_flag, VxVyB,
-          IF_STOPPED,fluxsrc)*/
-{
-
-}
-
-
 Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
     timeprops_ptr(_titanSimulation->get_timeprops()),
@@ -296,128 +88,7 @@ void Integrator::print0(int spaces)
     printf("%*corder: %d\n", spaces+4,' ',order);
     printf("%*cfrict_tiny: %.3f\n", spaces+4,' ',frict_tiny);
 }
-void Integrator::predictor()
-{
-    /* mdj 2007-04 */
-    int IF_STOPPED;
-    double curr_time, influx[3];
-    double VxVy[2];
-    double dt2 = .5 * dt; // dt2 is set as dt/2 !
 
-    Element* Curr_El;
-    //#pragma omp parallel for                                                \
-    //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
-    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
-    {
-    	if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
-    
-        Curr_El = &(elements_[ndx]);
-        elements_[ndx].update_prev_state_vars();
-
-        influx[0] = Curr_El->Influx(0);
-        influx[1] = Curr_El->Influx(1);
-        influx[2] = Curr_El->Influx(2);
-
-        //note, now there is no check for fluxes from non-local elements
-        if(!(influx[0] >= 0.0))
-        {
-            printf("negative influx=%g\n", influx[0]);
-            assert(0);
-        }
-
-        // -- calc contribution of flux source
-        curr_time = (timeprops_ptr->cur_time) * (timeprops_ptr->TIME_SCALE);
-
-
-        //VxVy[2];
-        if(Curr_El->state_vars(0) > GEOFLOW_TINY)
-        {
-            VxVy[0] = Curr_El->state_vars(1) / Curr_El->state_vars(0);
-            VxVy[1] = Curr_El->state_vars(2) / Curr_El->state_vars(0);
-        }
-        else
-            VxVy[0] = VxVy[1] = 0.0;
-
-#ifdef STOPCRIT_CHANGE_SOURCE
-        IF_STOPPED=Curr_El->stoppedflags();
-#else
-        IF_STOPPED = !(!(Curr_El->stoppedflags()));
-#endif
-        double gravity[3]{Curr_El->gravity(0),Curr_El->gravity(1),Curr_El->gravity(2)};
-        double d_gravity[3]{Curr_El->d_gravity(0),Curr_El->d_gravity(1),Curr_El->d_gravity(2)};
-
-        if(elementType == ElementType::TwoPhases)
-        {
-            //nothing there
-        }
-        if(elementType == ElementType::SinglePhase)
-        {
-
-            predict(Curr_El,
-                    Curr_El->dh_dx(), Curr_El->dhVx_dx(), Curr_El->dhVy_dx(),
-                    Curr_El->dh_dy(), Curr_El->dhVx_dy(), Curr_El->dhVy_dy(),
-                    tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
-                    matprops_ptr->bedfrict[Curr_El->material()], int_frict,
-                    d_gravity, frict_tiny, order, VxVy, IF_STOPPED, influx);
-        }
-
-        // apply bc's
-        for(int j = 0; j < 4; j++)
-            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
-                for(int k = 0; k < NUM_STATE_VARS; k++)
-                    Curr_El->state_vars(k,0.0);
-    }
-}
-void Integrator::corrector()
-{
-    Element* Curr_El;
-
-    //for comparison of magnitudes of forces in slumping piles
-    forceint = 0.0;
-    forcebed = 0.0;
-    eroded = 0.0;
-    deposited = 0.0;
-    realvolume = 0.0;
-
-    double elemforceint;
-    double elemforcebed;
-    double elemeroded;
-    double elemdeposited;
-
-
-    // mdj 2007-04 this loop has pretty much defeated me - there is
-    //             a dependency in the Element class that causes incorrect
-    //             results
-    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
-    {
-        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
-
-        Curr_El = &(elements_[ndx]);
-        double dx = Curr_El->dx(0);
-        double dy = Curr_El->dx(1);
-
-        //if first order states was not updated as there is no predictor
-        if(order==1)
-            elements_[ndx].update_prev_state_vars();
-
-        void *Curr_El_out = (void *) Curr_El;
-        correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, this, Curr_El_out, &elemforceint,
-                &elemforcebed, &elemeroded, &elemdeposited);
-
-        forceint += fabs(elemforceint);
-        forcebed += fabs(elemforcebed);
-        realvolume += dx * dy * Curr_El->state_vars(0);
-        eroded += elemeroded;
-        deposited += elemdeposited;
-
-        // apply bc's
-        for(int j = 0; j < 4; j++)
-            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
-                for(int k = 0; k < NUM_STATE_VARS; k++)
-                    Curr_El->state_vars(k, 0.0);
-    }
-
-}
 void Integrator::step()
 {
     assert(ElemTable->all_elenodes_are_permanent);
@@ -612,11 +283,238 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::print0(int spaces)
     printf("%*cint_frict:%.3f\n", spaces+4,' ',scaled?int_frict*180.0/PI:int_frict);
     Integrator_SinglePhase::print0(spaces+4);
 }
+
 void Integrator_SinglePhase_Coulomb_FirstOrder::predictor()
 {
+    if(order==1)return;
+    /* mdj 2007-04 */
+    int IF_STOPPED;
+    double curr_time, influx[3];
+    double VxVy[2];
+    double dt2 = .5 * dt; // dt2 is set as dt/2 !
+
+    Element* Curr_El;
+    //#pragma omp parallel for                                                \
+    //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+
+        Curr_El = &(elements_[ndx]);
+        elements_[ndx].update_prev_state_vars();
+
+        influx[0] = Influx_[0][ndx];
+        influx[1] = Influx_[1][ndx];
+        influx[2] = Influx_[2][ndx];
+
+        //note, now there is no check for fluxes from non-local elements
+        if(!(influx[0] >= 0.0))
+        {
+            printf("negative influx=%g\n", influx[0]);
+            assert(0);
+        }
+
+        // -- calc contribution of flux source
+        curr_time = (timeprops_ptr->cur_time) * (timeprops_ptr->TIME_SCALE);
+
+
+        //VxVy[2];
+        if(h[ndx] > GEOFLOW_TINY)
+        {
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+#ifdef STOPCRIT_CHANGE_SOURCE
+        IF_STOPPED=Curr_El->stoppedflags();
+#else
+        IF_STOPPED = !(!(Curr_El->stoppedflags()));
+#endif
+        double g[3]{gravity_[0][ndx],gravity_[1][ndx],gravity_[2][ndx]};
+        double d_g[3]{d_gravity_[0][ndx],d_gravity_[1][ndx],d_gravity_[2][ndx]};
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //predictor itself
+
+        //NOTE:  d(g[2]*Elm->state_vars(0))/dx is approximated by g[2]*dUvec[0]/dx !!!
+        double c_sq;
+        double h_inv;
+        double tanbed;
+        double VxVyS[2];
+        double unitvx, unitvy;
+        double tmp, sgn_dudy,sgn_dvdx;
+        double forcegrav;
+        double forceintx,forceinty, forcebedx,forcebedy;
+        double forcebedequil, forcebedmax;
+        double speed;
+        //    curv := inverse of radius of curvature = second derivative of
+        //    position normal to tangent with respect to distance along tangent,
+        //    if dz/dx=0 curve=d2z/dx2, otherwise rotate coordinate system so
+        //    dz/dx=0, that is mathematical definition of curvature I believe
+        //    laercio returns d2z/dx2 whether or not dz/dx=0 in his GIS functions
+
+        if (IF_STOPPED == 2) {
+            VxVy[0] = 0.0;
+            VxVy[1] = 0.0;
+            VxVyS[0] = 0.0;
+            VxVyS[1] = 0.0;
+        }
+        else {
+            //VxVy[0] = VxVy[0];
+            //Elm->state_vars(1)/Elm->state_vars(0);
+            //VxVy[1] = VxVy[1];
+            //Elm->state_vars(2)/Elm->state_vars(0);
+            VxVyS[0] = VxVy[0];
+            VxVyS[1] = VxVy[1];
+        }
+
+
+        c_sq = kactxy_[0][ndx] * g[2] * h[ndx];
+        //h_inv := 1/h[ndx];
+
+        h[ndx]=h[ndx] - dt2 * (dhVx_dx[ndx] + dhVy_dy[ndx] + influx[0]);
+        h[ndx]=c_dmax1(h[ndx], 0.0);
+
+        //dF/dU, dG/dU and S terms if h[ndx] > TINY !
+        if (h[ndx] > tiny) {
+            h_inv = 1.0 / h[ndx];
+            tanbed = tan(matprops_ptr->bedfrict[material_[ndx]]);
+
+            //here speed is speed squared
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+            if (speed > 0.0) {
+                //here speed is speed
+                speed = sqrt(speed);
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+
+            //dnorm=dsqrt(Uprev[1]**2+Uprev[2]**2+tiny**2)
+
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //****** X-dir ******
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // dF/dU and dG/dU terms
+            hVx[ndx]=hVx[ndx] -
+                    dt2 * ((c_sq - VxVy[0] * VxVy[0]) * dh_dx[ndx] +
+                    2.0 * VxVy[0] * dhVx_dx[ndx] -
+                    VxVy[0] * VxVy[1] * dh_dy[ndx] +
+                    VxVy[1] * dhVx_dy[ndx] +
+                    VxVy[0] * dhVy_dy[ndx] +
+                    influx[1]);
+
+            // x direction source terms
+
+            // the gravity force in the x direction
+            forcegrav = g[0] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVx_dy[ndx] - VxVyS[0] * dh_dy[ndx]);
+            sgn_dudy = sgn_tiny(tmp, frict_tiny);
+            forceintx = sgn_dudy * h[ndx] * kactxy_[0][ndx] * (g[2] * dh_dy[ndx] + d_g[1] * h[ndx]) * sin(int_frict);
+
+            // the bed friction force for fast moving flow
+            forcebedx = unitvx * c_dmax1(g[2] * h[ndx] + VxVyS[0] * hVx[ndx] * curvature_[0][ndx], 0.0) * tanbed;
+
+            if (IF_STOPPED == 2 && 1 == 0) {
+                //the bed friction force for stopped or nearly stopped flow
+
+                //the static friction force is LESS THAN or equal to the friction
+                //coefficient times the normal force but it can NEVER exceed the
+                //NET force it is opposing
+
+                //maximum friction force the bed friction can support
+                forcebedmax = c_dmax1(g[2] * h[ndx] + VxVyS[0] * hVx[ndx] * curvature_[0][ndx], 0.0) * tanbed;
+
+                //     the NET force the bed friction force is opposing
+                forcebedequil = forcegrav - forceintx;
+                //                   -kactxy*g[2]*Elm->state_vars(0)*dh_dx
+
+
+                // the "correct" stopped or nearly stopped flow bed friction force
+                // (this force is not entirely "correct" it will leave a "negligible"
+                // (determined by stopping criteria) amount of momentum in the cell
+                forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax,
+                        dabs(forcebedx) + dabs(forcebedequil)));
+                //  forcebedx=
+                //                   sgn(forcebed2,dmin1(forcebed1,dabs(forcebed2)))
+                //            else
+            }
+
+            // all the x source terms
+            hVx[ndx]=hVx[ndx] + dt2 * (forcegrav - forcebedx - forceintx);
+            //            write(*,*) 'int', forceintx, 'bed', forcebedx
+
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //****** Y-dir ******
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //dF/dU and dG/dU terms
+            hVy[ndx]=hVy[ndx] -
+                    dt2 * ((c_sq - VxVy[1] * VxVy[1]) * dh_dy[ndx] +
+                    2.0 * VxVy[1] * dhVy_dy[ndx] -
+                    VxVy[0] * VxVy[1] * dh_dx[ndx] +
+                    VxVy[1] * dhVx_dx[ndx] +
+                    VxVy[0] * dhVy_dx[ndx] +
+                    influx[2]);
+
+            //the gravity force in the y direction
+            forcegrav = g[1] * h[ndx];
+
+            //the internal friction force
+            tmp = h_inv * (dhVy_dx[ndx] - VxVyS[1] * dh_dx[ndx]);
+            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
+            forceinty = sgn_dvdx * h[ndx] * kactxy_[0][ndx] * (g[2] * dh_dx[ndx] + d_g[0] * h[ndx]) * sin(int_frict);
+
+            //the bed friction force for fast moving flow
+            forcebedy = unitvy *
+                    c_dmax1(g[2] * h[ndx] + VxVyS[1] * hVy[ndx] * curvature_[1][ndx], 0.0)
+                    * tanbed;
+
+            if (IF_STOPPED == 2 && 1 == 0) {
+                //the bed friction force for stopped or nearly stopped flow
+
+                forcebedmax =
+                        c_dmax1(g[2] * h[ndx] + VxVyS[1] * hVy[ndx] * curvature_[1][ndx], 0.0)
+                        * tanbed;
+
+                //the NET force the bed friction force is opposing
+                forcebedequil = forcegrav
+                        //     $              -kactxy*g[2]*Elm->state_vars(0)*dh_dy
+                        - forceinty;
+
+                //the "correct" stopped or nearly stopped flow bed friction force
+                //(this force is not entirely "correct" it will leave a "negligible"
+                //(determined by stopping criteria) amount of momentum in the cell
+                forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax,
+                        fabs(forcebedy) + fabs(forcebedequil)));
+
+                //          forcebedy=sgn(forcebed2,dmin1(forcebed1,dabs(forcebed2)))
+                //           else
+            }
+
+            // all the y source terms
+            hVy[ndx]=hVy[ndx] + dt2 * (forcegrav - forcebedy - forceinty);
+
+        }
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
 }
-
-
 
 void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
 {
@@ -2036,7 +1934,19 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_TwoPhases::Integrator_TwoPhases(cxxTitanSimulation *_titanSimulation):
-        Integrator(_titanSimulation)
+        Integrator(_titanSimulation),
+        h(state_vars_[0]),
+        h_liq(state_vars_[1]),
+        hVx_sol(state_vars_[2]),
+        hVy_sol(state_vars_[3]),
+        hVx_liq(state_vars_[4]),
+        hVy_liq(state_vars_[5])
+        /*dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])*/
 {
     assert(elementType==ElementType::TwoPhases);
 }
@@ -2082,6 +1992,224 @@ void Integrator_TwoPhases_Coulomb::print0(int spaces)
     //printf("%*cmu:%.3f\n", spaces+4,' ',mu);
     //printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
     Integrator_TwoPhases::print0(spaces+4);
+}
+void Integrator_TwoPhases_Coulomb::predictor()
+{
+
+}
+void correct2ph(Element *Elm, const double *fluxxp,
+        const double *fluxyp, const double *fluxxm, const double *fluxym,
+        const double tiny, const double dtdx, const double dtdy, const double dt,
+        const double dh_dx, const double dh_dx_liq, const double dhVy_dx_sol,
+        const double dh_dy, const double dh_dy_liq, const double dhVx_dy_sol,
+        const double xslope,const double yslope, const double curv_x, const double curv_y, const double intfrictang,
+        const double bedfrictang, const double *g, const double kactxy,
+        const double frict_tiny, double &forceint,
+        double &forcebed, const int DO_EROSION, double &eroded,
+        const double *v_solid, const double *v_fluid,
+        const double den_solid, const double den_fluid, const double terminal_vel,
+        const double eps, const int IF_STOPPED);
+void Integrator_TwoPhases_Coulomb::corrector()
+{
+    Element* Curr_El;
+    MatPropsTwoPhases* matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
+
+    double solid_den = matprops2_ptr->den_solid;
+    double fluid_den = matprops2_ptr->den_fluid;
+    double terminal_vel = matprops2_ptr->v_terminal;
+
+    //for comparison of magnitudes of forces in slumping piles
+    forceint = 0.0;
+    forcebed = 0.0;
+    eroded = 0.0;
+    deposited = 0.0;
+    realvolume = 0.0;
+
+    double elem_forceint;
+    double elem_forcebed;
+    double elem_eroded;
+    double elem_deposited;
+
+    //intfrictang=matprops_ptr->intfrict;
+    //frict_tiny=matprops_ptr->frict_tiny;
+    double sin_intfrictang=sin(int_frict);
+
+#ifdef DO_EROSION
+    int do_erosion=1;
+#else
+    int do_erosion = 0;
+#endif
+
+    //convinience ref
+    //tivector<double> *g=gravity_;
+    //tivector<double> *dgdx=d_gravity_;
+    //tivector<double> &kactxy=effect_kactxy_[0];
+    //tivector<double> &bedfrictang=effect_bedfrict_;
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
+        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+//#ifdef STOPPED_FLOWS
+    #ifdef STOPCRIT_CHANGE_SOURCE
+        int IF_STOPPED=stoppedflags_[ndx];
+    #else
+        int IF_STOPPED = !(!stoppedflags_[ndx]);
+    #endif
+//#endif
+        double g[3]{gravity_[0][ndx],gravity_[1][ndx],gravity_[2][ndx]};
+        double d_g[3]{d_gravity_[0][ndx],d_gravity_[1][ndx],d_gravity_[2][ndx]};
+
+
+        int i;
+        double kactxy[DIMENSION];
+        double bedfrict = effect_bedfrict_[ndx];
+        double Vfluid[DIMENSION];
+        double volf;
+
+        Element *EmTemp= &(elements_[ndx]);
+
+        if(h[ndx] > GEOFLOW_TINY)
+        {
+            for(i = 0; i < DIMENSION; i++)
+                kactxy[i] = EmTemp->effect_kactxy(i);
+
+            // fluid velocities
+            Vfluid[0] = hVx_liq[ndx] / h[ndx];
+            Vfluid[1] = hVy_liq[ndx] / h[ndx];
+
+            // volume fractions
+            volf = h_liq[ndx] / h[ndx];
+        }
+        else
+        {
+            for(i = 0; i < DIMENSION; i++)
+            {
+                kactxy[i] = matprops2_ptr->scale.epsilon;
+                Vfluid[i] = 0.;
+            }
+            volf = 1.;
+            bedfrict = matprops2_ptr->bedfrict[EmTemp->material()];
+        }
+
+        double Vsolid[DIMENSION];
+        if(h_liq[ndx] > GEOFLOW_TINY)
+        {
+            Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
+            Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
+        }
+        else
+        {
+            Vsolid[0] = Vsolid[1] = 0.0;
+        }
+
+        double V_avg[DIMENSION];
+        V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
+        V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
+        elements_[ndx].convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
+
+
+
+        /*correct2ph_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
+                 (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops2_ptr->intfrict), &bedfrict,
+                 gravity, kactxy, &(matprops2_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, Vsolid, Vfluid,
+                 &solid_den, &fluid_den, &terminal_vel, &(matprops2_ptr->epsilon), &IF_STOPPED, Influx);*/
+
+
+        correct2ph(EmTemp, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
+                EmTemp->dh_dx(), EmTemp->dh_dx_liq(), EmTemp->dhVy_dx_sol(),
+                EmTemp->dh_dy(), EmTemp->dh_dy_liq(), EmTemp->dhVx_dy_sol(),
+                EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), int_frict, bedfrict,
+                g, kactxy[0], matprops2_ptr->scale.frict_tiny, elem_forceint, elem_forcebed, do_erosion, elem_eroded, Vsolid, Vfluid,
+                solid_den, fluid_den, terminal_vel, matprops2_ptr->scale.epsilon, IF_STOPPED);
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
+
+
+        if(stoppedflags_[ndx] == 2)
+            elem_deposited = h[ndx] * dxdy;
+        else
+            elem_deposited = 0.0;
+
+        if(stoppedflags_[ndx])
+            elem_eroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+
+
+        //correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, this, Curr_El_out, &elemforceint,
+        //        &elemforcebed, &elemeroded, &elemdeposited);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+        forceint += fabs(elem_forceint);
+        forcebed += fabs(elem_forcebed);
+        realvolume += dxdy * h[ndx];
+        eroded += elem_eroded;
+        deposited += elem_deposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
+
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

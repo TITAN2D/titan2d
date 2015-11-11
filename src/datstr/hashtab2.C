@@ -1227,6 +1227,7 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 zeta_(ElemTable->zeta_),
                 effect_bedfrict_(ElemTable->effect_bedfrict_),
                 effect_kactxy_(ElemTable->effect_kactxy_),
+                kactxy_(ElemTable->kactxy_),
                 Influx_(ElemTable->Influx_),
                 neighbor_ndx_(ElemTable->neighbor_ndx_),
                 positive_x_side_(ElemTable->positive_x_side_),
@@ -1234,7 +1235,8 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 el_error_(ElemTable->el_error_),
                 dx_(ElemTable->dx_),
                 node_refinementflux_(_NodeTable->refinementflux_),
-                node_flux_(_NodeTable->flux_)
+                node_flux_(_NodeTable->flux_),
+                material_(ElemTable->material_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);

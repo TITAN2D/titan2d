@@ -567,6 +567,8 @@ public:
     tivector<double> *curvature_;
     tivector<double> &effect_bedfrict_;
     tivector<double> *effect_kactxy_;
+    tivector<double> *kactxy_;
+    tivector<int> &material_;
 
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;

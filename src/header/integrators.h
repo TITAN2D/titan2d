@@ -57,12 +57,14 @@ public:
 protected:
     /**
      * Predictor step for second order of nothing for first order
+     * should be implemented in derivative class
      */
-    virtual void predictor();
+    virtual void predictor()=0;
     /**
      * Corrector step for second order of whole step for first order
+     * should be implemented in derivative class
      */
-    virtual void corrector();
+    virtual void corrector()=0;
 
 protected:
     //!references to members of other classes
@@ -146,6 +148,9 @@ protected:
 
     /**
      * Predictor step for second order of nothing for first order
+     *
+     * half timestep update (finite difference predictor finite volume corrector)
+     *
      */
     virtual void predictor();
     /**
@@ -239,7 +244,7 @@ public:
 };
 
 /**
- * Base class for SinglePhase Integrators
+ * Base class for Two Phases Integrators
  */
 class Integrator_TwoPhases:public Integrator
 {
@@ -256,6 +261,21 @@ protected:
      */
     virtual void corrector();
 
+protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &h_liq;
+    tivector<double> &hVx_sol;
+    tivector<double> &hVy_sol;
+    tivector<double> &hVx_liq;
+    tivector<double> &hVy_liq;
+
+    /*tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;*/
 };
 
 /**
@@ -273,10 +293,10 @@ protected:
     /**
      * Predictor step for second order of nothing for first order
      */
-    //virtual void predictor();
+    virtual void predictor();
     /**
      * Corrector step for second order of whole step for first order
      */
-    //virtual void corrector();
+    virtual void corrector();
 };
 #endif
