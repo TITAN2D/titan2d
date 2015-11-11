@@ -21,6 +21,7 @@
 
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
+#include "../header/integrators.h"
 #include <math.h>
 
 //! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
@@ -175,7 +176,7 @@ void eigen2ph( const double h_sol, const double h_liq, double &eigenvxmax, doubl
 
 
 double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
-                          TimeProps* timeprops_ptr, int ghost_flag)
+                          Integrator *integrator, TimeProps* timeprops_ptr, int ghost_flag)
 {
     MatPropsTwoPhases* matprops2_ptr{nullptr};
     if(elementType == ElementType::TwoPhases)
@@ -201,7 +202,7 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
     
     //beginning of section that SHOULD ____NOT___ be openmp'd
     double maxinflux = 0.0;
-    if((maxinflux = fluxprops_ptr->MaxInfluxNow(matprops_ptr, timeprops_ptr) * (matprops_ptr->epsilon)) > 0.0)
+    if((maxinflux = fluxprops_ptr->MaxInfluxNow(matprops_ptr, timeprops_ptr) * (matprops_ptr->scale.epsilon)) > 0.0)
     {
         double mindx = -1.0;
         
@@ -227,7 +228,7 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
         double dttemp = mindx / maxinflux; //equivalent to dx/eigen_speed
                 
         //equivalent to 0.9*sqrt(hmax/g) where hmax=maxinflux*dt when xVel and yVel =0
-        double dttemp2 = 0.81 * maxinflux * (matprops_ptr->GRAVITY_SCALE) / 9.8;
+        double dttemp2 = 0.81 * maxinflux * (matprops_ptr->scale.gravity) / 9.8;
         
         dt[2] = c_dmin1(dttemp, dttemp2);
     } //end of section that SHOULD ____NOT___ be openmp'd
@@ -266,8 +267,8 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
                         gmfggetcoef2ph(EmTemp->state_vars(1),EmTemp->state_vars(2),EmTemp->state_vars(3), 
                                 EmTemp->dh_dx_liq(),EmTemp->dhVx_dx_sol(),
                                 EmTemp->dh_dy_liq(),EmTemp->dhVy_dy_sol(),  
-                                matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
-                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
+                                matprops_ptr->bedfrict[EmTemp->material()], integrator->int_frict,
+                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->scale.epsilon);
                         
                     }
                     if(elementType == ElementType::SinglePhase)
@@ -275,11 +276,11 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
                         gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVy(), 
                                 EmTemp->dh_dx(), EmTemp->dhVx_dx(),
                                 EmTemp->dh_dy(), EmTemp->dhVy_dy(),
-                                matprops_ptr->bedfrict[EmTemp->material()], matprops_ptr->intfrict,
-                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->epsilon);
+                                matprops_ptr->bedfrict[EmTemp->material()], integrator->int_frict,
+                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->scale.epsilon);
                     }
 
-                    EmTemp->calc_stop_crit(matprops_ptr);
+                    EmTemp->calc_stop_crit(matprops_ptr, integrator);
                     intswap = EmTemp->stoppedflags();
 
                     if((intswap < 0) || (intswap > 2))
@@ -339,7 +340,7 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
                                     EmTemp->state_vars(4), EmTemp->state_vars(5),
                                     EmTemp->state_vars(0), maxcurve, EmTemp->coord(0),
                                     EmTemp->coord(1));
-                            exit(1);
+                            assert(0);
                         }
                         if(elementType == ElementType::SinglePhase)
                         {
@@ -347,7 +348,7 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
                                    evalue, myid, EmTemp->state_vars(1), EmTemp->state_vars(2),
                                    EmTemp->state_vars(0), maxcurve, EmTemp->coord(0),
                                    EmTemp->coord(1));
-                            exit(1);
+                            assert(0);
                         }
                     }
                     
@@ -357,7 +358,7 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
                 {
                     if(elementType == ElementType::TwoPhases)
                     {
-                        EmTemp->calc_stop_crit(matprops2_ptr); // ensure decent values of kactxy
+                        EmTemp->calc_stop_crit(matprops2_ptr, integrator); // ensure decent values of kactxy
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
@@ -374,7 +375,7 @@ double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, 
     
     dt[0] = 0.5 * min_dx_dy_evalue;
     //printf("hmax=%g epsilon=%g\n",hmax,matprops_ptr->epsilon);
-    dt[1] = -0.9 * sqrt(hmax * (matprops_ptr->epsilon) * (matprops_ptr->GRAVITY_SCALE) / 9.8); //find the negative of the max not the positive min
+    dt[1] = -0.9 * sqrt(hmax * (matprops_ptr->scale.epsilon) * (matprops_ptr->scale.gravity) / 9.8); //find the negative of the max not the positive min
             
     //printf("myid=%d, dt={%g, %g, %g}\n",myid,dt[0],-dt[1],dt[2]);
     

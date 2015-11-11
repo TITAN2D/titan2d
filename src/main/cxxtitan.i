@@ -17,10 +17,12 @@
 %module cxxtitan
 
 %{
+#include "../header/constant.h"
 #include "../header/properties.h"
 #include "../header/titan_simulation.h"
 #include "../preproc/preproc.h"
 #include "../vectordatapreproc/vectordatpreproc.h"
+#include "../header/integrators.h"
 %}
 
 %include "std_string.i"
@@ -31,8 +33,9 @@ namespace std {
    %template(vectord) vector<double>;
    %template(vectors) vector<string>;
 };
-
+%include "../header/constant.h"
 %include "../header/properties.h"
+%include "../header/integrators.h"
 %include "../header/titan_simulation.h"
 %include "../preproc/preproc.h"
 %include "../vectordatapreproc/vectordatpreproc.h"

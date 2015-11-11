@@ -24,8 +24,8 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
     tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
     
-    double velocity_scale = sqrt(matprops->LENGTH_SCALE * (matprops->GRAVITY_SCALE));
-    double momentum_scale = matprops->HEIGHT_SCALE * velocity_scale; // scaling factor for the momentums
+    double velocity_scale = sqrt(matprops->scale.length * (matprops->scale.gravity));
+    double momentum_scale = matprops->scale.height * velocity_scale; // scaling factor for the momentums
             
     char filename[24];
     
@@ -50,7 +50,7 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
             {
                 Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(8));
                 
-                double pile_height = EmTemp->state_vars(0) * (matprops->HEIGHT_SCALE);
+                double pile_height = EmTemp->state_vars(0) * (matprops->scale.height);
                 double x_mom = EmTemp->state_vars(1) * momentum_scale;
                 double y_mom = EmTemp->state_vars(2) * momentum_scale;
                 double VxVy[2];
@@ -62,9 +62,9 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
                 
                 //print x,y,z,h,Vx,Vy,h*Vx,h*Vy
                 fprintf(fp, "%g|%g|%g|%%%g %%%g %%%g %%%g %%%g\n",
-                        (NodeTemp->coord(0)) * (matprops->LENGTH_SCALE), //x
-                        (NodeTemp->coord(1)) * (matprops->LENGTH_SCALE), //y
-                        NodeTemp->elevation() * (matprops->LENGTH_SCALE), //elevation
+                        (NodeTemp->coord(0)) * (matprops->scale.length), //x
+                        (NodeTemp->coord(1)) * (matprops->scale.length), //y
+                        NodeTemp->elevation() * (matprops->scale.length), //elevation
                         pile_height, vx, vy, x_mom, y_mom);
             }
         }

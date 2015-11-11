@@ -23,6 +23,7 @@
 
 #include "../header/hpfem.h"
 #include "../header/geoflow.h"
+#include "../header/integrators.h"
 
 //
 //dUdx[0] dh_dx
@@ -410,7 +411,7 @@ void correct2ph(Element *Elm, const double *fluxxp,
 
 }
 void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
-             TimeProps *timeprops, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
+             TimeProps *timeprops, Integrator *integrator, void *EmTemp_in, double *forceint, double *forcebed, double *eroded,
              double *deposited)
 {
     MatPropsTwoPhases* matprops2_ptr{nullptr};
@@ -500,7 +501,7 @@ void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable
         {
             for(i = 0; i < DIMENSION; i++)
             {
-                kactxy[i] = matprops2_ptr->epsilon;
+                kactxy[i] = matprops2_ptr->scale.epsilon;
                 Vfluid[i] = 0.;
             }
             volf = 1.;
@@ -531,9 +532,9 @@ void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable
         correct2ph(EmTemp, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
                 EmTemp->dh_dx(), EmTemp->dh_dx_liq(), EmTemp->dhVy_dx_sol(), 
                 EmTemp->dh_dy(), EmTemp->dh_dy_liq(), EmTemp->dhVx_dy_sol(),
-                EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops2_ptr->intfrict, bedfrict,
-                gravity, kactxy[0], matprops2_ptr->frict_tiny, *forceint, *forcebed, do_erosion, *eroded, Vsolid, Vfluid,
-                solid_den, fluid_den, terminal_vel, matprops2_ptr->epsilon, IF_STOPPED);
+                EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), integrator->int_frict, bedfrict,
+                gravity, kactxy[0], matprops2_ptr->scale.frict_tiny, *forceint, *forcebed, do_erosion, *eroded, Vsolid, Vfluid,
+                solid_den, fluid_den, terminal_vel, matprops2_ptr->scale.epsilon, IF_STOPPED);
         
         
         bool print_vars = false;
@@ -545,7 +546,7 @@ void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable
         {
             cout<<"ElemKey: "<<EmTemp->key()<<endl;
             printf("Kactxy = %10.5f%10.5f\n", kactxy[0], kactxy[1]);
-            printf("BedFrict: %10.5f: IntFrict: %10.5f\n", bedfrict, matprops2_ptr->intfrict);
+            printf("BedFrict: %10.5f: IntFrict: %10.5f\n", bedfrict, integrator->int_frict);
             printf("state_vars: \n");
             for(i = 0; i < NUM_STATE_VARS; i++)
                 printf("%10.5f", EmTemp->state_vars(i));
@@ -587,8 +588,8 @@ void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable
         correct1ph(EmTemp, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
                 EmTemp->dh_dx(), EmTemp->dhVy_dx(), 
                 EmTemp->dh_dy(), EmTemp->dhVx_dy(),
-                EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), matprops_ptr->intfrict,
-                EmTemp->effect_bedfrict(), gravity, EmTemp->effect_kactxy(0), d_gravity, matprops_ptr->frict_tiny, *forceint, *forcebed,
+                EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), integrator->int_frict,
+                EmTemp->effect_bedfrict(), gravity, EmTemp->effect_kactxy(0), d_gravity, matprops_ptr->scale.frict_tiny, *forceint, *forcebed,
                 do_erosion, *eroded, VxVy, IF_STOPPED);
 
         /*correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,

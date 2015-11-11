@@ -325,9 +325,14 @@ public:
             array_[i]=value;
         }
     }
-    
-    T& operator[](ti_ndx_t i){ return *(array_ + i);}
+#ifdef DEB3
+    T& operator[](ti_ndx_t i){ assert(i>=0);assert(i<size_);return *(array_ + i);}
+    const T& operator[](ti_ndx_t i) const { assert(i>=0);assert(i<size_); return *(array_ + i);}
+#else
+    T& operator[](ti_ndx_t i){return *(array_ + i);}
     const T& operator[](ti_ndx_t i) const { return *(array_ + i);}
+#endif
+    
 };
 #endif
 #endif	/* TIVECTOR_H */

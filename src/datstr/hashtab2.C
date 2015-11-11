@@ -43,8 +43,13 @@ NodeHashTable *nodeHashTable;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-HashTable<T>::HashTable(double *doublekeyrangein, int size, double XR[], double YR[],tisize_t reserved_size)
+HashTable<T>::HashTable(tisize_t reserved_size)
 : elenode_(reserved_size)
+{
+    all_elenodes_are_permanent=false;
+}
+template <typename T>
+void HashTable<T>::init(double *doublekeyrangein, int size, double XR[], double YR[])
 {
     int i;
 
@@ -317,14 +322,19 @@ void HashTable<T>::reserve_at_least_base(const tisize_t new_reserve_size)
     status_.reserve_at_least(new_reserve_size);
 }
 ////////////////////////////////////////////////////////////////////////////////
-NodeHashTable::NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[])
-    :HashTable<Node>(doublekeyrangein, size, XR, YR,node_reserved_size)
+NodeHashTable::NodeHashTable()
+    :HashTable<Node>(node_reserved_size)
 {
     nodeHashTable=this;
 }
 NodeHashTable::~NodeHashTable()
 {
     nodeHashTable=nullptr;
+}
+
+void NodeHashTable::init(double *doublekeyrangein, int size, double XR[], double YR[])
+{
+    HashTable<Node>::init(doublekeyrangein, size, XR, YR);
 }
 
 Node* NodeHashTable::addNode(const SFC_Key& keyi)
@@ -441,24 +451,41 @@ void NodeHashTable::reserve_at_least(const tisize_t new_reserve_size)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-ElementsHashTable::ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable)
-        :HashTable<Element>(doublekeyrangein, size, XR, YR,elem_reserved_size)
+ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
+        :HashTable<Element>(elem_reserved_size)
 {
     NlocalElements = 0;
     NodeTable = nodeTable;
     elementsHashTable=this;
     
-    if(NUM_STATE_VARS == 3)
-        elementType_=ElementType::SinglePhase;
-    else if(NUM_STATE_VARS == 6)
-        elementType_=ElementType::TwoPhases;
-    else
-        elementType_=ElementType::UnknownElementType;
+    elementType_=ElementType::UnknownElementType;
 }
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table
 {
     elementsHashTable=nullptr;
+}
+void ElementsHashTable::init(double *doublekeyrangein, int size, double XR[], double YR[])
+{
+    HashTable<Element>::init(doublekeyrangein, size, XR, YR);
+}
+void ElementsHashTable::set_element_type(const ElementType m_elementType)
+{
+    elementType_=m_elementType;
+
+    if(elementType_==ElementType::SinglePhase)
+    {
+        assert(NUM_STATE_VARS == 3);
+    }
+    else if(elementType_==ElementType::TwoPhases)
+    {
+        assert(NUM_STATE_VARS == 6);
+    }
+    else
+    {
+        printf("Unknown type of element!\n");
+        assert(0);
+    }
 }
 void ElementsHashTable::updateLocalElements()
 {
@@ -607,20 +634,22 @@ void ElementsHashTable::update_neighbours_ndx_on_ghosts(const bool check_neigh_p
                 for (int i = 0; i < 8; i++)
                 {
                     ti_ndx_t ndx2=neighbor_ndx_[i][ndx];
-                    for (int j = 0; j < 8; j++) {
-                        neighbor_ndx_[j][ndx2]=lookup_ndx(neighbors_[j][ndx2]);
+                    if(ti_ndx_not_negative(ndx2))
+                    {
+                        for (int j = 0; j < 8; j++) {
+                            neighbor_ndx_[j][ndx2]=lookup_ndx(neighbors_[j][ndx2]);
+                        }
+                        for (int j = 0; j < 4; j++) {
+                            brothers_ndx_[j][ndx2]=lookup_ndx(brothers_[j][ndx2]);
+                        }
+                        for (int j = 0; j < 4; j++) {
+                            son_ndx_[j][ndx2]=lookup_ndx(son_[j][ndx2]);
+                        }
+                        for (int j = 0; j < 8; j++) {
+                            node_key_ndx_[j][ndx2]=NodeTable->lookup_ndx(node_key_[j][ndx2]);
+                        }
+                        node_bubble_ndx_[ndx2] = NodeTable->lookup_ndx(key_[ndx2]);
                     }
-                    for (int j = 0; j < 4; j++) {
-                        brothers_ndx_[j][ndx2]=lookup_ndx(brothers_[j][ndx2]);
-                    }
-                    for (int j = 0; j < 4; j++) {
-                        son_ndx_[j][ndx2]=lookup_ndx(son_[j][ndx2]);
-                    }
-                    for (int j = 0; j < 8; j++) {
-                        node_key_ndx_[j][ndx2]=NodeTable->lookup_ndx(node_key_[j][ndx2]);
-                    }
-                    node_bubble_ndx_[ndx2] = NodeTable->lookup_ndx(key_[ndx2]);
-
                 }
             }
         }

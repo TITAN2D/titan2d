@@ -77,7 +77,7 @@ void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes*
         
         if(myid == 0)
         {
-            doubleswap = (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE) * (matprops->HEIGHT_SCALE);
+            doubleswap = (matprops->scale.length) * (matprops->scale.length) * (matprops->scale.height);
             
             for(iplane = 0; iplane < num_planes; iplane++)
                 receive[iplane] *= doubleswap;
@@ -89,10 +89,10 @@ void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes*
                 for(iplane = 0; iplane < num_planes; iplane++)
                     fprintf(fp, "plane %d endpoints are (%16.10g,%16.10g)"
                             " (%16.10g,%16.10g)\n",
-                            iplane + 1, discharge->planes[iplane][0] * (matprops->LENGTH_SCALE),
-                            discharge->planes[iplane][2] * (matprops->LENGTH_SCALE),
-                            discharge->planes[iplane][1] * (matprops->LENGTH_SCALE),
-                            discharge->planes[iplane][3] * (matprops->LENGTH_SCALE));
+                            iplane + 1, discharge->planes[iplane][0] * (matprops->scale.length),
+                            discharge->planes[iplane][2] * (matprops->scale.length),
+                            discharge->planes[iplane][1] * (matprops->scale.length),
+                            discharge->planes[iplane][3] * (matprops->scale.length));
             }
             
             fprintf(fp, "\n%16.10g  %16.10g", timeprops->timesec(), receive[0]);
@@ -132,7 +132,7 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
     { 0.0, 0.0, 0.0 };
     double masscenterdist2 = 0.0, masscentermindist2 = HUGE_VAL, xycen[2] =
     { 0.0, 0.0 };
-    double vmax_min_height = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 512.0 * ADAM_HEIGHT_FRAC;
+    double vmax_min_height = matprops_ptr->scale.max_negligible_height * 512.0 * ADAM_HEIGHT_FRAC;
     int i;
     struct
     { //for use with MPI_MAXLOC
@@ -140,8 +140,8 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
         int rank;
     } send, receive;
     
-    xy_cen[0] = statprops_ptr->xcen / (matprops_ptr->LENGTH_SCALE);
-    xy_cen[1] = statprops_ptr->ycen / (matprops_ptr->LENGTH_SCALE);
+    xy_cen[0] = statprops_ptr->xcen / (matprops_ptr->scale.length);
+    xy_cen[1] = statprops_ptr->ycen / (matprops_ptr->scale.length);
     
     double VxVy[2];
     
@@ -267,20 +267,20 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
                 //x,y,v,h at center of mass
                 statprops_ptr->xcen,
                 statprops_ptr->ycen,
-                vh_cen[0] * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE)),
-                vh_cen[1] * (matprops_ptr->HEIGHT_SCALE),
+                vh_cen[0] * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)),
+                vh_cen[1] * (matprops_ptr->scale.height),
                 
                 //x,y,v,h at location of vmax
-                xyh_vmax[0] * matprops_ptr->LENGTH_SCALE,
-                xyh_vmax[1] * matprops_ptr->LENGTH_SCALE,
-                vmax * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE)),
-                xyh_vmax[2] * (matprops_ptr->HEIGHT_SCALE),
+                xyh_vmax[0] * matprops_ptr->scale.length,
+                xyh_vmax[1] * matprops_ptr->scale.length,
+                vmax * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)),
+                xyh_vmax[2] * (matprops_ptr->scale.height),
                 
                 //x,y,v,h at location of hmax
-                xyv_hmax[0] * matprops_ptr->LENGTH_SCALE,
-                xyv_hmax[1] * matprops_ptr->LENGTH_SCALE,
-                xyv_hmax[2] * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE)),
-                hmax * (matprops_ptr->HEIGHT_SCALE));
+                xyv_hmax[0] * matprops_ptr->scale.length,
+                xyv_hmax[1] * matprops_ptr->scale.length,
+                xyv_hmax[2] * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)),
+                hmax * (matprops_ptr->scale.height));
         
         fclose(fp);
     }

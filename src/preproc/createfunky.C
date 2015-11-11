@@ -131,7 +131,7 @@ void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **
             {
                 printf("createfunky.C cannot open material property map \"%s\".\n  Check if the file exists.\n",
                        matmap);
-                exit(1);
+                assert(0);
             }
             
             free(matmap); //just the name not the map
@@ -385,7 +385,7 @@ void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **
     else
     {
         printf("Couldn't initialize the GIS information.\n");
-        exit(1);
+        assert(0);
     }
     
     return;

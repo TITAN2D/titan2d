@@ -86,7 +86,7 @@ int compare_key_fn(const void* elem1, const void* elem2)
     return (0);
 }
 
-TitanPreproc::TitanPreproc(cxxTitanSinglePhase *tSim)
+TitanPreproc::TitanPreproc(cxxTitanSimulation *tSim)
 {
     NumProc = -1;
     gis_format = -1;
@@ -114,6 +114,8 @@ TitanPreproc::TitanPreproc(cxxTitanSinglePhase *tSim)
     //material_map = tSim->material_map;
     matprops=tSim->get_matprops();
     
+    integrator=tSim->integrator;
+
     min_location_x = mapnames_ptr->min_location_x;
     max_location_x = mapnames_ptr->max_location_x;
     min_location_y = mapnames_ptr->min_location_y;
@@ -591,7 +593,7 @@ void TitanPreproc::Read_material_data(int *material_count, char ***materialnames
         (*materialnames)[imat] = allocstrcpy(matprops->matnames[imat ].c_str());
         
         //read in internal and bed friction angles
-        (*lambda)[imat] = matprops->intfrict;
+        (*lambda)[imat] = integrator->int_frict;
         (*mu)[imat] = matprops->bedfrict[imat];
         //fscanf(fp, "%lf", &((*lambda)[imat]));
         //fscanf(fp, "%lf", &((*mu)[imat]));

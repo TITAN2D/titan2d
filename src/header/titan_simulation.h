@@ -28,6 +28,7 @@
 class ElementsHashTable;
 class NodeHashTable;
 
+
 /**
  * cxxTitanSimulation
  */
@@ -35,21 +36,22 @@ class cxxTitanSimulation
 {
 public:
     cxxTitanSimulation();
-    virtual ~cxxTitanSimulation();
+    ~cxxTitanSimulation();
+
+    void set_short_speed(bool short_speed);
+
+    //!>Process input and initiate dependencies, replacing Read_data
+    void process_input();
+
+    void run();
+    void input_summary();
+
 
     int myid;
     int numprocs;
 
-    //! length scaling factor
-    double length_scale;
+    TiScale scale_;
 
-    //! height scaling factor
-    //legacy, not used, all height
-    //scaling now based on cube root of predicted volume, see below
-    double height_scale;
-
-    //! gravity scaling factor
-    double gravity_scale;
 
     //! adapt
     int adapt;
@@ -68,60 +70,29 @@ public:
     //! order == 2 means use second order method
     int order;
 
-    ElementType elementType;
+
 
     //!Integrator
     Integrator *integrator;
 
-    //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input(StatProps* statprops_ptr,
-                               TimeProps* timeprops_ptr, MapNames *mapnames_ptr, OutLine* outline_ptr)
-    {}
-    virtual void run();
-    virtual void input_summary();
-
-    virtual PileProps* get_pileprops()=0;
-    virtual MatProps* get_matprops()=0;
-    virtual FluxProps* get_fluxprops()=0;
-    virtual StatProps* get_statprops()=0;
-    virtual TimeProps* get_timeprops()=0;
-    virtual MapNames* get_mapnames()=0;
-    virtual OutLine* get_outline()=0;
-    virtual DischargePlanes* get_discharge_planes()=0;
-    virtual NodeHashTable* get_HT_Node()=0;
-    virtual ElementsHashTable* get_HT_Elem()=0;
-};
-
-/**
- * cxxTitanSinglePhase
- */
-class cxxTitanSinglePhase:public cxxTitanSimulation
-{
-public:
-    cxxTitanSinglePhase();
-    ~cxxTitanSinglePhase();
-
-    void set_short_speed(bool short_speed);
-
-    //!>Process input and initiate dependencies, replacing Read_data
-    virtual void process_input();
-
-    virtual void run();
-    virtual void input_summary();
-
-
 
     //!>Piles
-    PileProps pileprops_single_phase;
+    PileProps* pileprops;
+    //PileProps pileprops_single_phase;
+    //PilePropsTwoPhases pileprops_two_phases;
 
     //!>Flux sources
     FluxProps fluxprops;
+
 
     //!>Discharge planes
     DischargePlanes discharge_planes;
     //std::vector<cxxTitanDischargePlane> discharge_planes;
 
-    MatProps matprops_single_phase;
+    //!>MatProps
+    MatProps* matprops;
+    //MatProps matprops_single_phase;
+    //MatPropsTwoPhases matprops_two_phases;
 
     StatProps statprops;
     TimeProps timeprops;
@@ -131,17 +102,30 @@ public:
     NodeHashTable* NodeTable;
     ElementsHashTable* ElemTable;
 
-    virtual PileProps* get_pileprops(){return &pileprops_single_phase;}
-    virtual MatProps* get_matprops(){return &matprops_single_phase;}
-    virtual FluxProps* get_fluxprops(){return &fluxprops;}
-    virtual DischargePlanes* get_discharge_planes(){return &discharge_planes;}
-    virtual StatProps* get_statprops(){return &statprops;}
-    virtual TimeProps* get_timeprops(){return &timeprops;}
-    virtual MapNames* get_mapnames(){return &mapnames;}
-    virtual OutLine* get_outline(){return &outline;}
+    PileProps* get_pileprops(){return pileprops;}
+    void set_pileprops(PileProps* m_pileprops);
 
-    virtual NodeHashTable* get_HT_Node(){return NodeTable;}
-    virtual ElementsHashTable* get_HT_Elem(){return ElemTable;}
+
+    MatProps* get_matprops(){return matprops;}
+    void set_matprops(MatProps* m_matprops);
+
+    Integrator* get_integrator(){return integrator;}
+    void set_integrator(Integrator* m_integrator);
+
+
+
+    FluxProps* get_fluxprops(){return &fluxprops;}
+    DischargePlanes* get_discharge_planes(){return &discharge_planes;}
+    StatProps* get_statprops(){return &statprops;}
+    TimeProps* get_timeprops(){return &timeprops;}
+    MapNames* get_mapnames(){return &mapnames;}
+    OutLine* get_outline(){return &outline;}
+
+    NodeHashTable* get_HT_Node(){return NodeTable;}
+    ElementsHashTable* get_HT_Elem(){return ElemTable;}
+
+    void set_element_type(const ElementType m_elementType);
+    const ElementType& get_element_type() const{return elementType;}
 
 protected:
     /** this function intializes the piles, by commenting/uncommenting define statements you can switch from
@@ -152,22 +136,9 @@ protected:
      */
     void init_piles();
 
+    ElementType elementType;
 
 
-};
 
-class cxxTitanTwoPhases:public cxxTitanSinglePhase
-{
-public:
-    cxxTitanTwoPhases();
-    ~cxxTitanTwoPhases();
-
-    //!>Piles
-    PilePropsTwoPhases pileprops_two_phases;
-
-    MatPropsTwoPhases matprops_two_phases;
-
-    virtual PileProps* get_pileprops(){return (PileProps*)&pileprops_two_phases;}
-    virtual MatProps* get_matprops(){return (MatProps*)&matprops_two_phases;}
 };
 #endif

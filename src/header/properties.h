@@ -40,6 +40,101 @@ class NodeHashTable;
 class ElementsHashTable;
 class Element;
 
+class TiObject
+{
+public:
+    virtual ~TiObject(){}
+    virtual void print0(int spaces=0)=0;
+};
+
+//! all scaling
+class TiScale:public TiObject
+{
+public:
+    TiScale();
+    //! length scaling factor
+    double length;
+
+    //! height scaling factor
+    //legacy, not used, all height
+    //scaling now based on cube root of predicted volume, see below
+    double height;
+
+    //! scaling value, ratio of HEIGHT_SCALE to LENGTH_SCALE
+    double epsilon;
+
+    //! gravity scaling factor
+    double gravity;
+
+    bool auto_calc_height_scale;
+
+    //! cells with flow below this height are neglected for purposes of calculating statistics
+    double max_negligible_height;
+
+    //! to get the flow to start moving you have to decrease the friction angles, this variable is used to do that
+    double frict_tiny;
+
+    virtual void print0(int spaces=0);
+};
+
+class TiScalableObject:public TiObject
+{
+public:
+    TiScalableObject(const TiScale &scale__):scale_(scale__),scaled(false){}
+    virtual ~TiScalableObject(){}
+
+    //!scaling, return true if scaling is needed
+    //!set scaled to true
+    virtual bool scale()
+    {
+        if(scaled)
+        {
+            return false;
+        }
+        else
+        {
+            scaled=true;
+            return true;
+        }
+    }
+    //!unscaling return true if unscaling is needed
+    //!set scaled to false
+    virtual bool unscale()
+    {
+        if(scaled)
+        {
+            scaled=false;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+protected:
+    const TiScale &scale_;
+    bool scaled;
+};
+
+inline TiScale::TiScale()
+{
+    length=0.0;
+    height=0.0;
+    gravity=0.0;
+    max_negligible_height=0.0;
+    frict_tiny = 0.1;
+    epsilon=1.0;
+    auto_calc_height_scale=true;
+}
+inline void TiScale::print0(int spaces)
+{
+    printf("%*cScales:\n", spaces,' ');
+    printf("%*c  Length: %.5f\n", spaces,' ',length);
+    printf("%*c  Gravity: %.5f\n", spaces,' ',gravity);
+    printf("%*c  Height: %.5f\n", spaces,' ',height);
+    printf("%*c  Height auto-scaled: %s\n", spaces,' ',auto_calc_height_scale?"true":"false");
+}
+
 
 //! LHS stands for Latin Hypercube Sampling, it is a constrained sampling method whose convergence can be much faster than monte carlo 
 struct LHS_Props
@@ -501,10 +596,10 @@ public:
     std::vector<std::string> matnames;
 
     //! phi_{int}, the internal friction angle (must be GREATER than the bedfriction angle)
-    double intfrict;
+    //double intfrict;
 
     //! tan(phi_{int}), tangent of the internal friction angle
-    double tanintfrict;
+    //double tanintfrict;
 
     //! phi_{bed}, the bed friction angle, must be LESS than the internal friction angle and should be greater than about 8 degrees, this minimum angle may change once Keith's local stopping criteria is enforced
     std::vector<double> bedfrict;
@@ -522,50 +617,35 @@ public:
     double rho;
 
     //! scaling value, ratio of HEIGHT_SCALE to LENGTH_SCALE
-    double epsilon;
+    //double epsilon;
 
     //! slope limiting stuff
     double gamma;
 
-    //! length scaling factor
-    double LENGTH_SCALE;
-
-    //! height scaling factor
-    double HEIGHT_SCALE;
-
-    //! gravity scaling factor
-    double GRAVITY_SCALE;
-
-    //! cells with flow below this height are neglected for purposes of calculating statistics
-    double MAX_NEGLIGIBLE_HEIGHT;
+    TiScale &scale;
 
     //! Used in Bin Yu's legacy global stopping criteria, this never worked right except for initially cylindrical piles on a horizontal plane that were released and slumped... there Bin Yu's global stopping criteria worked great.
     double Vslump;
 
     //! to get the flow to start moving you have to decrease the friction angles, this variable is used to do that
-    double frict_tiny;
+    //double frict_tiny;
 
     //! this constructor allocates initial properties unfortunately the properties aren't known at the time this is called so dummy values are fed in instead for many if not all of these
-    MatProps()
+    MatProps(TiScale &_scale):
+        scale(_scale)
     {
         number_of_cells_across_axis = 0;
         smallest_axis = 0.0;
         material_count = 0;
-        intfrict = 1.0;
-        tanintfrict = tan(intfrict);
         porosity = 1.0;
 
         mu = 0.0001;
         rho = 2200.0;
 
-        epsilon = 1.0;
+        //epsilon = 1.0;
         gamma = 1.0;
-        LENGTH_SCALE = 1.0;
-        HEIGHT_SCALE = 1.0;
-        GRAVITY_SCALE = 1.0;
-        MAX_NEGLIGIBLE_HEIGHT = 0.0;
         Vslump = 0.0;
-        frict_tiny = 0.1;
+        //frict_tiny = 0.1;
         
         //something somewhere counting from 1, so add dummy values
         matnames.push_back("nothing");
@@ -578,28 +658,27 @@ public:
     virtual void process_input()
     {
         int imat;
-        intfrict = intfrict * PI / 180.0;
-        tanintfrict = tan(intfrict);
+        //intfrict = intfrict * PI / 180.0;
+        //tanintfrict = tan(intfrict);
 
         tanbedfrict.resize(bedfrict.size());
         for(imat = 1; imat <= material_count; imat++)
         {
             bedfrict[imat] *= PI / 180.0;
-            tanbedfrict[imat] = tan(intfrict);
+            tanbedfrict[imat] = tan(bedfrict[imat]);
         }
     }
 
-    virtual inline void set_scale(const double length_scale, const double height_scale, const double gravity_scale,
-                                  const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
+    virtual inline void set_scale(const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
     virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
     double get_TIME_SCALE()
     {
-        return sqrt(LENGTH_SCALE / GRAVITY_SCALE);
+        return sqrt(scale.length / scale.gravity);
     }
     //non-dimensionalize the inputs
     double get_VELOCITY_SCALE()
     {
-        return sqrt(LENGTH_SCALE * GRAVITY_SCALE);
+        return sqrt(scale.length * scale.gravity);
     }
 
     virtual void print0()
@@ -607,7 +686,7 @@ public:
         int i;
         printf("Material properties:\n");
         printf("\tNumber of cells across axis: %d\n", number_of_cells_across_axis);
-        printf("\tInternal friction: %f\n", intfrict * 180.0 / PI);
+        //printf("\tInternal friction: %f\n", intfrict * 180.0 / PI);
         printf("\tBed friction:\n");
         for(i = 1; i <= material_count; i++)
         {
@@ -620,8 +699,8 @@ public:
 class MatPropsTwoPhases: public MatProps
 {
 public:
-    MatPropsTwoPhases() :
-            MatProps()
+    MatPropsTwoPhases(TiScale &_scale) :
+            MatProps(_scale)
     {
         mu = 0.1;
         rho = 2700;
@@ -656,10 +735,9 @@ public:
         MatProps::process_input();
 
         double diameter = 0.005;
-        v_terminal = pow(diameter, 2.) * (den_solid - den_fluid) * GRAVITY_SCALE / (18. * viscosity);
+        v_terminal = pow(diameter, 2.) * (den_solid - den_fluid) * scale.gravity / (18. * viscosity);
     }
-    virtual inline void set_scale(const double length_scale, const double height_scale, const double gravity_scale,
-                                  const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
+    virtual inline void set_scale(const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
     virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
 };
 
@@ -858,18 +936,18 @@ struct OutLine
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
                 "Pileheight=\n",
-                Nx, xminmax[0] * matprops_ptr->LENGTH_SCALE, xminmax[1] * matprops_ptr->LENGTH_SCALE, Ny,
-                yminmax[0] * matprops_ptr->LENGTH_SCALE, yminmax[1] * matprops_ptr->LENGTH_SCALE);
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
         for(iy = 0; iy < Ny; iy++)
         {
             for(ix = 0; ix < Nx - 1; ix++)
-                fprintf(fp, "%g ", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
-            fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
+                fprintf(fp, "%g ", pileheight[iy][ix] * matprops_ptr->scale.height);
+            fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->scale.height);
         }
         fclose(fp);
 
         //output max over time kinetic energy
-        double ENERGY_SCALE = matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE * matprops_ptr->HEIGHT_SCALE;
+        double ENERGY_SCALE = matprops_ptr->scale.length * matprops_ptr->scale.gravity * matprops_ptr->scale.height;
         
         sprintf(filename, "maxkerecord.%06d", statprops_ptr->runid);
         fp = fopen(filename, "w");
@@ -877,8 +955,8 @@ struct OutLine
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
                 "KineticEnergy=\n",
-                Nx, xminmax[0] * matprops_ptr->LENGTH_SCALE, xminmax[1] * matprops_ptr->LENGTH_SCALE, Ny,
-                yminmax[0] * matprops_ptr->LENGTH_SCALE, yminmax[1] * matprops_ptr->LENGTH_SCALE);
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
         for(iy = 0; iy < Ny; iy++)
         {
             for(ix = 0; ix < Nx - 1; ix++)
@@ -894,8 +972,8 @@ struct OutLine
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
                 "KineticEnergy=\n",
-                Nx, xminmax[0] * matprops_ptr->LENGTH_SCALE, xminmax[1] * matprops_ptr->LENGTH_SCALE, Ny,
-                yminmax[0] * matprops_ptr->LENGTH_SCALE, yminmax[1] * matprops_ptr->LENGTH_SCALE);
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
         for(iy = 0; iy < Ny; iy++)
         {
             for(ix = 0; ix < Nx - 1; ix++)
@@ -909,21 +987,21 @@ struct OutLine
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
                 "Pileheight=\n",
-                Nx, xminmax[0] * matprops_ptr->LENGTH_SCALE, xminmax[1] * matprops_ptr->LENGTH_SCALE, Ny,
-                yminmax[0] * matprops_ptr->LENGTH_SCALE, yminmax[1] * matprops_ptr->LENGTH_SCALE);
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
         
         double yy, xx, res = dx + dy, elevation;
         int ierr;
         for(iy = 0; iy < Ny; iy++)
         {
-            yy = ((iy + 0.5) * dy + yminmax[0]) * matprops_ptr->LENGTH_SCALE;
+            yy = ((iy + 0.5) * dy + yminmax[0]) * matprops_ptr->scale.length;
             for(ix = 0; ix < Nx - 1; ix++)
             {
-                xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->LENGTH_SCALE;
+                xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
                 ierr = Get_elevation(res, xx, yy, elevation);
                 fprintf(fp, "%g ", elevation);
             }
-            fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->HEIGHT_SCALE);
+            fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->scale.height);
         }
         fclose(fp);
         return;
@@ -947,19 +1025,19 @@ struct OutLine
             fscanf(fp, "Nx=%d: X={%lf,%lf}\nNy=%d: Y={%lf,%lf}\nPileheight=\n", &Nxtemp, (xminmaxtemp + 0),
                    (xminmaxtemp + 1), &Nytemp, (yminmaxtemp + 0), (yminmaxtemp + 1));
             
-            if((Nxtemp == Nx) && (fabs(xminmaxtemp[0] / matprops_ptr->LENGTH_SCALE - xminmax[0])
+            if((Nxtemp == Nx) && (fabs(xminmaxtemp[0] / matprops_ptr->scale.length - xminmax[0])
                     <= fabs(xminmax[0]) / 10000000000.0)
-               && (fabs(xminmaxtemp[1] / matprops_ptr->LENGTH_SCALE - xminmax[1]) <= fabs(xminmax[1]) / 10000000000.0)
+               && (fabs(xminmaxtemp[1] / matprops_ptr->scale.length - xminmax[1]) <= fabs(xminmax[1]) / 10000000000.0)
                && (Nytemp == Ny)
-               && (fabs(yminmaxtemp[0] / matprops_ptr->LENGTH_SCALE - yminmax[0]) <= fabs(yminmax[0]) / 10000000000.0)
-               && (fabs(yminmaxtemp[1] / matprops_ptr->LENGTH_SCALE - yminmax[1]) <= fabs(yminmax[1]) / 10000000000.0))
+               && (fabs(yminmaxtemp[0] / matprops_ptr->scale.length - yminmax[0]) <= fabs(yminmax[0]) / 10000000000.0)
+               && (fabs(yminmaxtemp[1] / matprops_ptr->scale.length - yminmax[1]) <= fabs(yminmax[1]) / 10000000000.0))
             {
                 
                 for(iy = 0; iy < Ny; iy++)
                     for(ix = 0; ix < Nx; ix++)
                     {
                         fscanf(fp, "%lf", pileheight[iy] + ix);
-                        pileheight[iy][ix] /= matprops_ptr->HEIGHT_SCALE;
+                        pileheight[iy][ix] /= matprops_ptr->scale.height;
                     }
             }
             else
@@ -969,12 +1047,12 @@ struct OutLine
                 printf("Nx=%d Nxtemp=%d\n", Nx, Nxtemp);
                 printf("Ny=%d Nytemp=%d\n", Ny, Nytemp);
                 printf("xmin=%20.14g xmintemp=%20.14g  xmax=%20.14g, xmaxtemp=%20.14g\n",
-                       xminmax[0] * matprops_ptr->LENGTH_SCALE, xminmaxtemp[0], xminmax[1] * matprops_ptr->LENGTH_SCALE,
+                       xminmax[0] * matprops_ptr->scale.length, xminmaxtemp[0], xminmax[1] * matprops_ptr->scale.length,
                        xminmaxtemp[1]);
                 printf("ymin=%20.14g ymintemp=%20.14g  ymax=%20.14g, ymaxtemp=%20.14g\n",
-                       yminmax[0] * matprops_ptr->LENGTH_SCALE, yminmaxtemp[0], yminmax[1] * matprops_ptr->LENGTH_SCALE,
+                       yminmax[0] * matprops_ptr->scale.length, yminmaxtemp[0], yminmax[1] * matprops_ptr->scale.length,
                        yminmaxtemp[1]);
-                exit(0);
+                assert(0);
             }
             
             fclose(fp);
@@ -1512,7 +1590,7 @@ public:
             {
                 tempinflux = sqrt(
                         influx[isrc] * influx[isrc] + (xVel[isrc] * xVel[isrc] + yVel[isrc] * yVel[isrc])
-                                / ((matprops_ptr->epsilon) * (matprops_ptr->epsilon)));
+                                / ((matprops_ptr->scale.epsilon) * (matprops_ptr->scale.epsilon)));
                 if(tempinflux > maxinflux)
                     maxinflux = tempinflux;
             }
@@ -1522,15 +1600,8 @@ public:
 
 };
 
-inline void MatProps::set_scale(const double length_scale, const double height_scale, const double gravity_scale,
-                                const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
+inline void MatProps::set_scale(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
-    //scaling info
-    LENGTH_SCALE = length_scale;
-    //all height scaling now based on cube root of predicted volume, see below
-    HEIGHT_SCALE = height_scale;
-    GRAVITY_SCALE = gravity_scale;
-
     int isrc;
     double doubleswap;
 
@@ -1538,10 +1609,11 @@ inline void MatProps::set_scale(const double length_scale, const double height_s
     //MAX_NEGLIGIBLE_HEIGHT to zero now that we have "good" thin
     //layer control, need to reevaluate this, we should also
     //reevaluate after we implement a "good" local stopping criteria
-    MAX_NEGLIGIBLE_HEIGHT = HEIGHT_SCALE / 10000.0;
+    scale.max_negligible_height = scale.height / 10000.0;
 
-    if(height_scale == 0.0)
+    if(scale.height == 0.0 || scale.auto_calc_height_scale)
     {
+        scale.auto_calc_height_scale=true;
         double totalvolume = 0.0;
 
         if(pileprops_ptr != NULL)
@@ -1553,15 +1625,15 @@ inline void MatProps::set_scale(const double length_scale, const double height_s
 
         doubleswap = pow(totalvolume, 1.0 / 3.0);
 
-        if((GRAVITY_SCALE != 1.0) || (LENGTH_SCALE != 1.0))
-            HEIGHT_SCALE = doubleswap;
+        if((scale.gravity != 1.0) || (scale.length != 1.0))
+            scale.height = doubleswap;
         else
-            HEIGHT_SCALE = 1.0;
+            scale.height = 1.0;
 
-        MAX_NEGLIGIBLE_HEIGHT = doubleswap / HEIGHT_SCALE / 10000.0;
+        scale.max_negligible_height = doubleswap / scale.height / 10000.0;
     }
 
-    epsilon = HEIGHT_SCALE / LENGTH_SCALE;
+    scale.epsilon = scale.height / scale.length;
 }
 inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
@@ -1590,8 +1662,8 @@ inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProp
     int j = 0;
     for(i = 0; i < pileprops_ptr->numpiles; i++)
     {
-        double xcen = LENGTH_SCALE * pileprops_ptr->xCen[i];
-        double ycen = LENGTH_SCALE * pileprops_ptr->yCen[i];
+        double xcen = scale.length * pileprops_ptr->xCen[i];
+        double ycen = scale.length * pileprops_ptr->yCen[i];
         double ztemp = 0;
         ierr = Get_elevation(res, xcen, ycen, ztemp);
         if(ierr != 0)
@@ -1608,11 +1680,10 @@ inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProp
     double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
     Vslump = sqrt(gravity * hscale);
 }
-inline void MatPropsTwoPhases::set_scale(const double length_scale, const double height_scale,
-                                         const double gravity_scale, const PileProps *pileprops1_ptr,
+inline void MatPropsTwoPhases::set_scale(const PileProps *pileprops1_ptr,
                                          const FluxProps *fluxprops_ptr)
 {
-    MatProps::set_scale(length_scale, height_scale, gravity_scale, pileprops1_ptr, fluxprops_ptr);
+    MatProps::set_scale(pileprops1_ptr, fluxprops_ptr);
 
     PilePropsTwoPhases *pileprops_ptr = (PilePropsTwoPhases*) pileprops1_ptr;
 
@@ -1650,4 +1721,14 @@ inline void MatPropsTwoPhases::calc_Vslump(const PileProps *pileprops_ptr, const
     double gravity = 9.8; //[m/s^2]
     Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
 }
+
+
+
+
+
+
+
+
+
+
 #endif

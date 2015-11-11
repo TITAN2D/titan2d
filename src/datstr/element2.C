@@ -23,6 +23,7 @@
 #endif
 
 #include "../header/hpfem.h"
+#include "../header/integrators.h"
 #include <math.h>
 
 //stopping criteria define statements have been moved to geoflow.h
@@ -1096,7 +1097,7 @@ void Element::get_nelb_icon(NodeHashTable* NodeTable, ElementsHashTable* HT_Elem
                 if(j == 4)
                 {
                     cerr << "error in get_el_stiffness\n\n" << flush;
-                    exit(0);
+                    assert(0);
                 }
             }
             
@@ -2173,7 +2174,7 @@ double Element::convect_dryline(const double Vx, const double Vy, const double d
 }
 
 //x direction flux in current cell
-void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
+void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
                        double hrfv[3][MAX_NUM_STATE_VARS])
 {
     if(elementType() == ElementType::TwoPhases)
@@ -2182,7 +2183,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
         int i, j;
         double a, Vel[4]; // Vel[0:1]: solid-vel, Vel[2:3]: fluid-vel
         double volf = 0.;
-        double epsilon = matprops_ptr->epsilon;
+        double epsilon = matprops_ptr->scale.epsilon;
         double den_frac = matprops_ptr->den_fluid / matprops_ptr->den_solid;
 
         //the "update flux" values (hfv) are the fluxes used to update the solution,
@@ -2247,7 +2248,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 
             // get du/dy
             double dudy = (d_state_vars(NUM_STATE_VARS + 2) - d_state_vars(NUM_STATE_VARS + 1) * Vel[0]) / state_vars(1);
-            double alphaxy = -c_sgn(dudy) * sin(matprops_ptr->intfrict) * effect_kactxy(0);
+            double alphaxy = -c_sgn(dudy) * sin(integrator->int_frict) * effect_kactxy(0);
             double temp2 = alphaxy * hfv[0][0] * hfv[0][1] * gravity(2);
             if(hfv[0][0] > GEOFLOW_TINY)
                 volf = hfv[0][1] / hfv[0][0];
@@ -2297,7 +2298,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
             // get du/dy
             double dudy=(d_state_vars(NUM_STATE_VARS+2)-
                     d_state_vars(NUM_STATE_VARS+1)*Vel[0])/state_vars(1);
-            double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy(0);
+            double alphaxy=-c_sgn(dudy)*sin(matprops_ptr->int_frict)*effect_kactxy(0);
             double temp2=alphaxy*hrfv[0][0]*hrfv[0][1]*gravity(2);
             if ( hrfv[0][0] > GEOFLOW_TINY )
             volf = hrfv[0][1]/hrfv[0][0];
@@ -2444,7 +2445,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 }
 
 //y direction flux in current cell
-void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
+void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
                        double hrfv[3][MAX_NUM_STATE_VARS])
 {
     if(elementType() == ElementType::TwoPhases)
@@ -2453,7 +2454,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
         int i, j;
         double Vel[4], a;
         double volf = 0.;
-        double epsilon = matprops_ptr->epsilon;
+        double epsilon = matprops_ptr->scale.epsilon;
         double den_frac = matprops_ptr->den_fluid / matprops_ptr->den_solid;
         
         //the "update flux" values (hfv) are the fluxes used to update the solution,
@@ -2515,7 +2516,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 
             // hydostatic terms
             double dvdx = (d_state_vars(3) - d_state_vars(1) * Vel[1]) / state_vars(1);
-            double alphayx = -c_sgn(dvdx) * sin(matprops_ptr->intfrict) * effect_kactxy(1);
+            double alphayx = -c_sgn(dvdx) * sin(integrator->int_frict) * effect_kactxy(1);
             double temp2 = alphayx * hfv[0][0] * hfv[0][1] * gravity(2);
             if(hfv[0][0] > GEOFLOW_TINY)
                 volf = hfv[0][1] / hfv[0][0];
@@ -2564,7 +2565,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
     
             // hydostatic terms
             double dvdx=(d_state_vars(3)-d_state_vars(1)*Vel[1])/state_vars(1);
-            double alphayx=-c_sgn(dudy)*sin(matprops_ptr->intfrictang)*effect_kactxy(1);
+            double alphayx=-c_sgn(dudy)*sin(matprops_ptr->int_frict)*effect_kactxy(1);
             double temp2=alphayx*hrfv[0][0]*hrfv[0][1]*gravity(2);
             if ( hrfv[0][0] > GEOFLOW_TINY )
             volf = hrfv[0][1]/hrfv[0][0];
@@ -2715,7 +2716,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, double dz, double wetnessfactor,
 }
 
 //note z is not "z" but either x or y
-void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, const int order_flag, int dir,
+void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr,Integrator *integrator, const int order_flag, int dir,
                        double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element *EmNeigh, double dt)
 {
     double dz = 0.0;
@@ -2740,13 +2741,13 @@ void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Ma
         dz = (1.0 + dir % 2 - dir) * 0.5 * dx(dir % 2); //+ or - 1/2 dx or dy
              
     if(dir % 2 == 0)
-        xdirflux(matprops_ptr, dz, wetnessfactor, hfv, hrfv);
+        xdirflux(matprops_ptr, integrator, dz, wetnessfactor, hfv, hrfv);
     else if(dir % 2 == 1)
-        ydirflux(matprops_ptr, dz, wetnessfactor, hfv, hrfv);
+        ydirflux(matprops_ptr, integrator, dz, wetnessfactor, hfv, hrfv);
     else
     {
         printf("zdirflux: direction %d not known\n", dir);
-        exit(1);
+        assert(0);
     }
     return;
 }
@@ -2820,7 +2821,7 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
     return;
 }
 
-void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
+void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, Integrator *integrator, int myid, double dt,
                                const int order_flag, double *outflow)
 {
     Node *np, *np1, *np2, *nm, *nm1, *nm2;
@@ -2864,8 +2865,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             elm1 = getNeighborPtr(zp); //(Element*) El_Table->lookup(&neighbor(zp)[0]);
             assert(elm1);
             
-            zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm1, dt);
-            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv1, hrfv1, this, dt);
+            zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv, hrfv, elm1, dt);
+            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv1, hrfv1, this, dt);
             
             riemannflux(elm1->elementType(),hfv, hfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
@@ -2874,8 +2875,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             
             elm2 = getNeighborPtr(zp + 4); //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
             assert(elm2);
-            zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm2, dt);
-            elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv2, hrfv2, this, dt);
+            zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv, hrfv, elm2, dt);
+            elm2->zdirflux(El_Table, NodeTable, matprops_ptr, integrator,order_flag, side + 2, hfv2, hrfv2, this, dt);
             
             //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
             if(neigh_proc(zp + 4) == myid)
@@ -2913,8 +2914,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             elm1 = getNeighborPtr(zp); //(Element*) El_Table->lookup(&neighbor(zp)[0]);
             assert(elm1);
             
-            zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm1, dt);
-            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv1, hrfv1, this, dt);
+            zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv, hrfv, elm1, dt);
+            elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv1, hrfv1, this, dt);
             
             riemannflux(elm1->elementType(),hfv, hfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
@@ -2968,8 +2969,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm2 = elm1->getNeighborPtr((zelmpos + 4) % 8); //(Element*) El_Table->lookup(&elm1->neighbor[(zelmpos + 4) % 8][0]);
                 assert(elm2);
                 
-                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv1, hrfv1, elm2, dt);
-                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv2, hrfv2, elm1, dt);
+                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv1, hrfv1, elm2, dt);
+                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv2, hrfv2, elm1, dt);
                 
                 if(elm1->neigh_proc((zelmpos + 4) % 8) == myid)
                 {
@@ -3030,8 +3031,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm2 = getNeighborPtr(zp + 4); //(Element*) (El_Table->lookup(&neighbor[zp + 4][0]));
                 assert(elm2);
                 
-                zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv, hrfv, elm2, dt);
-                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv2, hrfv2, this, dt);
+                zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv, hrfv, elm2, dt);
+                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv2, hrfv2, this, dt);
                 
                 if(neigh_proc(zp + 4) == myid)
                 {
@@ -3143,8 +3144,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm1 = getNeighborPtr(zm); //(Element*) El_Table->lookup(&neighbor(zm)[0]);
                 assert(elm1);
                 
-                zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv, hrfv, elm1, dt);
-                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv1, hrfv1, this, dt);
+                zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv, hrfv, elm1, dt);
+                elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv1, hrfv1, this, dt);
                 riemannflux(elm1->elementType(),hfv1, hfv, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm->flux(i,flux[i]);
                 riemannflux(elm1->elementType(),hrfv1, hrfv, flux);
@@ -3153,8 +3154,8 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 elm2 = getNeighborPtr(zm + 4); //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
                 assert(elm2);
                 
-                zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side + 2, hfv, hrfv, elm2, dt);
-                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, order_flag, side, hfv2, hrfv2, this, dt);
+                zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv, hrfv, elm2, dt);
+                elm2->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv2, hrfv2, this, dt);
                 
                 //note a rectangular domain ensures that neigh_proc[zm+4]!=-1
                 if(neigh_proc(zm + 4) == myid)
@@ -3603,7 +3604,7 @@ void Element::calc_gravity_vector(MatProps* matprops_ptr)
     }
     
     for(int i = 0; i < 3; i++)
-        gravity(i, gravity(i) / matprops_ptr->GRAVITY_SCALE);
+        gravity(i, gravity(i) / matprops_ptr->scale.gravity);
     
     return;
 }
@@ -3712,10 +3713,10 @@ void Element::calc_d_gravity(ElementsHashTable* El_Table)
 
 void Element::calc_topo_data(MatProps* matprops_ptr)
 {
-    double resolution = (dx(0)/*/(zeta[0]*zeta[0]+1)*/+ dx(1)/*/(zeta[1]*zeta[1]+1)*/) * (matprops_ptr->LENGTH_SCALE)
+    double resolution = (dx(0)/*/(zeta[0]*zeta[0]+1)*/+ dx(1)/*/(zeta[1]*zeta[1]+1)*/) * (matprops_ptr->scale.length)
             / 2.0;  // element "size"
-    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->scale.length);
+    double ycoord = coord(1) * (matprops_ptr->scale.length);
     //double eldif = elevation;
     int i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
 #ifdef PRINT_GIS_ERRORS
@@ -3725,8 +3726,8 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         exit(1);
     }
 #endif
-    set_elevation(elevation() / matprops_ptr->LENGTH_SCALE);
-    //eldif=(elevation-eldif)*matprops_ptr->LENGTH_SCALE;
+    set_elevation(elevation() / matprops_ptr->scale.length);
+    //eldif=(elevation-eldif)*matprops_ptr->scale.length;
     //if(fabs(eldif)>1.0) printf("calc_topo_data() after-before=%g\n",eldif);
     i = Get_slope(resolution, xcoord, ycoord, zeta_ref(0), zeta_ref(1));
 #ifdef PRINT_GIS_ERRORS
@@ -3744,8 +3745,8 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         exit(1);
     }
 #endif
-    curvature(0, curvature(0) * (matprops_ptr->LENGTH_SCALE));
-    curvature(1, curvature(1) * (matprops_ptr->LENGTH_SCALE));
+    curvature(0, curvature(0) * (matprops_ptr->scale.length));
+    curvature(1, curvature(1) * (matprops_ptr->scale.length));
     
     if(matprops_ptr->material_count == 1)  //only one material so don't need map  
         set_material(1);  //GIS material id tag/index starts from 1
@@ -3757,7 +3758,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         if((material() < 1) || (material() > 1000))
         {
             fprintf(stderr, "ERROR garbage material %d read from material map\n", material());
-            exit(1);
+            assert(0);
         }
     }
     
@@ -4104,7 +4105,7 @@ void Element::find_opposite_brother(ElementsHashTable* El_Table)
  computing the initial "deposited" volume.
 
  */
-void Element::calc_stop_crit(MatProps *matprops_ptr)
+void Element::calc_stop_crit(MatProps *matprops_ptr,Integrator *integrator)
 {
     
     double stopcrit;
@@ -4117,8 +4118,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
 #ifdef STOPCRIT_CHANGE_BED
     if(stoppedflags()==2)
     {   
-        effect_kactxy(0,matprops_ptr->epsilon);
-        effect_kactxy(1,matprops_ptr->epsilon);
+        effect_kactxy(0,matprops_ptr->scale.epsilon);
+        effect_kactxy(1,matprops_ptr->scale.epsilon);
         set_effect_bedfrict(matprops_ptr->intfrict);
         set_effect_tanbedfrict(matprops_ptr->tanintfrict);
     }
@@ -4151,7 +4152,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
                                                                    * d_state_vars(NUM_STATE_VARS));
             
             stopcrit = (slopetemp + effect_tanbedfrict()) / Vtemp * NUM_FREEFALLS_2_STOP
-                       * sqrt(2.0 * 9.8 / matprops_ptr->GRAVITY_SCALE * state_vars(0) / (1 + bedslope * bedslope));
+                       * sqrt(2.0 * 9.8 / matprops_ptr->scale.gravity * state_vars(0) / (1 + bedslope * bedslope));
         }
         else
         {
@@ -4177,7 +4178,7 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
                     (zeta(0) + effect_kactxy(0) * d_state_vars(0)) * (zeta(0) + effect_kactxy(0) * d_state_vars(0))
                     * (zeta(1) + effect_kactxy(1) * d_state_vars(NUM_STATE_VARS))
                     * (zeta(1) + effect_kactxy(1) * d_state_vars(NUM_STATE_VARS)));
-            if(slopetemp + tan(matprops_ptr->intfrict) > 0)
+            if(slopetemp + tan(integrator->int_frict) > 0)
                 set_stoppedflags(2);
         }
     }
@@ -4192,8 +4193,8 @@ void Element::calc_stop_crit(MatProps *matprops_ptr)
 #ifdef STOPCRIT_CHANGE_BED
     if(stoppedflags()==2)
     {   
-        effect_kactxy(0,matprops_ptr->epsilon);
-        effect_kactxy(1,matprops_ptr->epsilon);
+        effect_kactxy(0,matprops_ptr->scale.epsilon);
+        effect_kactxy(1,matprops_ptr->scale.epsilon);
         set_effect_bedfrict(matprops_ptr->intfrict);
         set_effect_tanbedfrict(matprops_ptr->tanintfrict);
     }

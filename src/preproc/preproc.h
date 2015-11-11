@@ -52,7 +52,7 @@ class MatProps;
 class TitanPreproc
 {
 public:
-    TitanPreproc(cxxTitanSinglePhase *tSim);
+    TitanPreproc(cxxTitanSimulation *tSim);
     ~TitanPreproc();
 
     //!>number of processes
@@ -74,6 +74,8 @@ public:
 
     //MaterialMap material_map;
     MatProps *matprops;
+
+    Integrator *integrator;
 
     //If using Gdal data format:
     //raster map subdirectory, mapname

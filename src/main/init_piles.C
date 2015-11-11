@@ -46,21 +46,21 @@ void print_grid(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatP
                 double elevation;
                 get_elem_elev(HT_Node_Ptr, matprops, EmTemp, elevation);
                 
-                fprintf(fp, "%20.14g %20.14g %20.14g\n", (EmTemp->coord(0)) * (matprops)->LENGTH_SCALE,
-                        (EmTemp->coord(1)) * (matprops)->LENGTH_SCALE, elevation);
+                fprintf(fp, "%20.14g %20.14g %20.14g\n", (EmTemp->coord(0)) * (matprops)->scale.length,
+                        (EmTemp->coord(1)) * (matprops)->scale.length, elevation);
             }
         }
     }
     
     fclose(fp);
     
-    exit(1);
+    assert(0);
     
     return;
 }
 
 
-void cxxTitanSinglePhase::init_piles()
+void cxxTitanSimulation::init_piles()
 {
 
     MatProps* matprops_ptr = get_matprops();
@@ -129,10 +129,10 @@ void cxxTitanSinglePhase::init_piles()
                                 pile_height = 15 * (1. - radius_sq / 30000.);
                             break;
                         case PileProps::POPO: //popo topo
-                            radius_sq = pow(EmTemp->coord(0) - 537758. / matprops_ptr->LENGTH_SCALE, 2)
-                                    + pow(EmTemp->coord(1) - 2100910. / matprops_ptr->LENGTH_SCALE, 2);
-                            if(radius_sq < (10000. / matprops_ptr->LENGTH_SCALE))
-                                pile_height = 1. - radius_sq / (10000. / matprops_ptr->LENGTH_SCALE);
+                            radius_sq = pow(EmTemp->coord(0) - 537758. / matprops_ptr->scale.length, 2)
+                                    + pow(EmTemp->coord(1) - 2100910. / matprops_ptr->scale.length, 2);
+                            if(radius_sq < (10000. / matprops_ptr->scale.length))
+                                pile_height = 1. - radius_sq / (10000. / matprops_ptr->scale.length);
                             break;
                         case PileProps::ID1: // iverson and denlinger experiments I -- as pictured
 
@@ -147,11 +147,11 @@ void cxxTitanSinglePhase::init_piles()
                             }
                             break;
                         case PileProps::ID2: //iverson and denlinger experiments II -- 90 angle with plane
-                            if(EmTemp->coord(0) < 53.345 / matprops_ptr->LENGTH_SCALE && EmTemp->coord(0)
-                                    > 46.45 / matprops_ptr->LENGTH_SCALE)
+                            if(EmTemp->coord(0) < 53.345 / matprops_ptr->scale.length && EmTemp->coord(0)
+                                    > 46.45 / matprops_ptr->scale.length)
                                 pile_height = 4.207255
-                                        * (1.0 - (53.345 / matprops_ptr->LENGTH_SCALE - EmTemp->coord(0)) / 6.895
-                                                * matprops_ptr->LENGTH_SCALE);
+                                        * (1.0 - (53.345 / matprops_ptr->scale.length - EmTemp->coord(0)) / 6.895
+                                                * matprops_ptr->scale.length);
                             break;
                         default:
                             printf("Danger no recognized pile type defined in init_piles.C\n");
@@ -178,7 +178,7 @@ void cxxTitanSinglePhase::init_piles()
     double realvolume = 0.0, depositedvol = 0.0, forcebed = 0.0, meanslope = 0.0;
     double epsilon[DIMENSION];
     for(i=0;i<DIMENSION;i++)
-        epsilon[i]=matprops_ptr->epsilon;
+        epsilon[i]=matprops_ptr->scale.epsilon;
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -192,14 +192,14 @@ void cxxTitanSinglePhase::init_piles()
                 realvolume += dvol;
                 Curr_El->set_kactxy(epsilon);
 
-                Curr_El->calc_stop_crit(matprops_ptr);
+                Curr_El->calc_stop_crit(matprops_ptr,integrator);
                 if(Curr_El->stoppedflags() == 2)
                     depositedvol += dvol;
 
                 double resolution = 0, xslope = 0, yslope = 0;
                 Get_max_resolution(&resolution);
-                Get_slope(resolution, Curr_El->coord(0) * matprops_ptr->LENGTH_SCALE,
-                          Curr_El->coord(1) * matprops_ptr->LENGTH_SCALE, xslope, yslope);
+                Get_slope(resolution, Curr_El->coord(0) * matprops_ptr->scale.length,
+                          Curr_El->coord(1) * matprops_ptr->scale.length, xslope, yslope);
                 double slope = sqrt(xslope * xslope + yslope * yslope);
 
                 forcebed += dvol * 9.8 / sqrt(1.0 + slope * slope)
@@ -216,11 +216,11 @@ void cxxTitanSinglePhase::init_piles()
     
     MPI_Reduce(tempin, tempout, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     
-    statprops_ptr->realvolume = tempout[0] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE) * (matprops_ptr->LENGTH_SCALE);
+    statprops_ptr->realvolume = tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length) * (matprops_ptr->scale.length);
     statprops_ptr->outflowvol = 0.0;
     statprops_ptr->erodedvol = 0.0;
-    statprops_ptr->depositedvol = tempout[2] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
-                              * (matprops_ptr->LENGTH_SCALE);
+    statprops_ptr->depositedvol = tempout[2] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
+                              * (matprops_ptr->scale.length);
     
     statprops_ptr->forceint = 0.0;
     statprops_ptr->forcebed = tempout[1] / tempout[0];

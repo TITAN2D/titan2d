@@ -33,6 +33,8 @@
 
 int REFINE_LEVEL = 3;
 
+
+#include "../header/elenode.hpp"
 #include "../header/titan2d_utils.h"
 
 #include "../header/titan_simulation.h"
@@ -54,81 +56,72 @@ int threads_number;
 int NUM_STATE_VARS;
 bool SHORTSPEED;
 
-cxxTitanSimulation::cxxTitanSimulation():
-        integrator(nullptr)
+
+
+cxxTitanSimulation::cxxTitanSimulation() :
+        integrator(nullptr),
+        matprops(nullptr),
+        pileprops(nullptr),
+        NodeTable(nullptr),
+        ElemTable(nullptr)
 {
     elementType=ElementType::UnknownElementType;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
     MPI_Barrier (MPI_COMM_WORLD);
+
+
+
+    SHORTSPEED=false;
+
+    set_element_type(ElementType::SinglePhase);
+
+    NodeTable=new NodeHashTable();
+    ElemTable=new ElementsHashTable(NodeTable);
+
+    pileprops=nullptr;
+
+    set_element_type(ElementType::SinglePhase);
+
+    MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanSimulation::~cxxTitanSimulation()
 {
     FREE_VAR_IF_NOT_NULLPTR(integrator);
+    FREE_VAR_IF_NOT_NULLPTR(ElemTable);
+    FREE_VAR_IF_NOT_NULLPTR(NodeTable);
+    FREE_VAR_IF_NOT_NULLPTR(matprops);
+    FREE_VAR_IF_NOT_NULLPTR(pileprops);
 }
-void cxxTitanSimulation::run()
+void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
 {
+    elementType=m_elementType;
 
-}
-void cxxTitanSimulation::input_summary()
-{
-    if(myid != 0)
+    if(elementType==ElementType::SinglePhase)
     {
-        MPI_Barrier (MPI_COMM_WORLD);
-        return;
+        NUM_STATE_VARS = 3;
     }
-
-
-
-    /*int i;
-    printf("Piles:\n");
-    printf("\tNumber of piles: %d\n", (int) piles.size());
-    for(i = 0; i < piles.size(); i++)
+    else if(elementType==ElementType::TwoPhases)
     {
-        printf("\tPile %d:\n", i);
-        piles[i].print0();
+        NUM_STATE_VARS = 6;
     }
-    printf("Flux sources:\n");
-    printf("\tNumber of flux sources: %d\n", (int) flux_sources.size());
-    for(i = 0; i < flux_sources.size(); i++)
+    else
     {
-        printf("\tFlux_source %d:\n", i);
-        flux_sources[i].print0();
+        printf("Unknown type of element!\n");
+        assert(0);
     }
-    printf("Discharge planes:\n");
-    printf("\tNumber of discharge planes: %d\n", (int) discharge_planes.size());
-    for(i = 0; i < discharge_planes.size(); i++)
-    {
-        printf("\tDischarge plane %d:\n", i);
-        discharge_planes[i].print0();
-    }*/
-
-    MPI_Barrier (MPI_COMM_WORLD);
-}
-
-cxxTitanSinglePhase::cxxTitanSinglePhase() :
-        cxxTitanSimulation()
-{
-    NodeTable=NULL;
-    ElemTable=NULL;
-
-    NUM_STATE_VARS = 3;
-    SHORTSPEED=false;
-    get_outline()->elementType=ElementType::SinglePhase;
-    elementType=ElementType::SinglePhase;
-    MPI_Barrier (MPI_COMM_WORLD);
-}
-cxxTitanSinglePhase::~cxxTitanSinglePhase()
-{
+    get_outline()->elementType=elementType;
+    if(ElemTable!=nullptr)
+        ElemTable->set_element_type(elementType);
 
 }
-void cxxTitanSinglePhase::set_short_speed(bool short_speed)
+void cxxTitanSimulation::set_short_speed(bool short_speed)
 {
     SHORTSPEED=short_speed;
 }
 
-void cxxTitanSinglePhase::process_input()
+void cxxTitanSimulation::process_input()
 {
 
     int i;
@@ -151,7 +144,7 @@ void cxxTitanSinglePhase::process_input()
     if(fluxprops.no_of_sources+pileprops_ptr->numpiles==0)
     {
         printf("ERROR: No material source was defined");
-        exit(1);
+        assert(0);
     }
 
 #ifdef STATISTICS_IS_NOT_TRANSFERED
@@ -228,16 +221,17 @@ void cxxTitanSinglePhase::process_input()
     statprops_ptr->runid = statprops_ptr->lhs.runid;
 
     /*************************************************************************/
-    matprops_ptr->set_scale(length_scale, height_scale, gravity_scale,pileprops_ptr,fluxprops_ptr);
+    matprops_ptr->set_scale(pileprops_ptr,fluxprops_ptr);
     matprops_ptr->process_input();
 
     double TIME_SCALE = matprops_ptr->get_TIME_SCALE();
     //non-dimensionalize the inputs
     double VELOCITY_SCALE = matprops_ptr->get_VELOCITY_SCALE();
 
+    integrator->scale();
 
-    pileprops_ptr->scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
-    fluxprops.scale(matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,matprops_ptr->GRAVITY_SCALE);
+    pileprops_ptr->scale(scale_.length,scale_.height,scale_.gravity);
+    fluxprops.scale(scale_.length,scale_.height,scale_.gravity);
 
     double smallestpileradius=min(pileprops_ptr->get_smallest_pile_radius(),fluxprops.get_smallest_source_radius());
 
@@ -253,7 +247,7 @@ void cxxTitanSinglePhase::process_input()
         if(Initialize_Raster_data(mapnames_ptr->gis_main.c_str(), mapnames_ptr->gis_sub.c_str(), mapnames_ptr->gis_mapset.c_str(), gis_matmap))
         {
             printf("Problem with GIS Material on processor %d\n", myid);
-            exit(1);
+            assert(0);
         }
         free(gis_matmap);
 
@@ -263,7 +257,7 @@ void cxxTitanSinglePhase::process_input()
         {
             printf("frict.data has %d materials but material map has %d, aborting\n", matprops_ptr->material_count,
                    nummat);
-            exit(1);
+            assert(0);
         }
     }
     /*************************************************************************/
@@ -281,7 +275,7 @@ void cxxTitanSinglePhase::process_input()
     if(i != 0)
     {
         printf("Problem with GIS on processor %d\n", myid);
-        exit(1);
+        assert(0);
     }
 
     matprops_ptr->calc_Vslump(pileprops_ptr,&fluxprops);
@@ -290,7 +284,7 @@ void cxxTitanSinglePhase::process_input()
     statprops_ptr->scale(matprops_ptr);
 
     /*************************************************************************/
-    discharge_planes.scale(matprops_ptr->LENGTH_SCALE);
+    discharge_planes.scale(scale_.length);
 
     //the discharge plane section ends here
     /*************************************************************************/
@@ -327,7 +321,35 @@ void cxxTitanSinglePhase::process_input()
     //to read in outline parameters here when it has been added
     return;
 }
-void cxxTitanSinglePhase::run()
+void cxxTitanSimulation::set_matprops(MatProps* m_matprops)
+{
+    FREE_VAR_IF_NOT_NULLPTR(matprops);
+    matprops=m_matprops;
+
+    //reset matprops pointer in all dependencies
+    if(integrator!=nullptr)
+    {
+        integrator->matprops_ptr=matprops;
+    }
+}
+void cxxTitanSimulation::set_pileprops(PileProps* m_pileprops)
+{
+    FREE_VAR_IF_NOT_NULLPTR(pileprops);
+    pileprops=m_pileprops;
+
+    //reset matprops pointer in all dependencies
+    if(integrator!=nullptr)
+    {
+        integrator->pileprops_ptr=pileprops;
+    }
+}
+void cxxTitanSimulation::set_integrator(Integrator* m_integrator)
+{
+    FREE_VAR_IF_NOT_NULLPTR(integrator);
+    integrator=m_integrator;
+}
+
+void cxxTitanSimulation::run()
 {
     MPI_Barrier (MPI_COMM_WORLD);
 
@@ -425,7 +447,7 @@ void cxxTitanSinglePhase::run()
     HAdapt hadapt(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr,5);
     HAdaptUnrefine Unrefine(ElemTable, NodeTable,&timeprops,matprops_ptr);
 
-    FREE_VAR_IF_NOT_NULLPTR(integrator);
+    /*FREE_VAR_IF_NOT_NULLPTR(integrator);
     if(elementType == ElementType::TwoPhases)
     {
         if(order==1)integrator=new Integrator(this);
@@ -435,10 +457,10 @@ void cxxTitanSinglePhase::run()
         //if(order==1)integrator=new Integrator_SinglePhase_Vollmey_FirstOrder(this);
         //if(order==1)integrator=new Integrator_SinglePhase_Pouliquen_FirstOrder(this);
         //if(order==1)integrator=new Integrator_SinglePhase_Maeno_FirstOrder(this);
-        if(order==1)integrator=new Integrator_SinglePhase_CoulombMat_FirstOrder(this);
+        if(order==1)integrator=new Integrator_SinglePhase_Coulomb_FirstOrder(this);
         if(order==2)integrator=new Integrator(this);
 
-    }
+    }*/
     assert(integrator!=nullptr);
 
     /* for debug only, to check if exactly what's loaded will be saved again
@@ -453,8 +475,8 @@ void cxxTitanSinglePhase::run()
             printf("bed friction angle for \"%s\" is %g\n", matprops_ptr->matnames[imat].c_str(),
                    matprops_ptr->bedfrict[imat] * 180.0 / PI);
 
-        printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", matprops_ptr->intfrict * 180.0 / PI,
-               matprops_ptr->epsilon, order);
+        printf("internal friction angle is %g, epsilon is %g \n method order = %i\n", integrator->int_frict * 180.0 / PI,
+               scale_.epsilon, order);
         printf("REFINE_LEVEL=%d\n", REFINE_LEVEL);
     }
 
@@ -530,9 +552,9 @@ void cxxTitanSinglePhase::run()
         double UNREFINE_TARGET = .01;
         int h_count = 0;
         if(timeprops.iter < 50)
-            matprops_ptr->frict_tiny = 0.1;
+            scale_.frict_tiny = 0.1;
         else
-            matprops_ptr->frict_tiny = 0.000000001;
+            scale_.frict_tiny = 0.000000001;
 
         //check for changes in topography and update if necessary
         if(timeprops.iter == 200)
@@ -774,7 +796,7 @@ void cxxTitanSinglePhase::run()
     return;
 }
 
-void cxxTitanSinglePhase::input_summary()
+void cxxTitanSimulation::input_summary()
 {
     if(myid == 0)
     {
@@ -786,17 +808,4 @@ void cxxTitanSinglePhase::input_summary()
     }
     MPI_Barrier(MPI_COMM_WORLD);
     return;
-}
-
-cxxTitanTwoPhases::cxxTitanTwoPhases() :
-        cxxTitanSinglePhase()
-{
-    NUM_STATE_VARS = 6;
-    get_outline()->elementType=ElementType::TwoPhases;
-    elementType=ElementType::TwoPhases;
-    MPI_Barrier (MPI_COMM_WORLD);
-}
-cxxTitanTwoPhases::~cxxTitanTwoPhases()
-{
-
 }

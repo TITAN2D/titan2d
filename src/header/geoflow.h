@@ -36,7 +36,7 @@ extern int REFINE_LEVEL; //make REFINE_LEVEL a global variable that can be chang
 
 //! non member C++ function that wraps the fortran correct_() function
 void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable* El_Table, double dt, MatProps* matprops_ptr, FluxProps *fluxprops,
-             TimeProps *timeprops, void *EmTemp, double *forceint, double *forcebed, double *eroded, double *deposited);
+             TimeProps *timeprops, Integrator *integrator, void *EmTemp, double *forceint, double *forcebed, double *eroded, double *deposited);
 
 //! this function is legacy, the prototype exists but the function is not defined
 void checknodesol(NodeHashTable*);
@@ -68,7 +68,7 @@ void slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* mat
 
 //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model) calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum allowable timestep for this iteration.
 double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptrs,
-                          TimeProps* timeprops_ptr, int ghost_flag);
+                          Integrator *integrator, TimeProps* timeprops_ptr, int ghost_flag);
 
 //! this function transfers information during events such as ghost element data exchange and repartitioning
 void move_data(int nump, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr);
@@ -77,7 +77,7 @@ void move_data(int nump, int myid, ElementsHashTable* El_Table, NodeHashTable* N
 void delete_ghost_elms(ElementsHashTable* El_Table, int myid);
 
 //! This function loops through all the non-ghost current elements and calls the Element member function Element::calc_edge_states() which calculates the Riemann fluxes between elements and stores the Riemann fluxes in the edge nodes. 
-void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
+void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr, Integrator *integrator,
                       int myid, int order_flag, double *outflow);
 
 //! c++ sgn function 

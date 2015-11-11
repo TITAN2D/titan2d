@@ -27,7 +27,8 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
  */
 
 {
-    
+    return (0);
+#ifdef 0
     char filename[64];
     sprintf(filename, "restart%04d.this", myid);
     //printf("filename=\"%s\"\n",filename);
@@ -182,21 +183,21 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
     //material and scaling info
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
-    matprops_ptr->LENGTH_SCALE = temp8.d; //double
+    matprops_ptr->scale.length = temp8.d; //double
             
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
-    matprops_ptr->HEIGHT_SCALE = temp8.d; //double
+    matprops_ptr->scale.height = temp8.d; //double
             
-    matprops_ptr->epsilon = matprops_ptr->HEIGHT_SCALE / matprops_ptr->LENGTH_SCALE;
+    matprops_ptr->scale.epsilon = matprops_ptr->scale.height / matprops_ptr->scale.length;
     
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
-    matprops_ptr->GRAVITY_SCALE = temp8.d; //double
+    matprops_ptr->scale.gravity = temp8.d; //double
             
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
-    matprops_ptr->MAX_NEGLIGIBLE_HEIGHT = temp8.d; //double
+    matprops_ptr->scale.max_negligible_height = temp8.d; //double
             
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
@@ -204,7 +205,7 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
             
     for(itemp = 0; itemp < 8; itemp++)
         temp8.c[itemp] = header[Itemp++];
-    matprops_ptr->frict_tiny = temp8.d; //double
+    matprops_ptr->scale.frict_tiny = temp8.d; //double
             
     for(itemp = 0; itemp < 4; itemp++)
         temp4.c[itemp] = header[Itemp++];
@@ -467,7 +468,7 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
     Yrange[1] = temp8.d;
     
     //recreate the node hashtable
-    *NodeTable = new NodeHashTable(doublekeyrange, NODE_TABLE_SIZE, Xrange, Yrange);
+    (*NodeTable)->init(doublekeyrange, NODE_TABLE_SIZE, Xrange, Yrange);
     
     //the number of ELEMENTS in table 
     for(itemp = 0; itemp < 4; itemp++)
@@ -512,7 +513,7 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
     }
     
     //recreate the element hashtable
-    *ElemTable = new ElementsHashTable(doublekeyrange, ELEM_TABLE_SIZE, Xrange, Yrange, *NodeTable);
+    (*ElemTable)->init(doublekeyrange, ELEM_TABLE_SIZE, Xrange, Yrange);
     
     /*****************************************************************/
 
@@ -594,6 +595,7 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
     move_data(numprocs, myid, *ElemTable, *NodeTable, timeprops_ptr);
     
     return (1);
+#endif
 }
 
 /*************************************************************************/
@@ -605,6 +607,7 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
              DischargePlanes *discharge_ptr, OutLine* outline_ptr, int *savefileflag)
 {
     
+#if 0
     move_data(numprocs, myid, *ElemTable, *NodeTable, timeprops_ptr);
     
     char filename[64], file2[64], file3[64], file4[64], file5[64], file6[64];
@@ -733,19 +736,19 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
 #endif
     
     //material and scaling info
-    temp8.d = matprops_ptr->LENGTH_SCALE; //double
+    temp8.d = matprops_ptr->scale.length; //double
     for(itemp = 0; itemp < 8; itemp++)
         header[Itemp++] = temp8.c[itemp];
     
-    temp8.d = matprops_ptr->HEIGHT_SCALE; //double
+    temp8.d = matprops_ptr->scale.height; //double
     for(itemp = 0; itemp < 8; itemp++)
         header[Itemp++] = temp8.c[itemp];
     
-    temp8.d = matprops_ptr->GRAVITY_SCALE; //double
+    temp8.d = matprops_ptr->scale.gravity; //double
     for(itemp = 0; itemp < 8; itemp++)
         header[Itemp++] = temp8.c[itemp];
     
-    temp8.d = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT; //double
+    temp8.d = matprops_ptr->scale.max_negligible_height; //double
     for(itemp = 0; itemp < 8; itemp++)
         header[Itemp++] = temp8.c[itemp];
     
@@ -762,11 +765,11 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
         header[Itemp++] = temp4.c[itemp];
     
 #ifdef DEBUGSAVEHEADER
-    fprintf(fp3,"LENGTH_SCALE=%g HEIGHT_SCALE=%g GRAVITY_SCALE=%g\n",
-            matprops_ptr->LENGTH_SCALE,matprops_ptr->HEIGHT_SCALE,
-            matprops_ptr->GRAVITY_SCALE);
+    fprintf(fp3,"scale.length=%g scale.height=%g scale.gravity=%g\n",
+            matprops_ptr->scale.length,matprops_ptr->scale.height,
+            matprops_ptr->scale.gravity);
     fprintf(fp3,"max_neg_height=%g Vslump=%g frict_tiny=%g\nmat_count=%d\n",
-            matprops_ptr->MAX_NEGLIGIBLE_HEIGHT,matprops_ptr->Vslump,
+            matprops_ptr->scale.max_negligible_height,matprops_ptr->Vslump,
             matprops_ptr->frict_tiny,matprops_ptr->material_count);
 #endif
     
@@ -1265,5 +1268,5 @@ void saverun(NodeHashTable** NodeTable, int myid, int numprocs, ElementsHashTabl
     
     //flip savefileflag to indicate that THIS is the most recent completed file
     *savefileflag = (*savefileflag + 1) % 2;
-    
+#endif
 }

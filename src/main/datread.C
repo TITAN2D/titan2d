@@ -64,7 +64,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     if(!fp)
     {
         printf("Can't open file for %d \n", myid);
-        exit(0);
+        assert(0);
     }
     
     int version, DoublesFromFloats;
@@ -80,7 +80,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
             break;
         default:
             printf("Read_data() does not recognize binary funkyxxxx.inp version %d\n", version);
-            exit(1);
+            assert(0);
             break;
     }
     
@@ -110,16 +110,16 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     double xminmax[2], yminmax[2];
     for(i = 0; i < 2; i++)
     {
-        XRange[i] = XRange[i] / matprops_ptr->LENGTH_SCALE;
+        XRange[i] = XRange[i] / matprops_ptr->scale.length;
         xminmax[i] = XRange[i];
     }
     for(i = 0; i < 2; i++)
     {
-        YRange[i] = YRange[i] / matprops_ptr->LENGTH_SCALE;
+        YRange[i] = YRange[i] / matprops_ptr->scale.length;
         yminmax[i] = YRange[i];
     }
     
-    *NodeTable = new NodeHashTable(doublekeyrange, NODE_TABLE_SIZE, XRange, YRange);
+    (*NodeTable)->init(doublekeyrange, NODE_TABLE_SIZE, XRange, YRange);
     (*NodeTable)->reserve_at_least(Node_Num);
     
     for(i = 0; i < Node_Num; i++)
@@ -135,7 +135,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
                 freadD(fp, &(coord[j]));
         
         for(j = 0; j < 2; j++)
-            coord[j] = coord[j] / matprops_ptr->LENGTH_SCALE;
+            coord[j] = coord[j] / matprops_ptr->scale.length;
         NodeP = (*NodeTable)->createAddNode(sfc_key_from_oldkey(key), coord, matprops_ptr);
     }
     (*NodeTable)->print0();
@@ -166,7 +166,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     
     freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
 
-    *ElemTable = new ElementsHashTable(doublekeyrange, EL_TABLE_SIZE, XRange, YRange, *NodeTable);
+    (*ElemTable)->init(doublekeyrange, EL_TABLE_SIZE, XRange, YRange);
     (*ElemTable)->reserve_at_least(Node_Num);
     for(int ielem = 0; ielem < Elem_Num; ielem++)
     {

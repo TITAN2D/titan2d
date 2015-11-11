@@ -62,10 +62,10 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
     double xC = 0.0, yC = 0.0, rC = 0.0, piler2 = 0.0;
     double xVar = 0.0, yVar = 0.0;
     //assume that mean starting location is at (x,y) = (1,1)
-    double xCen = 1.2; //0; //1.0/(matprops->LENGTH_SCALE);
-    double yCen = 0.3; //0; //1.0/(matprops->LENGTH_SCALE);
+    double xCen = 1.2; //0; //1.0/(matprops->scale.length);
+    double yCen = 0.3; //0; //1.0/(matprops->scale.length);
     double dVol, dA;
-    double min_height = matprops->MAX_NEGLIGIBLE_HEIGHT;
+    double min_height = matprops->scale.max_negligible_height;
     double temp;
     int numproc;
     double xyminmax[4];
@@ -426,7 +426,7 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
                                    Curr_El->state_vars(2) / Curr_El->state_vars(1), Curr_El->state_vars(3) / Curr_El->state_vars(1),
                                    Curr_El->state_vars(4) / Curr_El->state_vars(0), Curr_El->state_vars(5) / Curr_El->state_vars(0));
                             ElemBackgroundCheck2(El_Table, NodeTable, Curr_El, stdout);
-                            exit(1);
+                            assert(0);
                         }
 
                         temp = sqrt(Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1]);
@@ -473,8 +473,8 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
                     //a negative number means the flow is headed uphill
                     double resolution = 0, xslope = 0, yslope = 0;
                     Get_max_resolution(&resolution);
-                    Get_slope(resolution, Curr_El->coord(0) * matprops->LENGTH_SCALE,
-                              Curr_El->coord(1) * matprops->LENGTH_SCALE, xslope, yslope);
+                    Get_slope(resolution, Curr_El->coord(0) * matprops->scale.length,
+                              Curr_El->coord(1) * matprops->scale.length, xslope, yslope);
                     if(temp > GEOFLOW_TINY)
                     {
                         if(elementType == ElementType::TwoPhases)
@@ -495,10 +495,10 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
     MPI_Reduce(xyminmax, statprops->xyminmax, 4, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     if(myid == 0)
     {
-        statprops->xyminmax[0] *= (matprops->LENGTH_SCALE);
-        statprops->xyminmax[1] *= -(matprops->LENGTH_SCALE);
-        statprops->xyminmax[2] *= (matprops->LENGTH_SCALE);
-        statprops->xyminmax[3] *= -(matprops->LENGTH_SCALE);
+        statprops->xyminmax[0] *= (matprops->scale.length);
+        statprops->xyminmax[1] *= -(matprops->scale.length);
+        statprops->xyminmax[2] *= (matprops->scale.length);
+        statprops->xyminmax[3] *= -(matprops->scale.length);
     }
     
     int inttempout;
@@ -540,30 +540,30 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
         if(testpointreach && (statprops->timereached < 0.0))
             statprops->timereached = timeprops->timesec();
         
-        double VELOCITY_SCALE = sqrt(matprops->LENGTH_SCALE * matprops->GRAVITY_SCALE);
+        double VELOCITY_SCALE = sqrt(matprops->scale.length * matprops->scale.gravity);
         //dimensionalize
-        statprops->xcen = tempout[0] * (matprops->LENGTH_SCALE) / tempout[10];
-        statprops->ycen = tempout[1] * (matprops->LENGTH_SCALE) / tempout[10];
-        statprops->xvar = tempout[11] * (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE) / tempout[10]
+        statprops->xcen = tempout[0] * (matprops->scale.length) / tempout[10];
+        statprops->ycen = tempout[1] * (matprops->scale.length) / tempout[10];
+        statprops->xvar = tempout[11] * (matprops->scale.length) * (matprops->scale.length) / tempout[10]
                 - (statprops->xcen) * (statprops->xcen);
-        statprops->yvar = tempout[12] * (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE) / tempout[10]
+        statprops->yvar = tempout[12] * (matprops->scale.length) * (matprops->scale.length) / tempout[10]
                 - (statprops->ycen) * (statprops->ycen);
-        statprops->rmean = tempout[2] * (matprops->LENGTH_SCALE) / tempout[10];
-        statprops->area = tempout[3] * (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE);
+        statprops->rmean = tempout[2] * (matprops->scale.length) / tempout[10];
+        statprops->area = tempout[3] * (matprops->scale.length) * (matprops->scale.length);
         statprops->vmean = tempout[4] * VELOCITY_SCALE / tempout[10];
         statprops->vxmean = tempout[5] * VELOCITY_SCALE / tempout[10];
         statprops->vymean = tempout[6] * VELOCITY_SCALE / tempout[10];
         
         statprops->slopemean = (tempout[9] > 0) ? tempout[7] / tempout[9] : 0.0;
         
-        statprops->realvolume = realvolume * (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE)
-                                * (matprops->HEIGHT_SCALE);
+        statprops->realvolume = realvolume * (matprops->scale.length) * (matprops->scale.length)
+                                * (matprops->scale.height);
         
         //statvolume is really testvolume which is statvolume if it's not disabled
-        statprops->statvolume = tempout[10] * (matprops->LENGTH_SCALE) * (matprops->LENGTH_SCALE)
-                                * (matprops->HEIGHT_SCALE);
+        statprops->statvolume = tempout[10] * (matprops->scale.length) * (matprops->scale.length)
+                                * (matprops->scale.height);
         
-        statprops->cutoffheight = cutoffheight * (matprops->HEIGHT_SCALE);
+        statprops->cutoffheight = cutoffheight * (matprops->scale.height);
         testvolume = tempout[10] / statvolume;
         
         /* the factor of 3^0.5 is a safety factor, this value was chosen because
@@ -572,7 +572,7 @@ void calc_stats(ElementType elementType, ElementsHashTable* El_Table, NodeHashTa
          */
         //3 standard deviations out ~ 99.5% of the material
         statprops->piler = 3.0 * sqrt(statprops->xvar + statprops->yvar);
-        statprops->hmax = temp2out[0] * (matprops->HEIGHT_SCALE);
+        statprops->hmax = temp2out[0] * (matprops->scale.height);
         statprops->vmax = temp2out[1] * VELOCITY_SCALE;
         
         /* v_star is the nondimensional global average velocity by v_slump

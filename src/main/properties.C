@@ -15,6 +15,7 @@
  * $Id: properties.h 233 2012-03-27 18:30:40Z dkumar $ 
  */
 
+#include <assert.h>
 #include "../header/properties.h"
 #include "../header/hpfem.h"
 
@@ -114,22 +115,22 @@ void StatProps::scale(const MatProps* matprops_ptr)
 {
     if(hxyminmax < 0.0)
     {
-        hxyminmax = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
+        hxyminmax = matprops_ptr->scale.max_negligible_height * 10.0;
 
     }
-    hxyminmax /= matprops_ptr->HEIGHT_SCALE;
+    hxyminmax /= matprops_ptr->scale.height;
 
     if(heightifreach > -1.9)
     {
 
         //default test height is 10 time the maximum negligible height
         if(heightifreach > -1.1 && heightifreach < -0.9)
-            heightifreach = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT * 10.0;
+            heightifreach = matprops_ptr->scale.max_negligible_height * 10.0;
 
-        heightifreach /= matprops_ptr->HEIGHT_SCALE;
+        heightifreach /= matprops_ptr->scale.height;
 
-        xyifreach[0] /= matprops_ptr->LENGTH_SCALE;
-        xyifreach[1] /= matprops_ptr->LENGTH_SCALE;
+        xyifreach[0] /= matprops_ptr->scale.length;
+        xyifreach[1] /= matprops_ptr->scale.length;
     }
     else
     {

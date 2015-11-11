@@ -16,10 +16,16 @@
 #*
 
 import sys,os,math,string,re,socket
+import copy
+import inspect
 
 from cxxtitan import *
 
-class TitanSimulation(object):
+
+class TitanSimulationBase(object):
+    """ Base class for TitanSimulation
+    it defines class members and static variables  
+    """
     possible_vizoutputs={
         'tecplotxxxx.tec':1, # first bit flag
         'mshplotxxxx.tec':2, # second bit flag
@@ -35,22 +41,102 @@ class TitanSimulation(object):
     }
     possible_orders={'First':1,'Second':2}
     
-    possible_pile_types={'PARABALOID':PileProps.PARABALOID,
-                         'CYLINDER':PileProps.CYLINDER,
-                         'PLANE':PileProps.PLANE,
-                         'CASITA':PileProps.CASITA,
-                         'POPO':PileProps.POPO,
-                         'ID1':PileProps.ID1,
-                         'ID2':PileProps.ID2
-                         }
+    possible_pile_types={
+         'PARABALOID':PileProps.PARABALOID,
+         'CYLINDER':PileProps.CYLINDER,
+         'PLANE':PileProps.PLANE,
+         'CASITA':PileProps.CASITA,
+         'POPO':PileProps.POPO,
+         'ID1':PileProps.ID1,
+         'ID2':PileProps.ID2
+    }
+    
+    possible_internal_mat_models={
+        'Coulomb':{
+            'allParameters':('int_frict',), 
+            'defaultParameters':{'int_frict':37.0},
+            'elementType':ElementType_SinglePhase,
+            'integrators':[
+                {
+                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'constructor':Integrator_SinglePhase_Coulomb_FirstOrder
+                },
+                {
+                    'conditions' :[lambda tsim: tsim.sim.order==1 or tsim.sim.order==2],
+                    'constructor':Integrator
+                }
+            ]
+        },
+        'Vollmey':{
+            'allParameters':('mu','xi'), 
+            'defaultParameters':{
+                'mu' : 0.5,
+                'xi' : 120.0
+            },
+            'elementType':ElementType_SinglePhase,
+            'integrators':[{
+                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'constructor':Integrator_SinglePhase_Vollmey_FirstOrder
+            }]
+        },
+        'Pouliquen':{
+            'allParameters':('phi1','phi2','partdiam','I_O'), 
+            'defaultParameters':{
+                'phi1':0.41887902,
+                'phi2':0.523598776,
+                'partdiam':1.0E-4,
+                'I_O':0.3
+            },
+            'elementType':ElementType_SinglePhase,
+            'integrators':[{
+                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'constructor':Integrator_SinglePhase_Pouliquen_FirstOrder
+            }]
+        },
+        'Maeno':{
+            'allParameters':('phis', 'phi2','partdiam', 'I_not'),
+            'defaultParameters':{
+                'phis':0.41887902,
+                'phi2':0.523598776,
+                'partdiam':1.0E-4,
+                'I_not':0.3
+            },
+            'elementType':ElementType_SinglePhase,
+            'integrators':[{
+                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'constructor':Integrator_SinglePhase_Maeno_FirstOrder
+            }],
+        },
+        'TwoPhases_Coulomb':{
+            'allParameters':('int_frict',), 
+            'defaultParameters':{'int_frict':37.0},
+            'elementType':ElementType_TwoPhases,
+            'integrators':[{
+                    'conditions' :[lambda tsim: tsim.sim.order==1],
+                    'constructor':Integrator_TwoPhase
+            }]
+        }
+    }
+    
+    
     
     def __init__(self):
+        #initiate all class members
+        
+        #referece to cxxTitanSimulation, the class which handles calculations on c++ side 
         self.sim=None
+        
+        #flag that integrator and internal material model is initialized        
+        self.integrator_initialized=False
+        self.gis_initialized=False
+        
+        self.pileprops=None
+        
     def input_summary(self):
         if self.sim!=None:
             self.sim.input_summary()
         
-class TitanSinglePhase(TitanSimulation):
+class TitanSimulation(TitanSimulationBase):
     def __init__(self,
                  max_iter=100,
                  max_time=1.5,
@@ -68,9 +154,9 @@ class TitanSinglePhase(TitanSimulation):
                  test_location=None,
                  sim_class=None
                  ):
-        super(TitanSinglePhase, self).__init__()
+        super(TitanSimulation, self).__init__()
         if sim_class==None:
-            self.sim=cxxTitanSinglePhase()
+            self.sim=cxxTitanSimulation()
         else:
             self.sim=sim_class
         #init values
@@ -85,19 +171,20 @@ class TitanSinglePhase(TitanSimulation):
         
         
         #Length Scale [m]
-        self.sim.length_scale = float(length_scale)
-        if self.sim.length_scale<=0.0:
+        self.sim.scale_.length = float(length_scale)
+        if self.sim.scale_.length<=0.0:
             raise ValueError("TitanSimulation::length_scale should be positive")
         #gravity scaling factor [m/s^2]
-        self.sim.gravity_scale = float(gravity_scale)
-        if self.sim.gravity_scale<=0.0:
+        self.sim.scale_.gravity = float(gravity_scale)
+        if self.sim.scale_.gravity<=0.0:
             raise ValueError("TitanSimulation::gravity_scale should be positive")
         #height scaling factor
         if height_scale==None:
-            self.sim.height_scale=0.0
+            self.sim.scale_.height=0.0
         else:
-            self.sim.height_scale = float(height_scale)
-            if self.sim.height_scale<=0.0:
+            self.sim.scale_.height = float(height_scale)
+            self.sim.scale_.auto_calc_height_scale=False
+            if self.sim.scale_.height<=0.0:
                 raise ValueError("TitanSimulation::height_scale should be positive")
             
         
@@ -234,70 +321,113 @@ class TitanSinglePhase(TitanSimulation):
             if (gis_map == '') or (gis_map == None) or (not isinstance(gis_map, basestring)) or \
                     (not os.path.isdir(gis_map)):
                 raise ValueError(errmsg)
+    def setIntMatModel(self,**karg):
+        """
+        Setup internal material model and respective integrator
+        Coulomb is default model
+        """
+        #
+        model=karg.pop('model','Coulomb');
+        if model not in TitanSimulationBase.possible_internal_mat_models.keys():
+            raise ValueError("Unknown internal material model "+str(vizoutput)+". Possible models: "+str(TitanSimulationBase.possible_internal_mat_models.keys()))
+        integrator=karg.pop('integrator',None);
+        
+        #initiate model parameters with default values
+        model_parameters=copy.deepcopy(TitanSimulationBase.possible_internal_mat_models[model]['defaultParameters'])
+        #get the list of all parameters for that model
+        model_all_parameters=TitanSimulationBase.possible_internal_mat_models[model]['allParameters']
+        
+        #set user specified parameters        
+        while len(karg):
+            (key,value)=karg.popitem()
+            if key not in model_all_parameters:
+                raise ValueError("Unknown parameter '"+str(key)+"' for "+str(model)+" model. Possible parameters: "+str(model_all_parameters) )
+            model_parameters[key]=value
+        
+        #check that all parameters present
+        for key in model_all_parameters:
+            if key not in model_parameters:
+                raise ValueError("Parameter '"+str(key)+"' is not set for "+str(model)+" model!")
+        
+        #find integrator        
+        if integrator==None:
+            integrators=TitanSimulationBase.possible_internal_mat_models[model]['integrators']
+            msg=""
             
+            for desc in integrators:
+                does_feat=True
+                msg+="Testing: "+desc['constructor'].__name__+"\n"
+                for cond in desc['conditions']:
+                    cond_result=cond(self)
+                    msg+="  "+inspect.getsource(cond).strip()+" ===>"+str(cond_result)+"\n"
+                    does_feat=does_feat and cond_result
+                if does_feat:
+                    integrator=desc['constructor']
+                    break
+            if integrator==None:
+                raise ValueError("Can not find suitable integrator, here is the hint\n"+msg+"\ncheck the manual.")
+        
+        #set element type
+        elementType=TitanSimulationBase.possible_internal_mat_models[model]['elementType']
+        self.sim.set_element_type(elementType)
+        #construct integrator
+        integrator_obj=integrator(self.sim)
+        #set parameters
+        for k,v in model_parameters.iteritems():
+            setattr(integrator_obj,k,v)
+        
+        
+        self.sim.set_integrator(integrator_obj)
+        self.integrator_initialized=True
+        #uncouple the c++ from python proxy 
+        integrator_obj.thisown=0
+        
     def setMatMap(self,
             use_gis_matmap=False,
             number_of_cells_across_axis=20,
             int_frict=30.0,
             bed_frict=15.0,
             mat_names=None):
+        if not self.integrator_initialized:
+            raise ValueError("Internal material model should be set before setMatMap!(see setIntMatModel")
+        
         #Use GIS Material Map?        
         self.sim.use_gis_matmap = use_gis_matmap
+        
+        #here we need to set mat prop
+        if self.sim.get_element_type()==ElementType_SinglePhase:
+            matprops=MatProps(self.sim.scale_)
+        elif self.sim.get_element_type()==ElementType_TwoPhases:
+            matprops=MatPropsTwoPhases(self.sim.scale_)
+        
         #Number of Computational Cells Across Smallest Pile/Flux-Source Diameter
-        self.sim.get_matprops().number_of_cells_across_axis = int(number_of_cells_across_axis)
-        if self.sim.get_matprops().number_of_cells_across_axis<=0:
+        matprops.number_of_cells_across_axis = int(number_of_cells_across_axis)
+        if matprops.number_of_cells_across_axis<=0:
             raise ValueError("TitanSimulation::number_of_cells_across_axis should be positive")
         
         
         if not isinstance(bed_frict, (list, tuple)):
             bed_frict=[bed_frict]
         
-        self.sim.get_matprops().intfrict=float(int_frict)
+        matprops.intfrict=float(int_frict)
         if self.sim.use_gis_matmap == False:
-            self.sim.get_matprops().material_count=1
-            self.sim.get_matprops().matnames.push_back("all materials")
-            self.sim.get_matprops().bedfrict.push_back(float(bed_frict[0]))
+            matprops.material_count=1
+            matprops.matnames.push_back("all materials")
+            matprops.bedfrict.push_back(float(bed_frict[0]))
         else:  #if they did want to use a GIS material map...
-            self.sim.get_matprops().material_count=len(mat_names)
+            matprops.material_count=len(mat_names)
             if len(bed_frict)!=len(mat_names):
                 raise Exception("number of mat_names does not match number of bed_frict")
             for i in range(len(bed_frict)):
-                self.sim.get_matprops().matnames.push_back(mat_names[i])
-                self.sim.get_matprops().bedfrict.push_back(float(bed_frict[i]))
+                matprops.matnames.push_back(mat_names[i])
+                matprops.bedfrict.push_back(float(bed_frict[i]))
             raise Exception("GIS material map Not implemented yet")
         
-    def validatePile(self, **kwargs):
-        out={}
-        out['height']=float(kwargs['height'])
-        if out['height'] < 0.0:
-            raise ValueError('TitanPile::height should be non negative')
+        self.sim.set_matprops(matprops)
+        #uncouple the c++ from python proxy 
+        matprops.thisown=0 
         
-        if 'center' in kwargs and kwargs['center']!=None:
-            out['xcenter'] = float(kwargs['center'][0])
-            out['ycenter'] = float(kwargs['center'][1])
-        else:
-            out['xcenter'] = 1.0
-            out['ycenter'] = 1.0
-            
-        if 'radii' in kwargs and kwargs['radii']!=None:
-            out['majradius'] = float(kwargs['radii'][0])
-            out['minradius'] = float(kwargs['radii'][1])
-        else:
-            out['majradius'] = 1.0
-            out['minradius'] = 1.0
-        out['orientation'] = float(kwargs['orientation'])
-        out['Vmagnitude'] = float(kwargs['Vmagnitude'])
-        out['Vdirection'] = float(kwargs['Vdirection'])
-        
-        if 'pile_type' not in kwargs or kwargs['pile_type']==None:
-            kwargs['pile_type']='CYLINDER'
-        
-        if kwargs['pile_type'] in TitanSimulation.possible_pile_types:
-            out['pile_type'] = TitanSimulation.possible_pile_types[kwargs['pile_type']]
-        else:
-            raise ValueError("Unknown pile_type "+str(pile_type)+". Possible formats: "+str(possible_pile_types.keys()))
-            
-        return out
+
         
     def addPile(self,**kwargs):
         """
@@ -316,12 +446,88 @@ class TitanSinglePhase(TitanSimulation):
         Vmagnitude=float - Initial speed [m/s]
         
         Vdirection = float - Initial direction ([degrees] from X axis)
-        """
         
-        pile=self.validatePile(**kwargs)
-        if pile!=None:
-            self.sim.pileprops_single_phase.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
-                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'])
+        pile_type = string - ['PARABALOID', 'CYLINDER']
+        
+        vol_fract = float - Initial solid-volume fraction,(0:1.) [for two phases]
+        """
+        if not self.integrator_initialized:
+            raise ValueError("Internal material model should be set before adding piles!(see setIntMatModel")
+        
+        
+        #couple helping functions
+        def validateSinglePhasePile(**kwargs):
+            out={}
+            out['height']=float(kwargs['height'])
+            if out['height'] < 0.0:
+                raise ValueError('TitanPile::height should be non negative')
+            
+            if 'center' in kwargs and kwargs['center']!=None:
+                out['xcenter'] = float(kwargs['center'][0])
+                out['ycenter'] = float(kwargs['center'][1])
+            else:
+                out['xcenter'] = 1.0
+                out['ycenter'] = 1.0
+                
+            if 'radii' in kwargs and kwargs['radii']!=None:
+                out['majradius'] = float(kwargs['radii'][0])
+                out['minradius'] = float(kwargs['radii'][1])
+            else:
+                out['majradius'] = 1.0
+                out['minradius'] = 1.0
+            out['orientation'] = float(kwargs['orientation'])
+            out['Vmagnitude'] = float(kwargs['Vmagnitude'])
+            out['Vdirection'] = float(kwargs['Vdirection'])
+            
+            if 'pile_type' not in kwargs or kwargs['pile_type']==None:
+                kwargs['pile_type']='CYLINDER'
+            
+            if kwargs['pile_type'] in TitanSimulationBase.possible_pile_types:
+                out['pile_type'] = TitanSimulationBase.possible_pile_types[kwargs['pile_type']]
+            else:
+                raise ValueError("Unknown pile_type "+str(pile_type)+". Possible formats: "+str(possible_pile_types.keys()))
+                
+            return out
+        
+        def validateTwoPhasesPile(**kwargs):
+            out=validateSinglePhasePile(**kwargs)
+            #if 'pile_type' not in kwargs or kwargs['pile_type']==None:
+            #    kwargs['pile_type']='PARABALOID'
+            out['vol_fract'] = float(kwargs['vol_fract'])
+            return out
+        
+        if self.sim.get_element_type()==ElementType_SinglePhase:
+            if self.pileprops==None:
+                self.pileprops=PileProps()
+                self.pileprops.thisown=0
+                self.sim.set_pileprops(self.pileprops)
+            if not isinstance(self.pileprops,PileProps):
+                raise ValueError("Can not mix element type for piles!")
+            if isinstance(self.pileprops,PilePropsTwoPhases):
+                raise ValueError("Can not mix element type for piles!")
+            
+            pile=validateSinglePhasePile(**kwargs)
+            if pile!=None:
+                self.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+                                       pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'])
+        elif self.sim.get_element_type()==ElementType_TwoPhases:
+            if self.pileprops==None:
+                self.pileprops=PilePropsTwoPhases()
+                self.pileprops.thisown=0
+                self.sim.set_pileprops(self.pileprops)
+            if not isinstance(self.pileprops,PileProps):
+                raise ValueError("Can not mix element type for piles!")
+            if not isinstance(self.pileprops,PilePropsTwoPhases):
+                raise ValueError("Can not mix element type for piles!")
+            
+            pile=validateTwoPhasesPile(**kwargs)
+            if pile!=None:
+                self.pileprops.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
+                                       pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'],pile['vol_fract'])
+        else:
+            raise ValueError("Unknown element type")
+    
+
             
     
     def validateFluxSource(self,influx,start_time,end_time,center,radii,
@@ -417,9 +623,9 @@ class TitanSinglePhase(TitanSimulation):
         #self.sim.input_summary()
         self.sim.run()
 
-class TitanTwoPhases(TitanSinglePhase):
+class TitanTwoPhases(TitanSimulation):
     def __init__(self, **kwargs):
-        kwargs['sim_class']=cxxTitanTwoPhases()
+        kwargs['sim_class']=cxxTitanSimulation()
         super(TitanTwoPhases, self).__init__(**kwargs)
         
     def validatePile(self, **kwargs):

@@ -132,9 +132,11 @@ public:
     tivector<T> elenode_;
     
 public:
-    HashTable(double *doublekeyrangein, int size, double XR[], double YR[],tisize_t reserved_size);
+    HashTable(tisize_t reserved_size);
     ~HashTable(){}
     
+    void init(double *doublekeyrangein, int size, double XR[], double YR[]);
+
     int hash(const SFC_Key& keyi) const
     {
         //Keith made this change 20061109; and made hash an inline function
@@ -208,9 +210,11 @@ class NodeHashTable: public HashTable<Node>
 public:
     friend class ElementsHashTable;
 
-    NodeHashTable(double *doublekeyrangein, int size, double XR[], double YR[]);
+    NodeHashTable();
     ~NodeHashTable();
     
+    void init(double *doublekeyrangein, int size, double XR[], double YR[]);
+
     Node* createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
     Node* createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);
     Node* createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
@@ -259,6 +263,9 @@ public:
 };
 extern NodeHashTable *nodeHashTable;
 
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 //! Hashtables for Elements
 class ElementsHashTable: public HashTable<Element>
@@ -273,8 +280,12 @@ protected:
     vector<SFC_Key> ukeyLocalElements;
     vector<Element*> localElements;
 public:
-    ElementsHashTable(double *doublekeyrangein, int size, double XR[], double YR[], NodeHashTable* nodeTable);
+    ElementsHashTable(NodeHashTable* nodeTable);
     ~ElementsHashTable();
+
+    void init(double *doublekeyrangein, int size, double XR[], double YR[]);
+
+    void set_element_type(const ElementType m_elementType);
 
     int getNumberOfLocalElements()
     {

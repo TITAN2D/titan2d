@@ -60,7 +60,7 @@
  the SFC 
 
  ----------------------------------------------------------------------*/
-
+#include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
 
@@ -272,7 +272,7 @@ void hsfc3d(unsigned coord[], /* IN: Normalized integer coordinates */
                 axis[2] = axis[3 + 0] ^ 01;
                 break;
             default:
-                exit(-1);
+                assert(0);
         }
     }
 }

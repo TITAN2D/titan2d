@@ -63,21 +63,21 @@ void Node::init(const SFC_Key& keyi, double* coordi, MatProps* matprops_ptr)
     zero_flux();
     // find the max resolution of the GIS info and then get the elevation at this node
     double resolution = 0;
-    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->scale.length);
+    double ycoord = coord(1) * (matprops_ptr->scale.length);
     i = Get_max_resolution(&resolution);
     if(i != 0)
     {
         printf("error in Get_max_resolution\n");
-        exit(1);
+        assert(0);
     }
     i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation(%d) r=%g (x,y)=(%g,%g) e=%g\n", i, resolution, xcoord, ycoord, elevation());
-        exit(1);
+        assert(0);
     }
-    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
+    elevation(elevation() / matprops_ptr->scale.length);
     /*  if((unsigned) 1548032885 == key[0])
      printf("created the missing node...\n"); */
 
@@ -113,17 +113,17 @@ void Node::init(const SFC_Key& keyi, const double *coordi, const int inf, const 
     if(i != 0)
     {
         printf("error in Get_max_resolution\n");
-        exit(1);
+        assert(0);
     }
-    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->scale.length);
+    double ycoord = coord(1) * (matprops_ptr->scale.length);
     i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation\n");
-        exit(1);
+        assert(0);
     }
-    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
+    elevation(elevation() / matprops_ptr->scale.length);
     /*  if((unsigned) 1548032885 == key[0])
      printf("created the missing node111111...\n");*/
 
@@ -172,21 +172,21 @@ Node::~Node()
 void Node::elevation(MatProps* matprops_ptr)
 {
     double resolution = 0;
-    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->scale.length);
+    double ycoord = coord(1) * (matprops_ptr->scale.length);
     int i = Get_max_resolution(&resolution);
     if(i != 0)
     {
         printf("error in Get_max_resolution\n");
-        exit(1);
+        assert(0);
     }
     i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation\n");
-        exit(1);
+        assert(0);
     }
-    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
+    elevation(elevation() / matprops_ptr->scale.length);
     
 }
 
@@ -323,21 +323,21 @@ void Node::init(FILE* fp, MatProps* matprops_ptr)
      */
     // find the max resolution of the GIS info and then get the elevation at this node
     double resolution = 0;
-    double xcoord = coord(0) * (matprops_ptr->LENGTH_SCALE);
-    double ycoord = coord(1) * (matprops_ptr->LENGTH_SCALE);
+    double xcoord = coord(0) * (matprops_ptr->scale.length);
+    double ycoord = coord(1) * (matprops_ptr->scale.length);
     int i = Get_max_resolution(&resolution);
     if(i != 0)
     {
         printf("error in Get_max_resolution\n");
-        exit(1);
+        assert(0);
     }
     i = Get_elevation(resolution, xcoord, ycoord, elevation_ref());
     if(i != 0)
     {
         printf("error in Get_elevation\n");
-        exit(1);
+        assert(0);
     }
-    elevation(elevation() / matprops_ptr->LENGTH_SCALE);
+    elevation(elevation() / matprops_ptr->scale.length);
     
     return;
 }

@@ -1462,7 +1462,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
     return;
     
     printf("myid=%d reached the end of initial_H_adapt\n", myid);
-    exit(1);
+    assert(0);
 }
 /***********************************************************************/
 

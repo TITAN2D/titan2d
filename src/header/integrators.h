@@ -17,8 +17,9 @@
 #define INTEGRATORS_H
 
 #include "hpfem.h"
+#include "properties.h"
 
-class cxxTitanSinglePhase;
+class cxxTitanSimulation;
 
 /**
  * Base class for integrators
@@ -29,14 +30,20 @@ class cxxTitanSinglePhase;
  * from the current timestep's data.
  *
  */
-class Integrator:public EleNodeRef
+class Integrator:public EleNodeRef,TiScalableObject
 {
 public:
-    Integrator(cxxTitanSinglePhase *_titanSimulation);
+    friend class cxxTitanSimulation;
+
+    Integrator(cxxTitanSimulation *_titanSimulation);
     virtual ~Integrator();
 
     //! Perform one integration step
     virtual void step();//=0;
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
 
 protected:
     /**
@@ -51,7 +58,7 @@ protected:
 protected:
     //!references to members of other classes
     int &order;
-    ElementType &elementType;
+    const ElementType &elementType;
 
     TimeProps *timeprops_ptr;
     MatProps *matprops_ptr;
@@ -77,6 +84,9 @@ protected:
     double eroded;
     double deposited;
     double realvolume;
+public:
+    double int_frict;
+    double frict_tiny;
 };
 
 /**
@@ -85,7 +95,7 @@ protected:
 class Integrator_SinglePhase:public Integrator
 {
 public:
-    Integrator_SinglePhase(cxxTitanSinglePhase *_titanSimulation);
+    Integrator_SinglePhase(cxxTitanSimulation *_titanSimulation);
 
 protected:
     /**
@@ -120,12 +130,13 @@ protected:
 /**
  * First order integrator for single phase and Coulomb material model
  */
-class Integrator_SinglePhase_CoulombMat_FirstOrder:public Integrator_SinglePhase
+class Integrator_SinglePhase_Coulomb_FirstOrder:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+    Integrator_SinglePhase_Coulomb_FirstOrder(cxxTitanSimulation *_titanSimulation);
 
 protected:
+
     /**
      * Predictor step for second order of nothing for first order
      */
@@ -134,6 +145,8 @@ protected:
      * Corrector step for second order of whole step for first order
      */
     virtual void corrector();
+
+
 };
 
 /**
@@ -142,7 +155,7 @@ protected:
 class Integrator_SinglePhase_Vollmey_FirstOrder:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+    Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSimulation *_titanSimulation);
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -164,7 +177,7 @@ public:
 class Integrator_SinglePhase_Pouliquen_FirstOrder:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+    Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSimulation *_titanSimulation);
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -188,7 +201,7 @@ public:
 class Integrator_SinglePhase_Maeno_FirstOrder:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSinglePhase *_titanSimulation);
+    Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSimulation *_titanSimulation);
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -206,4 +219,22 @@ public:
     double I_not;
 };
 
+/**
+ * Base class for SinglePhase Integrators
+ */
+class Integrator_TwoPhase:public Integrator
+{
+public:
+    Integrator_TwoPhase(cxxTitanSimulation *_titanSimulation);
+
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    //virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    //virtual void corrector();
+};
 #endif

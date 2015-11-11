@@ -50,8 +50,8 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     int conn[4];
     
     // scaling factor for the momentums
-    double momentum_scale = matprops_ptr->HEIGHT_SCALE
-            * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE));
+    double momentum_scale = matprops_ptr->scale.height
+            * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity));
     
     /* scan HashTable and store coordinates and variables in vectors */
     Element *EmTemp = NULL;
@@ -68,26 +68,26 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
             EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(!(EmTemp->refined_flag()))
             {
-                pheight.push_back(EmTemp->state_vars(0) * matprops_ptr->HEIGHT_SCALE);
+                pheight.push_back(EmTemp->state_vars(0) * matprops_ptr->scale.height);
                 xmom.push_back(EmTemp->state_vars(2) * momentum_scale);
                 ymom.push_back(EmTemp->state_vars(3) * momentum_scale);
                 num_elm++;
                 for(j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
-                    xcoord.push_back(NodeTemp->coord(0) * matprops_ptr->LENGTH_SCALE);
-                    ycoord.push_back(NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE);
+                    xcoord.push_back(NodeTemp->coord(0) * matprops_ptr->scale.length);
+                    ycoord.push_back(NodeTemp->coord(1) * matprops_ptr->scale.length);
                     conn[j] = num_nodes;
                     // Side-Corner node will have discontinuity in elevation
                     if(NodeTemp->info() != S_C_CON)
                     {
-                        elevation = NodeTemp->elevation() * matprops_ptr->LENGTH_SCALE;
+                        elevation = NodeTemp->elevation() * matprops_ptr->scale.length;
                         zcoord.push_back(elevation);
                     }
                     // hence <get a fake one> interpolate from neighbor
                     else
                     {
-                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j) * matprops_ptr->LENGTH_SCALE;
+                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j) * matprops_ptr->scale.length;
                         zcoord.push_back(elevation);
                     }
                     num_nodes++;
@@ -214,8 +214,8 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     double elevation;
     
     // scaling factor for the momentums
-    double momentum_scale = matprops_ptr->HEIGHT_SCALE
-            * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE));
+    double momentum_scale = matprops_ptr->scale.height
+            * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity));
     static double time_prev;
     
     /* generate XML file if required */
@@ -301,26 +301,26 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
             EmTemp = &(elenode_[bucket[ibuck].ndx[jelm]]);
             if(!(EmTemp->refined_flag()))
             {
-                pheight[ielm] = EmTemp->state_vars(0) * matprops_ptr->HEIGHT_SCALE;
+                pheight[ielm] = EmTemp->state_vars(0) * matprops_ptr->scale.height;
                 xmom[ielm] = EmTemp->state_vars(1) * momentum_scale;
                 ymom[ielm] = EmTemp->state_vars(2) * momentum_scale;
                 for(j = 0; j < 4; j++)
                 {
                     NodeTemp = (Node *) NodeTable->lookup(EmTemp->node_key(j));
                     int inode = NodeTemp->connection_id();
-                    xyz[3 * inode] = NodeTemp->coord(0) * matprops_ptr->LENGTH_SCALE;
-                    xyz[3 * inode + 1] = NodeTemp->coord(1) * matprops_ptr->LENGTH_SCALE;
+                    xyz[3 * inode] = NodeTemp->coord(0) * matprops_ptr->scale.length;
+                    xyz[3 * inode + 1] = NodeTemp->coord(1) * matprops_ptr->scale.length;
                     connections[4 * ielm + j] = inode;
                     // Side-Corner node will have discontinuity in elevation
                     if(NodeTemp->info() != S_C_CON)
                     {
-                        elevation = NodeTemp->elevation() * matprops_ptr->LENGTH_SCALE;
+                        elevation = NodeTemp->elevation() * matprops_ptr->scale.length;
                         xyz[3 * inode + 2] = elevation;
                     }
                     // hence <get a fake one> interpolate from neighbor
                     else
                     {
-                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j) * matprops_ptr->LENGTH_SCALE;
+                        elevation = interpolate_elv(El_Table, NodeTable, EmTemp, j) * matprops_ptr->scale.length;
                         xyz[3 * inode + 2] = elevation;
                     }
                 }

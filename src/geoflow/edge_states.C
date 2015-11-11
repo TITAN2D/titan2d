@@ -29,7 +29,7 @@
  *  GIS map's cummulative outflow (defined as the mass flow off of the
  *  GIS map).  Also, the elements are checked for multiple pile-height values 
  */
-void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,
+void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,Integrator *integrator,
                       int myid, const int order_flag, double *outflow)
 {
     int i, j, k, counter;
@@ -60,7 +60,7 @@ void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
             {
                 //if this element doesn't belong on this processor don't involve
                 double pheight = Curr_El->state_vars(0);
-                Curr_El->calc_edge_states(El_Table, NodeTable, matprops_ptr, myid, timeprops_ptr->dtime, order_flag,
+                Curr_El->calc_edge_states(El_Table, NodeTable, matprops_ptr, integrator, myid, timeprops_ptr->dtime, order_flag,
                                           &localoutflow);
 //(mdj)		*outflow+=localoutflow;
                 localoutflow_sum += localoutflow;

@@ -236,7 +236,7 @@ void predict2ph(Element *Elm, const double *dUdx, const double *dUdy,
 }
 
 
-Integrator::Integrator(cxxTitanSinglePhase *_titanSimulation):
+Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
     timeprops_ptr(_titanSimulation->get_timeprops()),
     matprops_ptr(_titanSimulation->get_matprops()),
@@ -245,9 +245,10 @@ Integrator::Integrator(cxxTitanSinglePhase *_titanSimulation):
     statprops_ptr(_titanSimulation->get_statprops()),
     outline_ptr(_titanSimulation->get_outline()),
     discharge_ptr(_titanSimulation->get_discharge_planes()),
-    elementType(_titanSimulation->elementType),
+    elementType(_titanSimulation->get_element_type()),
     order(_titanSimulation->order),
-    adapt(_titanSimulation->adapt)
+    adapt(_titanSimulation->adapt),
+    TiScalableObject(_titanSimulation->scale_)
 {
 
     tiny = GEOFLOW_TINY;
@@ -259,10 +260,38 @@ Integrator::Integrator(cxxTitanSinglePhase *_titanSimulation):
     eroded = 0.0;
     deposited = 0.0;
     realvolume = 0.0;
+
+
+    int_frict = 0.0;
+    frict_tiny = 0.1;
 }
 Integrator::~Integrator()
 {
 
+}
+bool Integrator::scale()
+{
+    if(TiScalableObject::scale())
+    {
+        frict_tiny=scale_.frict_tiny;
+        int_frict = int_frict * PI / 180.0;
+        return true;
+    }
+    return false;
+}
+bool Integrator::unscale()
+{
+    if(TiScalableObject::unscale())
+    {
+        frict_tiny=scale_.frict_tiny;
+        int_frict = int_frict * 180.0/PI;
+        return true;
+    }
+    return false;
+}
+void Integrator::print0(int spaces)
+{
+    printf("%*cIntegrator\n", spaces,' ');
 }
 void Integrator::predictor()
 {
@@ -325,8 +354,8 @@ void Integrator::predictor()
                     Curr_El->dh_dx(), Curr_El->dhVx_dx(), Curr_El->dhVy_dx(),
                     Curr_El->dh_dy(), Curr_El->dhVx_dy(), Curr_El->dhVy_dy(),
                     tiny, Curr_El->kactxy(0), dt2, gravity, Curr_El->curvature(0), Curr_El->curvature(1),
-                    matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
-                    d_gravity, matprops_ptr->frict_tiny, order, VxVy, IF_STOPPED, influx);
+                    matprops_ptr->bedfrict[Curr_El->material()], int_frict,
+                    d_gravity, frict_tiny, order, VxVy, IF_STOPPED, influx);
         }
 
         // apply bc's
@@ -369,7 +398,7 @@ void Integrator::corrector()
             elements_[ndx].update_prev_state_vars();
 
         void *Curr_El_out = (void *) Curr_El;
-        correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, Curr_El_out, &elemforceint,
+        correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, this, Curr_El_out, &elemforceint,
                 &elemforcebed, &elemeroded, &elemdeposited);
 
         forceint += fabs(elemforceint);
@@ -401,6 +430,9 @@ void Integrator::step()
     PROFILING3_DEFINE(pt_start);
     PROFILING3_START(pt_start);
 
+    //reset class members which can be reset outside
+    frict_tiny=scale_.frict_tiny;
+
     /*
      * PREDICTOR-CORRECTED based on Davis' Simplified Godunov Method
      */
@@ -416,7 +448,7 @@ void Integrator::step()
     PROFILING3_STOPADD_RESTART(step_slopesCalc,pt_start);
 
     // get coefficients, eigenvalues, hmax and calculate the time step
-    dt = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops_ptr, timeprops_ptr, 0);
+    dt = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops_ptr, this, timeprops_ptr, 0);
     PROFILING3_STOPADD_RESTART(step_get_coef_and_eigen,pt_start);
 
     timeprops_ptr->incrtime(&dt); //also reduces dt if necessary
@@ -440,7 +472,7 @@ void Integrator::step()
 
     //-------------------go through all the elements of the subdomain and
     //-------------------calculate the state variables at time .5*delta_t
-    if(order==1)predictor();
+    if(order!=1)predictor();
     PROFILING3_STOPADD_RESTART(step_predict,pt_start);
     TIMING1_STOPADD(predictorStepTime, t_start);
     /* finished predictor step */
@@ -463,14 +495,14 @@ void Integrator::step()
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     /* calculate kact/pass */
-    double dt_not_used = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops_ptr, timeprops_ptr, 1);
+    double dt_not_used = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops_ptr, this, timeprops_ptr, 1);
     PROFILING3_STOPADD_RESTART(step_get_coef_and_eigen,pt_start);
     /*
      * calculate edge states
      */
     double outflow = 0.0;  //shouldn't need the =0.0 assignment but just being cautious.
     //printf("step: before calc_edge_states\n"); fflush(stdout);
-    calc_edge_states(ElemTable, NodeTable, matprops_ptr, timeprops_ptr, myid, order, &outflow);
+    calc_edge_states(ElemTable, NodeTable, matprops_ptr, timeprops_ptr, this, myid, order, &outflow);
     PROFILING3_STOPADD_RESTART(step_calc_edge_states,pt_start);
 
     outflow *= dt;
@@ -517,24 +549,24 @@ void Integrator::step()
 
     MPI_Reduce(tempin, tempout, 6, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
-                                 * (matprops_ptr->LENGTH_SCALE);
-    statprops_ptr->erodedvol += tempout[1] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
-                                * (matprops_ptr->LENGTH_SCALE);
-    statprops_ptr->depositedvol = tempout[2] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
-                                  * (matprops_ptr->LENGTH_SCALE);
-    statprops_ptr->realvolume = tempout[3] * (matprops_ptr->HEIGHT_SCALE) * (matprops_ptr->LENGTH_SCALE)
-                                * (matprops_ptr->LENGTH_SCALE);
+    statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
+                                 * (matprops_ptr->scale.length);
+    statprops_ptr->erodedvol += tempout[1] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
+                                * (matprops_ptr->scale.length);
+    statprops_ptr->depositedvol = tempout[2] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
+                                  * (matprops_ptr->scale.length);
+    statprops_ptr->realvolume = tempout[3] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
+                                * (matprops_ptr->scale.length);
 
-    statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
-    statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->GRAVITY_SCALE;
+    statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->scale.gravity;
+    statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->scale.gravity;
 
     PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
 
     return;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase::Integrator_SinglePhase(cxxTitanSinglePhase *_titanSimulation):
+Integrator_SinglePhase::Integrator_SinglePhase(cxxTitanSimulation *_titanSimulation):
         Integrator(_titanSimulation),
         h(state_vars_[0]),
         hVx(state_vars_[1]),
@@ -562,20 +594,23 @@ void Integrator_SinglePhase::corrector()
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_CoulombMat_FirstOrder::Integrator_SinglePhase_CoulombMat_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+Integrator_SinglePhase_Coulomb_FirstOrder::Integrator_SinglePhase_Coulomb_FirstOrder(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
+
+    //intfrictang=matprops_ptr->intfrict;
+    //frict_tiny=matprops_ptr->frict_tiny;
 }
 
-void Integrator_SinglePhase_CoulombMat_FirstOrder::predictor()
+void Integrator_SinglePhase_Coulomb_FirstOrder::predictor()
 {
 }
 
 
 
-void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
+void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
 {
     Element* Curr_El;
 
@@ -591,9 +626,9 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
     double elem_eroded;
     double elem_deposited;
 
-    double intfrictang=matprops_ptr->intfrict;
-    double frict_tiny=matprops_ptr->frict_tiny;
-    double sin_intfrictang=sin(intfrictang);
+    //intfrictang=matprops_ptr->intfrict;
+    //frict_tiny=matprops_ptr->frict_tiny;
+    double sin_intfrictang=sin(int_frict);
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -890,7 +925,7 @@ void Integrator_SinglePhase_CoulombMat_FirstOrder::corrector()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Vollmey_FirstOrder::Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+Integrator_SinglePhase_Vollmey_FirstOrder::Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
@@ -918,10 +953,6 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
     double elem_forcebed;
     double elem_eroded;
     double elem_deposited;
-
-    double intfrictang=matprops_ptr->intfrict;
-    double frict_tiny=matprops_ptr->frict_tiny;
-    double sin_intfrictang=sin(intfrictang);
 
     double inv_xi= 1.0/xi;
 
@@ -1228,7 +1259,7 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Pouliquen_FirstOrder::Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+Integrator_SinglePhase_Pouliquen_FirstOrder::Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
@@ -1261,10 +1292,6 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
     double elem_forcebed;
     double elem_eroded;
     double elem_deposited;
-
-    double intfrictang=matprops_ptr->intfrict;
-    double frict_tiny=matprops_ptr->frict_tiny;
-    double sin_intfrictang=sin(intfrictang);
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -1579,7 +1606,7 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Maeno_FirstOrder::Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSinglePhase *_titanSimulation):
+Integrator_SinglePhase_Maeno_FirstOrder::Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
@@ -1610,10 +1637,6 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
     double elem_forcebed;
     double elem_eroded;
     double elem_deposited;
-
-    double intfrictang=matprops_ptr->intfrict;
-    double frict_tiny=matprops_ptr->frict_tiny;
-    double sin_intfrictang=sin(intfrictang);
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -1922,6 +1945,13 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
     }
 
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_TwoPhase::Integrator_TwoPhase(cxxTitanSimulation *_titanSimulation):
+        Integrator(_titanSimulation)
+{
+    assert(elementType==ElementType::TwoPhases);
+    assert(order==1||order==2);
+}
 /***********************************************************************/
 /* calc_volume():                                                      */
 /* calculates volume to verify mass conservation                       */
@@ -1941,7 +1971,7 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
     double v_ave = 0, gl_v_ave;
     double g_ave = 0, gl_g_ave;
     double v_max = 0, gl_v_max;
-    double min_height = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT;
+    double min_height = matprops_ptr->scale.max_negligible_height;
     register double temp;
     
     int no_of_buckets = El_Table->get_no_of_buckets();
@@ -2026,14 +2056,14 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
      */
     if(myid == 0)
     {
-        *nz_star = *nz_star / gl_volume2 * matprops_ptr->GRAVITY_SCALE / 9.8;
+        *nz_star = *nz_star / gl_volume2 * matprops_ptr->scale.gravity / 9.8;
         //dimensionalize
-        gl_v_ave = gl_v_ave / gl_volume2 * sqrt(matprops_ptr->LENGTH_SCALE * matprops_ptr->GRAVITY_SCALE);
-        gl_v_max = gl_v_max * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE));
+        gl_v_ave = gl_v_ave / gl_volume2 * sqrt(matprops_ptr->scale.length * matprops_ptr->scale.gravity);
+        gl_v_max = gl_v_max * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity));
         
-        gl_volume = gl_volume * (matprops_ptr->LENGTH_SCALE) * (matprops_ptr->LENGTH_SCALE)
-                    * (matprops_ptr->HEIGHT_SCALE);
-        gl_max_height = gl_max_height * (matprops_ptr->HEIGHT_SCALE);
+        gl_volume = gl_volume * (matprops_ptr->scale.length) * (matprops_ptr->scale.length)
+                    * (matprops_ptr->scale.height);
+        gl_max_height = gl_max_height * (matprops_ptr->scale.height);
         
         d_time *= timeprops_ptr->TIME_SCALE;
         
@@ -2068,7 +2098,7 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     
     double mom2, max_mom = 0, gl_max_mom;
-    double min_height = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT;
+    double min_height = matprops_ptr->scale.max_negligible_height;
     int i;
     
     int no_of_buckets = El_Table->get_no_of_buckets();
@@ -2121,7 +2151,7 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
     else
         gl_max_mom = max_mom;
     
-    return (gl_max_mom * matprops_ptr->HEIGHT_SCALE * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE)));
+    return (gl_max_mom * matprops_ptr->scale.height * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)));
     
 }
 
@@ -2167,7 +2197,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
     double velocity2;
     double v_max = 0;
     double xy_v_max[2];
-    double min_height = matprops_ptr->MAX_NEGLIGIBLE_HEIGHT;
+    double min_height = matprops_ptr->scale.max_negligible_height;
     int i;
     struct
     { //for use with MPI_MAXLOC
@@ -2245,14 +2275,14 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
         //print to screen
         printf("the final v* = v/v_slump = %g\n", v_star);
         printf("The maximum final velocity of %g [m/s] \noccured at the UTM coordinates (%g,%g)\n",
-               v_max * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE)),
-               xy_v_max[0] * matprops_ptr->LENGTH_SCALE, xy_v_max[1] * matprops_ptr->LENGTH_SCALE);
+               v_max * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)),
+               xy_v_max[0] * matprops_ptr->scale.length, xy_v_max[1] * matprops_ptr->scale.length);
         
         //print to file
         fprintf(fp, "the final v* = v/v_slump = %g\n", v_star);
         fprintf(fp, "The maximum final velocity of %g [m/s] \noccured at the UTM coordinates (%g,%g)\n",
-                v_max * sqrt(matprops_ptr->LENGTH_SCALE * (matprops_ptr->GRAVITY_SCALE)),
-                xy_v_max[0] * matprops_ptr->LENGTH_SCALE, xy_v_max[1] * matprops_ptr->LENGTH_SCALE);
+                v_max * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)),
+                xy_v_max[0] * matprops_ptr->scale.length, xy_v_max[1] * matprops_ptr->scale.length);
         fclose(fp);
     }
     
@@ -2265,7 +2295,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
 extern "C" void predict_1ph_coul_(double *Uvec, double *dUdx, double *dUdy,
         double *Uprev, double *tiny, double *kactxy,
         double *dt2, double *g, double *curv,
-        double *bedfrictang, double *intfrictang,
+        double *bedfrictang, double *int_frict,
         double *dgdx, double *frict_tiny, int *order_flag,
         double *VxVy, int *if_stopped, double *fluxcoef);
 
@@ -2274,7 +2304,7 @@ extern "C" void correct_1ph_coul_(double *Uvec, double *Uprev, double *fluxxp,
         double *fluxyp, double *fluxxm, double *fluxym,
         double *tiny, double *dtdx, double *dtdy, double *dt,
         double *dUdx, double *dUdy, double *xslope,
-        double *yslope, double *curv, double *intfrictang,
+        double *yslope, double *curv, double *int_frict,
         double *bedfrictang, double *g, double *kactxy,
         double *dgdx, double *frict_tiny, double *forceint,
         double *forcebed, int *do_erosion, double *eroded,

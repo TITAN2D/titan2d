@@ -33,6 +33,7 @@ class TimeProps;
 class FluxProps;
 class Node;
 class ElementsHashTable;
+class Integrator;
 
 extern ElementsHashTable *elementsHashTable;
 template<typename T> class tivector;
@@ -519,19 +520,19 @@ public:
     void insert_coord(NodeHashTable* NodeTable);
 
     //! this function, based on the dir flag, chooses between calling xdirflux and ydirflux, which respectively, calculate either the x or y direction analytical cell center fluxes (or the fluxes at the the boundary if 2nd order flux option is checked on the gui). Keith wrote this.
-    void zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, const int order_flag, int dir,
+    void zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, Integrator *integrator, const int order_flag, int dir,
             double hfv[3][MAX_NUM_STATE_VARS], double hrfv[3][MAX_NUM_STATE_VARS], Element* EmNeigh, double dt);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) x direction fluxes. Keith wrote this
-    void xdirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
+    void xdirflux(MatProps* matprops_ptr, Integrator *integrator, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
             double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function calculates the analytical cell center (or cell boundary if 2nd order flux flag is checked on the gui) y direction fluxes. Keith wrote this
-    void ydirflux(MatProps* matprops_ptr, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
+    void ydirflux(MatProps* matprops_ptr, Integrator *integrator, double dz, double thissideSwet, double hfv[3][MAX_NUM_STATE_VARS],
             double hrfv[3][MAX_NUM_STATE_VARS]);
 
     //! this function (indirectly) calculates the fluxes that will be used to perform the finite volume corrector step and stores them in element edge nodes, indirectly because it calls other functions to calculate the analytical fluxes and then calls another function to compute the riemann fluxes from the analytical fluxes. Talk to me (Keith) before you modify this, as I am fairly certain that it is now completely bug free and parts of it can be slightly confusing.
-    void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid, double dt,
+    void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, Integrator *integrator, int myid, double dt,
                           const int order_flag, double *outflow);
 
     //! this function calculates the maximum x and y direction wavespeeds which are the eigenvalues of the flux jacobian
@@ -643,7 +644,7 @@ public:
     void put_coord(double* coord_in);
 
     //! this function is part of the experimental _LOCAL_ (not Bin Yu's) stopping criteria which has not yet been validated, I (Keith) have faith in the criteria, but enforcing the stopped after it has been decided that it needs to stop still needs some work. the only place this function is called is in get_coef_and_eigen.C immediately after k_active/passive and in init_piles.C when computing the initial volume that "should already be" deposited.
-    void calc_stop_crit(MatProps*);
+    void calc_stop_crit(MatProps*,Integrator *integrator);
     
     //! this function returns the value of "stoppedflags"
 

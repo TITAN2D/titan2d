@@ -278,7 +278,7 @@ void HAdaptUnrefine::delete_oldsons()
             //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
             if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
             {
-                if(NodeTable->status_[EmSon->node_key_ndx(inode)]>=0 && ti_ndx_not_negative(EmSon->node_key_ndx(inode)))
+                if(ti_ndx_not_negative(EmSon->node_key_ndx(inode)) && NodeTable->status_[EmSon->node_key_ndx(inode)]>=0)
                 {
                     //delete if not deleted previously
                     ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
@@ -300,7 +300,7 @@ void HAdaptUnrefine::delete_oldsons()
             //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
             if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
             {
-                if(NodeTable->status_[EmSon->node_key_ndx(inode)]>=0 && ti_ndx_not_negative(EmSon->node_key_ndx(inode)))
+                if(ti_ndx_not_negative(EmSon->node_key_ndx(inode)) && NodeTable->status_[EmSon->node_key_ndx(inode)]>=0)
                 {
                     //delete if not deleted previously
                     ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
