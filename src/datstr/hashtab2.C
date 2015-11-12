@@ -1236,7 +1236,9 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 dx_(ElemTable->dx_),
                 node_refinementflux_(_NodeTable->refinementflux_),
                 node_flux_(_NodeTable->flux_),
-                material_(ElemTable->material_)
+                material_(ElemTable->material_),
+                eigenvxymax_(ElemTable->eigenvxymax_),
+                coord_(ElemTable->coord_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);

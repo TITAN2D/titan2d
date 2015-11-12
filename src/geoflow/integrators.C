@@ -122,7 +122,7 @@ void Integrator::step()
     PROFILING3_STOPADD_RESTART(step_slopesCalc,pt_start);
 
     // get coefficients, eigenvalues, hmax and calculate the time step
-    dt = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops_ptr, this, timeprops_ptr, 0);
+    dt = get_coef_and_eigen(0);
     PROFILING3_STOPADD_RESTART(step_get_coef_and_eigen,pt_start);
 
     timeprops_ptr->incrtime(&dt); //also reduces dt if necessary
@@ -169,7 +169,8 @@ void Integrator::step()
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     /* calculate kact/pass */
-    double dt_not_used = get_coef_and_eigen(elementType, ElemTable, NodeTable, matprops_ptr, fluxprops_ptr, this, timeprops_ptr, 1);
+    if(order!=1||numprocs>1)
+        double dt_not_used = get_coef_and_eigen(1);
     PROFILING3_STOPADD_RESTART(step_get_coef_and_eigen,pt_start);
     /*
      * calculate edge states

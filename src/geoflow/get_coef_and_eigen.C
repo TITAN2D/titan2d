@@ -24,376 +24,237 @@
 #include "../header/integrators.h"
 #include <math.h>
 
-//! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
-void gmfggetcoef(const double h,const double hVx,const double hVy, 
-        const double dh_dx,const double dhVx_dx,
-        const double dh_dy,const double dhVy_dy,
-        const double bedfrictang, const double intfrictang, 
-        double &Kactx, double &Kacty, const double tiny, 
-	const double epsilon)
+
+double Integrator_SinglePhase::get_coef_and_eigen(int ghost_flag)
 {
-    //vel is used to determine if velocity gradients are converging or diverging
-    double vel;
-    
-    //COEFFICIENTS
-    double hSQ=h*h;
-    double cosphiSQ = cos(intfrictang);
-    double tandelSQ = tan(bedfrictang);
-    cosphiSQ*=cosphiSQ;
-    tandelSQ*=tandelSQ;
-    
-    
-    
-    if(h > tiny)
-    {
-         vel=dhVx_dx/h - hVx*dh_dx/hSQ+
-             dhVy_dy/h - hVy*dh_dy/hSQ;
-         Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
-             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
-         Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
-             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
-
-         //if there is no yielding...
-         if(fabs(hVx/h) < tiny && fabs(hVy/h) < tiny)
-         {
-            Kactx = 1.0;
-            Kacty = 1.0;
-         }
-    }
-    else
-    {
-	vel = 0.0;
-	Kactx = 1.0;
-	Kacty = 1.0;
-    }
-    Kactx = epsilon * Kactx;
-    Kacty = epsilon * Kacty;
-}
-//! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function
-//dUdx[1] dh_dx_liq
-//dUdx[2] dhVx_dx_sol
-//dUdy[1] dh_dy_liq
-//dUdy[3] dhVy_dx_sol
-
-void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol, 
-        const double dh_dx_liq,const double dhVx_dx_sol,
-        const double dh_dy_liq,const double dhVy_dy_sol,
-        const double bedfrictang, const double intfrictang, 
-        double &Kactx, double &Kacty, const double tiny, 
-	const double epsilon)
-{
-    //vel is used to determine if velocity gradients are converging or diverging
-    double vel;
-    
-    //COEFFICIENTS
-    double h_liqSQ=h_liq*h_liq;
-    double cosphiSQ = cos(intfrictang);
-    double tandelSQ = tan(bedfrictang);
-    cosphiSQ*=cosphiSQ;
-    tandelSQ*=tandelSQ;
-    
-    if(h_liq > tiny)
-    {
-         vel=dhVx_dx_sol/h_liq - hVx_sol*dh_dx_liq/h_liqSQ+
-             dhVy_dy_sol/h_liq - hVy_sol*dh_dy_liq/h_liqSQ;
-         Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
-             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
-         Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
-             sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
-
-         //if there is no yielding...
-         if(fabs(hVx_sol/h_liq) < tiny && fabs(hVy_sol/h_liq) < tiny)
-         {
-            Kactx = 1.0;
-            Kacty = 1.0;
-         }
-    }
-    else
-    {
-	vel = 0.0;
-	Kactx = 1.0;
-	Kacty = 1.0;
-    }
-    Kactx = epsilon * Kactx;
-    Kacty = epsilon * Kacty;
-}
-//! the actual calculation of wave speeds (eigen vectors of the flux jacoboians) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
-void eigen( const double h, double &eigenvxmax, double &eigenvymax, double &evalue, 
-        const double tiny, double &kactx, const double gravity_z, const double *VxVy) 
-{
-    if (h > tiny)
-    {
-        //     iverson and denlinger
-        if (kactx < 0.0)
-        {
-            //negative kactxy
-            kactx = -kactx;
-        }
-        eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
-        eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
-
-    }
-    else
-    {
-        eigenvxmax = tiny;
-        eigenvymax = tiny;
-    }
-
-    evalue = c_dmax1(eigenvxmax, eigenvymax);
-}
-//@TODO is it really h2
-void eigen2ph( const double h_sol, const double h_liq, double &eigenvxmax, double &eigenvymax, double &evalue, 
-        const double tiny, double &kactx, const double gravity_z, 
-        const double *v_solid, const double *v_fluid, const int flowtype) 
-
-{
-    double sound_speed;
-    if (h_sol > tiny) {
-        //iverson and denlinger
-        if (kactx < 0.0) {
-            kactx = -kactx;
-        }
-
-        if (flowtype == 1)
-            sound_speed = sqrt(h_sol * kactx * gravity_z);
-        else if (flowtype == 2)
-            sound_speed = sqrt(h_sol * gravity_z);
-        else
-            sound_speed = sqrt(h_liq * gravity_z * kactx+(h_sol - h_liq) * gravity_z);
-
-        //x-direction
-        eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
-
-        //y-direction
-        eigenvymax = c_dmax1(fabs(v_solid[1] + sound_speed), fabs(v_fluid[1] + sound_speed));
-    }
-    else {
-        eigenvxmax = tiny;
-        eigenvymax = tiny;
-    }
-    evalue = c_dmax1(eigenvxmax, eigenvymax);
-}
-
-
-double get_coef_and_eigen(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, FluxProps* fluxprops_ptr,
-                          Integrator *integrator, TimeProps* timeprops_ptr, int ghost_flag)
-{
-    MatPropsTwoPhases* matprops2_ptr{nullptr};
-    if(elementType == ElementType::TwoPhases)
-    {
-        matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
-    }
     int myid;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    double min_distance = 1000000, max_evalue = GEOFLOW_TINY, doubleswap;
-    
-    int ibuck, ierr;
-    double tiny = GEOFLOW_TINY, min_dx_dy_evalue = 10000000, hmax = 0;
-    double evalue = 1.0;  //might need to change this
+
+    int ierr;
+    double min_dx_dy_evalue = 10000000.0, hmax = 0.0;
+    //double evalue = 1.0;  //might need to change this
     //-------------------go through all the elements of the subdomain and get
     //-------------------the coefficients and eigenvalues and calculate the time step
-    double global_dt[3], dt[3] =
-    { 0.0, 0.0, HUGE_VAL };
+    double global_dt[3], dt[3] = { 0.0, 0.0, HUGE_VAL };
+
+    //beginning of section that SHOULD ____NOT___ be openmp'd
+    //why the first element is good enough?
+    double maxinflux = 0.0;
+    if((maxinflux = fluxprops_ptr->MaxInfluxNow(matprops_ptr, timeprops_ptr) * scale_.epsilon) > 0.0)
+    {
+        double mindx = -1.0;
+
+        for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+        {
+            if(adapted_[ndx]!=0)
+            {
+                mindx = (dx_[0][ndx] < dx_[1][ndx]) ? dx_[0][ndx] : dx_[1][ndx]
+                        * pow(0.5, REFINE_LEVEL - generation_[ndx]);
+                break;
+            }
+        }
+
+        double dttemp = mindx / maxinflux; //equivalent to dx/eigen_speed
+
+        //equivalent to 0.9*sqrt(hmax/g) where hmax=maxinflux*dt when xVel and yVel =0
+        double dttemp2 = 0.81 * maxinflux * (scale_.gravity) / 9.8;
+
+        dt[2] = c_dmin1(dttemp, dttemp2);
+    } //end of section that SHOULD ____NOT___ be openmp'd
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))
+        {
+            //if this element does not belong on this processor don't involve!!!
+
+            if(h[ndx] > GEOFLOW_TINY)
+            {
+                double VxVy[2];
+                double evalue;
+
+                /* calculate hmax */
+                if(hmax < h[ndx])
+                    hmax = h[ndx];
+
+                gmfggetcoef(h[ndx], hVx[ndx], hVy[ndx],
+                        dh_dx[ndx], dhVx_dx[ndx],
+                        dh_dy[ndx], dhVy_dy[ndx],
+                        matprops_ptr->bedfrict[material_[ndx]], int_frict,
+                        kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
+
+                elements_[ndx].calc_stop_crit(matprops_ptr, this);
+
+                if((stoppedflags_[ndx] < 0) || (stoppedflags_[ndx] > 2))
+                    printf("get_coef_and_eigen stopped flag=%d\n", stoppedflags_[ndx]);
+
+                //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
+                //rule speed if it is smaller) because underestimating speed (which
+                //results in over estimating the timestep) is fatal to stability...
+                VxVy[0] = hVx[ndx] / h[ndx];
+                VxVy[1] = hVy[ndx] / h[ndx];
+
+                //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                eigen(h[ndx], eigenvxymax_[0][ndx],eigenvxymax_[1][ndx],
+                        evalue, tiny, kactxy_[0][ndx], gravity_[2][ndx], VxVy);
+
+                // ***********************************************************
+                // !!!!!!!!!!!!!!!!!!!!!check dx & dy!!!!!!!!!!!!!!!!!!!!!!!!
+                // ***********************************************************
+                if(evalue > 1000000000.)
+                {
+                    double maxcurve = (dabs(curvature_[0][ndx]) > dabs(curvature_[1][ndx]) ? curvature_[0][ndx] : curvature_[1][ndx]);
+                    printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
+                            evalue, myid, hVx[ndx], hVy[ndx],
+                           h[ndx], maxcurve, coord_[0][ndx],
+                           coord_[1][ndx]);
+                    assert(0);
+                }
+
+                min_dx_dy_evalue = min( min(dx_[0][ndx], dx_[1][ndx]) / evalue, min_dx_dy_evalue);
+            }
+            else
+            {
+                stoppedflags_[ndx]=2;
+            }
+        }
+    }
+
+    dt[0] = 0.5 * min_dx_dy_evalue;
+
+    dt[1] = -0.9 * sqrt(hmax * scale_.epsilon * scale_.gravity / 9.8); //find the negative of the max not the positive min
+
+
+    ierr = MPI_Allreduce(dt, global_dt, 3, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+    dt[0] = 0.5 * c_dmin1(global_dt[0], -global_dt[1]);
+    if(dt[0] == 0.0)
+        dt[0] = 0.5 * global_dt[2];
+
+    return dt[0];
+}
+double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
+{
+    MatPropsTwoPhases* matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
+    int myid;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     
-    Element *EmTemp;
-    int no_of_buckets = El_Table->get_no_of_buckets();
-    vector<HashEntryLine> &bucket=El_Table->bucket;
-    tivector<Element> &elenode_=El_Table->elenode_;
+    int ierr;
+    double min_dx_dy_evalue = 10000000, hmax = 0;
+    //might need to change this
+    //-------------------go through all the elements of the subdomain and get
+    //-------------------the coefficients and eigenvalues and calculate the time step
+    double global_dt[3], dt[3] = { 0.0, 0.0, HUGE_VAL };
+    
     
     //beginning of section that SHOULD ____NOT___ be openmp'd
+    //why the first element is good enough?
     double maxinflux = 0.0;
     if((maxinflux = fluxprops_ptr->MaxInfluxNow(matprops_ptr, timeprops_ptr) * (matprops_ptr->scale.epsilon)) > 0.0)
     {
         double mindx = -1.0;
         
-        //@ElementsBucketDoubleLoop
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
         {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+            if(adapted_[ndx]!=0)
             {
-                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                
-                if((EmTemp->adapted_flag() > 0) || (EmTemp->adapted_flag() < 0))
-                {
-                    mindx = (EmTemp->dx(0) < EmTemp->dx(1)) ?
-                                    EmTemp->dx(0) : EmTemp->dx(1)
-                            * pow(0.5, REFINE_LEVEL - EmTemp->generation());
-                    break;
-                }
-            }
-            if(mindx > 0.0)
+                mindx = (dx_[0][ndx] < dx_[1][ndx]) ? dx_[0][ndx] : dx_[1][ndx]
+                        * pow(0.5, REFINE_LEVEL - generation_[ndx]);
                 break;
+            }
         }
         
         double dttemp = mindx / maxinflux; //equivalent to dx/eigen_speed
                 
         //equivalent to 0.9*sqrt(hmax/g) where hmax=maxinflux*dt when xVel and yVel =0
-        double dttemp2 = 0.81 * maxinflux * (matprops_ptr->scale.gravity) / 9.8;
+        double dttemp2 = 0.81 * maxinflux * (scale_.gravity) / 9.8;
         
         dt[2] = c_dmin1(dttemp, dttemp2);
     } //end of section that SHOULD ____NOT___ be openmp'd
     
-    double u_vec_alt[3];
-    int intswap;
-    double maxcurve;
-    int ifanynonzeroheight = 0;
-    //for TWO PHASES
-    double Vsolid[2], Vfluid[2];
-    //for single PHASE
-    double VxVy[2];
 
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))
         {
-            EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            //if this element does not belong on this processor don't involve!!!
             
-            if((EmTemp->adapted_flag() > 0) || ((EmTemp->adapted_flag() < 0) && (ghost_flag == 1)))
+            if(h[ndx] > GEOFLOW_TINY)
             {
-                //if this element does not belong on this processor don't involve!!!
+                double Vsolid[2], Vfluid[2];
+                double evalue;
+                /* calculate hmax */
+                if(hmax < h[ndx])
+                    hmax = h[ndx];
                 
-                if(EmTemp->state_vars(0) > GEOFLOW_TINY)
+
+                gmfggetcoef2ph(h_liq[ndx],hVx_sol[ndx],hVy_sol[ndx],
+                        dh_liq_dx[ndx],dhVx_sol_dx[ndx],
+                        dh_liq_dy[ndx],dhVy_sol_dy[ndx],
+                        matprops_ptr->bedfrict[material_[ndx]], int_frict,
+                        kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
+
+                elements_[ndx].calc_stop_crit(matprops_ptr, this);
+
+                if((stoppedflags_[ndx] < 0) || (stoppedflags_[ndx] > 2))
+                    printf("get_coef_and_eigen stopped flag=%d\n", stoppedflags_[ndx]);
+
+                //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
+                //rule speed if it is smaller) because underestimating speed (which
+                //results in over estimating the timestep) is fatal to stability...
+                Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
+                Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
+
+                Vfluid[0] = hVx_liq[ndx] / h[ndx];
+                Vfluid[1] = hVy_liq[ndx] / h[ndx];
+
+                //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                eigen2ph(h[ndx], h_liq[ndx], eigenvxymax_[0][ndx],
+                          eigenvxymax_[1][ndx], evalue, tiny, kactxy_[0][ndx],
+                          gravity_[2][ndx], Vsolid, Vfluid,
+                          matprops2_ptr->flow_type);
+
+                // ***********************************************************
+                // !!!!!!!!!!!!!!!!!!!!!check dx & dy!!!!!!!!!!!!!!!!!!!!!!!!
+                // ***********************************************************
+                if(evalue > 1000000000.)
                 {
-                    ifanynonzeroheight = 1;
-                    
-                    /* calculate hmax */
-                    if(hmax < EmTemp->state_vars(0))
-                        hmax = EmTemp->state_vars(0);
-                    
-
-                    if(elementType == ElementType::TwoPhases)
-                    {
-                        gmfggetcoef2ph(EmTemp->state_vars(1),EmTemp->state_vars(2),EmTemp->state_vars(3), 
-                                EmTemp->dh_dx_liq(),EmTemp->dhVx_dx_sol(),
-                                EmTemp->dh_dy_liq(),EmTemp->dhVy_dy_sol(),  
-                                matprops_ptr->bedfrict[EmTemp->material()], integrator->int_frict,
-                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->scale.epsilon);
-                        
-                    }
-                    if(elementType == ElementType::SinglePhase)
-                    {
-                        gmfggetcoef(EmTemp->h(), EmTemp->hVx(), EmTemp->hVy(), 
-                                EmTemp->dh_dx(), EmTemp->dhVx_dx(),
-                                EmTemp->dh_dy(), EmTemp->dhVy_dy(),
-                                matprops_ptr->bedfrict[EmTemp->material()], integrator->int_frict,
-                                EmTemp->kactxy_ref(0), EmTemp->kactxy_ref(1), tiny, matprops_ptr->scale.epsilon);
-                    }
-
-                    EmTemp->calc_stop_crit(matprops_ptr, integrator);
-                    intswap = EmTemp->stoppedflags();
-
-                    if((intswap < 0) || (intswap > 2))
-                        printf("get_coef_and_eigen stopped flag=%d\n", intswap);
-                    
-                    //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
-                    //rule speed if it is smaller) because underestimating speed (which
-                    //results in over estimating the timestep) is fatal to stability...
-                    if(elementType == ElementType::TwoPhases)
-                    {
-                        Vsolid[0] = (EmTemp->state_vars(2)) / (EmTemp->state_vars(1));
-                        Vsolid[1] = (EmTemp->state_vars(3)) / (EmTemp->state_vars(1));
-
-                        Vfluid[0] = (EmTemp->state_vars(4)) / (EmTemp->state_vars(0));
-                        Vfluid[1] = (EmTemp->state_vars(5)) / (EmTemp->state_vars(0));
-
-                        //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen2ph(EmTemp->h(), EmTemp->h2(), EmTemp->eigenvxymax_ref(0),
-                                  EmTemp->eigenvxymax_ref(1), evalue, tiny, EmTemp->kactxy_ref(0),
-                                  EmTemp->gravity(2), Vsolid, Vfluid,
-                                  matprops2_ptr->flow_type);
-                    }
-                    if(elementType == ElementType::SinglePhase)
-                    {
-                        VxVy[0] = (EmTemp->state_vars(1)) / (EmTemp->state_vars(0));
-                        VxVy[1] = (EmTemp->state_vars(2)) / (EmTemp->state_vars(0));
-
-                        //eigen_(EmTemp->eval_state_vars(u_vec_alt),
-                        eigen(EmTemp->h(), EmTemp->eigenvxymax_ref(0),
-                                  EmTemp->eigenvxymax_ref(1),
-                               evalue, tiny, EmTemp->kactxy_ref(0), EmTemp->gravity(2), VxVy);
-                    }
-                    
-                    //printf("evalue=%g\n",evalue);
-                    
-                    // ***********************************************************
-                    // !!!!!!!!!!!!!!!!!!!!!check dx & dy!!!!!!!!!!!!!!!!!!!!!!!!
-                    // ***********************************************************
-                    doubleswap = c_dmin1(EmTemp->dx(0), EmTemp->dx(1));
-                    if(doubleswap / evalue < min_dx_dy_evalue)
-                    {
-                        min_distance = doubleswap;
-                        max_evalue = evalue;
-                    }
-                    
-                    if(evalue > 1000000000.)
-                    {
-                        maxcurve = (dabs(EmTemp->curvature(0)) > dabs(EmTemp->curvature(1)) ? EmTemp->curvature(0) : EmTemp->curvature(1));
-                        if(elementType == ElementType::TwoPhases)
-                        {
-                            fprintf(stderr,
-                                    "eigenvalue is %e for procd %d momentums are:\n \
-                     solid :(%e, %e) \n \
-                     fluid :(%e, %e) \n \
-                     for pile height %e curvature=%e (x,y)=(%e,%e)\n",
-                                    evalue, myid, EmTemp->state_vars(2), EmTemp->state_vars(3),
-                                    EmTemp->state_vars(4), EmTemp->state_vars(5),
-                                    EmTemp->state_vars(0), maxcurve, EmTemp->coord(0),
-                                    EmTemp->coord(1));
-                            assert(0);
-                        }
-                        if(elementType == ElementType::SinglePhase)
-                        {
-                            printf(" eigenvalue is %e for procd %d momentums are %e %e for pile height %e curvature=%e (x,y)=(%e,%e)\n",
-                                   evalue, myid, EmTemp->state_vars(1), EmTemp->state_vars(2),
-                                   EmTemp->state_vars(0), maxcurve, EmTemp->coord(0),
-                                   EmTemp->coord(1));
-                            assert(0);
-                        }
-                    }
-                    
-                    min_dx_dy_evalue = c_dmin1( c_dmin1(EmTemp->dx(0), EmTemp->dx(1)) / evalue, min_dx_dy_evalue);
-                }
-                else
-                {
-                    if(elementType == ElementType::TwoPhases)
-                    {
-                        EmTemp->calc_stop_crit(matprops2_ptr, integrator); // ensure decent values of kactxy
-                    }
-                    if(elementType == ElementType::SinglePhase)
-                    {
-                        EmTemp->set_stoppedflags(2);
-                    }
+                    double maxcurve = (dabs(curvature_[0][ndx]) > dabs(curvature_[1][ndx]) ? curvature_[0][ndx] : curvature_[1][ndx]);
+                    fprintf(stderr,
+                            "eigenvalue is %e for procd %d momentums are:\n \
+             solid :(%e, %e) \n \
+             fluid :(%e, %e) \n \
+             for pile height %e curvature=%e (x,y)=(%e,%e)\n",
+                            evalue, myid, hVx_sol[ndx],hVy_sol[ndx],
+                            hVx_liq[ndx],hVy_liq[ndx],
+                            h[ndx], maxcurve, coord_[0][ndx], coord_[1][ndx]);
+                    assert(0);
                 }
                 
-            } //(EmTemp->get_adapted_flag()>0)||...
+                min_dx_dy_evalue = min( min(dx_[0][ndx], dx_[1][ndx]) / evalue, min_dx_dy_evalue);
+            }
+            else
+            {
+                elements_[ndx].calc_stop_crit(matprops2_ptr, this); // ensure decent values of kactxy
+            }
             
-        } //while(entryp)
+        }
     }
     
-    //if(!ifanynonzeroheight) min_dx_dy_evalue=0.0;
-    
     dt[0] = 0.5 * min_dx_dy_evalue;
-    //printf("hmax=%g epsilon=%g\n",hmax,matprops_ptr->epsilon);
-    dt[1] = -0.9 * sqrt(hmax * (matprops_ptr->scale.epsilon) * (matprops_ptr->scale.gravity) / 9.8); //find the negative of the max not the positive min
-            
-    //printf("myid=%d, dt={%g, %g, %g}\n",myid,dt[0],-dt[1],dt[2]);
     
+    dt[1] = -0.9 * sqrt(hmax * scale_.epsilon * scale_.gravity / 9.8); //find the negative of the max not the positive min
+            
+
     ierr = MPI_Allreduce(dt, global_dt, 3, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     
-    /* if(myid==0)
-     printf("myid=0, global_dt={%g, %g, %g}\n",global_dt[0],-global_dt[1],global_dt[2]);
-     */
-
     dt[0] = 0.5 * c_dmin1(global_dt[0], -global_dt[1]);
     if(dt[0] == 0.0)
         dt[0] = 0.5 * global_dt[2];
     
-    //printf("====== for proc %d time step should be %e from distance %e and evalue %e  =========\n",
-    //	 myid, min_distance/max_evalue, min_distance, max_evalue);
-    
-    //exit(0);
     
     return dt[0];
 }
-

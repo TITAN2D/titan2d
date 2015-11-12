@@ -66,6 +66,12 @@ protected:
      */
     virtual void corrector()=0;
 
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    //! should be implemented in derivative class
+    virtual double get_coef_and_eigen(int ghost_flag)=0;
+
 protected:
     //!references to members of other classes
     const ElementType &elementType;
@@ -115,6 +121,11 @@ protected:
      */
     virtual void corrector();
 
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    virtual double get_coef_and_eigen(int ghost_flag);
+
 public:
     double threshold;
     double erosion_rate;
@@ -132,6 +143,76 @@ protected:
     tivector<double> &dhVy_dx;
     tivector<double> &dhVy_dy;
 
+protected:
+    //! calculation of k active passive
+    void gmfggetcoef(const double h,const double hVx,const double hVy,
+            const double dh_dx,const double dhVx_dx,
+            const double dh_dy,const double dhVy_dy,
+            const double bedfrictang, const double intfrictang,
+            double &Kactx, double &Kacty, const double tiny,
+        const double epsilon)
+    {
+        //vel is used to determine if velocity gradients are converging or diverging
+        double vel;
+
+        //COEFFICIENTS
+        double hSQ=h*h;
+        double cosphiSQ = cos(intfrictang);
+        double tandelSQ = tan(bedfrictang);
+        cosphiSQ*=cosphiSQ;
+        tandelSQ*=tandelSQ;
+
+
+
+        if(h > tiny)
+        {
+             vel=dhVx_dx/h - hVx*dh_dx/hSQ+
+                 dhVy_dy/h - hVy*dh_dy/hSQ;
+             Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+             Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+
+             //if there is no yielding...
+             if(fabs(hVx/h) < tiny && fabs(hVy/h) < tiny)
+             {
+                Kactx = 1.0;
+                Kacty = 1.0;
+             }
+        }
+        else
+        {
+        vel = 0.0;
+        Kactx = 1.0;
+        Kacty = 1.0;
+        }
+        Kactx = epsilon * Kactx;
+        Kacty = epsilon * Kacty;
+    }
+    //! calculation of wave speeds (eigen vectors of the flux jacoboians)
+    void eigen( const double h, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z, const double *VxVy)
+    {
+        if (h > tiny)
+        {
+            //     iverson and denlinger
+            if (kactx < 0.0)
+            {
+                //negative kactxy
+                kactx = -kactx;
+            }
+            eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
+            eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
+
+        }
+        else
+        {
+            eigenvxmax = tiny;
+            eigenvymax = tiny;
+        }
+
+        evalue = c_dmax1(eigenvxmax, eigenvymax);
+    }
 };
 
 
@@ -236,6 +317,7 @@ protected:
      */
     virtual void corrector();
 
+
 public:
     double phis;
     double phi2;
@@ -261,6 +343,11 @@ protected:
      */
     virtual void corrector();
 
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    virtual double get_coef_and_eigen(int ghost_flag);
+
 protected:
     //!properly named references
     tivector<double> &h;
@@ -282,6 +369,82 @@ protected:
     tivector<double> &dhVx_liq_dy;
     tivector<double> &dhVy_liq_dx;
     tivector<double> &dhVy_liq_dy;
+protected:
+    void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol,
+            const double dh_dx_liq,const double dhVx_dx_sol,
+            const double dh_dy_liq,const double dhVy_dy_sol,
+            const double bedfrictang, const double intfrictang,
+            double &Kactx, double &Kacty, const double tiny,
+        const double epsilon)
+    {
+        //vel is used to determine if velocity gradients are converging or diverging
+        double vel;
+
+        //COEFFICIENTS
+        double h_liqSQ=h_liq*h_liq;
+        double cosphiSQ = cos(intfrictang);
+        double tandelSQ = tan(bedfrictang);
+        cosphiSQ*=cosphiSQ;
+        tandelSQ*=tandelSQ;
+
+        if(h_liq > tiny)
+        {
+             vel=dhVx_dx_sol/h_liq - hVx_sol*dh_dx_liq/h_liqSQ+
+                 dhVy_dy_sol/h_liq - hVy_sol*dh_dy_liq/h_liqSQ;
+             Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+             Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+
+             //if there is no yielding...
+             if(fabs(hVx_sol/h_liq) < tiny && fabs(hVy_sol/h_liq) < tiny)
+             {
+                Kactx = 1.0;
+                Kacty = 1.0;
+             }
+        }
+        else
+        {
+        vel = 0.0;
+        Kactx = 1.0;
+        Kacty = 1.0;
+        }
+        Kactx = epsilon * Kactx;
+        Kacty = epsilon * Kacty;
+    }
+
+    //@TODO is it really h2
+    void eigen2ph( const double h_sol, const double h_liq, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z,
+            const double *v_solid, const double *v_fluid, const int flowtype)
+
+    {
+        double sound_speed;
+        if (h_sol > tiny) {
+            //iverson and denlinger
+            if (kactx < 0.0) {
+                kactx = -kactx;
+            }
+
+            if (flowtype == 1)
+                sound_speed = sqrt(h_sol * kactx * gravity_z);
+            else if (flowtype == 2)
+                sound_speed = sqrt(h_sol * gravity_z);
+            else
+                sound_speed = sqrt(h_liq * gravity_z * kactx+(h_sol - h_liq) * gravity_z);
+
+            //x-direction
+            eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
+
+            //y-direction
+            eigenvymax = c_dmax1(fabs(v_solid[1] + sound_speed), fabs(v_fluid[1] + sound_speed));
+        }
+        else {
+            eigenvxmax = tiny;
+            eigenvymax = tiny;
+        }
+        evalue = c_dmax1(eigenvxmax, eigenvymax);
+    }
 };
 
 /**

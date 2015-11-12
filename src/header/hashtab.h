@@ -577,6 +577,9 @@ public:
     tivector<double> *node_refinementflux_;
     tivector<double> *node_flux_;
 
+    tivector<double> *eigenvxymax_;
+    tivector<double> *coord_;
+
     int myid;
     int numprocs;
 };
