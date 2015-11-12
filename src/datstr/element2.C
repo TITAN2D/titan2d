@@ -1168,126 +1168,100 @@ void Element::find_positive_x_side(NodeHashTable* nodetable)
     return;
 }
 
-void Element::get_slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double gamma)
+void Element::get_slopes(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, double gamma)
 {
     int j = 0, bc = 0;
     /* check to see if this is a boundary */
     while (j < 4 && bc == 0)
     {
-        if(neigh_proc(j) == INIT)
+        if(ElemTable->neigh_proc_[j][ndx_] == INIT)
             bc = 1;
         j++;
     }
     if(bc == 1)
     {
         for(j = 0; j < NUM_STATE_VARS * DIMENSION; j++)
-            d_state_vars(j, 0.0);
+            ElemTable->d_state_vars_[j][ndx_]=0.0;
         return;
     }
-    
+
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
-    xp = positive_x_side();
-    switch (positive_x_side())
-    {
-        case 0:
-            xm = 2;
-            yp = 1;
-            ym = 3;
-            break;
-        case 1:
-            xm = 3;
-            yp = 2;
-            ym = 0;
-            break;
-        case 2:
-            xm = 0;
-            yp = 3;
-            ym = 1;
-            break;
-        case 3:
-            xm = 1;
-            yp = 0;
-            ym = 2;
-            break;
-    }
+    xp = ElemTable->positive_x_side_[ndx_];
+    xm = (2 + xp) % 4;
+    yp = (1 + xp) % 4;
+    ym = (3 + xp) % 4;
+
     /* x direction */
-    Element *ep = getNeighborPtr(xp); //(Element*) (El_Table->lookup(&neighbor(xp)[0]));
-    Element *em = getNeighborPtr(xm); //(Element*) (El_Table->lookup(&neighbor(xm)[0]));
-    Element *ep2 = NULL;
-    Element *em2 = NULL;
+    ti_ndx_t ep = ElemTable->neighbor_ndx_[xp][ndx_]; //(Element*) (ElemTable->lookup(&neighbor(xp)[0]));
+    ti_ndx_t em = ElemTable->neighbor_ndx_[xm][ndx_]; //(Element*) (ElemTable->lookup(&neighbor(xm)[0]));
+    ti_ndx_t ep2 = ti_ndx_doesnt_exist;
+    ti_ndx_t em2 = ti_ndx_doesnt_exist;
     //check if element has 2 neighbors on either side
-    Node* ndtemp = getNodePtr(xp + 4); //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
-    if(ndtemp->info() == S_C_CON)
+    ti_ndx_t ndtemp = ElemTable->node_key_ndx_[xp + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+    if(NodeTable->info_[ndtemp] == S_C_CON)
     {
-        ep2 = getNeighborPtr(xp + 4); //(Element*) (El_Table->lookup(&neighbor[xp + 4][0]));
-        assert(neigh_proc(xp + 4) >= 0 && ep2);
+        ep2 = ElemTable->neighbor_ndx_[xp + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
+        ASSERT3(neigh_proc_[xp + 4][ndx_] >= 0 && ti_ndx__not_negative(ep2));
     }
-    ndtemp = getNodePtr(xm + 4); //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
-    if(ndtemp->info() == S_C_CON)
+    ndtemp = ElemTable->node_key_ndx_[xm + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
+    if(NodeTable->info_[ndtemp] == S_C_CON)
     {
-        em2 = getNeighborPtr(xm + 4); //(Element*) (El_Table->lookup(&neighbor[xm + 4][0]));
-        assert(neigh_proc(xm + 4) >= 0 && em2);
+        em2 = ElemTable->neighbor_ndx_[xm + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xm + 4][0]));
+        ASSERT3(neigh_proc_[xm + 4][ndx_] >= 0 && ti_ndx__not_negative(em2));
     }
-    
+
     double dp, dm, dc, dxp, dxm;
-    dxp = ep->coord(0) - coord(0);
-    dxm = coord(0) - em->coord(0);
+    dxp = ElemTable->coord_[0][ep] - ElemTable->coord_[0][ndx_];
+    dxm = ElemTable->coord_[0][ndx_] - ElemTable->coord_[0][em];
     for(j = 0; j < NUM_STATE_VARS; j++)
     {
-        dp = (ep->state_vars(j) - state_vars(j)) / dxp;
-        if(ep2 != NULL)
-            dp = .5 * (dp + (ep2->state_vars(j) - state_vars(j)) / dxp);
-        dm = (state_vars(j) - em->state_vars(j)) / dxm;
-        if(em2 != NULL)
-            dm = .5 * (dm + (state_vars(j) - em2->state_vars(j)) / dxm);
-        
+        dp = (ElemTable->state_vars_[j][ep] - ElemTable->state_vars_[j][ndx_]) / dxp;
+        if(ti_ndx_not_negative(ep2))
+            dp = .5 * (dp + (ElemTable->state_vars_[j][ep2] - ElemTable->state_vars_[j][ndx_]) / dxp);
+        dm = (ElemTable->state_vars_[j][ndx_] - ElemTable->state_vars_[j][em]) / dxm;
+        if(ti_ndx_not_negative(em2))
+            dm = .5 * (dm + (ElemTable->state_vars_[j][ndx_] - ElemTable->state_vars_[j][em2]) / dxm);
+
         dc = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average
         //do slope limiting
-        d_state_vars(j, .5 * (c_sgn(dp) + c_sgn(dm)) * c_dmin1(gamma * dabs(dp), gamma * dabs(dm), dabs(dc)));
+        ElemTable->d_state_vars_[j][ndx_]=0.5 * (c_sgn(dp) + c_sgn(dm)) * c_dmin1(gamma * dabs(dp), gamma * dabs(dm), dabs(dc));
     }
-    
-    /* y direction */
-    ep = getNeighborPtr(yp);		//(Element*) (El_Table->lookup(&neighbor(yp)[0]));
-    em = getNeighborPtr(ym);		//(Element*) (El_Table->lookup(&neighbor(ym)[0]));
-    ep2 = NULL;
-    em2 = NULL;
-    //check if element has 2 neighbors on either side
-    ndtemp = getNodePtr(yp + 4);		//(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
-    if(ndtemp->info() == S_C_CON)
-    {
-        ep2 = getNeighborPtr(yp + 4);		//(Element*) (El_Table->lookup(&neighbor[yp + 4][0]));
-        assert(neigh_proc(yp + 4) >= 0 && ep2);
-    }
-    ndtemp = getNodePtr(ym + 4);		//(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
-    if(ndtemp->info() == S_C_CON)
-    {
-        em2 = getNeighborPtr(ym + 4);		//(Element*) (El_Table->lookup(&neighbor[ym + 4][0]));
-        if(!(neigh_proc(ym + 4) >= 0 && em2))
-        {
-            printf("ym=%d neigh_proc[ym+4]=%d em2=%p\n", ym, neigh_proc(ym + 4), em2);
-        }
 
-        assert(neigh_proc(ym + 4) >= 0 && em2);
+    /* y direction */
+    ep = ElemTable->neighbor_ndx_[yp][ndx_];        //(Element*) (ElemTable->lookup(&neighbor(yp)[0]));
+    em = ElemTable->neighbor_ndx_[ym][ndx_];        //(Element*) (ElemTable->lookup(&neighbor(ym)[0]));
+    ep2 = ti_ndx_doesnt_exist;
+    em2 = ti_ndx_doesnt_exist;
+    //check if element has 2 neighbors on either side
+    ndtemp = ElemTable->node_key_ndx_[yp + 4][ndx_];        //(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
+    if(NodeTable->info_[ndtemp] == S_C_CON)
+    {
+        ep2 = ElemTable->neighbor_ndx_[yp + 4][ndx_];       //(Element*) (ElemTable->lookup(&neighbor[yp + 4][0]));
+        ASSERT3(neigh_proc_[yp + 4][ndx_] >= 0 && ti_ndx__not_negative(ep2));
     }
-    
-    dxp = ep->coord(1) - coord(1);
-    dxm = coord(1) - em->coord(1);
+    ndtemp = ElemTable->node_key_ndx_[ym + 4][ndx_];        //(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
+    if(NodeTable->info_[ndtemp] == S_C_CON)
+    {
+        em2 = ElemTable->neighbor_ndx_[ym + 4][ndx_];       //(Element*) (ElemTable->lookup(&neighbor[ym + 4][0]));
+        ASSERT3(neigh_proc_[ym + 4][ndx_] >= 0 && ti_ndx__not_negative(em2));
+    }
+
+    dxp = ElemTable->coord_[1][ep] - ElemTable->coord_[1][ndx_];
+    dxm = ElemTable->coord_[1][ndx_] - ElemTable->coord_[1][em];
     for(j = 0; j < NUM_STATE_VARS; j++)
     {
-        dp = (ep->state_vars(j) - state_vars(j)) / dxp;
-        if(ep2 != NULL)
-            dp = .5 * (dp + (ep2->state_vars(j) - state_vars(j)) / dxp);
-        dm = (state_vars(j) - em->state_vars(j)) / dxm;
-        if(em2 != NULL)
-            dm = .5 * (dm + (state_vars(j) - em2->state_vars(j)) / dxm);
-        
-        dc = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average 
+        dp = (ElemTable->state_vars_[j][ep] - ElemTable->state_vars_[j][ndx_]) / dxp;
+        if(ti_ndx_not_negative(ep2))
+            dp = .5 * (dp + (ElemTable->state_vars_[j][ep2] - ElemTable->state_vars_[j][ndx_]) / dxp);
+        dm = (ElemTable->state_vars_[j][ndx_] - ElemTable->state_vars_[j][em]) / dxm;
+        if(ti_ndx_not_negative(em2))
+            dm = .5 * (dm + (ElemTable->state_vars_[j][ndx_] - ElemTable->state_vars_[j][em2]) / dxm);
+
+        dc = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average
         //do slope limiting
-        d_state_vars(j + NUM_STATE_VARS, .5 * (c_sgn(dp) + c_sgn(dm))
-                                           * c_dmin1(gamma * dabs(dp), gamma * dabs(dm), dabs(dc)));
+        ElemTable->d_state_vars_[j + NUM_STATE_VARS][ndx_]=0.5 * (c_sgn(dp) + c_sgn(dm))
+                                           * c_dmin1(gamma * dabs(dp), gamma * dabs(dm), dabs(dc));
     }
-    
-    return;
 }
 
 void Element::calculate_dx(NodeHashTable* NodeTable)

@@ -39,7 +39,8 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     discharge_ptr(_titanSimulation->get_discharge_planes()),
     elementType(_titanSimulation->get_element_type()),
     adapt(_titanSimulation->adapt),
-    TiScalableObject(_titanSimulation->scale_)
+    TiScalableObject(_titanSimulation->scale_),
+    ElemProp(ElemTable, NodeTable)
 {
 
     tiny = GEOFLOW_TINY;
@@ -117,7 +118,7 @@ void Integrator::step()
 
 
     TIMING1_START(t_start);
-    slopes(ElemTable, NodeTable, matprops_ptr);
+    ElemProp.slopes(matprops_ptr);
     TIMING1_STOPADD(slopesCalcTime, t_start);
     PROFILING3_STOPADD_RESTART(step_slopesCalc,pt_start);
 
@@ -157,7 +158,7 @@ void Integrator::step()
 
     /* calculate the slopes for the new (half-time step) state variables */
     TIMING1_START(t_start);
-    slopes(ElemTable, NodeTable, matprops_ptr);
+    if(order!=1)ElemProp.slopes(matprops_ptr);
     TIMING1_STOPADD(slopesCalcTime, t_start);
     PROFILING3_STOPADD_RESTART(step_slopesCalc,pt_start);
     // in TWO PHASES #endif  //SECOND_ORDER

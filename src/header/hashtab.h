@@ -473,7 +473,14 @@ public:
     //! length of the element in the global x and y directions: dx and dy 
     tivector<double> dx_[DIMENSION];
 
-    //! for structured grid, tells which side is the positive x direction
+    /** for structured grid, tells which side is the positive x direction
+     *  others can be calculated as:
+     *      xp = positive_x_side_[ndx];
+     *      xm = (2 + xp) % 4;
+     *      yp = (1 + xp) % 4;
+     *      ym = (3 + xp) % 4;
+     */
+    //
     tivector<int> positive_x_side_;
 
     //! maximum x and y direction wavespeeds for this element, wavespeeds are eigenvalues of the flux jacobians
@@ -576,6 +583,7 @@ public:
 
     tivector<double> *node_refinementflux_;
     tivector<double> *node_flux_;
+    tivector<int> &node_info_;
 
     tivector<double> *eigenvxymax_;
     tivector<double> *coord_;
@@ -599,12 +607,8 @@ public:
     //! this function is called in element_weight.C, it is used in computing the load balancing weight
     void calc_flux_balance(ti_ndx_t ndx);
 
-
-    int positive_x_side_xm[4];
-    int positive_x_side_yp[4];
-    int positive_x_side_ym[4];
-
-
+    void slopes(MatProps* matprops_ptr);
+    void get_slopes(ti_ndx_t ndx, double gamma);
 };
 
 #endif

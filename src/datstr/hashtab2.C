@@ -1236,6 +1236,7 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 dx_(ElemTable->dx_),
                 node_refinementflux_(_NodeTable->refinementflux_),
                 node_flux_(_NodeTable->flux_),
+                node_info_(_NodeTable->info_),
                 material_(ElemTable->material_),
                 eigenvxymax_(ElemTable->eigenvxymax_),
                 coord_(ElemTable->coord_)

@@ -27,23 +27,6 @@
 ElementsProperties::ElementsProperties(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     EleNodeRef(_ElemTable,_NodeTable)
 {
-    //positive_x_side_
-
-    positive_x_side_xm[0] = 2;
-    positive_x_side_yp[0] = 1;
-    positive_x_side_ym[0] = 3;
-
-    positive_x_side_xm[1] = 3;
-    positive_x_side_yp[1] = 2;
-    positive_x_side_ym[1] = 0;
-
-    positive_x_side_xm[2] = 0;
-    positive_x_side_yp[2] = 3;
-    positive_x_side_ym[2] = 1;
-
-    positive_x_side_xm[3] = 1;
-    positive_x_side_yp[3] = 0;
-    positive_x_side_ym[3] = 2;
 }
 int ElementsProperties::if_pile_boundary(ti_ndx_t ndx, double contour_height)
 {
@@ -229,38 +212,10 @@ void ElementsProperties::calc_flux_balance(ti_ndx_t ndx)
     double flux[3] ={ 0.0, 0.0, 0.0 };
     int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
     xp = positive_x_side_[ndx];
-    xm = positive_x_side_xm[xp];
-    yp = positive_x_side_yp[xp];
-    ym = positive_x_side_ym[xp];
-/*
-    switch (positive_x_side_[ndx])
-    {
-        case 0:
-            xm = 2;
-            yp = 1;
-            ym = 3;
-            break;
-        case 1:
-            xm = 3;
-            yp = 2;
-            ym = 0;
-            break;
-        case 2:
-            xm = 0;
-            yp = 3;
-            ym = 1;
-            break;
-        case 3:
-            xm = 1;
-            yp = 0;
-            ym = 2;
-            break;
-    }*/
-    /*Node *nd_xp, *nd_xn, *nd_yp, *nd_yn;
-    nd_xp = (Node*) NodeTable->lookup(node_key(xp + 4));
-    nd_xn = (Node*) NodeTable->lookup(node_key(xm + 4));
-    nd_yp = (Node*) NodeTable->lookup(node_key(yp + 4));
-    nd_yn = (Node*) NodeTable->lookup(node_key(ym + 4));*/
+    xm = (2 + xp) % 4;
+    yp = (1 + xp) % 4;
+    ym = (3 + xp) % 4;
+
     ti_ndx_t nd_xp, nd_xn, nd_yp, nd_yn;
     nd_xp = node_key_ndx_[xp + 4][ndx];
     nd_xn = node_key_ndx_[xm + 4][ndx];
@@ -349,3 +304,114 @@ double ElementsProperties::element_weight()
     return global_weight[0];
 }
 
+void ElementsProperties::slopes(MatProps* matprops_ptr)
+{
+    double gamma=matprops_ptr->gamma;
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] > 0)//if this element does not belong on this processor don't involve!!!
+        {
+            get_slopes(ndx,gamma);
+        }
+    }
+    return;
+}
+
+void ElementsProperties::get_slopes(ti_ndx_t ndx, double gamma)
+{
+    int j = 0, bc = 0;
+    /* check to see if this is a boundary */
+    while (j < 4 && bc == 0)
+    {
+        if(neigh_proc_[j][ndx] == INIT)
+            bc = 1;
+        j++;
+    }
+    if(bc == 1)
+    {
+        for(j = 0; j < NUM_STATE_VARS * DIMENSION; j++)
+            d_state_vars_[j][ndx]=0.0;
+        return;
+    }
+
+    int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
+    xp = positive_x_side_[ndx];
+    xm = (2 + xp) % 4;
+    yp = (1 + xp) % 4;
+    ym = (3 + xp) % 4;
+
+    /* x direction */
+    ti_ndx_t ep = neighbor_ndx_[xp][ndx]; //(Element*) (ElemTable->lookup(&neighbor(xp)[0]));
+    ti_ndx_t em = neighbor_ndx_[xm][ndx]; //(Element*) (ElemTable->lookup(&neighbor(xm)[0]));
+    ti_ndx_t ep2 = ti_ndx_doesnt_exist;
+    ti_ndx_t em2 = ti_ndx_doesnt_exist;
+    //check if element has 2 neighbors on either side
+    ti_ndx_t ndtemp = node_key_ndx_[xp + 4][ndx]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+    if(node_info_[ndtemp] == S_C_CON)
+    {
+        ep2 = neighbor_ndx_[xp + 4][ndx]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
+        ASSERT3(neigh_proc_[xp + 4][ndx] >= 0 && ti_ndx_not_negative(ep2));
+    }
+    ndtemp = node_key_ndx_[xm + 4][ndx]; //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
+    if(node_info_[ndtemp] == S_C_CON)
+    {
+        em2 = neighbor_ndx_[xm + 4][ndx]; //(Element*) (ElemTable->lookup(&neighbor[xm + 4][0]));
+        ASSERT3(neigh_proc_[xm + 4][ndx] >= 0 && ti_ndx_not_negative(em2));
+    }
+
+    double dp, dm, dc, dxp, dxm;
+    dxp = coord_[0][ep] - coord_[0][ndx];
+    dxm = coord_[0][ndx] - coord_[0][em];
+    for(j = 0; j < NUM_STATE_VARS; j++)
+    {
+        dp = (state_vars_[j][ep] - state_vars_[j][ndx]) / dxp;
+        if(ti_ndx_not_negative(ep2))
+            dp = .5 * (dp + (state_vars_[j][ep2] - state_vars_[j][ndx]) / dxp);
+        dm = (state_vars_[j][ndx] - state_vars_[j][em]) / dxm;
+        if(ti_ndx_not_negative(em2))
+            dm = .5 * (dm + (state_vars_[j][ndx] - state_vars_[j][em2]) / dxm);
+
+        dc = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average
+        //do slope limiting
+        d_state_vars_[j][ndx]=0.5 * (c_sgn(dp) + c_sgn(dm)) * c_dmin1(gamma * dabs(dp), gamma * dabs(dm), dabs(dc));
+    }
+
+    /* y direction */
+    ep = neighbor_ndx_[yp][ndx];        //(Element*) (ElemTable->lookup(&neighbor(yp)[0]));
+    em = neighbor_ndx_[ym][ndx];        //(Element*) (ElemTable->lookup(&neighbor(ym)[0]));
+    ep2 = ti_ndx_doesnt_exist;
+    em2 = ti_ndx_doesnt_exist;
+    //check if element has 2 neighbors on either side
+    ndtemp = node_key_ndx_[yp + 4][ndx];        //(Node*) NodeTable->lookup(&node_key[yp + 4][0]);
+    if(node_info_[ndtemp] == S_C_CON)
+    {
+        ep2 = neighbor_ndx_[yp + 4][ndx];       //(Element*) (ElemTable->lookup(&neighbor[yp + 4][0]));
+        ASSERT3(neigh_proc_[yp + 4][ndx] >= 0 && ti_ndx_not_negative(ep2));
+    }
+    ndtemp = node_key_ndx_[ym + 4][ndx];        //(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
+    if(node_info_[ndtemp] == S_C_CON)
+    {
+        em2 = neighbor_ndx_[ym + 4][ndx];       //(Element*) (ElemTable->lookup(&neighbor[ym + 4][0]));
+        ASSERT3(neigh_proc_[ym + 4][ndx] >= 0 && ti_ndx_not_negative(em2));
+    }
+
+    dxp = coord_[1][ep] - coord_[1][ndx];
+    dxm = coord_[1][ndx] - coord_[1][em];
+    for(j = 0; j < NUM_STATE_VARS; j++)
+    {
+        dp = (state_vars_[j][ep] - state_vars_[j][ndx]) / dxp;
+        if(ti_ndx_not_negative(ep2))
+            dp = .5 * (dp + (state_vars_[j][ep2] - state_vars_[j][ndx]) / dxp);
+        dm = (state_vars_[j][ndx] - state_vars_[j][em]) / dxm;
+        if(ti_ndx_not_negative(em2))
+            dm = .5 * (dm + (state_vars_[j][ndx] - state_vars_[j][em2]) / dxm);
+
+        dc = (dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average
+        //do slope limiting
+        d_state_vars_[j + NUM_STATE_VARS][ndx]=0.5 * (c_sgn(dp) + c_sgn(dm))
+                                           * c_dmin1(gamma * dabs(dp), gamma * dabs(dm), dabs(dc));
+    }
+
+    return;
+}

@@ -76,6 +76,8 @@ protected:
     //!references to members of other classes
     const ElementType &elementType;
 
+    ElementsProperties ElemProp;
+
     TimeProps *timeprops_ptr;
     MatProps *matprops_ptr;
     FluxProps* fluxprops_ptr;

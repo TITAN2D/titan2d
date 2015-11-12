@@ -29,23 +29,13 @@ void slopes(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* mat
     //-------------------and   --------------------------
     
     /* mdj 2007-02 */
-    Element* Curr_El;
-    int Nelms = El_Table->getNumberOfLocalElements();
-    //if this element does not belong on this processor don't involve!!!
-    Element** Elms = (Element**) El_Table->getLocalElementsValues();
-//#pragma omp parallel for private(currentPtr,Curr_El)
-    for(i = 0; i < Nelms; i++)
+    //#pragma omp parallel for private(currentPtr,Curr_El)
+    for(ti_ndx_t ndx = 0; ndx < El_Table->size(); ndx++)
     {
-        Elms[i]->get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
+        if(El_Table->adapted_[ndx] > 0)//if this element does not belong on this processor don't involve!!!
+        {
+            El_Table->elenode_[ndx].get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
+        }
     }
-       /* Element* Curr_El;
-    int Nelms = El_Table->size();
-    //if this element does not belong on this processor don't involve!!!
-//#pragma omp parallel for private(currentPtr,Curr_El)
-    for(int indx = 0; indx < Nelms; indx++)
-    {
-        if(El_Table->status_[indx]>=0 && El_Table->adapted_[indx] > 0)
-            El_Table->elem(indx).get_slopes(El_Table, NodeTable, matprops_ptr->gamma);
-    }*/
     return;
 }
