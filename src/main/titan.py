@@ -384,7 +384,6 @@ class TitanSimulation(TitanSimulationBase):
     def setMatMap(self,
             use_gis_matmap=False,
             number_of_cells_across_axis=20,
-            int_frict=30.0,
             bed_frict=15.0,
             mat_names=None):
         if not self.integrator_initialized:
@@ -408,7 +407,6 @@ class TitanSimulation(TitanSimulationBase):
         if not isinstance(bed_frict, (list, tuple)):
             bed_frict=[bed_frict]
         
-        matprops.intfrict=float(int_frict)
         if self.sim.use_gis_matmap == False:
             matprops.material_count=1
             matprops.matnames.push_back("all materials")
@@ -621,43 +619,3 @@ class TitanSimulation(TitanSimulationBase):
             print
         #self.sim.input_summary()
         self.sim.run()
-
-class TitanTwoPhases(TitanSimulation):
-    def __init__(self, **kwargs):
-        kwargs['sim_class']=cxxTitanSimulation()
-        super(TitanTwoPhases, self).__init__(**kwargs)
-        
-    def validatePile(self, **kwargs):
-        #if 'pile_type' not in kwargs or kwargs['pile_type']==None:
-        #    kwargs['pile_type']='PARABALOID'
-        out=super(TitanTwoPhases, self).validatePile(**kwargs)
-        out['vol_fract'] = float(kwargs['vol_fract'])
-        
-        return out
-        
-    def addPile(self,**kwargs):
-        """
-        Information for Pile Number 
-        Thickness of Initial Volume, h(x,y)
-        P*(1-((x-xc)/xr)^2 - ((y-yc)/yr)^2)
-        
-        height=float - Maximum Initial Thickness, P (m)
-        
-        center=[float,float] - Center of Initial Volume, xc, yc (UTM E, UTM N)
-        
-        radii=[float,float] - Major and Minor Extent, majorR, minorR (m, m)
-        
-        orientation=float - Orientation (angle [degrees] from X axis to major axis)
-        
-        Vmagnitude=float - Initial speed [m/s]
-        
-        Vdirection = float - Initial direction ([degrees] from X axis)
-        
-        vol_fract = float - Initial solid-volume fraction,(0:1.)
-        """
-        
-        pile=self.validatePile(**kwargs)
-        if pile!=None:
-            self.sim.pileprops_two_phases.addPile(pile['height'], pile['xcenter'], pile['ycenter'], pile['majradius'], 
-                                   pile['minradius'], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'],pile['vol_fract'])
-    

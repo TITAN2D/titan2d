@@ -532,8 +532,6 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
     double elem_eroded;
     double elem_deposited;
 
-    //intfrictang=matprops_ptr->intfrict;
-    //frict_tiny=matprops_ptr->frict_tiny;
     double sin_intfrictang=sin(int_frict);
 
     //convinience ref
@@ -1940,13 +1938,19 @@ Integrator_TwoPhases::Integrator_TwoPhases(cxxTitanSimulation *_titanSimulation)
         hVx_sol(state_vars_[2]),
         hVy_sol(state_vars_[3]),
         hVx_liq(state_vars_[4]),
-        hVy_liq(state_vars_[5])
-        /*dh_dx(d_state_vars_[0]),
+        hVy_liq(state_vars_[5]),
+        dh_dx(d_state_vars_[0]),
         dh_dy(d_state_vars_[NUM_STATE_VARS]),
-        dhVx_dx(d_state_vars_[1]),
-        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
-        dhVy_dx(d_state_vars_[2]),
-        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])*/
+        dh_liq_dx(d_state_vars_[1]),
+        dh_liq_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVx_sol_dx(d_state_vars_[2]),
+        dhVx_sol_dy(d_state_vars_[NUM_STATE_VARS+2]),
+        dhVy_sol_dx(d_state_vars_[3]),
+        dhVy_sol_dy(d_state_vars_[NUM_STATE_VARS+3]),
+        dhVx_liq_dx(d_state_vars_[4]),
+        dhVx_liq_dy(d_state_vars_[NUM_STATE_VARS+4]),
+        dhVy_liq_dx(d_state_vars_[5]),
+        dhVy_liq_dy(d_state_vars_[NUM_STATE_VARS+5])
 {
     assert(elementType==ElementType::TwoPhases);
 }
@@ -1997,25 +2001,12 @@ void Integrator_TwoPhases_Coulomb::predictor()
 {
 
 }
-void correct2ph(Element *Elm, const double *fluxxp,
-        const double *fluxyp, const double *fluxxm, const double *fluxym,
-        const double tiny, const double dtdx, const double dtdy, const double dt,
-        const double dh_dx, const double dh_dx_liq, const double dhVy_dx_sol,
-        const double dh_dy, const double dh_dy_liq, const double dhVx_dy_sol,
-        const double xslope,const double yslope, const double curv_x, const double curv_y, const double intfrictang,
-        const double bedfrictang, const double *g, const double kactxy,
-        const double frict_tiny, double &forceint,
-        double &forcebed, const int DO_EROSION, double &eroded,
-        const double *v_solid, const double *v_fluid,
-        const double den_solid, const double den_fluid, const double terminal_vel,
-        const double eps, const int IF_STOPPED);
 void Integrator_TwoPhases_Coulomb::corrector()
 {
-    Element* Curr_El;
     MatPropsTwoPhases* matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
 
-    double solid_den = matprops2_ptr->den_solid;
-    double fluid_den = matprops2_ptr->den_fluid;
+    double den_solid = matprops2_ptr->den_solid;
+    double den_fluid = matprops2_ptr->den_fluid;
     double terminal_vel = matprops2_ptr->v_terminal;
 
     //for comparison of magnitudes of forces in slumping piles
@@ -2033,12 +2024,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
     double sin_intfrictang=sin(int_frict);
-
-#ifdef DO_EROSION
-    int do_erosion=1;
-#else
-    int do_erosion = 0;
-#endif
+    double epsilon=scale_.epsilon;
 
     //convinience ref
     //tivector<double> *g=gravity_;
@@ -2117,12 +2103,11 @@ void Integrator_TwoPhases_Coulomb::corrector()
         double Vfluid[DIMENSION];
         double volf;
 
-        Element *EmTemp= &(elements_[ndx]);
 
         if(h[ndx] > GEOFLOW_TINY)
         {
             for(i = 0; i < DIMENSION; i++)
-                kactxy[i] = EmTemp->effect_kactxy(i);
+                kactxy[i] = effect_kactxy_[i][ndx];
 
             // fluid velocities
             Vfluid[0] = hVx_liq[ndx] / h[ndx];
@@ -2139,7 +2124,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
                 Vfluid[i] = 0.;
             }
             volf = 1.;
-            bedfrict = matprops2_ptr->bedfrict[EmTemp->material()];
+            bedfrict = matprops2_ptr->bedfrict[material_[ndx]];
         }
 
         double Vsolid[DIMENSION];
@@ -2158,21 +2143,150 @@ void Integrator_TwoPhases_Coulomb::corrector()
         V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
         elements_[ndx].convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
 
+        double curv_x=curvature_[0][ndx];
+        double curv_y=curvature_[1][ndx];
+        double xslope=zeta_[0][ndx];
+        double yslope=zeta_[1][ndx];
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector
+        double speed;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedmax, forcebedequil, forcegrav;
+        double unitvx, unitvy;
+        double den_frac;
+        double alphaxx, alphayy, alphaxy, alphaxz, alphayz;
+        double tanbed;
 
-        /*correct2ph_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt, d_state_vars,
-                 (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature, &(matprops2_ptr->intfrict), &bedfrict,
-                 gravity, kactxy, &(matprops2_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, Vsolid, Vfluid,
-                 &solid_den, &fluid_den, &terminal_vel, &(matprops2_ptr->epsilon), &IF_STOPPED, Influx);*/
+        double Ustore[6];
+        double h_inv, hphi_inv;
+        double sgn_dudy, sgn_dvdx, tmp;
+        double slope;
+        double t1, t2, t3, t4, t5;
+        double es, totalShear;
+        double drag[4];
 
+        // initialize to zero
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        elem_eroded = 0.0;
 
-        correct2ph(EmTemp, fluxxp, fluxyp, fluxxm, fluxym, tiny, dtdx, dtdy, dt,
-                EmTemp->dh_dx(), EmTemp->dh_dx_liq(), EmTemp->dhVy_dx_sol(),
-                EmTemp->dh_dy(), EmTemp->dh_dy_liq(), EmTemp->dhVx_dy_sol(),
-                EmTemp->zeta(0), EmTemp->zeta(1), EmTemp->curvature(0),EmTemp->curvature(1), int_frict, bedfrict,
-                g, kactxy[0], matprops2_ptr->scale.frict_tiny, elem_forceint, elem_forcebed, do_erosion, elem_eroded, Vsolid, Vfluid,
-                solid_den, fluid_den, terminal_vel, matprops2_ptr->scale.epsilon, IF_STOPPED);
+        slope = sqrt(xslope * xslope + yslope * yslope);
+        den_frac = den_fluid / den_solid;
+        for (i = 0; i < 6; ++i)
+            Ustore[i] = prev_state_vars_[i][ndx] + dt * Influx_[i][ndx]
+                    - dtdx * (fluxxp[i] - fluxxm[i])
+                    - dtdy * (fluxyp[i] - fluxym[i]);
 
+        if (Ustore[0] > tiny)
+        {
+            // Source terms ...
+            // here speed is speed squared
+            speed = Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1];
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = Vsolid[0] / speed;
+                unitvy = Vsolid[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            tanbed = tan(bedfrict);
+            h_inv = 1.0 / h[ndx];
+            hphi_inv = 1.0 / h_liq[ndx];
+            alphaxx = kactxy[0];
+            alphayy = kactxy[0];
+            den_frac = den_fluid / den_solid;
+            calc_drag_force(ndx, Vsolid, Vfluid, den_solid, den_fluid,terminal_vel, drag);
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    solid fraction x-direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    alphaxy -- see pitman-le (2005)
+            tmp = hphi_inv * (dhVx_sol_dy[ndx] - Vsolid[0] * dh_liq_dy[ndx]);
+            sgn_dudy = sgn_tiny(tmp, frict_tiny);
+            alphaxy = sgn_dudy * sin_intfrictang * kactxy[0];
+
+            //    alphaxz (includes centrifugal effects)
+            alphaxz = -unitvx * tanbed
+                    * (1.0 + (Vsolid[0] * Vsolid[0]) * curv_x / g[2]);
+
+            //    evaluate t1
+            t1 = (1.0 - den_frac)
+                    * (-alphaxx * xslope - alphaxy * yslope + alphaxz)
+                    * h_liq[ndx] * g[2];
+            //    evaluate t2
+            t2 = epsilon * den_frac * h_liq[ndx] * g[2] * dh_dx[ndx];
+            //    evaluate t3
+            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * xslope;
+            //    evaluate t4
+            t4 = h_liq[ndx] * g[0];
+            //    evaluate drag
+            t5 = drag[0];
+            //    update Ustore
+            Ustore[2] = Ustore[2] + dt * (t1 - t2 - t3 + t4 + t5);
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // solid fraction y-direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    alphaxy -- see pitman-le (2005) for definitions
+            tmp = hphi_inv * (dhVy_sol_dx[ndx] - Vsolid[1] * dh_liq_dx[ndx]);
+            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
+            alphaxy = sgn_dvdx * sin_intfrictang * kactxy[0];
+
+            //    alphayz
+            alphayz = -unitvy * tanbed
+                    * (1.0 + (Vsolid[1] * Vsolid[1]) * curv_y / g[2]);
+
+            //    evaluate t1
+            t1 = (1.0 - den_frac)
+                    * (-alphaxy * xslope - alphayy * yslope + alphayz)
+                    * h_liq[ndx] * g[2];
+            //    evaluate t2
+            t2 = epsilon * den_frac * h_liq[ndx] * dh_dy[ndx];
+            //    evaluate t3
+            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * yslope;
+            //    evaluate t4 ( gravity along y-dir )
+            t4 = h_liq[ndx] * g[1];
+            //    drag term
+            t5 = drag[1];
+            Ustore[3] = Ustore[3] + dt * (t1 - t2 - t3 + t4 + t5);
+
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    fluid fraction x-direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    gravity on fluid
+            t4 = h[ndx] * g[0];
+            //    drag force on fluid
+            t5 = drag[2];
+            Ustore[4] = Ustore[4] + dt * (t4 - t5);
+
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    fluid fraction y-direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    gravity on fluid
+            t4 = h[ndx] * g[1];
+            //    drag force on fluid
+            t5 = drag[3];
+            Ustore[5] = Ustore[5] + dt * (t4 - t5);
+        }
+
+        // computation of magnitude of friction forces for statistics
+        elem_forceint = unitvx * forceintx + unitvy * forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy * forcebedy;
+
+        // update the state variables
+        for (i = 0; i < 6; ++i)
+            state_vars_[i][ndx]=Ustore[i];
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

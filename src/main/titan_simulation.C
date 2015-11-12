@@ -552,9 +552,15 @@ void cxxTitanSimulation::run()
         double UNREFINE_TARGET = .01;
         int h_count = 0;
         if(timeprops.iter < 50)
+        {
             scale_.frict_tiny = 0.1;
+            integrator->frict_tiny=scale_.frict_tiny;
+        }
         else
+        {
             scale_.frict_tiny = 0.000000001;
+            integrator->frict_tiny=scale_.frict_tiny;
+        }
 
         //check for changes in topography and update if necessary
         if(timeprops.iter == 200)

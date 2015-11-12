@@ -270,12 +270,18 @@ protected:
     tivector<double> &hVx_liq;
     tivector<double> &hVy_liq;
 
-    /*tivector<double> &dh_dx;
+    tivector<double> &dh_dx;
     tivector<double> &dh_dy;
-    tivector<double> &dhVx_dx;
-    tivector<double> &dhVx_dy;
-    tivector<double> &dhVy_dx;
-    tivector<double> &dhVy_dy;*/
+    tivector<double> &dh_liq_dx;
+    tivector<double> &dh_liq_dy;
+    tivector<double> &dhVx_sol_dx;
+    tivector<double> &dhVx_sol_dy;
+    tivector<double> &dhVy_sol_dx;
+    tivector<double> &dhVy_sol_dy;
+    tivector<double> &dhVx_liq_dx;
+    tivector<double> &dhVx_liq_dy;
+    tivector<double> &dhVy_liq_dx;
+    tivector<double> &dhVy_liq_dy;
 };
 
 /**
@@ -298,5 +304,37 @@ protected:
      * Corrector step for second order of whole step for first order
      */
     virtual void corrector();
+
+    void calc_drag_force(const ti_ndx_t ndx, const double *vsolid, const double *vfluid,
+            const double den_solid, const double den_fluid, const double vterminal,
+            double *drag)
+    {
+        double temp, volf, denfrac;
+        double delv[2];
+        const double exponant = 3.0;
+
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //!     model in pitman-le paper
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        volf = h_liq[ndx] / h[ndx];
+        temp = h_liq[ndx] * pow(1. - volf, 1.0 - exponant) / vterminal;
+        denfrac = den_fluid / den_solid;
+
+        for (int i = 0; i < 4; ++i)
+            drag[i] = 0.0;
+
+        //fluid vel - solid vel
+        if (h_liq[ndx] > tiny)
+        {
+            for (int i = 0; i < 2; ++i)
+                delv[i] = vfluid[i] - vsolid[i];
+
+            //compute individual drag-forces
+            drag[0] = (1.0 - denfrac) * temp * delv[0];
+            drag[1] = (1.0 - denfrac) * temp * delv[1];
+            drag[2] = (1.0 - denfrac) * temp * delv[0] / denfrac;
+            drag[3] = (1.0 - denfrac) * temp * delv[1] / denfrac;
+        }
+    }
 };
 #endif
