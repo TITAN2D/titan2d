@@ -609,6 +609,13 @@ public:
 
     void slopes(MatProps* matprops_ptr);
     void get_slopes(ti_ndx_t ndx, double gamma);
+
+    //! This function loops through all the non-ghost current elements and calls the Element member function Element::calc_edge_states() which calculates the Riemann fluxes between elements and stores the Riemann fluxes in the edge nodes.
+    void calc_edge_states(MatProps* matprops_ptr, TimeProps* timeprops_ptr,Integrator *integrator,
+            int myid, const int order, double &outflow);
+protected:
+    vector<double> dtmp;
+
 };
 
 #endif

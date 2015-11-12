@@ -178,7 +178,7 @@ void Integrator::step()
      */
     double outflow = 0.0;  //shouldn't need the =0.0 assignment but just being cautious.
     //printf("step: before calc_edge_states\n"); fflush(stdout);
-    calc_edge_states(ElemTable, NodeTable, matprops_ptr, timeprops_ptr, this, myid, order, &outflow);
+    ElemProp.calc_edge_states(matprops_ptr, timeprops_ptr, this, myid, order, outflow);
     PROFILING3_STOPADD_RESTART(step_calc_edge_states,pt_start);
 
     outflow *= dt;

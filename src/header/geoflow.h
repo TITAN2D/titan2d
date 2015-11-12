@@ -73,10 +73,6 @@ void move_data(int nump, int myid, ElementsHashTable* El_Table, NodeHashTable* N
 //! this function deletes the current ghost elements
 void delete_ghost_elms(ElementsHashTable* El_Table, int myid);
 
-//! This function loops through all the non-ghost current elements and calls the Element member function Element::calc_edge_states() which calculates the Riemann fluxes between elements and stores the Riemann fluxes in the edge nodes. 
-void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr, Integrator *integrator,
-                      int myid, int order_flag, double *outflow);
-
 //! c++ sgn function 
 inline double c_sgn(double zz)
 {

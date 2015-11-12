@@ -21,6 +21,7 @@
 
 #include "../header/hpfem.h"
 
+
 /*! calc_edge_states() cycles through the element Hashtable (listing of all 
  *  elements) and for each element (that has not been refined this iteration 
  *  and is not a ghost_element) calls Element member function 
@@ -29,48 +30,57 @@
  *  GIS map's cummulative outflow (defined as the mass flow off of the
  *  GIS map).  Also, the elements are checked for multiple pile-height values 
  */
-void calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, TimeProps* timeprops_ptr,Integrator *integrator,
-                      int myid, const int order_flag, double *outflow)
+void ElementsProperties::calc_edge_states(MatProps* matprops_ptr, TimeProps* timeprops_ptr,Integrator *integrator,
+                      int myid, const int order, double &outflow)
 {
-    int i, j, k, counter;
-    double tiny = GEOFLOW_TINY;
-    int el_counter = 0;
-    double evalue = 1;
+    assert(ElemTable->all_elenodes_are_permanent);
     
     //-------------------go through all the elements of the subdomain and  
     //-------------------find the edge states
+#ifdef BINARY_IDENTICAL_OMP
+    vector<double> &localoutflow=dtmp;
+    localoutflow.resize(elements_.size());
     
-    double localoutflow;
-    *outflow = 0.0;
-    /* mdj 2007-04 */
-    double localoutflow_sum = 0.0;
-    Element* Curr_El;
-    
-    int no_of_buckets = El_Table->get_no_of_buckets();
-    vector<HashEntryLine> &bucket=El_Table->bucket;
-    tivector<Element> &elenode_=El_Table->elenode_;
-    //@ElementsBucketDoubleLoop
-//#pragma omp parallel for private(currentPtr,Curr_El) reduction(+:localoutflow_sum)
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        localoutflow[ndx]=0.0;
+        if(adapted_[ndx] > 0)//if this element does not belong on this processor don't involve!!!
         {
-            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            if(Curr_El->adapted_flag() > 0)
-            {
                 //if this element doesn't belong on this processor don't involve
-                double pheight = Curr_El->state_vars(0);
-                Curr_El->calc_edge_states(El_Table, NodeTable, matprops_ptr, integrator, myid, timeprops_ptr->dtime, order_flag,
-                                          &localoutflow);
-//(mdj)		*outflow+=localoutflow;
-                localoutflow_sum += localoutflow;
-                double pheight2 = Curr_El->state_vars(0);
+                double pheight = state_vars_[0][ndx];
+                elements_[ndx].calc_edge_states(ElemTable, NodeTable, matprops_ptr, integrator, myid, timeprops_ptr->dtime, order,
+                                          &(localoutflow[ndx]));
+
+                double pheight2 = state_vars_[0][ndx];
                 if(pheight != pheight2)
                     printf("prolbem of changing height here,,,.....\n");
-//(mdj) unused		el_counter++;
-            }
         }
     }
-    *outflow = localoutflow_sum;
+
+    outflow = 0.0;
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+        outflow+=localoutflow[ndx];
+#else
+    double localoutflow_sum=0.0;
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(+:localoutflow_sum)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] > 0)//if this element does not belong on this processor don't involve!!!
+        {
+                //if this element doesn't belong on this processor don't involve
+                double pheight = state_vars_[0][ndx];
+                double localoutflow;
+                elements_[ndx].calc_edge_states(ElemTable, NodeTable, matprops_ptr, integrator, myid, timeprops_ptr->dtime, order,
+                                          &localoutflow);
+                localoutflow_sum+=localoutflow;
+                double pheight2 = state_vars_[0][ndx];
+                if(pheight != pheight2)
+                    printf("prolbem of changing height here,,,.....\n");
+        }
+    }
+    outflow=localoutflow_sum;
+#endif
     return;
 }

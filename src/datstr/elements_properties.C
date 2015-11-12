@@ -306,6 +306,7 @@ double ElementsProperties::element_weight()
 
 void ElementsProperties::slopes(MatProps* matprops_ptr)
 {
+    assert(ElemTable->all_elenodes_are_permanent);
     double gamma=matprops_ptr->gamma;
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
