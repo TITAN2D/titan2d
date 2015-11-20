@@ -1201,13 +1201,13 @@ void Element::get_slopes(ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
     if(NodeTable->info_[ndtemp] == S_C_CON)
     {
         ep2 = ElemTable->neighbor_ndx_[xp + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
-        ASSERT3(neigh_proc_[xp + 4][ndx_] >= 0 && ti_ndx__not_negative(ep2));
+        ASSERT3(ElemTable->neigh_proc_[xp + 4][ndx_] >= 0 && ti_ndx_not_negative(ep2));
     }
     ndtemp = ElemTable->node_key_ndx_[xm + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xm + 4][0]);
     if(NodeTable->info_[ndtemp] == S_C_CON)
     {
         em2 = ElemTable->neighbor_ndx_[xm + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xm + 4][0]));
-        ASSERT3(neigh_proc_[xm + 4][ndx_] >= 0 && ti_ndx__not_negative(em2));
+        ASSERT3(ElemTable->neigh_proc_[xm + 4][ndx_] >= 0 && ti_ndx_not_negative(em2));
     }
 
     double dp, dm, dc, dxp, dxm;
@@ -1237,13 +1237,13 @@ void Element::get_slopes(ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
     if(NodeTable->info_[ndtemp] == S_C_CON)
     {
         ep2 = ElemTable->neighbor_ndx_[yp + 4][ndx_];       //(Element*) (ElemTable->lookup(&neighbor[yp + 4][0]));
-        ASSERT3(neigh_proc_[yp + 4][ndx_] >= 0 && ti_ndx__not_negative(ep2));
+        ASSERT3(ElemTable->neigh_proc_[yp + 4][ndx_] >= 0 && ti_ndx_not_negative(ep2));
     }
     ndtemp = ElemTable->node_key_ndx_[ym + 4][ndx_];        //(Node*) NodeTable->lookup(&node_key[ym + 4][0]);
     if(NodeTable->info_[ndtemp] == S_C_CON)
     {
         em2 = ElemTable->neighbor_ndx_[ym + 4][ndx_];       //(Element*) (ElemTable->lookup(&neighbor[ym + 4][0]));
-        ASSERT3(neigh_proc_[ym + 4][ndx_] >= 0 && ti_ndx__not_negative(em2));
+        ASSERT3(ElemTable->neigh_proc_[ym + 4][ndx_] >= 0 && ti_ndx_not_negative(em2));
     }
 
     dxp = ElemTable->coord_[1][ep] - ElemTable->coord_[1][ndx_];

@@ -459,6 +459,7 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     elementsHashTable=this;
     
     elementType_=ElementType::UnknownElementType;
+    conformation=0;
 }
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table
@@ -1082,6 +1083,8 @@ void ElementsHashTable::flushElemTable()
         }
     }
     updateLocalElements();
+
+    conformation++;
     titanTimings.flushElemTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushElemTableTime += MPI_Wtime() - t_start;
 }

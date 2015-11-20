@@ -22,6 +22,8 @@
 #ifndef PROPS
 #define PROPS
 
+#include "ticore.hpp"
+
 #include<stdlib.h>
 #include<stdio.h> //useful_lib.h has a function that return pointer to FILE
 #include "../useful/useful_lib.h"
@@ -742,9 +744,18 @@ public:
 };
 
 #ifndef SWIG
-//! the OutLine Structure holds the maximum throughout time flow depth at every spatial point
-struct OutLine
+/** the OutLine Structure holds the maximum throughout time flow depth at every spatial point
+ *
+ * first it collects max in pileheight_by_elm which is per element based (update_single_phase/update_two_phases)
+ * when geometry is changed it converts pileheight_by_elm to pileheight_loc, which is a grid local to each thread (flush_stats)
+ * at that step it also calculated the boundaries of each element (update_on_changed_geometry)
+ * finally then the time came it combines all results from threads it single final grid pileheight (combine_results_from_threads)
+ */
+class OutLine
 {
+public:
+    //geometric id of temporary arrays
+    int conformation;
     // the least squares interpolated height didn't work for some reason
     // that is didn't produce a meaningful pileheight contour map so it has
     // been commented out.  that is everything to deal with pileheight2
@@ -753,6 +764,12 @@ struct OutLine
 
     //! number of cells in the y direction on the map 
     int Ny;
+
+    //!2d elements accessed as a[ix+iy*stride]
+    int stride;
+
+    int size;
+
 
     //! length of a cell in the x direction
     double dx;
@@ -767,308 +784,72 @@ struct OutLine
     double yminmax[2];
 
     //! 2-d array holding the maximum throughout time pileheight at every point
-    double **pileheight;
+    //! pileheight[ithread][ix+iy*stride]
+    double *pileheight;
 
     //! 2-d array holding the maximum throughout time kinetice energy at every point
-    double **max_kinergy;
+    double *max_kinergy;
+
 
     //! 2-d array holding the cummulative kinetic energy at every point
-    double **cum_kinergy;
+    double *cum_kinergy;
 
     ElementType elementType;
 
     //! this is the OutLine constructor it initializes the number of cells to zero
-    OutLine()
-    {
-        Nx = Ny = 0;
-        elementType=ElementType::SinglePhase;
-        return;
-    }
+    OutLine();
     
     //! this is the OutLine it deallocates the 2 dimensional array holding maximum throughout time pileheight in every cell on the map
-    ~OutLine()
-    {
-        if((Nx > 0) && (Ny > 0))
-            CDeAllocD2(pileheight);
-        return;
-    }
+    ~OutLine();
     
     //! this function initializes the OutLine map/2-dimensional array 
-    void init(const double *dxy, int power, double *XRange, double *YRange)
-    {
-        int ix, iy;
-        
-        if(power < 0)
-            power = 0;
-        
-        dx = dxy[0] / pow(2.0, power);
-        dy = dxy[1] / pow(2.0, power);
-        //printf("dx=%g dy=%g  XRange={%g,%g} YRange={%g,%g}\n",dx,dy,XRange[0],XRange[1],YRange[0],YRange[1]);
-        
-        xminmax[0] = XRange[0];
-        xminmax[1] = XRange[1];
-        yminmax[0] = YRange[0];
-        yminmax[1] = YRange[1];
-        
-        Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
-        Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
-        
-        while (Nx * Ny > 1024 * 1024)
-        {
-            dx *= 2.0;
-            dy *= 2.0;
-            
-            Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
-            Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
-        }
-        printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d\n", Nx, Ny, Nx * Ny);
-        
-        pileheight = CAllocD2(Ny, Nx);
-        max_kinergy = CAllocD2(Ny, Nx);
-        cum_kinergy = CAllocD2(Ny, Nx);
-
-        for(iy = 0; iy < Ny; iy++)
-            for(ix = 0; ix < Nx; ix++)
-            {
-                pileheight[iy][ix] = 0.0;
-                max_kinergy[iy][ix] = 0.0;
-                cum_kinergy[iy][ix] = 0.0;
-            }
-        return;
-    }
+    void init(const double *dxy, int power, double *XRange, double *YRange);
     
     //! this function reinitializes the OutLine map/2-dimensional array during restart
-    void init2(const double *dxy, double *XRange, double *YRange)
-    {
-        int ix, iy;
-        
-        dx = dxy[0];
-        dy = dxy[1];
-        
-        xminmax[0] = XRange[0];
-        xminmax[1] = XRange[1];
-        yminmax[0] = YRange[0];
-        yminmax[1] = YRange[1];
-        
-        Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
-        Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
-        
-        pileheight = CAllocD2(Ny, Nx);
-        max_kinergy = CAllocD2(Ny, Nx);
-        cum_kinergy = CAllocD2(Ny, Nx);
-        for(iy = 0; iy < Ny; iy++)
-            for(ix = 0; ix < Nx; ix++)
-            {
-                pileheight[iy][ix] = 0.0;
-                max_kinergy[iy][ix] = 0.0;
-                cum_kinergy[iy][ix] = 0.0;
-            }
-        return;
-    }
-    void update(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+    void init2(const double *dxy, double *XRange, double *YRange);
+
     //! this function updates the maximum throughout time pileheight in every cell covered by an arbitrary element
-    void update(double xstart, double xstop, double ystart, double ystop, double height, double *hv)
-    {
-        int ixstart = (int) ((xstart - xminmax[0]) / dx + 0.5);
-        int ixstop = (int) ((xstop - xminmax[0]) / dx + 0.5);
-        int iystart = (int) ((ystart - yminmax[0]) / dy + 0.5);
-        int iystop = (int) ((ystop - yminmax[0]) / dy + 0.5);
-        
-        if(ixstart < 0)
-            ixstart = 0;
-        if(ixstop == ixstart)
-        {
-            ixstart = (int) ((xstart - xminmax[0]) / dx);
-            ixstop = ixstart + 1;
-        }
-        if(ixstop > Nx)
-            ixstop = Nx;
-        
-        if(iystart < 0)
-            iystart = 0;
-        if(iystop == iystart)
-        {
-            iystart = (int) ((ystart - yminmax[0]) / dy);
-            iystop = iystart + 1;
-        }
-        if(iystop > Ny)
-            iystop = Ny;
+    void update(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
 
-        double ke = 0.;
-        if(height > 1.0E-04)
-        {
-            if(elementType == ElementType::TwoPhases)
-            {
-                //@TODO: Check the correctness of TwoPhases ke calculation
-                ke = 0.5 * (hv[0] * hv[0] + hv[1] * hv[1] + hv[2] * hv[2] + hv[3] * hv[3]) / height;
-            }
-            if(elementType == ElementType::SinglePhase)
-            {
-                ke = 0.5 * (hv[0] * hv[0] + hv[1] * hv[1]) / height;
-            }
-        }
-
-
-        for(int iy = iystart; iy < iystop; iy++)
-            for(int ix = ixstart; ix < ixstop; ix++)
-            {
-                cum_kinergy[iy][ix] += ke;
-                if(height > pileheight[iy][ix])
-                    pileheight[iy][ix] = height;
-                if(ke > max_kinergy[iy][ix])
-                    max_kinergy[iy][ix] = ke;
-            }
-        return;
-    }
-    
     /*! this function outputs the maximum over time map of pileheights
      *  to the file pileheightrecord.xxxxxx
      */
-    void output(MatProps* matprops_ptr, StatProps* statprops_ptr)
-    {
-        int ix, iy;
-        char filename[256];
-        
-        // output max over time pile-height
-        sprintf(filename, "pileheightrecord.%06d", statprops_ptr->runid);
-        FILE *fp = fopen(filename, "w");
-        
-        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-                "Ny=%d: Y={%20.14g,%20.14g}\n"
-                "Pileheight=\n",
-                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-        for(iy = 0; iy < Ny; iy++)
-        {
-            for(ix = 0; ix < Nx - 1; ix++)
-                fprintf(fp, "%g ", pileheight[iy][ix] * matprops_ptr->scale.height);
-            fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->scale.height);
-        }
-        fclose(fp);
-
-        //output max over time kinetic energy
-        double ENERGY_SCALE = matprops_ptr->scale.length * matprops_ptr->scale.gravity * matprops_ptr->scale.height;
-        
-        sprintf(filename, "maxkerecord.%06d", statprops_ptr->runid);
-        fp = fopen(filename, "w");
-        
-        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-                "Ny=%d: Y={%20.14g,%20.14g}\n"
-                "KineticEnergy=\n",
-                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-        for(iy = 0; iy < Ny; iy++)
-        {
-            for(ix = 0; ix < Nx - 1; ix++)
-                fprintf(fp, "%g ", max_kinergy[iy][ix] * ENERGY_SCALE);
-            fprintf(fp, "%g\n", max_kinergy[iy][ix] * ENERGY_SCALE);
-        }
-        fclose(fp);
-
-        // output cummulative kinetic-energy
-        sprintf(filename, "cumkerecord.%06d", statprops_ptr->runid);
-        fp = fopen(filename, "w");
-        
-        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-                "Ny=%d: Y={%20.14g,%20.14g}\n"
-                "KineticEnergy=\n",
-                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-        for(iy = 0; iy < Ny; iy++)
-        {
-            for(ix = 0; ix < Nx - 1; ix++)
-                fprintf(fp, "%g ", cum_kinergy[iy][ix] * ENERGY_SCALE);
-            fprintf(fp, "%g\n", cum_kinergy[iy][ix] * ENERGY_SCALE);
-        }
-        fclose(fp);
-        
-        // output elevation data
-        fp = fopen("elevation.grid", "w");
-        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-                "Ny=%d: Y={%20.14g,%20.14g}\n"
-                "Pileheight=\n",
-                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-        
-        double yy, xx, res = dx + dy, elevation;
-        int ierr;
-        for(iy = 0; iy < Ny; iy++)
-        {
-            yy = ((iy + 0.5) * dy + yminmax[0]) * matprops_ptr->scale.length;
-            for(ix = 0; ix < Nx - 1; ix++)
-            {
-                xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
-                ierr = Get_elevation(res, xx, yy, elevation);
-                fprintf(fp, "%g ", elevation);
-            }
-            fprintf(fp, "%g\n", pileheight[iy][ix] * matprops_ptr->scale.height);
-        }
-        fclose(fp);
-        return;
-    }
+    void output(MatProps* matprops_ptr, StatProps* statprops_ptr);
     
     //! this function reads in the previous map of maximum throughout time pileheight stored in the file pileheightrecord.xxxxxx during restart
-    void reload(MatProps* matprops_ptr, StatProps* statprops_ptr)
-    {
-        int ix, iy;
-        char filename[256];
-        sprintf(filename, "pileheightrecord.%06d", statprops_ptr->runid);
-        FILE *fp = fopen(filename, "r");
-        
-        if(fp == NULL)
-            printf("pileheightrecord.%06d can not be found.\nRestarting from zero instead\n", statprops_ptr->runid);
-        else
-        {
-            
-            int Nxtemp, Nytemp;
-            double xminmaxtemp[2], yminmaxtemp[2];
-            fscanf(fp, "Nx=%d: X={%lf,%lf}\nNy=%d: Y={%lf,%lf}\nPileheight=\n", &Nxtemp, (xminmaxtemp + 0),
-                   (xminmaxtemp + 1), &Nytemp, (yminmaxtemp + 0), (yminmaxtemp + 1));
-            
-            if((Nxtemp == Nx) && (fabs(xminmaxtemp[0] / matprops_ptr->scale.length - xminmax[0])
-                    <= fabs(xminmax[0]) / 10000000000.0)
-               && (fabs(xminmaxtemp[1] / matprops_ptr->scale.length - xminmax[1]) <= fabs(xminmax[1]) / 10000000000.0)
-               && (Nytemp == Ny)
-               && (fabs(yminmaxtemp[0] / matprops_ptr->scale.length - yminmax[0]) <= fabs(yminmax[0]) / 10000000000.0)
-               && (fabs(yminmaxtemp[1] / matprops_ptr->scale.length - yminmax[1]) <= fabs(yminmax[1]) / 10000000000.0))
-            {
-                
-                for(iy = 0; iy < Ny; iy++)
-                    for(ix = 0; ix < Nx; ix++)
-                    {
-                        fscanf(fp, "%lf", pileheight[iy] + ix);
-                        pileheight[iy][ix] /= matprops_ptr->scale.height;
-                    }
-            }
-            else
-            {
-                printf("the pileheightrecord.%06d that is present does not match the restart file.\nRestarting from zero instead\n",
-                       statprops_ptr->runid);
-                printf("Nx=%d Nxtemp=%d\n", Nx, Nxtemp);
-                printf("Ny=%d Nytemp=%d\n", Ny, Nytemp);
-                printf("xmin=%20.14g xmintemp=%20.14g  xmax=%20.14g, xmaxtemp=%20.14g\n",
-                       xminmax[0] * matprops_ptr->scale.length, xminmaxtemp[0], xminmax[1] * matprops_ptr->scale.length,
-                       xminmaxtemp[1]);
-                printf("ymin=%20.14g ymintemp=%20.14g  ymax=%20.14g, ymaxtemp=%20.14g\n",
-                       yminmax[0] * matprops_ptr->scale.length, yminmaxtemp[0], yminmax[1] * matprops_ptr->scale.length,
-                       yminmaxtemp[1]);
-                assert(0);
-            }
-            
-            fclose(fp);
-        }
-        
-        return;
-    }
+    void reload(MatProps* matprops_ptr, StatProps* statprops_ptr);
     
-    //! this function deallocates the 2 dimensional array of maximum throughout time pileheights
-    void dealloc()
-    {
-        CDeAllocD2(pileheight);
-        //CDeAllocD2(pileheight2);
-        return;
-    }
-    
+    void combine_results_from_threads();
+
+protected:
+
+    void update_on_changed_geometry(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+    void flush_stats(bool zero_old_arrays=true);
+
+    void update_single_phase(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+    void update_two_phases(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+
+    int myid;
+    int numprocs;
+
+    //! 2-d array holding the maximum throughout time pileheight at every point
+    //! pileheight_loc[ithread][ix+iy*stride]
+    double **pileheight_loc;
+    vector<double, AlignmentAllocator<double> > pileheight_by_elm;
+
+    //! 2-d array holding the maximum throughout time kinetice energy at every point
+    double **max_kinergy_loc;
+    vector<double, AlignmentAllocator<double> > max_kinergy_by_elm;
+
+
+    //! 2-d array holding the cummulative kinetic energy at every point
+    double **cum_kinergy_loc;
+    vector<double, AlignmentAllocator<double> > cum_kinergy_by_elm;
+
+    vector<int> el_x_start;
+    vector<int> el_x_stop;
+    vector<int> el_y_start;
+    vector<int> el_y_stop;
 };
 #endif
 

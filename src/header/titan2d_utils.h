@@ -24,7 +24,7 @@
 #include <chrono>
 #include <iostream>
 
-
+#include "ticore.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -187,6 +187,7 @@ typedef std::chrono::high_resolution_clock Clock;
 #define PROFILING1_START(t_start) t_start=Clock::now();
 #define PROFILING1_STOP(where,t_start) titanProfiling.where=Clock::now()-t_start
 #define PROFILING1_STOPADD(where,t_start) titanProfiling.where+=Clock::now()-t_start
+#define PROFILING1_STOPADD_RESTART(where,t_start) titanProfiling.where+=Clock::now()-t_start;t_start=Clock::now();
 #define IF_DEF_PROFILING1(statement) statement
 
 #define PROFILE1_TIMINGS_PRINTING(variable) std::cout<<"  "<<#variable<<" "<<variable.count()<<" "<< std::chrono::duration<double, std::chrono::milliseconds::period>(variable).count() <<"\n"
@@ -230,6 +231,14 @@ public:
         {
             printf("%s\n", title);
         }
+        PROFILE1_TIMINGS_PRINTING(tsim_iter);
+        PROFILE1_TIMINGS_PRINTING(tsim_iter_update_topo);
+        PROFILE1_TIMINGS_PRINTING(tsim_iter_adapt);
+        PROFILE1_TIMINGS_PRINTING(tsim_iter_step);
+        PROFILE1_TIMINGS_PRINTING(tsim_iter_saverestart);
+        PROFILE1_TIMINGS_PRINTING(tsim_iter_output);
+        PROFILE1_TIMINGS_PRINTING(tsim_iter_post);
+
         PROFILE1_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_loop);
         PROFILE1_TIMINGS_PRINTING(PrimaryRefinementsFinder_findSeedRefinements_merge);
         PROFILE1_TIMINGS_PRINTING(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop);
@@ -256,11 +265,21 @@ public:
         PROFILE3_TIMINGS_PRINTING(step_outline);
         PROFILE3_TIMINGS_PRINTING(step_calc_wet_dry_orient);
         PROFILE3_TIMINGS_PRINTING(step_calc_stats);
+
+
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
     }
     void reset()
     {
+        IF_DEF_PROFILING1(tsim_iter=zero);
+        IF_DEF_PROFILING1(tsim_iter_update_topo=zero);
+        IF_DEF_PROFILING1(tsim_iter_adapt=zero);
+        IF_DEF_PROFILING1(tsim_iter_step=zero);
+        IF_DEF_PROFILING1(tsim_iter_saverestart=zero);
+        IF_DEF_PROFILING1(tsim_iter_output=zero);
+        IF_DEF_PROFILING1(tsim_iter_post=zero);
+
         IF_DEF_PROFILING1(PrimaryRefinementsFinder_findSeedRefinements_loop=zero);
         IF_DEF_PROFILING1(PrimaryRefinementsFinder_findSeedRefinements_merge=zero);
         IF_DEF_PROFILING1(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop=zero);
@@ -292,6 +311,14 @@ public:
     }
 public:
     Clock::duration zero;
+    IF_DEF_PROFILING1(Clock::duration tsim_iter);
+    IF_DEF_PROFILING1(Clock::duration tsim_iter_update_topo);
+    IF_DEF_PROFILING1(Clock::duration tsim_iter_adapt);
+    IF_DEF_PROFILING1(Clock::duration tsim_iter_step);
+    IF_DEF_PROFILING1(Clock::duration tsim_iter_saverestart);
+    IF_DEF_PROFILING1(Clock::duration tsim_iter_output);
+    IF_DEF_PROFILING2(Clock::duration tsim_iter_post);
+    //IF_DEF_PROFILING2(Clock::duration );
 
     IF_DEF_PROFILING1(Clock::duration PrimaryRefinementsFinder_findSeedRefinements_loop);
     IF_DEF_PROFILING1(Clock::duration PrimaryRefinementsFinder_findSeedRefinements_merge);
@@ -389,8 +416,5 @@ void merge_vectors_from_threads(vector<T> &where, const vector< vector<T> > &wha
 #define IF_DEB3(statement) {}
 #define ASSERT3(statement) {}
 #endif
-
-
-#define FREE_VAR_IF_NOT_NULLPTR(variable) if(variable!=nullptr){delete variable;variable=nullptr;}
 
 #endif

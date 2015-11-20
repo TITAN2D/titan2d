@@ -541,6 +541,12 @@ void cxxTitanSimulation::run()
 
     ASSERT2(ElemTable->checkPointersToNeighbours("Prestep index check",false)==0);
 
+    PROFILING1_DEFINE(pt_start0);
+    PROFILING1_DEFINE(pt_start1);
+    PROFILING1_START(pt_start0);
+    PROFILING1_DEFINE(pt_start);
+    PROFILING1_START(pt_start);
+
     titanTimingsAlongSimulation.totalTime = MPI_Wtime();
     while (!(timeprops.ifend(0)) && !ifstop)
     {
@@ -548,6 +554,7 @@ void cxxTitanSimulation::run()
          *  mesh adaption routines
          */
         TIMING1_START(t_start);
+        PROFILING1_START(pt_start);
         double TARGET = .05;
         double UNREFINE_TARGET = .01;
         int h_count = 0;
@@ -567,12 +574,14 @@ void cxxTitanSimulation::run()
         {
             update_topo(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
         }
+        PROFILING1_STOPADD_RESTART(tsim_iter_update_topo,pt_start);
 
         if((adapt != 0) && (timeprops.iter % 5 == 4))
         {
             AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -2.0);
 
             TIMING1_START(t_start2);
+            ElemTable->conformation++;
             hadapt.adapt(h_count, TARGET);
             TIMING1_STOPADD(refinementTime, t_start2);
             
@@ -603,12 +612,14 @@ void cxxTitanSimulation::run()
             ASSERT2(ElemTable->checkPointersToNeighbours("After all adaptions",false)==0);
         }
         TIMING1_STOPADD(meshAdaptionTime, t_start);
+        PROFILING1_STOPADD_RESTART(tsim_iter_adapt,pt_start);
 
         TIMING1_START(t_start);
         integrator->step();
         //step(matprops_ptr, &timeprops, pileprops_ptr, &fluxprops, &statprops,
         //     &order, &outline, &discharge_planes, adapt);
         TIMING1_STOPADD(stepTime, t_start);
+        PROFILING1_STOPADD_RESTART(tsim_iter_step,pt_start);
 
         TIMING1_START(t_start);
         /*
@@ -618,6 +629,7 @@ void cxxTitanSimulation::run()
             saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
                     &statprops, &discharge_planes, &outline, &savefileflag);
 
+        PROFILING1_STOPADD_RESTART(tsim_iter_saverestart,pt_start);
         /*
          * output results to file
          */
@@ -659,7 +671,7 @@ void cxxTitanSimulation::run()
                 grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
             }
         }
-
+        PROFILING1_STOPADD_RESTART(tsim_iter_output,pt_start);
 #ifdef PERFTEST
         int countedvalue=timeprops.iter%2+1;
         int e_buckets=ElemTable->get_no_of_buckets();
@@ -696,9 +708,11 @@ void cxxTitanSimulation::run()
             titanTimingsAlongSimulation.reset();
             titanTimingsAlongSimulation.totalTime = MPI_Wtime();
         }
+        PROFILING1_STOPADD_RESTART(tsim_iter_post,pt_start);
     }
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    PROFILING1_STOP(tsim_iter,pt_start0);
 
     /*
      * save a restart file
@@ -761,6 +775,10 @@ void cxxTitanSimulation::run()
     MPI_Barrier(MPI_COMM_WORLD);
 
     //output maximum flow depth a.k.a. flow outline
+    PROFILING3_START(pt_start1);
+    outline.combine_results_from_threads();
+    PROFILING3_STOPADD(step_outline,pt_start1);
+
     if(numprocs > 1)
     {
         OutLine outline2;
@@ -768,17 +786,19 @@ void cxxTitanSimulation::run()
         dxy[0] = outline.dx;
         dxy[1] = outline.dy;
         outline2.init2(dxy, outline.xminmax, outline.yminmax);
-        int NxNyout = outline.Nx * outline.Ny;
+        int NxNyout = outline.Ny * outline.stride;
 
 //TWO PHASES is:MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        MPI_Reduce(*(outline.max_kinergy), *(outline2.max_kinergy), NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        MPI_Reduce(*(outline.cum_kinergy), *(outline2.cum_kinergy), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(outline.pileheight, outline2.pileheight, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        MPI_Reduce(outline.max_kinergy, outline2.max_kinergy, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        MPI_Reduce(outline.cum_kinergy, outline2.cum_kinergy, NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if(myid == 0)
             outline2.output(matprops_ptr, &statprops);
     }
     else
+    {
         outline.output(matprops_ptr, &statprops);
+    }
 
 #ifdef PERFTEST
     long m = element_counter, ii;

@@ -42,6 +42,7 @@ using namespace std;
 #include <assert.h>
 
 #include "titan2d.h"
+#include "ticore.hpp"
 
 #include "properties.h"
 #include "elenode.hpp"

@@ -354,6 +354,9 @@ private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);
 public:
+     //geometric structure id, every time starting adaptation conformation is increamented and  every time flushElemTable is called conformation is updated as well
+     //should be used in routings which do some precalculation on fixed geometry
+     int conformation;
     //here goes element content storage probably should be separate class at the end
     
     //! Element type

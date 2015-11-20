@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include "ticore.hpp"
 
 typedef int tisize_t;
 typedef int ti_ndx_t;
@@ -134,6 +135,10 @@ public:
 };
 
 #else
+
+
+
+
 template<typename T>
 class tivector
 {
@@ -152,13 +157,13 @@ public:
         reserved_size_=reserved_size;
         reserved_size_old_=reserved_size_;
         
-        array_=new T[reserved_size_];
-        array_old_=new T[reserved_size_old_];
+        array_=TI_ALLOC(T,reserved_size_);
+        array_old_=TI_ALLOC(T,reserved_size_old_);
         //for(size_t i=0;i<reserved_size_;i++)array_[i]=0;
     }
     ~tivector(){
-        if(array_!=nullptr)delete [] array_;
-        if(array_old_!=nullptr)delete [] array_old_;
+        if(array_!=nullptr)TI_FREE(array_);
+        if(array_old_!=nullptr)TI_FREE(array_old_);
     }
     const tisize_t& size() const {return size_;}
 public:
@@ -180,13 +185,13 @@ public:
     {
         if(new_size>reserved_size_){
             //move to array_old_
-            delete [] array_old_;
+            TI_FREE(array_old_);
             size_old_=size_;
             reserved_size_old_=reserved_size_;
             array_old_=array_;
             //allocate new
             reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
-            array_=new T[reserved_size_];
+            array_=TI_ALLOC(T,reserved_size_);
             //for(tisize_t i=0;i<size_old_;++i)
             //    array_[i]=array_old_[i];
             if(movecontent)
@@ -200,14 +205,14 @@ public:
         if(new_reserve_size<reserved_size_)return;
 
         //move to array_old_
-        delete [] array_old_;
+        TI_FREE(array_old_);
         size_old_=size_;
         reserved_size_old_=reserved_size_;
         array_old_=array_;
 
         //allocate new
         reserved_size_=2*(new_reserve_size/reserved_size_+1)*reserved_size_;
-        array_=new T[reserved_size_];
+        array_=TI_ALLOC(T,reserved_size_);
 
         if(movecontent)
             memcpy(array_, array_old_, sizeof(T)*size_old_);
@@ -219,14 +224,14 @@ public:
         if(new_reserve_size<reserved_size_)return;
 
         //move to array_old_
-        delete [] array_old_;
+        TI_FREE(array_old_);
         size_old_=size_;
         reserved_size_old_=reserved_size_;
         array_old_=array_;
 
         //allocate new
         reserved_size_=2*(new_reserve_size/reserved_size_)*reserved_size_;
-        array_=new T[reserved_size_];
+        array_=TI_ALLOC(T,reserved_size_);
 
         if(movecontent)
             memcpy(array_, array_old_, sizeof(T)*size_old_);
@@ -238,11 +243,11 @@ public:
         //reallocate array_ if needed
         if(size_old_+1>reserved_size_){
             //move to array_old_
-            delete [] array_;
+            TI_FREE(array_);
             //allocate new
             size_=size_old_+1;
             reserved_size_=2*(size_/reserved_size_)*reserved_size_;
-            array_=new T[reserved_size_];
+            array_=TI_ALLOC(T,reserved_size_);
         }
         //size_=size_+1;
         //for(tisize_t i=0;i<pos;++i)
@@ -258,11 +263,11 @@ public:
         //reallocate array_ if needed
         if(size_old_-1>reserved_size_){
             //move to array_old_
-            delete [] array_;
+            TI_FREE(array_);
             //allocate new
             size_=size_old_-1;
             reserved_size_=2*(size_/reserved_size_)*reserved_size_;
-            array_=new T[reserved_size_];
+            array_=TI_ALLOC(T,reserved_size_);
         }
         size_=size_old_-1;
         //size_=size_+1;
@@ -284,10 +289,10 @@ public:
         swap_arrays();
         if(new_size>reserved_size_){
             //move to array_old_
-            delete [] array_;
+            TI_FREE(array_);
             //allocate new
             reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
-            array_=new T[reserved_size_];
+            array_=TI_ALLOC(T,reserved_size_);
         }
         size_=new_size;
         
@@ -301,10 +306,10 @@ public:
         swap_arrays();
         if(new_size>reserved_size_){
             //move to array_old_
-            delete [] array_;
+            TI_FREE(array_);
             //allocate new
             reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
-            array_=new T[reserved_size_];
+            array_=TI_ALLOC(T,reserved_size_);
         }
         size_=new_size;
 
