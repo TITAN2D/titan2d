@@ -204,11 +204,7 @@ void Integrator::step()
     //update the orientation of the "dryline" (divides partially wetted cells
     //into wet and dry parts solely based on which neighbors currently have
     //pileheight greater than GEOFLOW_TINY
-    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
-    {
-    	if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
-        elements_[ndx].calc_wet_dry_orient(ElemTable);
-    }
+    ElemProp.calc_wet_dry_orient();
     PROFILING3_STOPADD_RESTART(step_calc_wet_dry_orient,pt_start);
 
     /* finished corrector step */

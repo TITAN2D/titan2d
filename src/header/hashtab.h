@@ -580,6 +580,11 @@ public:
     tivector<double> *kactxy_;
     tivector<int> &material_;
 
+    tivector<int> &iwetnode_;
+    tivector<double> &Awet_;
+    tivector<double> *drypoint_;
+    tivector<double> &Swet_;
+
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;
     tivector<double> *dx_;
@@ -616,6 +621,22 @@ public:
     //! This function loops through all the non-ghost current elements and calls the Element member function Element::calc_edge_states() which calculates the Riemann fluxes between elements and stores the Riemann fluxes in the edge nodes.
     void calc_edge_states(MatProps* matprops_ptr, TimeProps* timeprops_ptr,Integrator *integrator,
             int myid, const int order, double &outflow);
+
+    /** the element member function calc_wet_dry_orient() determines the orientation of the dryline and which side of
+     * it is wet, the wet fraction (Swet) of a partially wet edge, the location of the drypoint, it does NOT calculate
+     * the wet area (Awet)... these quantities are used in the adjustment of fluxes in partially wet elements.
+     * calc_wet_dry_orient() is not coded for generic element orientation, i.e. the positive_x_side must be side 1.
+     * Keith wrote this may 2007
+     */
+    void calc_wet_dry_orient();
+    /** the element member function calc_wet_dry_orient() determines the orientation of the dryline and which side of
+     * it is wet, the wet fraction (Swet) of a partially wet edge, the location of the drypoint, it does NOT calculate
+     * the wet area (Awet)... these quantities are used in the adjustment of fluxes in partially wet elements.
+     * calc_wet_dry_orient() is not coded for generic element orientation, i.e. the positive_x_side must be side 1.
+     * Keith wrote this may 2007
+     */
+    void calc_wet_dry_orient(ti_ndx_t ndx);
+
 protected:
     vector<double> dtmp;
 

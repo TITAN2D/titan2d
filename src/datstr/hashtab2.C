@@ -1241,6 +1241,10 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 node_flux_(_NodeTable->flux_),
                 node_info_(_NodeTable->info_),
                 material_(ElemTable->material_),
+                iwetnode_(ElemTable->iwetnode_),
+                Awet_(ElemTable->Awet_),
+                drypoint_(ElemTable->drypoint_),
+                Swet_(ElemTable->Swet_),
                 eigenvxymax_(ElemTable->eigenvxymax_),
                 coord_(ElemTable->coord_)
 

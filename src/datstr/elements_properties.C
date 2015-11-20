@@ -416,3 +416,166 @@ void ElementsProperties::get_slopes(ti_ndx_t ndx, double gamma)
 
     return;
 }
+void ElementsProperties::calc_wet_dry_orient()
+{
+    #pragma omp for schedule(static,TITAN2D_DINAMIC_CHUNK)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //elements_[ndx].calc_wet_dry_orient(ElemTable);
+        calc_wet_dry_orient(ndx);
+    }
+}
+// the element member function calc_wet_dry_orient() calculates the orientation of the dryline (drylineorient),
+// the wet length (Swet), the location of the drypoint, and the location of the wetpoint... it does NOT calculate
+// the wet area (Awet)... these quantities are used in the wetted area adjustment of fluxes. calc_wet_dry_orient()
+// is not coded for generic element orientation, positive_x_side must be side 1.  Keith wrote this may 2007
+void ElementsProperties::calc_wet_dry_orient(ti_ndx_t ndx)
+{
+
+    int ifsidewet[4], numwetsides = 0;
+    int ineigh;
+
+    for(ineigh = 0; ineigh < 4; ineigh++)
+    {
+        if(neigh_proc_[ineigh][ndx] == -1)
+        {
+            //edge of map and cell has same wetness as the cell
+            ifsidewet[ineigh] = (state_vars_[0][ndx] > GEOFLOW_TINY) ? 1 : 0;
+        }
+        else
+        {
+            if(state_vars_[0][neighbor_ndx_[ineigh][ndx]] > GEOFLOW_TINY)
+            {
+                //first neighbor on this side is wet
+                ifsidewet[ineigh] = 1;
+            }
+            else if(neigh_proc_[ineigh + 4][ndx] == -2)
+            {
+                //only one neighbor on this side and it's not wet
+                ifsidewet[ineigh] = 0;
+            }
+            else
+            {
+                //since first neighbor on this side is not wet, the edge has the wetness of the second neighbor on this side
+                ifsidewet[ineigh] = (state_vars_[0][neighbor_ndx_[ineigh+4][ndx]] > GEOFLOW_TINY) ? 1 : 0;
+            }
+        }
+        numwetsides += ifsidewet[ineigh];
+    }
+
+    if((ifsidewet[0] == ifsidewet[2]) && (ifsidewet[1] == ifsidewet[3]))
+    {
+        //if opposite sides of the element are the same (both wet or dry)
+        iwetnode_[ndx]=8;
+        drypoint_[0][ndx]=0.0;
+        drypoint_[1][ndx]=0.0;
+        if(state_vars_[0][ndx] > GEOFLOW_TINY)
+        {
+            Awet_[ndx]=1.0;
+            Swet_[ndx]=1.0;
+        }
+        else
+        {
+            Awet_[ndx]=0.0;
+            Swet_[ndx]=0.0;
+        }
+        //?1.0:0.0;
+    }
+    else if(numwetsides == 2)
+    {
+        //having exactly 2 adjacent wet edges means it has a diagonal orientation
+
+        Swet_[ndx]=sqrt(2.0 * ((Awet_[ndx] > 0.5) ? 1.0 - Awet_[ndx] : Awet_[ndx])); //edge length of small triangle
+        drypoint_[0][ndx]=0.5 * (1.0 - Swet_[ndx]);
+        drypoint_[1][ndx]=drypoint_[0][ndx];
+        if(Awet_[ndx] > 0.5)
+            Swet_[ndx]=1.0 - Swet_[ndx]; //the small triangle is dry not wet
+
+        if(ifsidewet[3] && ifsidewet[0])
+        {
+            iwetnode_[ndx]=0;
+            if(Awet_[ndx] <= 0.5){
+                drypoint_[0][ndx] = -drypoint_[0][ndx];
+                drypoint_[1][ndx] =  drypoint_[0][ndx];
+            }
+
+        }
+        else if(ifsidewet[0] && ifsidewet[1])
+        {
+            iwetnode_[ndx]=1;
+            if(Awet_[ndx] <= 0.5)
+                drypoint_[1][ndx] =  -drypoint_[1][ndx];
+            else
+                drypoint_[0][ndx] = -drypoint_[0][ndx];
+        }
+        else if(ifsidewet[1] && ifsidewet[2])
+        {
+            iwetnode_[ndx]=2;
+            if(Awet_[ndx] > 0.5)
+            {
+                drypoint_[0][ndx] = -drypoint_[0][ndx];
+                drypoint_[1][ndx] = drypoint_[0][ndx];
+            }
+        }
+        else if(ifsidewet[2] && ifsidewet[3])
+        {
+            iwetnode_[ndx]=3;
+            if(Awet_[ndx] > 0.5)
+                drypoint_[1][ndx] =  -drypoint_[1][ndx];
+            else
+                drypoint_[0][ndx] = -drypoint_[0][ndx];
+        }
+    }
+    else
+    {
+        //numwetsides is 1 or 3 i.e. it's a vertical or horizontal orientation
+        if(numwetsides == 1)
+        {
+            //find the one wet side
+            for(ineigh = 0; ineigh < 4; ineigh++)
+                if(ifsidewet[ineigh])
+                    break;
+        }
+        else
+        {
+            //find the one dry side
+            for(ineigh = 0; ineigh < 4; ineigh++)
+                if(!ifsidewet[ineigh])
+                    break;
+            //find the wet side opposite the one dry side
+            ineigh = (ineigh + 2) % 4;
+        }
+        assert((-1 < ineigh) && (ineigh < 4));
+        Swet_[ndx]=Awet_[ndx];
+
+        iwetnode_[ndx]=ineigh + 4;
+        switch (iwetnode_[ndx])
+        {
+            case 4:
+                drypoint_[0][ndx] = 0.0;
+                drypoint_[1][ndx] = -0.5 + Swet_[ndx];
+                break;
+            case 5:
+                drypoint_[0][ndx] = +0.5 - Swet_[ndx];
+                drypoint_[1][ndx] = 0.0;
+                break;
+            case 6:
+                drypoint_[0][ndx] = 0.0;
+                drypoint_[1][ndx] = +0.5 - Swet_[ndx];
+                break;
+            case 7:
+                drypoint_[0][ndx] = -0.5 + Swet_[ndx];
+                drypoint_[1][ndx] = 0.0;
+                break;
+            default:
+                assert(0);
+        }
+    }
+
+    if(iwetnode_[ndx] == 8)
+        Awet_[ndx]=(state_vars_[0][ndx] > GEOFLOW_TINY) ? 1.0 : 0.0;
+
+    return;
+}
+
