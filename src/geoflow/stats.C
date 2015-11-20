@@ -24,6 +24,9 @@
 #include "../header/properties.h"
 
 #include <cmath>
+
+#include <advisor-annotate.h>
+
 /* STAT_VOL_FRAC is only here temporarily until a good value for it
  is found (because changing geoflow.h requires recompiling all of
  titan), it will then be moved to ../header/geoflow.h */
@@ -102,7 +105,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
 
     int i, iproc;
     double m_area = 0.0, m_max_height = 0.0;
-    double m_cutoffvolume; /* the desired volume of material to take
+    //double m_cutoffvolume;
+    /* the desired volume of material to take
      statistics from, this is portion is the one
      with the largest heights, for example
      sampling the 95% (by volume) of the pile with
@@ -111,37 +115,44 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     double m_cutoffheight = 0.0; /* a pile height criteria equivalent to the
      cutoffvolume, this criteria is found at each
      iteration */
-    double m_statvolume; /* volume where pile thickness >= cutoffheight
+    double m_statvolume=1.0; /* volume where pile thickness >= cutoffheight
      statvolume >= m_cutoffvolume */
     double m_realvolume = 0.0; /* the total volume on this processor or across
      processors */
-    double m_slopevolume = 0.0; /* volume used to determine the average slope
+    //double m_slopevolume = 0.0;
+    /* volume used to determine the average slope
      in the direction of velocity,
      slopevolume<=statvolume because can't count
      cells with zero velocity */
-    double testpointheight = heightifreach;
-    double testpointx = xyifreach[0];
-    double testpointy = xyifreach[1];
-    double testpointdist2;
+    const double testpointheight = heightifreach;
+    const double testpointx = xyifreach[0];
+    const double testpointy = xyifreach[1];
+
     double testpointmindist2;
     testpointmindist2 = pow(2.0, 30.0); //HUGE_VAL;
     int testpointreach = 0;
 
     double testvolume = 0.0;
-    double m_slope_ave = 0.0;
-    double m_v_max = 0.0, m_v_ave = 0.0, m_vx_ave = 0.0, m_vy_ave = 0.0, m_g_ave;
+    //double m_slope_ave = 0.0;
+    double m_v_max = 0.0, m_v_ave = 0.0, m_vx_ave = 0.0, m_vy_ave = 0.0;
+
     double xC = 0.0, yC = 0.0, rC = 0.0, m_piler2 = 0.0;
     double m_xVar = 0.0, m_yVar = 0.0;
     //assume that mean starting location is at (x,y) = (1,1)
-    double m_xCen = 1.2; //0; //1.0/(matprops->scale.length);
-    double m_yCen = 0.3; //0; //1.0/(matprops->scale.length);
-    double dVol, dA;
-    double min_height = matprops->scale.max_negligible_height;
-    double temp;
+    const double m_xCen = 1.2; //0; //1.0/(matprops->scale.length);
+    const double m_yCen = 0.3; //0; //1.0/(matprops->scale.length);
+    const double min_height = matprops->scale.max_negligible_height;
     int numproc;
-    double m_xyminmax[4];
-    for(i = 0; i < 4; i++)
-        m_xyminmax[i] = HUGE_VAL;
+    double m_x_min = HUGE;
+    double m_x_max = -HUGE;
+    double m_y_min = HUGE;
+    double m_y_max = -HUGE;
+
+    double resolution = 0;
+    Get_max_resolution(&resolution);
+
+
+
 
     MPI_Comm_size(MPI_COMM_WORLD, &numproc);
 
@@ -161,18 +172,18 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
 
     const int N = ElemTable->elenode_.size();
 
-    /* need to allocate space to store nonzero pile heights and
-     volumes, to do that we first have to count the number of
-     nonzero elements */
-
-    int num_nonzero_elem = 0, *all_num_nonzero_elem;
-
+    //initiate m_xyminmax
     for(ti_ndx_t ndx = 0; ndx < N; ndx++)
     {
-        if(adapted_[ndx] > 0 && myid == myprocess_[ndx])
-            num_nonzero_elem+=h[ndx] > GEOFLOW_TINY;
+        if(h[ndx] > min_height && h[ndx] >= hxyminmax && adapted_[ndx] > 0 && myid == myprocess_[ndx])
+        {
+            m_x_min = coord_[0][ndx];
+            m_x_max = coord_[0][ndx];
+            m_y_min = coord_[1][ndx];
+            m_y_max = coord_[1][ndx];
+            break;
+        }
     }
-
     /**************************************************/
     /****** TADA!!!!!!!!! we have finally found  ******/
     /****** this iteration's cut off height (and ******/
@@ -181,24 +192,35 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     /****** straight forward manner              ******/
     /**************************************************/
     int state_vars_bad_values=0;
+    ANNOTATE_SITE_BEGIN(StatProps_calc_stats);
+    ANNOTATE_TASK_BEGIN(StatProps_calc_stats_loop);
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(min:m_x_min,m_y_min,testpointmindist2) \
+        reduction(max:m_x_max,m_y_max,m_v_max,testpointreach) \
+        reduction(max:m_max_height) \
+        reduction(+:xC,yC,rC,m_area,m_v_ave,m_vx_ave,m_vy_ave)\
+        reduction(+:m_piler2,testvolume,m_xVar,m_yVar) /*m_slope_ave,m_slopevolume*/
     for(ti_ndx_t ndx = 0; ndx < N; ndx++)
     {
         if(adapted_[ndx] > 0 && myid == myprocess_[ndx])
         {
             Element* Curr_El = &(ElemTable->elenode_[ndx]);
-            //calculate volume passing through "discharge planes"
-            double nodescoord[9][2];
-            Node* node;
-
-            for(int inode = 0; inode < 8; inode++)
+            if(discharge->num_planes>0)
             {
-                nodescoord[inode][0] = coord_[0][node_key_ndx_[inode][ndx]];
-                nodescoord[inode][1] = coord_[1][node_key_ndx_[inode][ndx]];
-            }
-            nodescoord[8][0] = coord_[0][ndx];
-            nodescoord[8][1] = coord_[1][ndx];
+                //calculate volume passing through "discharge planes"
+                double nodescoord[9][2];
+                Node* node;
 
-            discharge->update(nodescoord, hVx[ndx], hVy[ndx], d_time);
+                for(int inode = 0; inode < 8; inode++)
+                {
+                    nodescoord[inode][0] = coord_[0][node_key_ndx_[inode][ndx]];
+                    nodescoord[inode][1] = coord_[1][node_key_ndx_[inode][ndx]];
+                }
+                nodescoord[8][0] = coord_[0][ndx];
+                nodescoord[8][1] = coord_[1][ndx];
+
+                discharge->update(nodescoord, hVx[ndx], hVy[ndx], d_time);
+            }
 
             // rule out non physical fast moving thin layers
             //if(state_vars_[0][ndx] >= cutoffheight){
@@ -211,34 +233,26 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
 
                 if(h[ndx] >= hxyminmax)
                 {
-                    if(coord_[0][ndx] < m_xyminmax[0]) //xmin
-                        m_xyminmax[0] = coord_[0][ndx];
-                    if(-coord_[0][ndx] < m_xyminmax[1]) //negative xmax
-                        m_xyminmax[1] = -coord_[0][ndx];
-                    if(coord_[1][ndx] < m_xyminmax[2]) //ymin
-                        m_xyminmax[2] = coord_[1][ndx];
-                    if(-coord_[1][ndx] < m_xyminmax[3]) //negative ymax
-                        m_xyminmax[3] = -coord_[1][ndx];
+                    m_x_min = min(m_x_min,coord_[0][ndx]);
+                    m_x_max = max(m_x_max,coord_[0][ndx]);
+                    m_y_min = min(m_y_min,coord_[1][ndx]);
+                    m_y_max = max(m_y_max,coord_[1][ndx]);
                 }
 
                 //to test if pileheight of depth testpointheight
                 //has reached the testpoint
-                testpointdist2 = (coord_[0][ndx] - testpointx) * (coord_[0][ndx] - testpointx)
+                double testpointdist2 = (coord_[0][ndx] - testpointx) * (coord_[0][ndx] - testpointx)
                         + (coord_[1][ndx] - testpointy) * (coord_[1][ndx] - testpointy);
-                double junktest = 0;
-                if(testpointdist2 > 0)
-                    junktest = testpointdist2;
-                if(testpointmindist2 > 0)
-                    junktest = testpointmindist2;
+
                 if(testpointdist2 < testpointmindist2)
                 {
                     testpointmindist2 = testpointdist2;
                     testpointreach = h[ndx] >= testpointheight;
                 }
 
-                dA = dx_[0][ndx] * dx_[1][ndx];
+                double dA = dx_[0][ndx] * dx_[1][ndx];
                 m_area += dA;
-                dVol = state_vars_[0][ndx] * dA;
+                double dVol = state_vars_[0][ndx] * dA;
                 testvolume += dVol;
                 xC += coord_[0][ndx] * dVol;
                 yC += coord_[1][ndx] * dVol;
@@ -300,7 +314,7 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                 }
 
 
-                temp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
+                double temp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
                 m_v_max = max(m_v_max,temp);
                 m_vx_ave += hVx[ndx] * dA;
                 m_vy_ave += hVy[ndx] * dA;
@@ -311,90 +325,31 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                 //with a global stopping criteria (to stop the calculation, not the pile)
                 //volume averaged slope in the direction of velocity
                 //a negative number means the flow is headed uphill
-                double resolution = 0, xslope = 0, yslope = 0;
-                Get_max_resolution(&resolution);
+                /*double xslope = 0, yslope = 0;
+
                 Get_slope(resolution, coord_[0][ndx] * matprops->scale.length,
                           coord_[1][ndx] * matprops->scale.length, xslope, yslope);
                 if(temp > GEOFLOW_TINY)
                 {
                     m_slope_ave += -(hVx[ndx] * xslope + hVy[ndx] * yslope) * dA / temp;
                     m_slopevolume += dVol;
-                }
+                }*/
             }
         }
     }
-#ifdef 0
-    //check state values
-    if(elementType == ElementType::TwoPhases)
-    {
-        for(ti_ndx_t ndx = 0; ndx < N; ndx++)
-        {
-            if(adapted_[ndx] > 0 && myid == myprocess_[ndx])
-            {
-                if((!((state_vars_[0][ndx] <= 0.0) || (0.0 <= state_vars_[0][ndx])))
-                   || (!((state_vars_[1][ndx] <= 0.0) || (0.0 <= state_vars_[1][ndx])))
-                   || (!((state_vars_[2][ndx] <= 0.0) || (0.0 <= state_vars_[2][ndx])))
-                   || (!((state_vars_[3][ndx] <= 0.0) || (0.0 <= state_vars_[3][ndx])))
-                   || (!((state_vars_[4][ndx] <= 0.0) || (0.0 <= state_vars_[4][ndx])))
-                   || (!((state_vars_[5][ndx] <= 0.0) || (0.0 <= state_vars_[5][ndx]))))
-                {
-                    //v_ave is NaN
-                    cout<<"calc_stats(): NaN detected in element={"<<ElemTable->key_[ndx]<<"} at iter="<<timeprops->iter<<"\n";
-                    printf("prevu={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                           prev_state_vars_[0][ndx], prev_state_vars_[1][ndx],
-                           prev_state_vars_[2][ndx], prev_state_vars_[3][ndx],
-                           prev_state_vars_[4][ndx], prev_state_vars_[5][ndx]);
-                    printf("  u={%12.6g,%12.6g,%12.6g,%12.6g,%12.6g,%12.6g}\n", state_vars_[0][ndx], state_vars_[1][ndx],
-                           state_vars_[2][ndx], state_vars_[3][ndx], state_vars_[4][ndx], state_vars_[5][ndx]);
-                    printf("prev {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                           prev_state_vars_[2][ndx] / (prev_state_vars_[1][ndx]),
-                           prev_state_vars_[3][ndx] / (prev_state_vars_[1][ndx]),
-                           prev_state_vars_[4][ndx] / (prev_state_vars_[0][ndx]),
-                           prev_state_vars_[5][ndx] / (prev_state_vars_[0][ndx]));
-                    printf("this {Vx_s, Vy_s, Vx_f, Vy_f}={%12.6g,%12.6g,%12.6g,%12.6g}\n",
-                           state_vars_[2][ndx] / state_vars_[1][ndx], state_vars_[3][ndx] / state_vars_[1][ndx],
-                           state_vars_[4][ndx] / state_vars_[0][ndx], state_vars_[5][ndx] / state_vars_[0][ndx]);
-                    ElemBackgroundCheck2(ElemTable, NodeTable, &(ElemTable->elenode_[ndx]), stdout);
-                    assert(0);
-                }
-            }
-        }
-    }
-    if(elementType == ElementType::SinglePhase)
-    {
-        for(ti_ndx_t ndx = 0; ndx < N; ndx++)
-        {
-            if(adapted_[ndx] > 0 && myid == myprocess_[ndx])
-            {
-                if((!((state_vars_[0][ndx] <= 0.0) || (0.0 <= state_vars_[0][ndx])))
-                   || (!((state_vars_[1][ndx] <= 0.0) || (0.0 <= state_vars_[1][ndx])))
-                   || (!((state_vars_[2][ndx] <= 0.0) || (0.0 <= state_vars_[2][ndx]))))
-                {
-                    //v_ave is NaN
+    ANNOTATE_TASK_END(StatProps_calc_stats_loop);
+    ANNOTATE_SITE_END(StatProps_calc_stats);
 
-                    cout<<"calc_stats(): NaN detected in element={"<<ElemTable->key_[ndx]<<"} at iter="<<timeprops->iter<<"\n";
-                    printf("prevu={%12.6g,%12.6g,%12.6g}\n", prev_state_vars_[0][ndx],
-                           prev_state_vars_[1][ndx], prev_state_vars_[2][ndx]);
-                    printf("    u={%12.6g,%12.6g,%12.6g}\n", state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx]);
-                    printf("prev {hVx/h,hVy/h}={%12.6g,%12.6g}\n",
-                           prev_state_vars_[1][ndx] / prev_state_vars_[0][ndx],
-                           prev_state_vars_[2][ndx] / prev_state_vars_[0][ndx]);
-                    printf("this {hVx/h,hVy/h}={%12.6g,%12.6g}\n", state_vars_[1][ndx] / state_vars_[0][ndx],
-                           state_vars_[2][ndx] / state_vars_[0][ndx]);
-                    ElemBackgroundCheck2(ElemTable, NodeTable, &(ElemTable->elenode_[ndx]), stdout);
-                    assert(0);
-                }
-            }
-        }
-    }
-#endif
-    MPI_Reduce(m_xyminmax, xyminmax, 4, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&m_x_min, xyminmax, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&m_x_max, xyminmax+1, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&m_y_min, xyminmax+2, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&m_y_max, xyminmax+3, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if(myid == 0)
     {
-        xyminmax[0] *= (matprops->scale.length);
-        xyminmax[1] *= -(matprops->scale.length);
-        xyminmax[2] *= (matprops->scale.length);
-        xyminmax[3] *= -(matprops->scale.length);
+        xyminmax[0] *= matprops->scale.length;
+        xyminmax[1] *= matprops->scale.length;
+        xyminmax[2] *= matprops->scale.length;
+        xyminmax[3] *= matprops->scale.length;
     }
 
     int inttempout;
@@ -418,9 +373,9 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     tempin[4] = m_v_ave;
     tempin[5] = m_vx_ave;
     tempin[6] = m_vy_ave;
-    tempin[7] = m_slope_ave;
+    tempin[7] = 0.0;//m_slope_ave;
     tempin[8] = m_piler2;
-    tempin[9] = m_slopevolume;
+    tempin[9] = 0.0;//m_slopevolume;
     tempin[10] = testvolume;
     tempin[11] = m_xVar;
     tempin[12] = m_yVar;
@@ -450,7 +405,7 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
         vxmean = tempout[5] * VELOCITY_SCALE / tempout[10];
         vymean = tempout[6] * VELOCITY_SCALE / tempout[10];
 
-        slopemean = (tempout[9] > 0) ? tempout[7] / tempout[9] : 0.0;
+        //slopemean = (tempout[9] > 0) ? tempout[7] / tempout[9] : 0.0;
 
         realvolume = m_realvolume * (matprops->scale.length) * (matprops->scale.length)
                                 * (matprops->scale.height);
@@ -459,8 +414,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
         statvolume = tempout[10] * (matprops->scale.length) * (matprops->scale.length)
                                 * (matprops->scale.height);
 
-        cutoffheight = m_cutoffheight * (matprops->scale.height);
-        testvolume = tempout[10] / m_statvolume;
+        cutoffheight = m_cutoffheight * (matprops->scale.height);//@TODO m_cutoffheight is not init
+        testvolume = tempout[10] / m_statvolume;//@TODO m_statvolume is not init
 
         /* the factor of 3^0.5 is a safety factor, this value was chosen because
          * it makes the "radius" of a uniformly distributed line equal to half
@@ -501,7 +456,9 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
         printf("\ttime step length is %g [sec], volume is %g [m^3],\n", d_time, statvolume);
         printf("\tmax height is %g [m], max velocity is %g [m/s],\n", hmax, vmax);
         printf("\tave velocity is %g [m/s], v* = %g,\n", vmean, vstar);
-        printf("\ttotal number of elements %.0f\n\n", tempout[13]);
+        printf("\ttotal number of elements %.0f\n", tempout[13]);
+        printf("\txyminmax %.9e %.9e %.9e %.9e\n", xyminmax[0], xyminmax[1], xyminmax[2], xyminmax[3]);
+        printf("\n");
     }
 
     return;
