@@ -222,10 +222,10 @@ protected:
 /**
  * First order integrator for single phase and Coulomb material model
  */
-class Integrator_SinglePhase_Coulomb_FirstOrder:public Integrator_SinglePhase
+class Integrator_SinglePhase_Coulomb:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Coulomb_FirstOrder(cxxTitanSimulation *_titanSimulation);
+    Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation);
 
     virtual void print0(int spaces=0);
 protected:

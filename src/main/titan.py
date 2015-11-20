@@ -59,7 +59,7 @@ class TitanSimulationBase(object):
             'integrators':[
                 {
                     'conditions' :[lambda tsim,model_parameters: model_parameters['order']==1 or model_parameters['order']==2],
-                    'constructor':Integrator_SinglePhase_Coulomb_FirstOrder
+                    'constructor':Integrator_SinglePhase_Coulomb
                 }
             ]
         },

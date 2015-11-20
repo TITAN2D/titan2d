@@ -32,52 +32,87 @@
 void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, MatProps *matprops, FluxProps *fluxprops,
                       TimeProps *timeprops)
 {
-    int no_of_buckets = ElemTable->get_no_of_buckets();
-    vector<HashEntryLine> &bucket=ElemTable->bucket;
-    tivector<Element> &elenode_=ElemTable->elenode_;
-    
-    if(fluxprops->MaxInfluxNow(matprops, timeprops) > 0.0)
+    if(ElemTable->all_elenodes_are_permanent)
     {
-        /*
-         if(timeprops->timesec()>30.0){
-         printf("flux not stopped after 30 seconds\n");
-         assert(0);
-         }
-         */
-        // mdj 2007-04
-        Element *EmTemp;
-//#pragma omp parallel for private(entryptr,EmTemp)
-        //@ElementsBucketDoubleLoop
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        int * RESTRICT adapted=&(ElemTable->adapted_[0]);
+        Element * RESTRICT elements=&(ElemTable->elenode_[0]);
+
+        TI_ASSUME_ALIGNED(adapted);
+
+        const ti_ndx_t N=ElemTable->size();
+    
+
+        if(fluxprops->MaxInfluxNow(matprops, timeprops) > 0.0)
         {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+            #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+            for (ti_ndx_t ndx = 0; ndx < N; ndx++)
             {
-                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                if(EmTemp->adapted_flag() > 0)
+                if (adapted[ndx] > 0)
                     //if this element doesn't belong on this processor don't involve
-                    EmTemp->calc_flux(NodeTable, fluxprops, timeprops);
+                    elements[ndx].calc_flux(NodeTable, fluxprops, timeprops);
             }
         }
+        else
+        {
+            #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+            for (ti_ndx_t ndx = 0; ndx < N; ndx++)
+            {
+                if (adapted[ndx] > 0)
+                    //if this element doesn't belong on this processor don't involve
+                    elements[ndx].zero_influx();
+            }
+        }
+
+        return;
     }
     else
     {
-        
-        // mdj 2007-04
-        Element *EmTemp;
-//#pragma omp parallel for private(entryptr,EmTemp)
-        //@ElementsBucketDoubleLoop
-        for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+        int no_of_buckets = ElemTable->get_no_of_buckets();
+        vector<HashEntryLine> &bucket=ElemTable->bucket;
+        tivector<Element> &elenode_=ElemTable->elenode_;
+
+        if(fluxprops->MaxInfluxNow(matprops, timeprops) > 0.0)
         {
-            for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+            /*
+             if(timeprops->timesec()>30.0){
+             printf("flux not stopped after 30 seconds\n");
+             assert(0);
+             }
+             */
+            // mdj 2007-04
+            Element *EmTemp;
+    //#pragma omp parallel for private(entryptr,EmTemp)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
             {
-                EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                if(EmTemp->adapted_flag() > 0)
-                    //if this element doesn't belong on this processor don't involve
-                    EmTemp->zero_influx();
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+                {
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    if(EmTemp->adapted_flag() > 0)
+                        //if this element doesn't belong on this processor don't involve
+                        EmTemp->calc_flux(NodeTable, fluxprops, timeprops);
+                }
+            }
+        }
+        else
+        {
+
+            // mdj 2007-04
+            Element *EmTemp;
+    //#pragma omp parallel for private(entryptr,EmTemp)
+            //@ElementsBucketDoubleLoop
+            for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+            {
+                for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+                {
+                    EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+                    if(EmTemp->adapted_flag() > 0)
+                        //if this element doesn't belong on this processor don't involve
+                        EmTemp->zero_influx();
+                }
             }
         }
     }
-    
     return;
 }
 

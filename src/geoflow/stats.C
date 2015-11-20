@@ -25,7 +25,7 @@
 
 #include <cmath>
 
-#include <advisor-annotate.h>
+//#include <advisor-annotate.h>
 
 /* STAT_VOL_FRAC is only here temporarily until a good value for it
  is found (because changing geoflow.h requires recompiling all of
@@ -192,8 +192,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     /****** straight forward manner              ******/
     /**************************************************/
     int state_vars_bad_values=0;
-    ANNOTATE_SITE_BEGIN(StatProps_calc_stats);
-    ANNOTATE_TASK_BEGIN(StatProps_calc_stats_loop);
+    //ANNOTATE_SITE_BEGIN(StatProps_calc_stats);
+    //ANNOTATE_TASK_BEGIN(StatProps_calc_stats_loop);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(min:m_x_min,m_y_min,testpointmindist2) \
         reduction(max:m_x_max,m_y_max,m_v_max,testpointreach) \
@@ -337,8 +337,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
             }
         }
     }
-    ANNOTATE_TASK_END(StatProps_calc_stats_loop);
-    ANNOTATE_SITE_END(StatProps_calc_stats);
+    //ANNOTATE_TASK_END(StatProps_calc_stats_loop);
+    //ANNOTATE_SITE_END(StatProps_calc_stats);
 
     MPI_Reduce(&m_x_min, xyminmax, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Reduce(&m_x_max, xyminmax+1, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);

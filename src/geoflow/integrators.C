@@ -27,6 +27,7 @@
 #include "../header/titan_simulation.h"
 #include "../header/outline.h"
 
+#include <advisor-annotate.h>
 
 Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
@@ -266,7 +267,7 @@ void Integrator_SinglePhase::corrector()
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Coulomb_FirstOrder::Integrator_SinglePhase_Coulomb_FirstOrder(cxxTitanSimulation *_titanSimulation):
+Integrator_SinglePhase_Coulomb::Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
@@ -275,15 +276,16 @@ Integrator_SinglePhase_Coulomb_FirstOrder::Integrator_SinglePhase_Coulomb_FirstO
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
 }
-void Integrator_SinglePhase_Coulomb_FirstOrder::print0(int spaces)
+void Integrator_SinglePhase_Coulomb::print0(int spaces)
 {
     printf("%*cIntegrator: single phase, Coulomb model\n", spaces,' ');
     printf("%*cint_frict:%.3f\n", spaces+4,' ',scaled?int_frict*180.0/PI:int_frict);
     Integrator_SinglePhase::print0(spaces+4);
 }
 
-void Integrator_SinglePhase_Coulomb_FirstOrder::predictor()
+void Integrator_SinglePhase_Coulomb::predictor()
 {
+    //@TODO OMP me
     if(order==1)return;
     /* mdj 2007-04 */
     int IF_STOPPED;
@@ -514,23 +516,16 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::predictor()
     }
 }
 
-void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
+void Integrator_SinglePhase_Coulomb::corrector()
 {
-    Element* Curr_El;
-
     //for comparison of magnitudes of forces in slumping piles
-    forceint = 0.0;
-    forcebed = 0.0;
-    eroded = 0.0;
-    deposited = 0.0;
-    realvolume = 0.0;
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
 
-    double elem_forceint;
-    double elem_forcebed;
-    double elem_eroded;
-    double elem_deposited;
-
-    double sin_intfrictang=sin(int_frict);
+    const double sin_intfrictang=sin(int_frict);
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -541,8 +536,13 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
+    //ANNOTATE_SITE_BEGIN(ISPC_cor);
+    //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
+        //ANNOTATE_ITERATION_TASK(ISPC_cor_iter);
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
         //if first order states was not updated as there is no predictor
         if(order==1)
@@ -552,6 +552,11 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
@@ -811,11 +816,11 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        forceint += fabs(elem_forceint);
-        forcebed += fabs(elem_forcebed);
-        realvolume += dxdy * h[ndx];
-        eroded += elem_eroded;
-        deposited += elem_deposited;
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -823,6 +828,14 @@ void Integrator_SinglePhase_Coulomb_FirstOrder::corrector()
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
     }
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
+    //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
+    //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
+
 
 }
 
@@ -868,16 +881,11 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::predictor()
 void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
 {
     //for comparison of magnitudes of forces in slumping piles
-    forceint = 0.0;
-    forcebed = 0.0;
-    eroded = 0.0;
-    deposited = 0.0;
-    realvolume = 0.0;
-
-    double elem_forceint;
-    double elem_forcebed;
-    double elem_eroded;
-    double elem_deposited;
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
 
     double inv_xi= 1.0/xi;
 
@@ -890,6 +898,8 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -901,6 +911,11 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
@@ -1169,11 +1184,11 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        forceint += fabs(elem_forceint);
-        forcebed += fabs(elem_forcebed);
-        realvolume += dxdy * h[ndx];
-        eroded += elem_eroded;
-        deposited += elem_deposited;
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -1181,7 +1196,11 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
     }
-
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Pouliquen_FirstOrder::Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSimulation *_titanSimulation):
@@ -1237,16 +1256,13 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
     Element* Curr_El;
 
     //for comparison of magnitudes of forces in slumping piles
-    forceint = 0.0;
-    forcebed = 0.0;
-    eroded = 0.0;
-    deposited = 0.0;
-    realvolume = 0.0;
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
 
-    double elem_forceint;
-    double elem_forcebed;
-    double elem_eroded;
-    double elem_deposited;
+    const double sin_intfrictang=sin(int_frict);
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -1254,9 +1270,8 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
     tivector<double> &kactxy=effect_kactxy_[0];
     tivector<double> &bedfrictang=effect_bedfrict_;
 
-    // mdj 2007-04 this loop has pretty much defeated me - there is
-    //             a dependency in the Element class that causes incorrect
-    //             results
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1268,6 +1283,11 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
@@ -1546,11 +1566,11 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        forceint += fabs(elem_forceint);
-        forcebed += fabs(elem_forcebed);
-        realvolume += dxdy * h[ndx];
-        eroded += elem_eroded;
-        deposited += elem_deposited;
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -1558,7 +1578,11 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
     }
-
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Maeno_FirstOrder::Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSimulation *_titanSimulation):
@@ -1610,16 +1634,13 @@ void Integrator_SinglePhase_Maeno_FirstOrder::predictor()
 void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
 {
     //for comparison of magnitudes of forces in slumping piles
-    forceint = 0.0;
-    forcebed = 0.0;
-    eroded = 0.0;
-    deposited = 0.0;
-    realvolume = 0.0;
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
 
-    double elem_forceint;
-    double elem_forcebed;
-    double elem_eroded;
-    double elem_deposited;
+    const double sin_intfrictang=sin(int_frict);
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -1627,9 +1648,9 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
     tivector<double> &kactxy=effect_kactxy_[0];
     tivector<double> &bedfrictang=effect_bedfrict_;
 
-    // mdj 2007-04 this loop has pretty much defeated me - there is
-    //             a dependency in the Element class that causes incorrect
-    //             results
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1641,6 +1662,11 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
@@ -1914,11 +1940,12 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        forceint += fabs(elem_forceint);
-        forcebed += fabs(elem_forcebed);
-        realvolume += dxdy * h[ndx];
-        eroded += elem_eroded;
-        deposited += elem_deposited;
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
+
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -1926,6 +1953,11 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
     }
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2008,16 +2040,12 @@ void Integrator_TwoPhases_Coulomb::corrector()
     double terminal_vel = matprops2_ptr->v_terminal;
 
     //for comparison of magnitudes of forces in slumping piles
-    forceint = 0.0;
-    forcebed = 0.0;
-    eroded = 0.0;
-    deposited = 0.0;
-    realvolume = 0.0;
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
 
-    double elem_forceint;
-    double elem_forcebed;
-    double elem_eroded;
-    double elem_deposited;
 
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
@@ -2033,6 +2061,8 @@ void Integrator_TwoPhases_Coulomb::corrector()
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -2044,6 +2074,11 @@ void Integrator_TwoPhases_Coulomb::corrector()
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
@@ -2309,11 +2344,11 @@ void Integrator_TwoPhases_Coulomb::corrector()
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-        forceint += fabs(elem_forceint);
-        forcebed += fabs(elem_forcebed);
-        realvolume += dxdy * h[ndx];
-        eroded += elem_eroded;
-        deposited += elem_deposited;
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -2321,7 +2356,11 @@ void Integrator_TwoPhases_Coulomb::corrector()
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
     }
-
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

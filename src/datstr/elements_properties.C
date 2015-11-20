@@ -418,7 +418,7 @@ void ElementsProperties::get_slopes(ti_ndx_t ndx, double gamma)
 }
 void ElementsProperties::calc_wet_dry_orient()
 {
-    #pragma omp for schedule(static,TITAN2D_DINAMIC_CHUNK)
+    #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
