@@ -17,6 +17,7 @@
 #define INTEGRATORS_H
 
 #include "hpfem.h"
+#include "stats.hpp"
 #include "properties.h"
 
 class cxxTitanSimulation;

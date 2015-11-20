@@ -79,68 +79,6 @@ void MapNames::print0()
     }
     return;
 }
-StatProps::StatProps()
-{
-    timereached = -1.0;
-    xcen = ycen = xvar = yvar = rmean = area = vmean = vxmean = vymean = slopemean = vstar = 0.0;
-    realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
-    piler = hmax = vmax = forceint = forcebed = 0.0;
-    heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
-    xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
-    lhs.refnum = lhs.runid = -1;
-    runid = -1;
-}
-StatProps::~StatProps()
-{
-}
-void StatProps::set(const double edge_height, const double test_height, const double test_location_x, const double test_location_y)
-{
-    hxyminmax = edge_height;
-
-    heightifreach=test_height;
-    if(heightifreach < 0.0)
-    {
-        xyifreach[0]=test_location_x;
-        xyifreach[1]=test_location_y;
-    }
-    else
-    {
-        heightifreach = xyifreach[0] = xyifreach[1] = HUGE_VAL;
-    }
-
-    //to get rid on uninitiallized memory error in saverun() (restart.C)
-    forceint = forcebed = 0.0;
-}
-void StatProps::scale(const MatProps* matprops_ptr)
-{
-    if(hxyminmax < 0.0)
-    {
-        hxyminmax = matprops_ptr->scale.max_negligible_height * 10.0;
-
-    }
-    hxyminmax /= matprops_ptr->scale.height;
-
-    if(heightifreach > -1.9)
-    {
-
-        //default test height is 10 time the maximum negligible height
-        if(heightifreach > -1.1 && heightifreach < -0.9)
-            heightifreach = matprops_ptr->scale.max_negligible_height * 10.0;
-
-        heightifreach /= matprops_ptr->scale.height;
-
-        xyifreach[0] /= matprops_ptr->scale.length;
-        xyifreach[1] /= matprops_ptr->scale.length;
-    }
-    else
-    {
-        heightifreach = xyifreach[0] = xyifreach[1] =
-        HUGE_VAL;
-    }
-
-    //to get rid on uninitiallized memory error in saverun() (restart.C)
-    forceint = forcebed = 0.0;
-}
 PileProps::PileProps()
 {
     numpiles = 0;

@@ -209,7 +209,7 @@ void Integrator::step()
 
     /* finished corrector step */
 
-    calc_stats(elementType, ElemTable, NodeTable, myid, matprops_ptr, timeprops_ptr, statprops_ptr, discharge_ptr, dt);
+    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, dt);
 
     double tempin[6], tempout[6];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration

@@ -45,6 +45,7 @@ using namespace std;
 #include "ticore.hpp"
 
 #include "properties.h"
+#include "stats.hpp"
 #include "elenode.hpp"
 #include "extfun.h"
 #include "geoflow.h"

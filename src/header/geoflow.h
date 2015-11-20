@@ -41,11 +41,6 @@ void correct(ElementType elementType,NodeHashTable* NodeTable, ElementsHashTable
 //! this function is legacy, the prototype exists but the function is not defined
 void checknodesol(NodeHashTable*);
 
-
-//! This function calculates the vast majority of statistics used for output, including most of what appears in output_summary.######, the friction body forces however are not calculated in here, Keith wrote this to replace calc_volume()
-void calc_stats(ElementType elementType,ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, MatProps* matprops, TimeProps* timeprops,
-                StatProps* statprops, DischargePlanes* discharge, double d_time);
-
 //! calc_volume() has been replaced by calc_stats(), calc_volume() is out of date legacy code, the function is still defined in step.C but it is not called.
 void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
                  double* v_star, double* nz_star);

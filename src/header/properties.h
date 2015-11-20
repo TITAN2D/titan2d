@@ -41,6 +41,9 @@ class MatProps;
 class NodeHashTable;
 class ElementsHashTable;
 class Element;
+class DischargePlanes;
+class TimeProps;
+class StatProps;
 
 class TiObject
 {
@@ -156,106 +159,6 @@ struct LHS_Props
     
 };
 
-//! the StatProps structure holds statistics about the flow
-class StatProps
-{
-public:
-    //note all means are mass/volume averages
-    
-    //! job number for monte carlo or lhs simulations
-    int runid;
-
-    //! x coordinate of pile centroid
-    double xcen;
-
-    //! y coordinate of pile centroid
-    double ycen;
-
-    //! variance of location of pile material in the x direction
-    double xvar;
-
-    //! variance of location of pile material in the y direction
-    double yvar;
-
-    //! mean distance from the point (0,0), this was the mean pile starting point for the ordered reduced number of runs monte carlo method validation 
-    double rmean;
-
-    //! area covered by pile of thickness greater than cutoffheight 
-    double area;
-
-    //! mean speed
-    double vmean;
-
-    //! mean x velocity
-    double vxmean;
-
-    //! mean y velocity
-    double vymean;
-
-    //! mean slope in the direction of velocity a negative number	indicates the flow is heading uphill 
-    double slopemean;
-
-    //! nondimensionalized mean speed
-    double vstar;
-
-    //! volume of ALL material, NOT used for other statistics
-    double realvolume;
-
-    //! STAT_VOL_FRAC*realvolume, all statistics computed in ../geoflow/stats.C are based on statvolume not realvolume
-    double statvolume;
-
-    //! volume of material that have flown off the map
-    double outflowvol;
-
-    //! volume of material that has been eroded
-    double erodedvol;
-
-    //! volume of material that is currently deposited  
-    double depositedvol;
-
-    //! pile height of contour line that encloses statvolume
-    double cutoffheight;
-
-    //! an estimate of the radius of the pile
-    double piler;
-
-    //! current spatial maximum of pile height
-    double hmax;
-
-    //! current spatial maximum of speed
-    double vmax;
-
-    //! the integrated magnitude of acceleration due to internal friction force (based on realvolume not statvolume)
-    double forceint;
-
-    //! the same thing but for bed friction
-    double forcebed;
-
-    //! check if a flow of height heightifreach reaches the point xyifreach and record the first time it does in timereached, if the value is -1 the flow has not reached the point with the specified height.
-    double heightifreach;
-
-    //! check if a flow of height heightifreach reaches the point xyifreach and record the first time it does in timereached, if the value is -1 the flow has not reached the point with the specified height.
-    double xyifreach[2];
-
-    //! check if a flow of height heightifreach reaches the point xyifreach and record the first time it does in timereached, if the value is -1 the flow has not reached the point with the specified height.
-    double timereached;
-
-    //! xyminmax holds the minimum and maximum x and y coordinates where the pile height is greater than hxyminmax
-    double xyminmax[4];
-
-    //! xyminmax holds the minimum and maximum x and y coordinates where the pile height is greater than hxyminmax
-    double hxyminmax;
-
-    //! the latin hypercube sampling specific stats
-    LHS_Props lhs;
-
-    //! the constructor initializes a few statistics
-    StatProps();
-    ~StatProps();
-    void set(const double edge_height, const double test_height, const double test_location_x, const double test_location_y);
-    void scale(const MatProps* matprops_ptr);
-    
-};
 
 
 //! the PileProps structure holds the pile properties read in in Read_data() so the pile can be placed at the proper locations shortly thereafter in init_piles() 

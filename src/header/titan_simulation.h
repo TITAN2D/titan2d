@@ -91,7 +91,7 @@ public:
     //MatProps matprops_single_phase;
     //MatPropsTwoPhases matprops_two_phases;
 
-    StatProps statprops;
+    StatProps *statprops;
     TimeProps timeprops;
     MapNames mapnames;
     OutLine outline;
@@ -113,7 +113,7 @@ public:
 
     FluxProps* get_fluxprops(){return &fluxprops;}
     DischargePlanes* get_discharge_planes(){return &discharge_planes;}
-    StatProps* get_statprops(){return &statprops;}
+    StatProps* get_statprops(){return statprops;}
     TimeProps* get_timeprops(){return &timeprops;}
     MapNames* get_mapnames(){return &mapnames;}
     OutLine* get_outline(){return &outline;}

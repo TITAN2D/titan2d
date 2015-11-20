@@ -579,6 +579,7 @@ public:
     tivector<double> *effect_kactxy_;
     tivector<double> *kactxy_;
     tivector<int> &material_;
+    tivector<int> &myprocess_;
 
     tivector<int> &iwetnode_;
     tivector<double> &Awet_;

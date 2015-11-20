@@ -20,6 +20,7 @@
 #endif
 
 #include "../header/hpfem.h"
+#include "../header/stats.hpp"
 
 #define ADAM_HEIGHT_FRAC 0.02
 

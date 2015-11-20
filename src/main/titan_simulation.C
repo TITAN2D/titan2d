@@ -20,6 +20,7 @@
 
 #include "../header/hpfem.h"
 #include "../header/hadapt.h"
+#include "../header/stats.hpp"
 
 #if HAVE_HDF5_H
 #include "../header/hd5calls.h"
@@ -84,6 +85,8 @@ cxxTitanSimulation::cxxTitanSimulation() :
 
     set_element_type(ElementType::SinglePhase);
 
+    statprops=new StatProps(ElemTable,NodeTable);
+
     MPI_Barrier (MPI_COMM_WORLD);
 }
 cxxTitanSimulation::~cxxTitanSimulation()
@@ -93,6 +96,7 @@ cxxTitanSimulation::~cxxTitanSimulation()
     FREE_VAR_IF_NOT_NULLPTR(NodeTable);
     FREE_VAR_IF_NOT_NULLPTR(matprops);
     FREE_VAR_IF_NOT_NULLPTR(pileprops);
+    FREE_VAR_IF_NOT_NULLPTR(statprops);
 }
 void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
 {
@@ -481,19 +485,19 @@ void cxxTitanSimulation::run()
     }
 
     MPI_Barrier (MPI_COMM_WORLD);
-    calc_stats(elementType, ElemTable, NodeTable, myid, matprops_ptr, &timeprops, &statprops, &discharge_planes, 0.0);
+    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
     if(myid == 0)
-        output_summary(&timeprops, &statprops, savefileflag);
+        output_summary(&timeprops, statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
 
     if(vizoutput & 2)
-        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
@@ -627,7 +631,7 @@ void cxxTitanSimulation::run()
          */
         if(timeprops.ifsave())
             saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
-                    &statprops, &discharge_planes, &outline, &savefileflag);
+                    statprops, &discharge_planes, &outline, &savefileflag);
 
         PROFILING1_STOPADD_RESTART(tsim_iter_saverestart,pt_start);
         /*
@@ -640,13 +644,13 @@ void cxxTitanSimulation::run()
             output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
             if(myid == 0)
-                output_summary(&timeprops, &statprops, savefileflag);
+                output_summary(&timeprops, statprops, savefileflag);
 
             if(vizoutput & 1)
-                tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
 
             if(vizoutput & 2)
-                meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+                meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
 
 #if HAVE_LIBHDF5
             if(vizoutput & 4)
@@ -719,20 +723,20 @@ void cxxTitanSimulation::run()
      */
 
     saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
-            &statprops, &discharge_planes, &outline, &savefileflag);
+            statprops, &discharge_planes, &outline, &savefileflag);
     MPI_Barrier(MPI_COMM_WORLD);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(myid == 0)
-        output_summary(&timeprops, &statprops, savefileflag);
+        output_summary(&timeprops, statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
 
     if(vizoutput & 2)
-        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops.vstar);
+        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
@@ -760,18 +764,18 @@ void cxxTitanSimulation::run()
     MPI_Barrier(MPI_COMM_WORLD);
 
     // write out ending warning, maybe flow hasn't finished moving
-    sim_end_warning(elementType, ElemTable, matprops_ptr, &timeprops, statprops.vstar);
+    sim_end_warning(elementType, ElemTable, matprops_ptr, &timeprops, statprops->vstar);
     MPI_Barrier(MPI_COMM_WORLD);
 
     //write out the final pile statistics (and run time)
     if(myid == 0)
-        out_final_stats(&timeprops, &statprops);
+        out_final_stats(&timeprops, statprops);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     //write out stochastic simulation statistics
     if(myid == 0)
-        output_stoch_stats(matprops_ptr, &statprops);
+        output_stoch_stats(matprops_ptr, statprops);
     MPI_Barrier(MPI_COMM_WORLD);
 
     //output maximum flow depth a.k.a. flow outline
@@ -793,11 +797,11 @@ void cxxTitanSimulation::run()
         MPI_Reduce(outline.max_kinergy, outline2.max_kinergy, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         MPI_Reduce(outline.cum_kinergy, outline2.cum_kinergy, NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if(myid == 0)
-            outline2.output(matprops_ptr, &statprops);
+            outline2.output(matprops_ptr, statprops);
     }
     else
     {
-        outline.output(matprops_ptr, &statprops);
+        outline.output(matprops_ptr, statprops);
     }
 
 #ifdef PERFTEST

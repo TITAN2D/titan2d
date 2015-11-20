@@ -23,6 +23,7 @@
 #include "../preproc/preproc.h"
 #include "../vectordatapreproc/vectordatpreproc.h"
 #include "../header/integrators.h"
+#include "../header/stats.hpp"
 %}
 
 %include "std_string.i"
@@ -39,4 +40,5 @@ namespace std {
 %include "../header/titan_simulation.h"
 %include "../preproc/preproc.h"
 %include "../vectordatapreproc/vectordatpreproc.h"
+%include "../header/stats.hpp"
 
