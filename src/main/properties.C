@@ -433,7 +433,8 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
     Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
 
-    while (Nx * Ny > 1024 * 1024)
+
+    while ((float)Nx * (float)Ny > 1024 * 1024)
     {
         dx *= 2.0;
         dy *= 2.0;
@@ -441,6 +442,8 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
         Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
         Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
     }
+    //Nx * Ny should be less then 65536x65536
+    assert((float)Nx * (float)Ny <65536.0*65536.0*0.5);
     stride=Nx;
     printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
 
