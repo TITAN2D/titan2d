@@ -19,9 +19,14 @@
 
 #include <cstddef>
 
+#if defined(__INTEL_COMPILER)
+#include <malloc.h>
+#else
+#include <mm_malloc.h>
+#define NO_MM_MALLOC
+#endif // defined(__GNUC__)
 
 //!Memory management
-//#define NO_MM_MALLOC
 #ifdef NO_MM_MALLOC
 //this one c++ way but no alignment
 #define TI_ALLOC(element_type, number_of_elements) new element_type[number_of_elements]
@@ -30,13 +35,14 @@
 
 #define AlignmentAllocator allocator
 
+#define FREE_VAR_IF_NOT_NULLPTR(variable) if(variable!=nullptr){delete variable;variable=nullptr;}
+
 #else
 //this one is with alignment
 #define TI_ALIGNMENT 64
 #define TI_ALLOC(element_type, number_of_elements) (element_type*)_mm_malloc(sizeof(element_type)*number_of_elements,TI_ALIGNMENT)
 #define TI_FREE(pointer) _mm_free(pointer)
 #define TI_ASSUME_ALIGNED(pointer) __assume_aligned(pointer,TI_ALIGNMENT)
-#endif
 
 #define FREE_VAR_IF_NOT_NULLPTR(variable) if(variable!=nullptr){delete variable;variable=nullptr;}
 
@@ -124,5 +130,6 @@ public:
         return true;
     }
 };
+#endif
 
 #endif /* SRC_HEADER_TICORE_HPP_ */

@@ -28,7 +28,7 @@ int loadrun(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTable
 
 {
     return (0);
-#ifdef 0
+#if 0
     char filename[64];
     sprintf(filename, "restart%04d.this", myid);
     //printf("filename=\"%s\"\n",filename);

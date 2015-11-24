@@ -24,6 +24,7 @@
 #include <chrono>
 #include <iostream>
 
+#include "titan2d.h"
 #include "ticore.hpp"
 
 #ifdef _OPENMP

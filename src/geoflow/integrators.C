@@ -27,7 +27,7 @@
 #include "../header/titan_simulation.h"
 #include "../header/outline.h"
 
-#include <advisor-annotate.h>
+//#include <advisor-annotate.h>
 
 Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
@@ -2705,7 +2705,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef 0
+#if 0
 //! the actual predictor half timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
 extern "C" void predict_1ph_coul_(double *Uvec, double *dUdx, double *dUdy,
         double *Uprev, double *tiny, double *kactxy,

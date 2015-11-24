@@ -321,6 +321,10 @@ void HashTable<T>::reserve_at_least_base(const tisize_t new_reserve_size)
     elenode_.reserve_at_least(new_reserve_size);
     status_.reserve_at_least(new_reserve_size);
 }
+
+//explicit implementation
+template class HashTable<Node>;
+template class HashTable<Element>;
 ////////////////////////////////////////////////////////////////////////////////
 NodeHashTable::NodeHashTable()
     :HashTable<Node>(node_reserved_size)

@@ -10,7 +10,7 @@ libgeoflow_a_SOURCES = element_weight.C \
    edge_states.C get_coef_and_eigen.C rnr.h slopes.C  \
    move_data.C setup_geoflow.C integrators.C stats.C flux_srcs.C
    
-integrators.$(OBJEXT):CXXFLAGS +=-I/opt/intel/advisor_xe/include -qopt-report=5 -qopt-report-phase=vec 
+#integrators.$(OBJEXT):CXXFLAGS +=-I/opt/intel/advisor_xe/include -qopt-report=5 -qopt-report-phase=vec 
 
 
 

@@ -197,8 +197,7 @@ protected:
     vector<ti_ndx_t> ndx_map_old;
     vector<SFC_Key> key_map;
 };
-template class HashTable<Node>;
-template class HashTable<Element>;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
