@@ -18,6 +18,7 @@
 #define	HADAPT_H
 
 #include <vector>
+#include <array>
 
 //!interfce for seed refinements finders
 class SeedRefinementsFinder
@@ -107,12 +108,14 @@ private:
 
     void check_create_new_node(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
                      SFC_Key NewNodeKey[], ti_ndx_t NewNodeNdx[], const int info, int& RefNe, const int boundary);
-    void create_new_node3(const int which, const int Node1, const int Node2,const ti_ndx_t * ndxNodeTemp,
-                         SFC_Key NewNodeKey[], ti_ndx_t NewNodeNdx[], const int info, int& RefNe, const int boundary);
+    void check_create_new_node2(const int iElm, const int iNode, const int info, int& RefNe, const int boundary);
 
+    void create_new_node3(const int which, const ti_ndx_t Node1, const ti_ndx_t Node2,
+            SFC_Key NewNodeKey[], ti_ndx_t NewNodeNdx[], const int info);
 
     void refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement);
-
+    void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const array<double,2> Node1, const array<double,2> Node2);
+    void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const ti_ndx_t Node1, const ti_ndx_t Node2);
 private:
     PrimaryRefinementsFinder primaryRefinementsFinder;
     BuferFirstLayerRefinementsFinder buferFirstLayerRefinementsFinder;
@@ -125,11 +128,41 @@ private:
     vector< vector<ti_ndx_t> > loc_SeedRefinement;
     vector<ti_ndx_t> allRefinement;
 
+    //temporary arrays used during refinement (refineElements)
+    vector<array<ti_ndx_t,16> > new_node_ndx;
+    vector<array<SFC_Key,16> > new_node_key;
+    vector<array<array<double,2>, 16> > new_node_coord;
+    vector<array<bool, 16> > new_node_isnew;
+    vector<array<ti_ndx_t,9> > node_ndx_ref;
+    //!map for indexes of elements for refinement: refining_elem_map[allRefinement[i]]=i or -1 if not refined
+    vector<int> refining_elem_map;
+
+    vector<vector<int> > create_node_ielm;
+    vector<vector<int> > create_node_iwhich;
+    //vector<SFC_Key> new_key;
+    //vector<array<double,2> > new_coord;
+
 private:
     int myid;
     int numprocs;
     ElemPtrList TempList;
     vector<ti_ndx_t> tempList;
+
+private:
+    int which_neighbor(ti_ndx_t ndx,ti_ndx_t neigh_elm_ndx)
+    {
+        int i = 0;
+        int which = -1;
+        while (i < 4 && which == -1)
+        {
+            if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
+                which = i;
+            i++;
+        }
+        ASSERT2(which != -1);
+        return which;
+    }
+
 };
 
 //! class for unrefinement

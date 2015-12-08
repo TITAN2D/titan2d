@@ -27,7 +27,7 @@
 
 #include <algorithm>
 
-
+//@TODO OMP me
 void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement, vector<int> &set_for_refinement, vector<ti_ndx_t> &allRefinement)
 
 /*---

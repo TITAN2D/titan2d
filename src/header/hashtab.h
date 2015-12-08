@@ -37,6 +37,10 @@ using namespace std;
 #include "constant.h"
 #include "tivector.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 
 #define HASHTABLE_LOOKUP_LINSEARCH 8
 
@@ -156,10 +160,13 @@ public:
     }
     
     ti_ndx_t lookup_ndx(const SFC_Key& keyi);
+    //!thread safe version of lookup_ndx, should be used in case if addition of new elenodes is possible
+    ti_ndx_t lookup_ndx_locked(const SFC_Key& keyi);
     T* lookup(const SFC_Key& keyi);
     //T lookup(const SFC_Key& keyi);
 protected:
     ti_ndx_t add_ndx(const SFC_Key& keyi);
+    ti_ndx_t add_ndx_locked(const SFC_Key& keyi);
     T* add(const SFC_Key& keyi);
     
     void remove(const SFC_Key& keyi);
@@ -192,6 +199,14 @@ protected:
     void reserve_base(const tisize_t new_reserve_size);
     void reserve_at_least_base(const tisize_t new_reserve_size);
     void flushTable();//actually delete, removed nodes and rearrange added (sort according to keys)
+
+
+    //locks for multithreaded manipulations with tables sizes
+#ifdef _OPENMP
+    vector<omp_lock_t> bucket_lock;
+    omp_lock_t content_table_lock;
+#endif
+
     //!temporary arrays used in flush()
     vector<ti_ndx_t> ndx_map;
     vector<ti_ndx_t> ndx_map_old;
@@ -214,13 +229,19 @@ public:
     
     void init(double *doublekeyrangein, int size, double XR[], double YR[]);
 
+
     Node* createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr);
     Node* createAddNode(const SFC_Key& keyi, double *coordi, int inf, int ord, MatProps *matprops_ptr);
     Node* createAddNode(const SFC_Key& keyi, double* coordi, int inf, int ord, double elev, int yada);
     Node* createAddNode(FILE* fp, MatProps* matprops_ptr);
     
+    //!allocate space and insert to hash table do not initiate values (except key)
+    ti_ndx_t createAddNode_ndx(const SFC_Key& keyi){return addNode_ndx(keyi);}
+
     ti_ndx_t createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
-    
+    //!thread safe version of createAddNode_ndx
+    ti_ndx_t createAddNode_ndx_locked(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
+
     void removeNode(const ti_ndx_t ndx);
     void removeNode(Node* node);
 
@@ -231,6 +252,8 @@ public:
 private:
      Node* addNode(const SFC_Key& keyi);
      ti_ndx_t addNode_ndx(const SFC_Key& keyi);
+     //!thread safe version of addNode_ndx
+     ti_ndx_t addNode_ndx_locked(const SFC_Key& keyi);
 public: 
     //! used in delete_unused_nodes_and_elements() function 
     tivector<int> id_;

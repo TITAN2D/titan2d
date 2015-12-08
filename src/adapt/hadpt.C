@@ -197,6 +197,13 @@ HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, Element
    buferNextLayerRefinementsFinder(_ElemTable, _NodeTable, _ElemProp),
    loc_SeedRefinement(threads_number)
 {
+    create_node_ielm.resize(threads_number);
+    create_node_iwhich.resize(threads_number);
+    for(int i=0;i<threads_number;++i)
+    {
+        create_node_ielm[i].resize(0);
+        create_node_iwhich[i].resize(0);
+    }
 }
 
 void HAdapt::adapt(int h_count, double target)

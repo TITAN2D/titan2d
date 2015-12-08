@@ -132,4 +132,13 @@ public:
 };
 #endif
 
+
+#ifdef _OPENMP
+#define IF_OMP(statement) statement
+#else
+#define IF_OMP(statement)
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
+#endif
+
 #endif /* SRC_HEADER_TICORE_HPP_ */

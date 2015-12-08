@@ -47,6 +47,7 @@ HashTable<T>::HashTable(tisize_t reserved_size)
 : elenode_(reserved_size)
 {
     all_elenodes_are_permanent=false;
+
 }
 template <typename T>
 void HashTable<T>::init(double *doublekeyrangein, int size, double XR[], double YR[])
@@ -75,6 +76,13 @@ void HashTable<T>::init(double *doublekeyrangein, int size, double XR[], double 
     
     all_elenodes_are_permanent=false;
 
+#ifdef _OPENMP
+    bucket_lock.resize(NBUCKETS);
+    for(i=0;i<NBUCKETS;++i)
+        omp_init_lock(&(bucket_lock[i]));
+    omp_init_lock(&content_table_lock);
+#endif
+
     //Keith made this change 20061109; and made hash an inline function
         /* NBUCKETS*2 is NBUCKETS*integer integer is empirical could be 1
          return (((int) ((key[0]*doublekeyrange[1]+key[1])/
@@ -89,17 +97,27 @@ template <typename T>
 ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& keyi)
 {
     int entry = hash(keyi);
+    //IF_OMP(omp_set_lock(&(bucket_lock[entry])));
     int size = bucket[entry].key.size();
     
     SFC_Key *keyArr = &(bucket[entry].key[0]);
     int i;
     
     if(size == 0)
+    {
+        //IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
         return ti_ndx_doesnt_exist;
+    }
     if(keyi < keyArr[0])
+    {
+        //IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
         return ti_ndx_doesnt_exist;
+    }
     if(keyi > keyArr[size - 1])
+    {
+        //IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
         return ti_ndx_doesnt_exist;
+    }
     
     if(size < HASHTABLE_LOOKUP_LINSEARCH)
     {
@@ -107,6 +125,7 @@ ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& keyi)
         {
             if(keyi == keyArr[i])
             {
+                //IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
                 return bucket[entry].ndx[i];
             }
         }
@@ -134,10 +153,80 @@ ti_ndx_t HashTable<T>::lookup_ndx(const SFC_Key& keyi)
         {
             if(keyi == keyArr[i])
             {
+                //IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
                 return bucket[entry].ndx[i];
             }
         }
     }
+    //IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+    return ti_ndx_doesnt_exist;
+}
+template <typename T>
+ti_ndx_t HashTable<T>::lookup_ndx_locked(const SFC_Key& keyi)
+{
+    int entry = hash(keyi);
+    IF_OMP(omp_set_lock(&(bucket_lock[entry])));
+    int size = bucket[entry].key.size();
+
+    SFC_Key *keyArr = &(bucket[entry].key[0]);
+    int i;
+
+    if(size == 0)
+    {
+        IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+        return ti_ndx_doesnt_exist;
+    }
+    if(keyi < keyArr[0])
+    {
+        IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+        return ti_ndx_doesnt_exist;
+    }
+    if(keyi > keyArr[size - 1])
+    {
+        IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+        return ti_ndx_doesnt_exist;
+    }
+
+    if(size < HASHTABLE_LOOKUP_LINSEARCH)
+    {
+        for(i = 0; i < size; i++)
+        {
+            if(keyi == keyArr[i])
+            {
+                IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+                return bucket[entry].ndx[i];
+            }
+        }
+    }
+    else
+    {
+        int i0, i1, i2;
+        i0 = 0;
+        i1 = size / 2;
+        i2 = size - 1;
+        while ((i2 - i0) > HASHTABLE_LOOKUP_LINSEARCH)
+        {
+            if(keyi > keyArr[i1])
+            {
+                i0 = i1 + 1;
+                i1 = (i0 + i2) / 2;
+            }
+            else
+            {
+                i2 = i1;
+                i1 = (i0 + i2) / 2;
+            }
+        }
+        for(i = i0; i <= i2; i++)
+        {
+            if(keyi == keyArr[i])
+            {
+                IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+                return bucket[entry].ndx[i];
+            }
+        }
+    }
+    IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
     return ti_ndx_doesnt_exist;
 }
 template <typename T>
@@ -206,7 +295,56 @@ ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& keyi)
     ENTRIES+=1;
 
     elenode_[ndx].ndx(ndx);
-    elenode_[ndx].set_key(keyi);
+    return ndx;
+}
+template <typename T>
+ti_ndx_t HashTable<T>::add_ndx_locked(const SFC_Key& keyi)
+{
+    ti_ndx_t ndx=lookup_ndx_locked(keyi);
+    if(ti_ndx_not_negative(ndx))
+        return ndx;
+
+    all_elenodes_are_permanent=false;
+
+    //get space
+    IF_OMP(omp_set_lock(&content_table_lock));
+    ndx=key_.push_back();
+    elenode_.push_back();
+    status_.push_back();
+    IF_OMP(omp_unset_lock(&content_table_lock));
+
+    int entry = hash(keyi);
+    IF_OMP(omp_set_lock(&(bucket_lock[entry])));
+
+    int entry_size = bucket[entry].key.size();
+
+    //set values
+    key_[ndx]=keyi;
+    status_[ndx]=CS_Added;
+
+    //place to hash table
+    if(entry_size>0)
+    {
+        //this place is already occupied
+        //find proper place to insert it
+        int i;
+        SFC_Key *keyArr = &(bucket[entry].key[0]);
+        for(i=0;i<entry_size&&keyi>keyArr[i];++i){}
+
+        bucket[entry].key.insert(bucket[entry].key.begin() + i, keyi);
+        bucket[entry].ndx.insert(bucket[entry].ndx.begin() + i, ndx);
+    }
+    else
+    {
+        //will be first member of the bucket entry
+        bucket[entry].key.push_back(keyi);
+        bucket[entry].ndx.push_back(ndx);
+    }
+    ENTRIES+=1;
+
+    IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+
+    elenode_[ndx].ndx(ndx);
     return ndx;
 }
 template <typename T>
@@ -378,6 +516,26 @@ ti_ndx_t NodeHashTable::addNode_ndx(const SFC_Key& keyi)
     connection_id_.push_back();
     return ndx;
 }
+ti_ndx_t NodeHashTable::addNode_ndx_locked(const SFC_Key& keyi)
+{
+    ti_ndx_t ndx = add_ndx_locked(keyi);
+
+    IF_OMP(omp_set_lock(&content_table_lock));
+    id_.push_back();
+    num_assoc_elem_.push_back();
+    info_.push_back();
+    for(int i=0;i<DIMENSION;i++)
+        coord_[i].push_back();
+    elevation_.push_back();
+    for(int i=0;i<NUM_STATE_VARS;i++)
+    {
+        flux_[i].push_back();
+        refinementflux_[i].push_back();
+    }
+    connection_id_.push_back();
+    IF_OMP(omp_unset_lock(&content_table_lock));
+    return ndx;
+}
 
 Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, MatProps *matprops_ptr)
 {
@@ -394,6 +552,13 @@ Node* NodeHashTable::createAddNode(const SFC_Key& keyi, double *coordi, int inf,
 ti_ndx_t NodeHashTable::createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr)
 {
     ti_ndx_t ndx=addNode_ndx(keyi);
+    //@TODO remove ord
+    elenode_[ndx].init(keyi, coordi, inf, -3, matprops_ptr);
+    return ndx;
+}
+ti_ndx_t NodeHashTable::createAddNode_ndx_locked(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr)
+{
+    ti_ndx_t ndx=addNode_ndx_locked(keyi);
     //@TODO remove ord
     elenode_[ndx].init(keyi, coordi, inf, -3, matprops_ptr);
     return ndx;
