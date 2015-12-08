@@ -114,8 +114,8 @@ private:
             SFC_Key NewNodeKey[], ti_ndx_t NewNodeNdx[], const int info);
 
     void refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement);
-    void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const array<double,2> Node1, const array<double,2> Node2);
-    void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const ti_ndx_t Node1, const ti_ndx_t Node2);
+    //void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const array<double,2> Node1, const array<double,2> Node2);
+    //void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const ti_ndx_t Node1, const ti_ndx_t Node2);
 private:
     PrimaryRefinementsFinder primaryRefinementsFinder;
     BuferFirstLayerRefinementsFinder buferFirstLayerRefinementsFinder;
@@ -136,6 +136,8 @@ private:
     vector<array<ti_ndx_t,9> > node_ndx_ref;
     //!map for indexes of elements for refinement: refining_elem_map[allRefinement[i]]=i or -1 if not refined
     vector<int> refining_elem_map;
+    vector<array<ti_ndx_t,4> > new_sons_ndx;
+
 
     vector<vector<int> > create_node_ielm;
     vector<vector<int> > create_node_iwhich;
@@ -162,7 +164,174 @@ private:
         ASSERT2(which != -1);
         return which;
     }
+    void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const ti_ndx_t Node1, const ti_ndx_t Node2)
+    {
+        double norm_coord[2];
+        unsigned nkey = 2;
+        unsigned oldkey[KEYLENGTH];
 
+        ti_ndx_t ndx;
+
+        for(int i = 0; i < 2; i++)
+            coord[i] = (NodeTable->coord_[i][Node1] + NodeTable->coord_[i][Node2]) * .5;
+
+        norm_coord[0] = (coord[0] - NodeTable->Xrange[0]) / (NodeTable->Xrange[1] - NodeTable->Xrange[0]);
+        norm_coord[1] = (coord[1] - NodeTable->Yrange[0]) / (NodeTable->Yrange[1] - NodeTable->Yrange[0]);
+
+        fhsfc2d_(norm_coord, &nkey, oldkey);
+
+        SET_NEWKEY(key,oldkey);
+
+        ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx_locked(key)));
+        return;
+    }
+    void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const array<double,2> Node1, const array<double,2> Node2)
+    {
+        double norm_coord[2];
+        unsigned nkey = 2;
+        unsigned oldkey[KEYLENGTH];
+
+        ti_ndx_t ndx;
+
+        for(int i = 0; i < 2; i++)
+            coord[i] = (Node1[i] + Node2[i]) * .5;
+
+        norm_coord[0] = (coord[0] - NodeTable->Xrange[0]) / (NodeTable->Xrange[1] - NodeTable->Xrange[0]);
+        norm_coord[1] = (coord[1] - NodeTable->Yrange[0]) / (NodeTable->Yrange[1] - NodeTable->Yrange[0]);
+
+        fhsfc2d_(norm_coord, &nkey, oldkey);
+
+        SET_NEWKEY(key,oldkey);
+
+        ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx_locked(key)));
+        return;
+    }
+    /**
+     * helper function for refineElements
+     *
+     * calculate new node's coordinates and keys and set for allocation, new node will locate half way
+     * between node0_ndx and node1_ndx nodes
+     *
+     * in case of MPI parallel will use lookup_ndx if neighbor element is on other processor
+     *
+     * input:
+     * iElm - index of element to refine within all elements for refinement (in allRefinement)
+     * which - the node new local index in respect to element (in new_node_key, etc)
+     * ndx  - index of element to refine (in ElemTable)
+     * neigh - the neighbour element local index in respect to element
+     * neigh_elm_ndx - index of neighbour which will share new node
+     * node0_ndx,node1_ndx - indexes of nodes (in ElemTable) where
+     * ithread - thread id which do work
+     *
+     * output:
+     * new_node_key[iElm][which],
+     * new_node_coord[iElm][which]
+     * create_node_ielm[ithread].push_back(iElm)
+     * create_node_iwhich[ithread].push_back(which)
+     */
+
+    void rE__find_new_side_node_or_set_for_alloc(const int iElm, const int which, const ti_ndx_t ndx,const int neigh,
+                                                    const ti_ndx_t node0_ndx,const ti_ndx_t node1_ndx,const int ithread)
+    {
+        const ti_ndx_t neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
+
+        calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node0_ndx, node1_ndx);
+        if(ElemTable->myprocess_[neigh_elm_ndx]==myid)
+        {
+            ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(which);
+        }
+        else
+        {
+            new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
+            if(ti_ndx_negative(new_node_ndx[iElm][which]))
+            {
+                create_node_ielm[ithread].push_back(iElm);
+                create_node_iwhich[ithread].push_back(which);
+            }
+        }
+    }
+    /**
+     * same as rE__find_new_side_node_set_for_alloc but also will check if neighbour is also will be refined and
+     * will get node from there
+     */
+    void rE__find_new_side_node_or_set_for_alloc_refcheck(const int iElm, const int which, const ti_ndx_t ndx,const int neigh, const int neigh_which,
+                                                    const ti_ndx_t node0_ndx,const ti_ndx_t node1_ndx,const int ithread)
+    {
+
+        const ti_ndx_t neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
+        calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node0_ndx, node1_ndx);
+        if(ElemTable->myprocess_[neigh_elm_ndx]==myid)
+        {
+            if(refining_elem_map[neigh_elm_ndx]==-1 || ElemTable->neigh_gen_[neigh][ndx] < ElemTable->generation_[ndx])
+            {
+                //i.e. neigbour is not refined or neighour is of lower generation
+                ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
+                create_node_ielm[ithread].push_back(iElm);
+                create_node_iwhich[ithread].push_back(which);
+            }
+            else
+            {
+                ASSERT2(ti_ndx_not_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
+                new_node_ndx[iElm][which]=new_node_ndx[refining_elem_map[neigh_elm_ndx]][neigh_which];
+            }
+        }
+        else
+        {
+            new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
+            if(ti_ndx_negative(new_node_ndx[iElm][which]))
+            {
+                create_node_ielm[ithread].push_back(iElm);
+                create_node_iwhich[ithread].push_back(which);
+            }
+        }
+    }
+    /**
+     * helper function for refineElements
+     *
+     * find new side node (4,5) in case of neighbor generation higher then this one
+     *
+     * input:
+     * iElm - index of element to refine within all elements for refinement (in allRefinement)
+     * which - the node new local index in respect to element (in new_node_key, etc)
+     * ndx  - index of element to refine (in ElemTable)
+     * neigh - the neighbour element local index in respect to element
+     * neigh_which - local index in respect to neighboring element of the which node
+     *
+     * output:
+     * new_node_key[iElm][which]
+     * new_node_ndx[iElm][which]
+     */
+    void rE__find_new_side_node(const int iElm, const int which, const ti_ndx_t ndx,const int neigh, const int neigh_which)
+    {
+        const ti_ndx_t neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
+        ASSERT2(neigh_which == which_neighbor(ndx,neigh_elm_ndx) + 4);
+        new_node_key[iElm][which] = ElemTable->node_key_[neigh_which][neigh_elm_ndx];
+        new_node_ndx[iElm][which] = ElemTable->node_key_ndx_[neigh_which][neigh_elm_ndx];
+    }
+
+    /**
+     * helper function for refineElements
+     *
+     * allocate new nodes, set indexes
+     */
+    void rE__alloc_new_nodes()
+    {
+        for(int ithread=0;ithread<threads_number;++ithread)
+        {
+            const int N=create_node_ielm[ithread].size();
+            for(int i=0;i<N;++i)
+            {
+                const int iElm=create_node_ielm[ithread][i];
+                const int which=create_node_iwhich[ithread][i];
+                new_node_ndx[iElm][which]=NodeTable->createAddNode_ndx(new_node_key[iElm][which]);
+                new_node_isnew[iElm][which]=true;
+            }
+            create_node_ielm[ithread].resize(0);
+            create_node_iwhich[ithread].resize(0);
+        }
+    }
 };
 
 //! class for unrefinement

@@ -285,6 +285,7 @@ public:
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side2_init);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side3_init);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_int_nodes_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_new_elm_aloc);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_new_elm_init);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_update_neighbours_ndx_on_ghosts);
 
@@ -347,6 +348,7 @@ public:
         IF_DEF_PROFILING3(HAdapt_refineElements_side3_init = zero);
         IF_DEF_PROFILING3(HAdapt_refineElements_int_nodes_init = zero);
         IF_DEF_PROFILING3(HAdapt_refineElements_new_elm_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_new_elm_aloc = zero);
         IF_DEF_PROFILING3(HAdapt_refineElements_update_neighbours_ndx_on_ghosts = zero);
 
 
@@ -410,6 +412,7 @@ public:
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side3_init);
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_int_nodes_init);
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_new_elm_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_new_elm_aloc);
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_update_neighbours_ndx_on_ghosts);
 
     //IF_DEF_PROFILING1(Clock::duration );

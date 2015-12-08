@@ -140,48 +140,7 @@ void HAdapt::create_new_node3(const int which, const ti_ndx_t Node1, const ti_nd
     NewNodeNdx[which]=ndx;
     return;
 }
-void HAdapt::calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const ti_ndx_t Node1, const ti_ndx_t Node2)
-{
-    double norm_coord[2];
-    unsigned nkey = 2;
-    unsigned oldkey[KEYLENGTH];
 
-    ti_ndx_t ndx;
-
-    for(int i = 0; i < 2; i++)
-        coord[i] = (NodeTable->coord_[i][Node1] + NodeTable->coord_[i][Node2]) * .5;
-
-    norm_coord[0] = (coord[0] - NodeTable->Xrange[0]) / (NodeTable->Xrange[1] - NodeTable->Xrange[0]);
-    norm_coord[1] = (coord[1] - NodeTable->Yrange[0]) / (NodeTable->Yrange[1] - NodeTable->Yrange[0]);
-
-    fhsfc2d_(norm_coord, &nkey, oldkey);
-
-    SET_NEWKEY(key,oldkey);
-
-    ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx_locked(key)));
-    return;
-}
-void HAdapt::calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const array<double,2> Node1, const array<double,2> Node2)
-{
-    double norm_coord[2];
-    unsigned nkey = 2;
-    unsigned oldkey[KEYLENGTH];
-
-    ti_ndx_t ndx;
-
-    for(int i = 0; i < 2; i++)
-        coord[i] = (Node1[i] + Node2[i]) * .5;
-
-    norm_coord[0] = (coord[0] - NodeTable->Xrange[0]) / (NodeTable->Xrange[1] - NodeTable->Xrange[0]);
-    norm_coord[1] = (coord[1] - NodeTable->Yrange[0]) / (NodeTable->Yrange[1] - NodeTable->Yrange[0]);
-
-    fhsfc2d_(norm_coord, &nkey, oldkey);
-
-    SET_NEWKEY(key,oldkey);
-
-    ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx_locked(key)));
-    return;
-}
 // (#) - NewNodeKey - new node numbering
 //  #  - old node numbering
 //  E# - old neighbouring elements numbering
@@ -259,6 +218,11 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
                 for(int i=0;i<2;++i)
                     new_node_coord[iElm][k][i]=i;
 #endif
+    for(int ithread=0;ithread<threads_number;++ithread)
+    {
+        create_node_ielm[ithread].resize(0);
+        create_node_iwhich[ithread].resize(0);
+    }
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_init,pt_start);
 
 	//find position of corners, sides and bubbles
@@ -283,8 +247,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     #pragma omp parallel
     {
         int ithread=omp_get_thread_num();
-        create_node_ielm[ithread].resize(0);
-        create_node_iwhich[ithread].resize(0);
 
         #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
         for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -293,94 +255,30 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
             if(ElemTable->neigh_proc_[0][ndx] == -1 || ElemTable->neigh_gen_[0][ndx] <= ElemTable->generation_[ndx])
             {
                 //i.e. boundary of the computational domain or neighbor generation same or smaller then this one
-                ti_ndx_t neigh_elm_ndx;
-                int which;
-                int neigh;
-                which=4;
-                neigh=0;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node_ndx_ref[iElm][0], node_ndx_ref[iElm][4]);
-                if(ElemTable->neigh_proc_[neigh][ndx]==myid)
-                {
-                    ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                    create_node_ielm[ithread].push_back(iElm);
-                    create_node_iwhich[ithread].push_back(which);
-                }
-                else
-                {
-                    new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
-                    if(ti_ndx_negative(new_node_ndx[iElm][which]))
-                    {
-                        create_node_ielm[ithread].push_back(iElm);
-                        create_node_iwhich[ithread].push_back(which);
-                    }
-                }
-                which=5;
-                neigh=4;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node_ndx_ref[iElm][1], node_ndx_ref[iElm][4]);
-                if(ElemTable->neigh_proc_[neigh][ndx]==myid)
-                {
-                    ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                    create_node_ielm[ithread].push_back(iElm);
-                    create_node_iwhich[ithread].push_back(which);
-                }
-                else
-                {
-                    new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
-                    if(ti_ndx_negative(new_node_ndx[iElm][which]))
-                    {
-                        create_node_ielm[ithread].push_back(iElm);
-                        create_node_iwhich[ithread].push_back(which);
-                    }
-                }
+                rE__find_new_side_node_or_set_for_alloc(
+                        iElm, 4/*which*/, ndx, 0 /*neigh*/,
+                        node_ndx_ref[iElm][0], node_ndx_ref[iElm][4],ithread);
+                rE__find_new_side_node_or_set_for_alloc(
+                        iElm, 5/*which*/, ndx, 4 /*neigh*/,
+                        node_ndx_ref[iElm][1], node_ndx_ref[iElm][4],ithread);
             }
             else
             {
                 //i.e. not boundary of the computational domain and neighbor generation higher then this one
-                ti_ndx_t neigh_elm_ndx;
-                int which;
-                int neigh;
-                //
-                neigh=0;
-                which=6;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                ASSERT2(which == which_neighbor(ndx,neigh_elm_ndx) + 4);
-                new_node_key[iElm][4] = ElemTable->node_key_[which][neigh_elm_ndx];
-                new_node_ndx[iElm][4] = ElemTable->node_key_ndx_[which][neigh_elm_ndx];
-
-                //
-                neigh=4;
-                which=6;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                ASSERT2(which = which_neighbor(ndx,neigh_elm_ndx) + 4);
-                new_node_key[iElm][5] = ElemTable->node_key_[which][neigh_elm_ndx];
-                new_node_ndx[iElm][5] = ElemTable->node_key_ndx_[which][neigh_elm_ndx];
+                rE__find_new_side_node(iElm,4/*which*/,ndx,0/*neigh*/,6/*neigh_which*/);
+                rE__find_new_side_node(iElm,5/*which*/,ndx,4/*neigh*/,6/*neigh_which*/);
             }
         }
 	}
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_find_nodes,pt_start);
-	for(int ithread=0;ithread<threads_number;++ithread)
-	{
-	    const int N=create_node_ielm[ithread].size();
-	    for(int i=0;i<N;++i)
-	    {
-	        const int iElm=create_node_ielm[ithread][i];
-	        const int which=create_node_iwhich[ithread][i];
-	        new_node_ndx[iElm][which]=NodeTable->createAddNode_ndx(new_node_key[iElm][which]);
-	        new_node_isnew[iElm][which]=true;
-	    }
 
-	}
+    rE__alloc_new_nodes();
 	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_add_new_nodes,pt_start);
 	//SIDE 2
     #pragma omp parallel
 	{
-
         int ithread=omp_get_thread_num();
 
-        create_node_ielm[ithread].resize(0);
-        create_node_iwhich[ithread].resize(0);
         #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
         for(int iElm=0;iElm<numElemToRefine;++iElm)
         {
@@ -388,107 +286,27 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
             if(ElemTable->neigh_proc_[2][ndx] == -1 || ElemTable->neigh_gen_[2][ndx] <= ElemTable->generation_[ndx])
             {
                 //i.e. boundary of the computational domain or neighbor generation same or smaller then this one
-                ti_ndx_t neigh_elm_ndx;
-                int which;
-                int neigh_which;
-                int neigh;
-                which=14;
-                neigh_which=4;
-                neigh=6;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node_ndx_ref[iElm][3], node_ndx_ref[iElm][6]);
-                if(ElemTable->myprocess_[neigh_elm_ndx]==myid)
-                {
-                    if(refining_elem_map[neigh_elm_ndx]==-1 || ElemTable->neigh_gen_[neigh][ndx] < ElemTable->generation_[ndx])
-                    {
-                        //i.e. neigbour is not refined or neighour is of lower generation
-                        ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                        create_node_ielm[ithread].push_back(iElm);
-                        create_node_iwhich[ithread].push_back(which);
-                    }
-                    else
-                    {
-                        ASSERT2(ti_ndx_not_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                        new_node_ndx[iElm][which]=new_node_ndx[refining_elem_map[neigh_elm_ndx]][neigh_which];
-                    }
-                }
-                else
-                {
-                    new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
-                    if(ti_ndx_negative(new_node_ndx[iElm][which]))
-                    {
-                        create_node_ielm[ithread].push_back(iElm);
-                        create_node_iwhich[ithread].push_back(which);
-                    }
-                }
-                which=15;
-                neigh=2;
-                neigh_which=5;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node_ndx_ref[iElm][2], node_ndx_ref[iElm][6]);
-                if(ElemTable->myprocess_[neigh_elm_ndx]==myid)
-                {
-                    if(refining_elem_map[neigh_elm_ndx]==-1 || ElemTable->neigh_gen_[neigh][ndx] < ElemTable->generation_[ndx])
-                    {
-                        //i.e. neigbour is not refined
-                        ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                        create_node_ielm[ithread].push_back(iElm);
-                        create_node_iwhich[ithread].push_back(which);
-                    }
-                    else
-                    {
-                        ASSERT2(ti_ndx_not_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                        new_node_ndx[iElm][which]=new_node_ndx[refining_elem_map[neigh_elm_ndx]][neigh_which];
-                    }
-                }
-                else
-                {
-                    new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
-                    if(ti_ndx_negative(new_node_ndx[iElm][which]))
-                    {
-                        create_node_ielm[ithread].push_back(iElm);
-                        create_node_iwhich[ithread].push_back(which);
-                    }
-                }
+                rE__find_new_side_node_or_set_for_alloc_refcheck(
+                        iElm, 14/*which*/, ndx, 6 /*neigh*/, 4/*neigh_which*/,
+                        node_ndx_ref[iElm][3], node_ndx_ref[iElm][6],ithread);
+                rE__find_new_side_node_or_set_for_alloc_refcheck(
+                        iElm, 15/*which*/, ndx, 2 /*neigh*/, 5/*neigh_which*/,
+                        node_ndx_ref[iElm][2], node_ndx_ref[iElm][6],ithread);
             }
             else
             {
                 //i.e. not boundary of the computational domain and neighbor generation higher then this one
-                ti_ndx_t neigh_elm_ndx;
-                int which;
-                int neigh;
-                //
-                neigh=6;
-                which=4;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                ASSERT2(which_neighbor(ndx,neigh_elm_ndx) + 4==which);
-                new_node_key[iElm][14] = ElemTable->node_key_[which][neigh_elm_ndx];
-                new_node_ndx[iElm][14] = ElemTable->node_key_ndx_[which][neigh_elm_ndx];
-
-                //
-                neigh=2;
-                which=4;
-                neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-                ASSERT2(which_neighbor(ndx,neigh_elm_ndx) + 4==which);
-                new_node_key[iElm][15] = ElemTable->node_key_[which][neigh_elm_ndx];
-                new_node_ndx[iElm][15] = ElemTable->node_key_ndx_[which][neigh_elm_ndx];
+                rE__find_new_side_node(iElm,14/*which*/,ndx,6/*neigh*/,4/*neigh_which*/);
+                rE__find_new_side_node(iElm,15/*which*/,ndx,2/*neigh*/,4/*neigh_which*/);
             }
         }
 	}
 	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_find_nodes,pt_start);
-    for(int ithread=0;ithread<threads_number;++ithread)
-    {
-        const int N=create_node_ielm[ithread].size();
-        for(int i=0;i<N;++i)
-        {
-            const int iElm=create_node_ielm[ithread][i];
-            const int which=create_node_iwhich[ithread][i];
-            new_node_ndx[iElm][which]=NodeTable->createAddNode_ndx(new_node_key[iElm][which]);
-            new_node_isnew[iElm][which]=true;
-        }
 
-    }
+	rE__alloc_new_nodes();
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_add_new_nodes,pt_start);
+
+
 
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
@@ -1006,7 +824,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     }
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side3_init,pt_start);
 
-    #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
         ti_ndx_t ndx=ElemToRefine[iElm];
@@ -1051,6 +869,25 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     }
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_int_nodes_init,pt_start);
 
+    //first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
+    new_sons_ndx.resize(numElemToRefine);
+    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    {
+        //---NEW ELEMENTS---
+		//check if such element exists (should not be such element)
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][0])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][1])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][2])));
+		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][3])));
+		//first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
+
+		new_sons_ndx[iElm][0]=ElemTable->generateAddElement_ndx(new_node_key[iElm][0]);
+		new_sons_ndx[iElm][1]=ElemTable->generateAddElement_ndx(new_node_key[iElm][1]);
+		new_sons_ndx[iElm][2]=ElemTable->generateAddElement_ndx(new_node_key[iElm][2]);
+		new_sons_ndx[iElm][3]=ElemTable->generateAddElement_ndx(new_node_key[iElm][3]);
+    }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_new_elm_aloc,pt_start);
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
         ti_ndx_t ndx=ElemToRefine[iElm];
@@ -1069,18 +906,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         int other_proc = 0;
         int boundary;
 
-		//---NEW ELEMENTS---
-		//check if such element exists (should not be such element)
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[0])));
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[1])));
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[2])));
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(NewNodeKey[3])));
-		//first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
-        ti_ndx_t ndxSons[4];
-		ndxSons[0]=ElemTable->generateAddElement_ndx(NewNodeKey[0]);
-		ndxSons[1]=ElemTable->generateAddElement_ndx(NewNodeKey[1]);
-		ndxSons[2]=ElemTable->generateAddElement_ndx(NewNodeKey[2]);
-		ndxSons[3]=ElemTable->generateAddElement_ndx(NewNodeKey[3]);
+        ti_ndx_t *ndxSons=&(new_sons_ndx[iElm][0]);
+
+
 
 
 		SFC_Key nodes[9];
