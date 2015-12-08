@@ -210,6 +210,9 @@ void HAdapt::calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const arra
 
 void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 {
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
+
     //convinience references
     const int numElemToRefine=allRefinement.size();
     const ti_ndx_t *ElemToRefine=&(allRefinement[0]);
@@ -256,6 +259,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
                 for(int i=0;i<2;++i)
                     new_node_coord[iElm][k][i]=i;
 #endif
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_init,pt_start);
 
 	//find position of corners, sides and bubbles
 	for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -274,6 +278,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		ASSERT2(ElemTable->node_bubble_ndx_[ndx]==NodeTable->lookup_ndx(ElemTable->key_[ndx]));
         ASSERT2(ti_ndx_not_negative(node_ndx_ref[iElm][8]));
     }
+	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_find_corners_sides_bubbles,pt_start);
 	//SIDE 0
     #pragma omp parallel
     {
@@ -354,6 +359,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
             }
         }
 	}
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_find_nodes,pt_start);
 	for(int ithread=0;ithread<threads_number;++ithread)
 	{
 	    const int N=create_node_ielm[ithread].size();
@@ -366,6 +372,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 	    }
 
 	}
+	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_add_new_nodes,pt_start);
 	//SIDE 2
     #pragma omp parallel
 	{
@@ -468,6 +475,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
             }
         }
 	}
+	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_find_nodes,pt_start);
     for(int ithread=0;ithread<threads_number;++ithread)
     {
         const int N=create_node_ielm[ithread].size();
@@ -480,6 +488,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         }
 
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_add_new_nodes,pt_start);
 
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
@@ -488,6 +497,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         calc_coord_and_key(new_node_key[iElm][11],new_node_coord[iElm][11], node_ndx_ref[iElm][3], node_ndx_ref[iElm][7]);
         calc_coord_and_key(new_node_key[iElm][13],new_node_coord[iElm][13], node_ndx_ref[iElm][2], node_ndx_ref[iElm][5]);
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_other,pt_start);
+
 	//INTERNAL SIDES and NEW BUBBLES
     //first find keys and coords for new nodes
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
@@ -520,6 +531,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         calc_coord_and_key(new_node_key[iElm][3],new_node_coord[iElm][3], new_node_coord[iElm][11], new_node_coord[iElm][12]);
         //new_node_isnew[iElm][3]=true;
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_int_nodes_calc_keys,pt_start);
     //allocate and insert new nodes
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
@@ -540,7 +552,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         new_node_ndx[iElm][2]=NodeTable->createAddNode_ndx(new_node_key[iElm][2]);
         new_node_ndx[iElm][3]=NodeTable->createAddNode_ndx(new_node_key[iElm][3]);
     }
-
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_int_nodes_alloc,pt_start);
 	//SIDE 0
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -643,6 +655,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[n1_ndx]=S_C_CON;
 		}
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_init,pt_start);
+
     //SIDE1
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
@@ -761,6 +775,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[n1_ndx]=S_C_CON;
 		}
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side1_init,pt_start);
+
     //SIDE2
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -869,6 +885,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[n1_ndx]=S_C_CON;
 		}
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_init,pt_start);
+
     //SIDE 3
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
@@ -986,6 +1004,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 				NodeTable->info_[n1_ndx]=S_C_CON;
 		}
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side3_init,pt_start);
 
     #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -1030,6 +1049,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		which=3;
 		NodeTable->elenode_[new_node_ndx[iElm][which]].init(new_node_key[iElm][which], &(new_node_coord[iElm][which][0]), BUBBLE, -3, matprops_ptr);
     }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_int_nodes_init,pt_start);
 
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
@@ -1460,8 +1480,10 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
         adapted[ndx]=OLDFATHER;
         refined[ndx]=1;
 	}
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_new_elm_init,pt_start);
 
 	if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
+	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_update_neighbours_ndx_on_ghosts,pt_start);
 
 #ifdef DEB3
 	//some checking

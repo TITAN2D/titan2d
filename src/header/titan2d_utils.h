@@ -267,6 +267,26 @@ public:
         PROFILE3_TIMINGS_PRINTING(step_calc_wet_dry_orient);
         PROFILE3_TIMINGS_PRINTING(step_calc_stats);
 
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_other);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_find_corners_sides_bubbles);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side0_find_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side0_add_new_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side1_find_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side1_add_new_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side2_find_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side2_add_new_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side3_find_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side3_add_new_nodes);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_int_nodes_calc_keys);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_int_nodes_alloc);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side0_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side1_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side2_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_side3_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_int_nodes_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_new_elm_init);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_update_neighbours_ndx_on_ghosts);
 
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
@@ -307,6 +327,29 @@ public:
         IF_DEF_PROFILING3(step_outline=zero);
         IF_DEF_PROFILING3(step_calc_wet_dry_orient=zero);
         IF_DEF_PROFILING3(step_calc_stats=zero);
+
+        IF_DEF_PROFILING3(HAdapt_refineElements_other = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_find_corners_sides_bubbles = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side0_find_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side0_add_new_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side1_find_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side1_add_new_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side2_find_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side2_add_new_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side3_find_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side3_add_new_nodes = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_int_nodes_calc_keys = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_int_nodes_alloc = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side0_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side1_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side2_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_side3_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_int_nodes_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_new_elm_init = zero);
+        IF_DEF_PROFILING3(HAdapt_refineElements_update_neighbours_ndx_on_ghosts = zero);
+
+
         //IF_DEF_PROFILING1(=zero);
         //IF_DEF_PROFILING3(=zero);
     }
@@ -348,6 +391,26 @@ public:
     IF_DEF_PROFILING3(Clock::duration step_calc_wet_dry_orient);
     IF_DEF_PROFILING3(Clock::duration step_calc_stats);
 
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_other);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_find_corners_sides_bubbles);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side0_find_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side0_add_new_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side1_find_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side1_add_new_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side2_find_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side2_add_new_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side3_find_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side3_add_new_nodes);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_int_nodes_calc_keys);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_int_nodes_alloc);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side0_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side1_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side2_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_side3_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_int_nodes_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_new_elm_init);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_update_neighbours_ndx_on_ghosts);
 
     //IF_DEF_PROFILING1(Clock::duration );
     //IF_DEF_PROFILING3(Clock::duration );
