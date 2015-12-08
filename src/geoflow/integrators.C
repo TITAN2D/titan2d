@@ -1062,7 +1062,7 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
 
             //the turbulent type force for fast moving flow
 
-            forceturbulencex= unitvx*g[0][ndx]*speed*speed*inv_xi;
+            forceturbulencex= unitvx*speed*speed*inv_xi;
 
 
 #ifdef STOPPED_FLOWS
@@ -1106,7 +1106,7 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
             forcecolumbfricty = unitvy * mu * g[2][ndx] * h[ndx];
 
             // the turbulent type force for fast moving flow
-            forceturbulencey = unitvy * g[1][ndx] * (speed * speed) * inv_xi;
+            forceturbulencey = unitvy * (speed * speed) * inv_xi;
 
 #ifdef STOPPED_FLOWS
             if (IF_STOPPED == 2 && 1 == 0) {
