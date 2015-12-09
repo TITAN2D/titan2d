@@ -41,6 +41,7 @@ NodeHashTable *nodeHashTable;
 
 #include <algorithm>
 
+
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 HashTable<T>::HashTable(tisize_t reserved_size)
@@ -340,6 +341,7 @@ ti_ndx_t HashTable<T>::add_ndx_locked(const SFC_Key& keyi)
         bucket[entry].key.push_back(keyi);
         bucket[entry].ndx.push_back(ndx);
     }
+    #pragma omp atomic
     ENTRIES+=1;
 
     IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
@@ -619,6 +621,30 @@ void NodeHashTable::reserve_at_least(const tisize_t new_reserve_size)
     reserve_at_least_base(new_reserve_size);
 }
 
+void NodeHashTable::groupCreateAddNode(vector<vector<int> > &create_node_ielm, vector<vector<int> > &create_node_iwhich,
+                            vector<array<SFC_Key,16> > &new_node_key,
+                            vector<array<array<double,2>, 16> > &new_node_coord,
+                            vector<array<ti_ndx_t,16> > &new_node_ndx,
+                            vector<array<bool, 16> > &new_node_isnew
+                            )
+{
+    for(int ithread=0;ithread<threads_number;++ithread)
+    {
+        const int N=create_node_ielm[ithread].size();
+        for(int i=0;i<N;++i)
+        {
+            const int iElm=create_node_ielm[ithread][i];
+            const int which=create_node_iwhich[ithread][i];
+            ti_ndx_t ndx=createAddNode_ndx(new_node_key[iElm][which]);
+            new_node_ndx[iElm][which]=ndx;
+            for(int j=0;j<DIMENSION;++j)
+                coord_[j][ndx]=new_node_coord[iElm][which][j];
+            new_node_isnew[iElm][which]=true;
+        }
+        create_node_ielm[ithread].resize(0);
+        create_node_iwhich[ithread].resize(0);
+    }
+}
 ////////////////////////////////////////////////////////////////////////////////
 ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
         :HashTable<Element>(elem_reserved_size)

@@ -305,72 +305,118 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 	rE__alloc_new_nodes();
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_add_new_nodes,pt_start);
-
-
-
-    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    //SIDE 1
+    #pragma omp parallel
     {
-        calc_coord_and_key(new_node_key[iElm][6],new_node_coord[iElm][6], node_ndx_ref[iElm][0], node_ndx_ref[iElm][7]);
-        calc_coord_and_key(new_node_key[iElm][8],new_node_coord[iElm][8], node_ndx_ref[iElm][1], node_ndx_ref[iElm][5]);
-        calc_coord_and_key(new_node_key[iElm][11],new_node_coord[iElm][11], node_ndx_ref[iElm][3], node_ndx_ref[iElm][7]);
-        calc_coord_and_key(new_node_key[iElm][13],new_node_coord[iElm][13], node_ndx_ref[iElm][2], node_ndx_ref[iElm][5]);
+        int ithread=omp_get_thread_num();
+
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(int iElm=0;iElm<numElemToRefine;++iElm)
+        {
+            ti_ndx_t ndx=ElemToRefine[iElm];
+            if(ElemTable->neigh_proc_[1][ndx] == -1 || ElemTable->neigh_gen_[1][ndx] <= ElemTable->generation_[ndx])
+            {
+                //i.e. boundary of the computational domain or neighbor generation same or smaller then this one
+                rE__find_new_side_node_or_set_for_alloc(
+                       iElm, 8/*which*/, ndx, 1 /*neigh*/,
+                       node_ndx_ref[iElm][1], node_ndx_ref[iElm][5],ithread);
+                rE__find_new_side_node_or_set_for_alloc(
+                        iElm, 13/*which*/, ndx, 5 /*neigh*/,
+                        node_ndx_ref[iElm][2], node_ndx_ref[iElm][5],ithread);
+            }
+            else
+            {
+                //i.e. not boundary of the computational domain and neighbor generation higher then this one
+                rE__find_new_side_node(iElm,8/*which*/,ndx,1/*neigh*/,7/*neigh_which*/);
+                rE__find_new_side_node(iElm,13/*which*/,ndx,5/*neigh*/,7/*neigh_which*/);
+            }
+        }
     }
-    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_other,pt_start);
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side1_find_nodes,pt_start);
+
+    rE__alloc_new_nodes();
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side1_add_new_nodes,pt_start);
+    //SIDE 3
+    #pragma omp parallel
+    {
+        int ithread=omp_get_thread_num();
+
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(int iElm=0;iElm<numElemToRefine;++iElm)
+        {
+            ti_ndx_t ndx=ElemToRefine[iElm];
+            if(ElemTable->neigh_proc_[3][ndx] == -1 || ElemTable->neigh_gen_[3][ndx] <= ElemTable->generation_[ndx])
+            {
+                //i.e. boundary of the computational domain or neighbor generation same or smaller then this one
+                rE__find_new_side_node_or_set_for_alloc_refcheck(
+                        iElm, 6/*which*/, ndx, 3 /*neigh*/, 8/*neigh_which*/,
+                        node_ndx_ref[iElm][0], node_ndx_ref[iElm][7],ithread);
+                rE__find_new_side_node_or_set_for_alloc_refcheck(
+                        iElm, 11/*which*/, ndx, 3 /*neigh*/, 13/*neigh_which*/,
+                        node_ndx_ref[iElm][3], node_ndx_ref[iElm][7],ithread);
+            }
+            else
+            {
+                //i.e. not boundary of the computational domain and neighbor generation higher then this one
+                rE__find_new_side_node(iElm,6/*which*/,ndx,7/*neigh*/,5/*neigh_which*/);
+                rE__find_new_side_node(iElm,11/*which*/,ndx,3/*neigh*/,5/*neigh_which*/);
+            }
+        }
+    }
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side3_find_nodes,pt_start);
+
+    rE__alloc_new_nodes();
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side3_add_new_nodes,pt_start);
 
 	//INTERNAL SIDES and NEW BUBBLES
     //first find keys and coords for new nodes
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    #pragma omp parallel
     {
-        //++++++++++++++++INTERNAL SIDE NODES 7, 12, 9, 10
-        //---Seventh new node---
-        calc_coord_and_key(new_node_key[iElm][7],new_node_coord[iElm][7], node_ndx_ref[iElm][4], node_ndx_ref[iElm][8]);
-        //new_node_isnew[iElm][7]=true;
-        //---Twelwth new node---
-        calc_coord_and_key(new_node_key[iElm][12],new_node_coord[iElm][12], node_ndx_ref[iElm][6], node_ndx_ref[iElm][8]);
-        //new_node_isnew[iElm][12]=true;
-        //---Ninth new node---
-        calc_coord_and_key(new_node_key[iElm][9],new_node_coord[iElm][9], node_ndx_ref[iElm][7], node_ndx_ref[iElm][8]);
-        //new_node_isnew[iElm][9]=true;
-        //---Tenth new node---
-        calc_coord_and_key(new_node_key[iElm][10],new_node_coord[iElm][10], node_ndx_ref[iElm][5], node_ndx_ref[iElm][8]);
-        //new_node_isnew[iElm][10]=true;
-        //+++++++++++++++++++THE NEW BUBBLES 0, 1, 2, 3
-        //---0th new node---
-        calc_coord_and_key(new_node_key[iElm][0],new_node_coord[iElm][0], new_node_coord[iElm][6], new_node_coord[iElm][7]);
-        //new_node_isnew[iElm][0]=true;
-        //---1st new node---
-        calc_coord_and_key(new_node_key[iElm][1],new_node_coord[iElm][1], new_node_coord[iElm][7], new_node_coord[iElm][8]);
-        //new_node_isnew[iElm][1]=true;
-        //---2nd new node---
-        calc_coord_and_key(new_node_key[iElm][2],new_node_coord[iElm][2], new_node_coord[iElm][12], new_node_coord[iElm][13]);
-        //new_node_isnew[iElm][2]=true;
-        //---3rd new node---
-        calc_coord_and_key(new_node_key[iElm][3],new_node_coord[iElm][3], new_node_coord[iElm][11], new_node_coord[iElm][12]);
-        //new_node_isnew[iElm][3]=true;
+        int ithread=omp_get_thread_num();
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(int iElm=0;iElm<numElemToRefine;++iElm)
+        {
+            //++++++++++++++++INTERNAL SIDE NODES 7, 12, 9, 10
+            //---Seventh new node---
+            calc_coord_and_key(new_node_key[iElm][7],new_node_coord[iElm][7], node_ndx_ref[iElm][4], node_ndx_ref[iElm][8]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(7);
+            //---Twelwth new node---
+            calc_coord_and_key(new_node_key[iElm][12],new_node_coord[iElm][12], node_ndx_ref[iElm][6], node_ndx_ref[iElm][8]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(12);
+            //---Ninth new node---
+            calc_coord_and_key(new_node_key[iElm][9],new_node_coord[iElm][9], node_ndx_ref[iElm][7], node_ndx_ref[iElm][8]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(9);
+            //---Tenth new node---
+            calc_coord_and_key(new_node_key[iElm][10],new_node_coord[iElm][10], node_ndx_ref[iElm][5], node_ndx_ref[iElm][8]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(10);
+            //+++++++++++++++++++THE NEW BUBBLES 0, 1, 2, 3
+            //---0th new node---
+            calc_coord_and_key(new_node_key[iElm][0],new_node_coord[iElm][0], new_node_coord[iElm][6], new_node_coord[iElm][7]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(0);
+            //---1st new node---
+            calc_coord_and_key(new_node_key[iElm][1],new_node_coord[iElm][1], new_node_coord[iElm][7], new_node_coord[iElm][8]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(1);
+            //---2nd new node---
+            calc_coord_and_key(new_node_key[iElm][2],new_node_coord[iElm][2], new_node_coord[iElm][12], new_node_coord[iElm][13]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(2);
+            //---3rd new node---
+            calc_coord_and_key(new_node_key[iElm][3],new_node_coord[iElm][3], new_node_coord[iElm][11], new_node_coord[iElm][12]);
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(3);
+        }
     }
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_int_nodes_calc_keys,pt_start);
     //allocate and insert new nodes
-    for(int iElm=0;iElm<numElemToRefine;++iElm)
-    {
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][7]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][12]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][9]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][10]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][0]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][1]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][2]));
-        ASSERT3(ti_ndx_negative(new_node_key[iElm][3]));
-        new_node_ndx[iElm][7]=NodeTable->createAddNode_ndx(new_node_key[iElm][7]);
-        new_node_ndx[iElm][12]=NodeTable->createAddNode_ndx(new_node_key[iElm][12]);
-        new_node_ndx[iElm][9]=NodeTable->createAddNode_ndx(new_node_key[iElm][9]);
-        new_node_ndx[iElm][10]=NodeTable->createAddNode_ndx(new_node_key[iElm][10]);
-        new_node_ndx[iElm][0]=NodeTable->createAddNode_ndx(new_node_key[iElm][0]);
-        new_node_ndx[iElm][1]=NodeTable->createAddNode_ndx(new_node_key[iElm][1]);
-        new_node_ndx[iElm][2]=NodeTable->createAddNode_ndx(new_node_key[iElm][2]);
-        new_node_ndx[iElm][3]=NodeTable->createAddNode_ndx(new_node_key[iElm][3]);
-    }
+    rE__alloc_new_nodes();
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_int_nodes_alloc,pt_start);
+
 	//SIDE 0
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -443,11 +489,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// fourth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[0][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[0][ndx]));
-			which=6;
-			ASSERT2(which == which_neighbor(ndx,neigh_elm_ndx) + 4);
-			NewNodeKey[4] = ElemTable->node_key_[which][neigh_elm_ndx];
-			n1_ndx = ElemTable->node_key_ndx_[which][neigh_elm_ndx];
-			NewNodeNdx[4]=n1_ndx;
+
+			n1_ndx = NewNodeNdx[4];
 			ASSERT2(NewNodeNdx[4] == NodeTable->lookup_ndx(NewNodeKey[4]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
@@ -461,11 +504,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// fifth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[4][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[4][ndx]));
-			which=6;
-			ASSERT2(which == which_neighbor(ndx,neigh_elm_ndx) + 4);
-			NewNodeKey[5] = ElemTable->node_key_[which][neigh_elm_ndx];
-			n1_ndx = ElemTable->node_key_ndx_[which][neigh_elm_ndx];
-			NewNodeNdx[5]=n1_ndx;
+
+			n1_ndx = NewNodeNdx[5];
 			ASSERT2(NewNodeNdx[5] == NodeTable->lookup_ndx(NewNodeKey[5]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
@@ -476,6 +516,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_init,pt_start);
 
     //SIDE1
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
         ti_ndx_t ndx=ElemToRefine[iElm];
@@ -516,10 +557,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			//---Eight new node---
 			which = 8;
-			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(1));
-
-			check_create_new_node(which, 1, 5, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+			check_create_new_node2(iElm, which, info, RefinedNeigh, boundary);
 
 			//---Fifth old node---
 			if(RefinedNeigh || boundary)
@@ -531,10 +569,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			//---Thirteenth new node---
 			which = 13;
-			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(5));
-			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
-
-			check_create_new_node(which, 2, 5, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+			check_create_new_node2(iElm, which, info, RefinedNeigh, boundary);
+			//check_create_new_node(which, 2, 5, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 		}
 		else
 		{
@@ -548,19 +584,10 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// eighth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[1][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[1][ndx]));
-			i = 0;
-			which = -1;
-			while (i < 4 && which == -1)
-			{
-				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-					which = i;
-				i++;
-			}
-			assert(which != -1);
-			NewNodeKey[8] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
-			NewNodeNdx[8]=n1_ndx;
+
+			n1_ndx =NewNodeNdx[8];
 			ASSERT2(NewNodeNdx[8] == NodeTable->lookup_ndx(NewNodeKey[8]));
+
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
 			else
@@ -574,18 +601,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// thirteenth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[5][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[5][ndx]));
-			i = 0;
-			which = -1;
-			while (i < 4 && which == -1)
-			{
-				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-					which = i;
-				i++;
-			}
-			assert(which != -1);
-			NewNodeKey[13] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
-			NewNodeNdx[13]=n1_ndx;
+
+			n1_ndx = NewNodeNdx[13];
 			ASSERT2(NewNodeNdx[13] == NodeTable->lookup_ndx(NewNodeKey[13]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
@@ -638,9 +655,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			//---Fourteenth new node---
 			which = 14;
-			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
-			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-
 			check_create_new_node2(iElm, which, info, RefinedNeigh, boundary);
 
 			//---Sixth old node---
@@ -653,10 +667,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			//---Fifteenth new node---
 			which = 15;
-			// geoflow info
-			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(6));
-			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(2));
-
 			check_create_new_node2(iElm, which, info, RefinedNeigh, boundary);
 		}
 		else
@@ -671,11 +681,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// fourteenth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[6][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[6][ndx]));
-			which=0;
-			ASSERT2(which == which_neighbor(ndx,neigh_elm_ndx));
-			NewNodeKey[14] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
-			NewNodeNdx[14]=n1_ndx;
+
+			n1_ndx = NewNodeNdx[14];
 			ASSERT2(NewNodeNdx[14] == NodeTable->lookup_ndx(NewNodeKey[14]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
@@ -690,12 +697,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// fifteenth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[2][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[2][ndx]));
-			which=0;
-			ASSERT2(which == which_neighbor(ndx,neigh_elm_ndx));
 
-			NewNodeKey[15] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-            n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
-            NewNodeNdx[15]=n1_ndx;
+            n1_ndx = NewNodeNdx[15];
             ASSERT2(NewNodeNdx[15] == NodeTable->lookup_ndx(NewNodeKey[15]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
@@ -706,6 +709,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_init,pt_start);
 
     //SIDE 3
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
         ti_ndx_t ndx=ElemToRefine[iElm];
@@ -746,10 +750,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			//---Sixth new node----
 			which = 6;
-			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
-			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(0));
-
-			check_create_new_node(which, 0, 7, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+			check_create_new_node2(iElm, which, info, RefinedNeigh, boundary);
+			//check_create_new_node(which, 0, 7, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 
 			//---Seventh old node---
 			if(RefinedNeigh || boundary)
@@ -761,10 +763,11 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 			//---Eleventh new node---
 			which = 11;
+			check_create_new_node2(iElm, which, info, RefinedNeigh, boundary);
 			//n1 = (Node*) NodeTable->lookup(EmTemp->node_key(7));
 			//n2 = (Node*) NodeTable->lookup(EmTemp->node_key(3));
 
-			check_create_new_node(which, 3, 7, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
+			//check_create_new_node(which, 3, 7, ndxNodeTemp, NewNodeKey, NewNodeNdx, info, RefinedNeigh, boundary);
 		}
 		else
 		{
@@ -778,18 +781,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// sixth new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[7][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[7][ndx]));
-			i = 0;
-			which = -1;
-			while (i < 4 && which == -1)
-			{
-				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-					which = i;
-				i++;
-			}
-			assert(which != -1);
-			NewNodeKey[6] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-			n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
-			NewNodeNdx[6]=n1_ndx;
+
+			n1_ndx = NewNodeNdx[6];
 			ASSERT2(NewNodeNdx[6] == NodeTable->lookup_ndx(NewNodeKey[6]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;
@@ -803,18 +796,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 			// eleventh new node
 			neigh_elm_ndx = ElemTable->neighbor_ndx_[3][ndx];
 			ASSERT2(neigh_elm_ndx == ElemTable->lookup_ndx(ElemTable->neighbors_[3][ndx]));
-			i = 0;
-			which = -1;
-			while (i < 4 && which == -1)
-			{
-				if(ElemTable->neighbors_[i][neigh_elm_ndx]==ElemTable->key_[ndx])
-					which = i;
-				i++;
-			}
-			assert(which != -1);
-			NewNodeKey[11] = ElemTable->node_key_[which + 4][neigh_elm_ndx];
-            n1_ndx = ElemTable->node_key_ndx_[which + 4][neigh_elm_ndx];
-            NewNodeNdx[11]=n1_ndx;
+
+            n1_ndx = NewNodeNdx[11];
             ASSERT2(NewNodeNdx[11] == NodeTable->lookup_ndx(NewNodeKey[11]));
 			if(ElemTable->refined_[neigh_elm_ndx] == 0 || ElemTable->refined_[neigh_elm_ndx] == GHOST)
 				NodeTable->info_[n1_ndx]=SIDE;

@@ -27,6 +27,8 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <array>
+
 using namespace std;
 
 #include <stdio.h>
@@ -237,10 +239,19 @@ public:
     
     //!allocate space and insert to hash table do not initiate values (except key)
     ti_ndx_t createAddNode_ndx(const SFC_Key& keyi){return addNode_ndx(keyi);}
-
+    //!thread safe version of createAddNode_ndx
+    ti_ndx_t createAddNode_ndx_locked(const SFC_Key& keyi){return addNode_ndx_locked(keyi);}
     ti_ndx_t createAddNode_ndx(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
     //!thread safe version of createAddNode_ndx
     ti_ndx_t createAddNode_ndx_locked(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
+
+    //!
+    void groupCreateAddNode(vector<vector<int> > &create_node_ielm, vector<vector<int> > &create_node_iwhich,
+                            vector<array<SFC_Key,16> > &new_node_key,
+                            vector<array<array<double,2>, 16> > &new_node_coord,
+                            vector<array<ti_ndx_t,16> > &new_node_ndx,
+                            vector<array<bool, 16> > &new_node_isnew
+                            );
 
     void removeNode(const ti_ndx_t ndx);
     void removeNode(Node* node);

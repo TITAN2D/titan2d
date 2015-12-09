@@ -182,7 +182,7 @@ private:
 
         SET_NEWKEY(key,oldkey);
 
-        ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx_locked(key)));
+        //ASSERT3(ti_ndx_negative(NodeTable->lookup_ndx_locked(key)));
         return;
     }
     void calc_coord_and_key(SFC_Key &key, array<double,2> &coord, const array<double,2> Node1, const array<double,2> Node2)
@@ -309,28 +309,35 @@ private:
         ASSERT2(neigh_which == which_neighbor(ndx,neigh_elm_ndx) + 4);
         new_node_key[iElm][which] = ElemTable->node_key_[neigh_which][neigh_elm_ndx];
         new_node_ndx[iElm][which] = ElemTable->node_key_ndx_[neigh_which][neigh_elm_ndx];
+        for(int j=0;j<DIMENSION;++j)
+            new_node_coord[iElm][which][j]=NodeTable->coord_[j][new_node_ndx[iElm][which]];
     }
 
     /**
      * helper function for refineElements
      *
-     * allocate new nodes, set indexes
+     * allocate new nodes, set indexes and coordinates
      */
     void rE__alloc_new_nodes()
     {
-        for(int ithread=0;ithread<threads_number;++ithread)
+        NodeTable->groupCreateAddNode(create_node_ielm, create_node_iwhich,new_node_key,new_node_coord,new_node_ndx,new_node_isnew);
+
+        /*for(int ithread=0;ithread<threads_number;++ithread)
         {
             const int N=create_node_ielm[ithread].size();
             for(int i=0;i<N;++i)
             {
                 const int iElm=create_node_ielm[ithread][i];
                 const int which=create_node_iwhich[ithread][i];
-                new_node_ndx[iElm][which]=NodeTable->createAddNode_ndx(new_node_key[iElm][which]);
+                ti_ndx_t ndx=NodeTable->createAddNode_ndx(new_node_key[iElm][which]);
+                new_node_ndx[iElm][which]=ndx;
+                for(int j=0;j<DIMENSION;++j)
+                    NodeTable->coord_[j][ndx]=new_node_coord[iElm][which][j];
                 new_node_isnew[iElm][which]=true;
             }
             create_node_ielm[ithread].resize(0);
             create_node_iwhich[ithread].resize(0);
-        }
+        }*/
     }
 };
 
