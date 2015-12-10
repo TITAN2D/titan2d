@@ -68,7 +68,17 @@ HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _No
 void HAdaptUnrefine::unrefine(const double target)
 {
     int time_step = timeprops_ptr->iter;
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
     
+    //convinience references
+    tivector<ContentStatus> &status=ElemTable->status_;
+    tivector<int> &adapted=ElemTable->adapted_;
+    tivector<int> &generation=ElemTable->generation_;
+    tivector<double> &el_error=ElemTable->el_error_[0];
+    tivector<int> &refined=ElemTable->refined_;
+    tivector<int> &which_son=ElemTable->which_son_;
+
     Element* Curr_El;
     NewFatherList.resize(0);
     OtherProcUpdate.resize(0);
@@ -80,35 +90,35 @@ void HAdaptUnrefine::unrefine(const double target)
     vector<HashEntryLine> &bucket=ElemTable->bucket;
     tivector<Element> &elenode_=ElemTable->elenode_;
 
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    //@ElementsSingleLoopNoStatusCheck
+    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-        {
-            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            if(Curr_El->adapted_flag() == NEWFATHER)
-                Curr_El->set_adapted_flag(NOTRECADAPTED);
-        }
+        //don't need to check if element schedule for deletion
+        if(adapted[ndx] >= NEWFATHER)adapted[ndx] = NOTRECADAPTED;
     }
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_init,pt_start);
     
     // start unrefinement
     //@ElementsSingleLoop
     for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
     {
-        if(ElemTable->status_[ndx]>=0 && ElemTable->adapted_[ndx]==NOTRECADAPTED)
+        if(status[ndx]>=0 && adapted[ndx]==NOTRECADAPTED)
         {
             //if this is a refined element don't involve!!!
 
             // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
-            if((ElemTable->generation_[ndx] > MIN_GENERATION) && (ElemTable->which_son_[ndx] == 0))
+            if((generation[ndx] > MIN_GENERATION) && (which_son[ndx] == 0))
             {
                 ElemTable->elenode_[ndx].find_brothers(ElemTable, NodeTable, target, myid, matprops_ptr, NewFatherList,OtherProcUpdate);
             }
         }
     }
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_find,pt_start);
     //updateBrothersIndexes for new fathers, as brothers which are also new fathers was not handled during initiation
     ElemTable->updateBrothersIndexes(true);
     ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After new fathers creation",false)==0);
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_updateBrothersIndexes,pt_start);
+
     int iproc;
     time_t tic, toc;
     
@@ -116,18 +126,22 @@ void HAdaptUnrefine::unrefine(const double target)
     unrefine_neigh_update();
     ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_neigh_update",false)==0);
     //assert(!IfMissingElem(El_Table, myid, time_step, 1));
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_unrefine_neigh_update,pt_start);
     
     unrefine_interp_neigh_update();
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
     ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After unrefine_interp_neigh_update",false)==0);
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_unrefine_interp_neigh_update,pt_start);
     
     delete_oldsons();
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
     ASSERT3(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After delete_oldsons",false)==0);
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_delete_oldsons,pt_start);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
     ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts,pt_start);
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -139,6 +153,7 @@ void HAdaptUnrefine::unrefine(const double target)
                 Curr_El->calc_wet_dry_orient(ElemTable);
         }
     }
+    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_calc_wet_dry_orient,pt_start);
     return;
 }
 

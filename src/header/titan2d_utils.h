@@ -295,6 +295,16 @@ public:
         PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_mpi_update);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_removeElements);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts);
+
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_init);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_find);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_updateBrothersIndexes);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_unrefine_neigh_update);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_unrefine_interp_neigh_update);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_delete_oldsons);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts);
+        PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_calc_wet_dry_orient);
+
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
     }
@@ -363,6 +373,17 @@ public:
         IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_mpi_update = zero);
         IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_removeElements = zero);
         IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts = zero);
+
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_init = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_find = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_updateBrothersIndexes = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_unrefine_neigh_update = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_unrefine_interp_neigh_update = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_delete_oldsons = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts = zero);
+        IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_calc_wet_dry_orient = zero);
+
+
 
         //IF_DEF_PROFILING1(=zero);
         //IF_DEF_PROFILING3(=zero);
@@ -434,6 +455,14 @@ public:
     IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_removeElements);
     IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts);
 
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_init);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_find);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_updateBrothersIndexes);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_unrefine_neigh_update);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_unrefine_interp_neigh_update);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_delete_oldsons);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts);
+    IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_calc_wet_dry_orient);
     //IF_DEF_PROFILING1(Clock::duration );
     //IF_DEF_PROFILING3(Clock::duration );
 };
