@@ -426,6 +426,16 @@ void ElementsProperties::calc_wet_dry_orient()
         calc_wet_dry_orient(ndx);
     }
 }
+void ElementsProperties::calc_wet_dry_orient2()
+{
+    #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0 || status_[ndx]<0)continue;//if this element does not belong on this processor don't involve!!!
+        //elements_[ndx].calc_wet_dry_orient(ElemTable);
+        calc_wet_dry_orient(ndx);
+    }
+}
 // the element member function calc_wet_dry_orient() calculates the orientation of the dryline (drylineorient),
 // the wet length (Swet), the location of the drypoint, and the location of the wetpoint... it does NOT calculate
 // the wet area (Awet)... these quantities are used in the wetted area adjustment of fluxes. calc_wet_dry_orient()

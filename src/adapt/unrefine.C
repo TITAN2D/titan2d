@@ -55,14 +55,23 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch)
     
     return (1);
 }*/
-HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops):
+HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops):
    ElemTable(_ElemTable),
+   ElemProp(_ElemProp),
    NodeTable(_NodeTable),
    matprops_ptr(_matprops),
    timeprops_ptr(_timeprops)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+
+    nodesToDelete.resize(threads_number);
+    elementsToDelete.resize(threads_number);
+    for(int ithread=0;ithread<threads_number;++ithread)
+    {
+        nodesToDelete[ithread].resize(0);
+        elementsToDelete[ithread].resize(0);
+    }
 }
 
 void HAdaptUnrefine::unrefine(const double target)
@@ -143,16 +152,7 @@ void HAdaptUnrefine::unrefine(const double target)
     ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts,pt_start);
     
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-    {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-        {
-            Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
-            if(Curr_El->adapted_flag() > TOBEDELETED)
-                Curr_El->calc_wet_dry_orient(ElemTable);
-        }
-    }
+    ElemProp->calc_wet_dry_orient2();
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_calc_wet_dry_orient,pt_start);
     return;
 }
@@ -245,104 +245,115 @@ int Element::check_unrefinement(ElementsHashTable* El_Table, double target)
 
 void HAdaptUnrefine::delete_oldsons()
 {
-    for(int iupdate = 0; iupdate < NewFatherList.size(); iupdate++)
+    #pragma omp parallel
     {
-        int ison, isonneigh, ineigh, inode;
-        Element *EmSon, *EmNeigh;
-        Node* NdTemp;
-        Element *EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
-        ASSERT3(EmFather);
-    
-        EmFather->set_refined_flag(0);
-        
-#ifdef DEB3
-        for(inode = 4; inode < 8; inode++)
+        int ithread=omp_get_thread_num();
+        nodesToDelete[ithread].resize(0);
+        elementsToDelete[ithread].resize(0);
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(int iupdate = 0; iupdate < NewFatherList.size(); iupdate++)
         {
-            NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
-            ASSERT3(NdTemp);
-        }
-#endif
-        inode = 8;
-        ASSERT3(EmFather->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->key()));
-        NdTemp = &(NodeTable->elenode_[EmFather->node_bubble_ndx()]);
+            int ison, isonneigh, ineigh, inode;
+            Element *EmSon, *EmNeigh;
+            Node* NdTemp;
+            Element *EmFather = &(ElemTable->elenode_[NewFatherList[iupdate]]);
+            ASSERT3(EmFather);
         
-        for(ison = 0; ison < 4; ison++)
-        {
-            EmSon = &(ElemTable->elenode_[EmFather->son_ndx(ison)]);
-            ASSERT3(EmFather->son_ndx(ison)==ElemTable->lookup_ndx(EmFather->son(ison)));
-            ASSERT3(EmSon->adapted_flag()==OLDSON);
-            EmSon->set_adapted_flag(TOBEDELETED);
+            EmFather->set_refined_flag(0);
+
+    #ifdef DEB3
+            for(inode = 4; inode < 8; inode++)
+            {
+                NdTemp = (Node *) NodeTable->lookup(EmFather->node_key(inode));
+                ASSERT3(NdTemp);
+            }
+    #endif
+            inode = 8;
+            ASSERT3(EmFather->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->key()));
+            NdTemp = &(NodeTable->elenode_[EmFather->node_bubble_ndx()]);
             
-            //delete son's bubble nodes
-            ASSERT3(EmSon->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->son(ison)));
-            NdTemp = &(NodeTable->elenode_[EmSon->node_bubble_ndx()]);
-            NodeTable->removeNode(NdTemp);
-
-            //delete son to son edge nodes
-            inode = (ison + 1) % 4 + 4;
-            ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
-            NdTemp = &(NodeTable->elenode_[EmSon->node_key_ndx(inode)]);
-            NodeTable->removeNode(NdTemp);
-
-            //check 2 other edge nodes per son and delete if necessary
-            //the first
-            isonneigh = ison;
-            inode = isonneigh + 4;
-            ineigh = ison;
-
-            //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-            if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
+            for(ison = 0; ison < 4; ison++)
             {
-                if(ti_ndx_not_negative(EmSon->node_key_ndx(inode)) && NodeTable->status_[EmSon->node_key_ndx(inode)]>=0)
-                {
-                    //delete if not deleted previously
-                    ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
-                    NodeTable->removeNode(EmSon->node_key_ndx(inode));
-                }
-            }
-            else if(EmFather->neigh_proc(ineigh) == myid)
-            {
-                ASSERT3(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
+                EmSon = &(ElemTable->elenode_[EmFather->son_ndx(ison)]);
+                ASSERT3(EmFather->son_ndx(ison)==ElemTable->lookup_ndx(EmFather->son(ison)));
+                ASSERT3(EmSon->adapted_flag()==OLDSON);
+                EmSon->set_adapted_flag(TOBEDELETED);
+
+                //delete son's bubble nodes
+                ASSERT3(EmSon->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->son(ison)));
+                nodesToDelete[ithread].push_back(EmSon->node_bubble_ndx());
+
+                //delete son to son edge nodes
+                inode = (ison + 1) % 4 + 4;
                 ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
-                NodeTable->info_[EmSon->node_key_ndx(inode)]=S_S_CON;
-            }
+                nodesToDelete[ithread].push_back(EmSon->node_key_ndx(inode));
 
-            //the second
-            isonneigh = (ison + 3) % 4;
-            inode = isonneigh + 4;
-            ineigh = inode;
+                //check 2 other edge nodes per son and delete if necessary
+                //the first
+                isonneigh = ison;
+                inode = isonneigh + 4;
+                ineigh = ison;
 
-            //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
-            if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
-            {
-                if(ti_ndx_not_negative(EmSon->node_key_ndx(inode)) && NodeTable->status_[EmSon->node_key_ndx(inode)]>=0)
+                //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
+                if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh) == -1))
                 {
-                    //delete if not deleted previously
-                    ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
-                    NodeTable->removeNode(EmSon->node_key_ndx(inode));
+                    if(ti_ndx_not_negative(EmSon->node_key_ndx(inode)) && NodeTable->status_[EmSon->node_key_ndx(inode)]>=0)
+                    {
+                        //delete if not deleted previously
+                        ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                        nodesToDelete[ithread].push_back(EmSon->node_key_ndx(inode));
+                    }
                 }
-                ASSERT3(EmFather->node_key_ndx(inode)==NodeTable->lookup_ndx(EmFather->node_key(inode)));
-                NodeTable->info_[EmFather->node_key_ndx(inode)]=SIDE;
-            }
-            else if(EmFather->neigh_proc(ineigh) == myid)
-            {
-                ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
-                NodeTable->info_[EmSon->node_key_ndx(inode)]=S_S_CON;
+                else if(EmFather->neigh_proc(ineigh) == myid)
+                {
+                    ASSERT3(EmFather->neigh_gen(ineigh) == EmFather->generation() + 1);
+                    ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                    NodeTable->info_[EmSon->node_key_ndx(inode)]=S_S_CON;
+                }
 
-                ASSERT3(EmFather->node_key_ndx(inode)==NodeTable->lookup_ndx(EmFather->node_key(inode)));
-                NodeTable->info_[EmFather->node_key_ndx(inode)]=S_C_CON;
+                //the second
+                isonneigh = (ison + 3) % 4;
+                inode = isonneigh + 4;
+                ineigh = inode;
+
+                //EmNeigh=(Element *) El_Table->lookup(EmFather->neighbor[ineigh]);
+                if((EmFather->neigh_gen(ineigh) == EmFather->generation()) || (EmFather->neigh_proc(ineigh % 4) == -1))
+                {
+                    if(ti_ndx_not_negative(EmSon->node_key_ndx(inode)) && NodeTable->status_[EmSon->node_key_ndx(inode)]>=0)
+                    {
+                        //delete if not deleted previously
+                        ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                        nodesToDelete[ithread].push_back(EmSon->node_key_ndx(inode));
+                    }
+                    ASSERT3(EmFather->node_key_ndx(inode)==NodeTable->lookup_ndx(EmFather->node_key(inode)));
+                    NodeTable->info_[EmFather->node_key_ndx(inode)]=SIDE;
+                }
+                else if(EmFather->neigh_proc(ineigh) == myid)
+                {
+                    ASSERT3(EmSon->node_key_ndx(inode)==NodeTable->lookup_ndx(EmSon->node_key(inode)));
+                    NodeTable->info_[EmSon->node_key_ndx(inode)]=S_S_CON;
+
+                    ASSERT3(EmFather->node_key_ndx(inode)==NodeTable->lookup_ndx(EmFather->node_key(inode)));
+                    NodeTable->info_[EmFather->node_key_ndx(inode)]=S_C_CON;
+                }
+
+                //Now delete this oldson Element
+                EmSon->void_bcptr();
+                elementsToDelete[ithread].push_back(EmSon->ndx());
+                EmFather->son_ndx(ison,ti_ndx_doesnt_exist);
             }
+            inode = 8;
             
-            //Now delete this oldson Element
-            EmSon->void_bcptr();
-            ElemTable->removeElement(EmSon);
-            EmFather->son_ndx(ison,ti_ndx_doesnt_exist);
+            ASSERT3(EmFather->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->key()));
+            NodeTable->info_[EmFather->node_bubble_ndx()]=BUBBLE;
         }
-        inode = 8;
-        
-        ASSERT3(EmFather->node_bubble_ndx()==NodeTable->lookup_ndx(EmFather->key()));
-        NodeTable->info_[EmFather->node_bubble_ndx()]=BUBBLE;
     }
+    merge_vectors_from_threads_to0_omp(nodesToDelete);
+    merge_vectors_from_threads_to0_omp(elementsToDelete);
+
+    NodeTable->removeNodes(&(nodesToDelete[0][0]),nodesToDelete[0].size());
+    ElemTable->removeElements(&(elementsToDelete[0][0]),elementsToDelete[0].size());
+
     return;
 }
 void HAdaptUnrefine::unrefine_neigh_update()

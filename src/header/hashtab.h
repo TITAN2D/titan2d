@@ -179,7 +179,7 @@ protected:
     /**
      * remove elenode from hashtable and set status to
      *
-     * upon changing logics modify ElementsHashTable::removeElements too
+     * upon changing logics modify ElementsHashTable::removeElements and NodeHashTable::removeNodes too
      */
     void remove(const SFC_Key& keyi);
     
@@ -266,6 +266,14 @@ public:
 
     void removeNode(const ti_ndx_t ndx);
     void removeNode(Node* node);
+
+    /**
+     * delete nodes listed in nodes_to_delete from hashtable and set their status to CS_Removed
+     * actual deletion from storage arrays will happens during removeElements
+     *
+     * omp parallel
+     */
+    void removeNodes(const ti_ndx_t *nodes_to_delete, const ti_ndx_t Nnodes_to_delete);
 
     Node& node(const ti_ndx_t ndx){return elenode_[ndx];}
     void flushNodeTable();
@@ -690,6 +698,8 @@ public:
      * Keith wrote this may 2007
      */
     void calc_wet_dry_orient();
+    /* same as calc_wet_dry_orient but with status check */
+    void calc_wet_dry_orient2();
     /** the element member function calc_wet_dry_orient() determines the orientation of the dryline and which side of
      * it is wet, the wet fraction (Swet) of a partially wet edge, the location of the drypoint, it does NOT calculate
      * the wet area (Awet)... these quantities are used in the adjustment of fluxes in partially wet elements.

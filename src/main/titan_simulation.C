@@ -449,7 +449,7 @@ void cxxTitanSimulation::run()
     ElementsProperties ElemProp(ElemTable, NodeTable);
 
     HAdapt hadapt(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr,5);
-    HAdaptUnrefine Unrefine(ElemTable, NodeTable,&timeprops,matprops_ptr);
+    HAdaptUnrefine Unrefine(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr);
 
     /*FREE_VAR_IF_NOT_NULLPTR(integrator);
     if(elementType == ElementType::TwoPhases)

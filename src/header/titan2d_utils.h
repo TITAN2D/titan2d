@@ -489,7 +489,40 @@ void merge_vectors_from_threads(vector<T> &where, const vector< vector<T> > &wha
         where.insert(where.end(),what[ithread].begin(), what[ithread].end());
     }
 }
-
+/**
+ * move the content of vector< vector<T> > vec to vec[0]
+ * usefull for omp
+ */
+template<typename T>
+void merge_vectors_from_threads_to0_omp(vector< vector<T> > &vec)
+{
+    ti_ndx_t number_of_new_elenodes=0;
+            #pragma omp parallel
+            {
+                int ithread=omp_get_thread_num();
+                ti_ndx_t start=0;
+                if(ithread==0)
+                    for(int jthread=0;jthread<threads_number;++jthread)
+                        number_of_new_elenodes+=vec[jthread].size();
+                else
+                    for(int jthread=0;jthread<ithread;++jthread)
+                        start+=vec[jthread].size();
+                #pragma omp barrier
+                if(ithread==0)
+                {
+                    vec[0].resize(number_of_new_elenodes);
+                }
+                #pragma omp barrier
+                if(ithread!=0)
+                {
+                    for(ti_ndx_t i=0;i<vec[ithread].size();++i)
+                    {
+                        vec[0][start+i]=vec[ithread][i];
+                    }
+                    vec[ithread].resize(0);
+                }
+            }
+}
 /*void parallel_for_get_my_part(const int ithread, const tisize_t N, ti_ndx_t &ndx_start, ti_ndx_t &ndx_end)
 {
     ndx_start=ithread*N/threads_number;

@@ -88,7 +88,7 @@ public:
     TimeProps* timeprops_ptr;
     int num_buffer_layer;
 public:
-    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer);
+    HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer);
     void adapt(int h_count, double target);
     
     void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);
@@ -361,11 +361,12 @@ class HAdaptUnrefine
 {
 public:
     ElementsHashTable* ElemTable;
+    ElementsProperties* ElemProp;
     NodeHashTable* NodeTable;
     MatProps* matprops_ptr;
     TimeProps* timeprops_ptr;
 public:
-    HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops);
+    HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops);
 
 
     //! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
@@ -379,6 +380,9 @@ private:
     //temporary arrays used during refinement
     vector<ti_ndx_t> NewFatherList;
     vector<ti_ndx_t> OtherProcUpdate;
+
+    vector< vector<ti_ndx_t> > nodesToDelete;
+    vector< vector<ti_ndx_t> > elementsToDelete;
 private:
     int myid;
     int numprocs;

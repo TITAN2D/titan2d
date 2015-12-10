@@ -595,6 +595,42 @@ void NodeHashTable::removeNode(const ti_ndx_t ndx)
 {
     remove(key_[ndx]);
 }
+void NodeHashTable::removeNodes(const ti_ndx_t *nodes_to_delete, const ti_ndx_t Nnodes_to_delete)
+{
+    #pragma omp parallel for schedule(guided,TITAN2D_DINAMIC_CHUNK)
+    for(int i=0;i<Nnodes_to_delete;++i)
+    {
+        ti_ndx_t ndx=nodes_to_delete[i];
+        if(status_[ndx]<0)continue;/*was already deleted*/
+        ASSERT2(status_[ndx]>=0);
+
+
+        SFC_Key keyi=key_[ndx];
+        int entry = hash(keyi);
+
+        IF_OMP(omp_set_lock(&(bucket_lock[entry])));
+        if(status_[ndx]>=0)/*nodes_to_delete might contain duplicates which might be removed while waiting for lock*/
+        {
+            ASSERT2(ti_ndx_not_negative(lookup_ndx(key_[ndx])));
+            int entry_size = bucket[entry].key.size();
+            ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
+
+            if(ti_ndx_not_negative(bucket_entry_ndx))
+            {
+                //delete
+                bucket[entry].key.erase(bucket[entry].key.begin() + bucket_entry_ndx);
+                bucket[entry].ndx.erase(bucket[entry].ndx.begin() + bucket_entry_ndx);
+            }
+            //set status
+            status_[ndx]=CS_Removed;
+        }
+        IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+    }
+
+    ENTRIES-=Nnodes_to_delete;
+    if(Nnodes_to_delete>0)
+        all_elenodes_are_permanent=false;
+}
 void NodeHashTable::flushNodeTable()
 {
     double t_start = MPI_Wtime();
