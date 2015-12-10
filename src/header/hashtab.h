@@ -167,10 +167,20 @@ public:
     T* lookup(const SFC_Key& keyi);
     //T lookup(const SFC_Key& keyi);
 protected:
+    /**
+     * add elenode with key keyi to hashtable and reserve storage
+     *
+     * upon changing logics modify NodeHashTable::groupCreateAddNode and ElementsHashTable::groupCreateAddNode
+     */
     ti_ndx_t add_ndx(const SFC_Key& keyi);
     ti_ndx_t add_ndx_locked(const SFC_Key& keyi);
     T* add(const SFC_Key& keyi);
     
+    /**
+     * remove elenode from hashtable and set status to
+     *
+     * upon changing logics modify ElementsHashTable::removeElements too
+     */
     void remove(const SFC_Key& keyi);
     
 public:
@@ -383,6 +393,14 @@ public:
     //!should not be used
     void removeElement(Element* elm);
     
+    /**
+     * delete elements listed in elements_to_delete from hashtable and set their status to CS_Removed
+     * actual deletion from storage arrays will happens during removeElements
+     *
+     * omp parallel
+     */
+    void removeElements(const ti_ndx_t *elements_to_delete, const ti_ndx_t Nelements_to_delete);
+
     void flushElemTable();
     void reserve(const tisize_t new_reserve_size);
     void reserve_at_least(const tisize_t new_reserve_size);
@@ -609,6 +627,7 @@ public:
     tivector<double> *prev_state_vars_;
     tivector<double> *d_state_vars_;
     tivector<ti_ndx_t> *neighbor_ndx_;
+    tivector<SFC_Key> *neighbors_;
     tivector<double> *Influx_;
     tivector<int> &positive_x_side_;
     tivector<int> &stoppedflags_;
@@ -678,6 +697,15 @@ public:
      * Keith wrote this may 2007
      */
     void calc_wet_dry_orient(ti_ndx_t ndx);
+
+    /**
+     * this function calculates the (global) x and y derivatives of the local z component of gravity as an approximation
+     * of the local derivatives, it wouldn't be that difficult to correct incorporating the terrain slopes in the calculation
+     * it is calculated in the creation of a father element, after mesh refinement and, during a restart.
+     */
+    void calc_d_gravity(ti_ndx_t ndx);
+
+
 
 protected:
     vector<double> dtmp;

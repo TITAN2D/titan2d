@@ -382,17 +382,17 @@ void HAdapt::adapt(int h_count, double target)
     PROFILING3_STOPADD_RESTART(HAdapt_adapt_htflush2,pt_start);
 
     TIMING3_START(t_start3);
-    //@ElementsBucketDoubleLoop
-    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
     {
-        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        if(status[ndx]>=0)
         {
-            EmTemp = &(elements[bucket[ibuck].ndx[ielm]]);
+            EmTemp = &(elements[ndx]);
             
-            switch (EmTemp->adapted_flag())
+            switch (adapted[ndx])
             {
                 case NEWBUFFER:
-                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->adapted_flag());
+                    printf("Suspicious element has adapted flag=%d\n aborting", adapted[ndx]);
                     assert(0);
                     break;
                 case BUFFER:
@@ -400,14 +400,13 @@ void HAdapt::adapt(int h_count, double target)
                 case NEWFATHER:
                 case NOTRECADAPTED:
                     //it's an active (non ghost) element
-                    EmTemp->calc_d_gravity(ElemTable);
-                    EmTemp->calc_wet_dry_orient(ElemTable);
+                    ElemProp->calc_d_gravity(ndx);
+                    ElemProp->calc_wet_dry_orient(ndx);
                     break;
                 case TOBEDELETED:
-                    //deleting the refined father elements but not ghost element so don't need to call move_data() again
-                    EmTemp->void_bcptr();
-                    ElemTable->removeElement(EmTemp);
-                    --ielm;
+                    //there should be no more elements to delete at this point
+                    printf("Should be already deleted aborting", adapted[ndx]);
+                    assert(0);
                     break;
                 case -NOTRECADAPTED:
                 case -NEWFATHER:
@@ -417,12 +416,12 @@ void HAdapt::adapt(int h_count, double target)
                     break;
                 case OLDFATHER:
                 case OLDSON:
-                    printf("Suspicious element has adapted flag=%d\n aborting", EmTemp->adapted_flag());
+                    printf("Suspicious element has adapted flag=%d\n aborting", adapted[ndx]);
                     assert(0);
                     break;
                 default:
                     //I don't know what kind of Element this is.
-                    cout<<"FUBAR element type in H_adapt()!!! key={"<<EmTemp->key()<<"} adapted="<<EmTemp->adapted_flag();
+                    cout<<"FUBAR element type in H_adapt()!!! key={"<<ElemTable->key_[ndx]<<"} adapted="<<adapted[ndx];
                     cout <<"\naborting.\n";
                     assert(0);
                     break;

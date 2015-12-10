@@ -578,4 +578,76 @@ void ElementsProperties::calc_wet_dry_orient(ti_ndx_t ndx)
 
     return;
 }
+void ElementsProperties::calc_d_gravity(ti_ndx_t ndx)
+{
+    int xp, xm, yp, ym; //x plus, x minus, y plus, y minus
+    xp = positive_x_side_[ndx];
+    xm = (2 + xp) % 4;
+    yp = (1 + xp) % 4;
+    ym = (3 + xp) % 4;
+
+    /* x direction */
+    ti_ndx_t ep = neighbor_ndx_[xp][ndx];
+    ti_ndx_t em = neighbor_ndx_[xm][ndx];
+    ASSERT2(neighbor_ndx_[xp][ndx]==ElemTable->lookup_ndx(neighbors_[xp][ndx]));
+    ASSERT2(neighbor_ndx_[xm][ndx]==ElemTable->lookup_ndx(neighbors_[xm][ndx]));
+    int j;
+    if(ti_ndx_not_negative(ep)&& ti_ndx_not_negative(em))
+    {
+        double dp, dm, dxp, dxm;
+        dxp = coord_[0][ep] - coord_[0][ndx];
+        dp = (gravity_[2][ep] - gravity_[2][ndx]) / dxp;
+        dxm = coord_[0][ndx] - coord_[0][em];
+        dm = (gravity_[2][ndx] - gravity_[2][em]) / dxm;
+
+        d_gravity_[0][ndx]=(dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average
+    }
+    else if(ti_ndx_not_negative(em))
+    {
+        double dm, dxm;
+        dxm = coord_[0][ndx] - coord_[0][em];
+        d_gravity_[0][ndx]=(gravity_[2][ndx] - gravity_[2][em]) / dxm;
+    }
+    else if(ti_ndx_not_negative(ep))
+    {
+        double dp, dxp;
+        dxp = coord_[0][ep] - coord_[0][ndx];
+        d_gravity_[0][ndx]=(gravity_[2][ep] - gravity_[2][ndx]) / dxp;
+    }
+    else
+        //no neighbors on either side -- assume that the ground is flat
+        d_gravity_[0][ndx]=0.0;
+
+    /* y direction */
+    ep = neighbor_ndx_[yp][ndx];
+    em = neighbor_ndx_[ym][ndx];
+    ASSERT2(neighbor_ndx_[yp][ndx]==ElemTable->lookup_ndx(neighbors_[yp][ndx]));
+    ASSERT2(neighbor_ndx_[ym][ndx]==ElemTable->lookup_ndx(neighbors_[ym][ndx]));
+    if(ti_ndx_not_negative(ep)&& ti_ndx_not_negative(em))
+    {
+        double dp, dm, dxp, dxm;
+        dxp = coord_[1][ep] - coord_[1][ndx];
+        dp = (gravity_[2][ep] - gravity_[2][ndx]) / dxp;
+        dxm = coord_[1][ndx] - coord_[1][em];
+        dm = (gravity_[2][ndx] - gravity_[2][em]) / dxm;
+
+        d_gravity_[1][ndx]=(dp * dxm + dm * dxp) / (dxm + dxp);  // weighted average
+    }
+    else if(ti_ndx_not_negative(em))
+    {
+        double dm, dxm;
+        dxm = coord_[1][ndx] - coord_[1][em];
+        d_gravity_[1][ndx]=(gravity_[2][ndx] - gravity_[2][em]) / dxm;
+    }
+    else if(ti_ndx_not_negative(ep))
+    {
+        double dp, dxp;
+        dxp = coord_[1][ep] - coord_[1][ndx];
+        d_gravity_[1][ndx]=(gravity_[2][ep] - gravity_[2][ndx]) / dxp;
+    }
+    else
+        //no neighbors on either side -- assume that the ground is flat
+        d_gravity_[1][ndx]=0.0;
+    return;
+}
 

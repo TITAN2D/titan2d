@@ -1653,6 +1653,39 @@ void ElementsHashTable::groupCreateAddNode(vector<array<ti_ndx_t,4> > &new_sons_
     ENTRIES+=numElemToRefine*4;
     return;
 }
+void ElementsHashTable::removeElements(const ti_ndx_t *elements_to_delete, const ti_ndx_t Nelements_to_delete)
+{
+    #pragma omp parallel for schedule(guided,TITAN2D_DINAMIC_CHUNK)
+    for(int i=0;i<Nelements_to_delete;++i)
+    {
+        ti_ndx_t ndx=elements_to_delete[i];
+        ASSERT2(status_[ndx]>=0);
+
+        elenode_[ndx].void_bcptr();
+
+        SFC_Key keyi=key_[ndx];
+        int entry = hash(keyi);
+
+        IF_OMP(omp_set_lock(&(bucket_lock[entry])));
+        ASSERT2(ti_ndx_not_negative(lookup_ndx(key_[ndx])));
+        int entry_size = bucket[entry].key.size();
+        ti_ndx_t bucket_entry_ndx=bucket[entry].lookup_local_ndx(keyi);
+
+        if(ti_ndx_not_negative(bucket_entry_ndx))
+        {
+            //set status
+            status_[bucket[entry].ndx[bucket_entry_ndx]]=CS_Removed;
+            //delete
+            bucket[entry].key.erase(bucket[entry].key.begin() + bucket_entry_ndx);
+            bucket[entry].ndx.erase(bucket[entry].ndx.begin() + bucket_entry_ndx);
+        }
+        IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+    }
+
+    ENTRIES-=Nelements_to_delete;
+    if(Nelements_to_delete>0)
+        all_elenodes_are_permanent=false;
+}
 EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
                 ElemTable(_ElemTable),
                 NodeTable(_NodeTable),
@@ -1675,6 +1708,7 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 kactxy_(ElemTable->kactxy_),
                 Influx_(ElemTable->Influx_),
                 neighbor_ndx_(ElemTable->neighbor_ndx_),
+                neighbors_(ElemTable->neighbors_),
                 positive_x_side_(ElemTable->positive_x_side_),
                 node_key_ndx_(ElemTable->node_key_ndx_),
                 el_error_(ElemTable->el_error_),

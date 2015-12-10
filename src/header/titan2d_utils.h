@@ -253,6 +253,7 @@ public:
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_allrefine);
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_allrefine_buffer_handling);
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_htflush2);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_remove_elements);
         PROFILE3_TIMINGS_PRINTING(HAdapt_adapt_epilog);
 
         PROFILE3_TIMINGS_PRINTING(step_other);
@@ -289,6 +290,11 @@ public:
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_new_elm_init);
         PROFILE3_TIMINGS_PRINTING(HAdapt_refineElements_update_neighbours_ndx_on_ghosts);
 
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_mpi_prep);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_onproc_updates);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_mpi_update);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_removeElements);
+        PROFILE3_TIMINGS_PRINTING(HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts);
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
     }
@@ -315,6 +321,7 @@ public:
         IF_DEF_PROFILING3(HAdapt_adapt_allrefine=zero);
         IF_DEF_PROFILING3(HAdapt_adapt_allrefine_buffer_handling=zero);
         IF_DEF_PROFILING3(HAdapt_adapt_htflush2=zero);
+        IF_DEF_PROFILING3(HAdapt_adapt_remove_elements=zero);
         IF_DEF_PROFILING3(HAdapt_adapt_epilog=zero);
 
         IF_DEF_PROFILING3(step_other=zero);
@@ -351,6 +358,11 @@ public:
         IF_DEF_PROFILING3(HAdapt_refineElements_new_elm_aloc = zero);
         IF_DEF_PROFILING3(HAdapt_refineElements_update_neighbours_ndx_on_ghosts = zero);
 
+        IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_mpi_prep = zero);
+        IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_onproc_updates = zero);
+        IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_mpi_update = zero);
+        IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_removeElements = zero);
+        IF_DEF_PROFILING3(HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts = zero);
 
         //IF_DEF_PROFILING1(=zero);
         //IF_DEF_PROFILING3(=zero);
@@ -379,6 +391,7 @@ public:
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_allrefine);
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_allrefine_buffer_handling);
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_htflush2);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_remove_elements);
     IF_DEF_PROFILING3(Clock::duration HAdapt_adapt_epilog);
 
     IF_DEF_PROFILING3(Clock::duration step_other);
@@ -414,6 +427,12 @@ public:
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_new_elm_init);
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_new_elm_aloc);
     IF_DEF_PROFILING3(Clock::duration HAdapt_refineElements_update_neighbours_ndx_on_ghosts);
+
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_mpi_prep);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_onproc_updates);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_mpi_update);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_removeElements);
+    IF_DEF_PROFILING3(Clock::duration HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts);
 
     //IF_DEF_PROFILING1(Clock::duration );
     //IF_DEF_PROFILING3(Clock::duration );

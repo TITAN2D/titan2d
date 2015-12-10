@@ -176,11 +176,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     const int numElemToRefine=allRefinement.size();
     const ti_ndx_t *ElemToRefine=&(allRefinement[0]);
 
-    ti_ndx_t *node_key_ndx[8];
-    for(int k=0;k<8;++k)
-    {
-        node_key_ndx[k]=&(ElemTable->node_key_ndx_[0][k]);
-    }
 
     refining_elem_map.assign(ElemTable->size(),-1);
     for(int iElm=0;iElm<numElemToRefine;++iElm)
@@ -858,21 +853,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     new_sons_ndx.resize(numElemToRefine);
     ElemTable->groupCreateAddNode(new_sons_ndx,new_node_key,new_node_coord,
             new_node_ndx,new_node_isnew);
-    /*for(int iElm=0;iElm<numElemToRefine;++iElm)
-    {
-        //---NEW ELEMENTS---
-		//check if such element exists (should not be such element)
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][0])));
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][1])));
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][2])));
-		ASSERT2(ti_ndx_negative(ElemTable->lookup_ndx(new_node_key[iElm][3])));
-		//first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
 
-		new_sons_ndx[iElm][0]=ElemTable->generateAddElement_ndx(new_node_key[iElm][0]);
-		new_sons_ndx[iElm][1]=ElemTable->generateAddElement_ndx(new_node_key[iElm][1]);
-		new_sons_ndx[iElm][2]=ElemTable->generateAddElement_ndx(new_node_key[iElm][2]);
-		new_sons_ndx[iElm][3]=ElemTable->generateAddElement_ndx(new_node_key[iElm][3]);
-    }*/
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_new_elm_aloc,pt_start);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)

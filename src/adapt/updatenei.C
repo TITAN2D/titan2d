@@ -887,27 +887,30 @@ void refine_neigh_update(NodeHashTable* El_Table, NodeHashTable* NodeTable,
 #else
 void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
 {
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
     
-    Element* EmFather;
-    Element* EmSon[4];
-    ti_ndx_t EmSonNdx[4];
-    Element* EmNeighNew[4];
-    ti_ndx_t EmNeighNewNdx[4];
-    Element* EmNeighOld[2];
-    ti_ndx_t EmNeighOldNdx[2];
-    Node* NdTemp;
-    ti_ndx_t NdTempNdx;
+    //convinience references
+    ti_ndx_t *node_key_ndx[8];
+    for(int k=0;k<8;++k)
+    {
+        node_key_ndx[k]=&(ElemTable->node_key_ndx_[k][0]);
+    }
+    SFC_Key *node_key[8];
+    for(int k=0;k<8;++k)
+    {
+        node_key[k]=&(ElemTable->node_key_[k][0]);
+    }
+    int *node_info=&(NodeTable->info_[0]);
 
 
-    int ifather, iside, ineigh, ineighp4, isonA, isonB;
-    int ineighme, ineighmep4, ineighson, inewcase, inode;
-    
     //interproc update only variables
     int *num_send, *num_recv, *isend;
     int iproc, ineighm4, ierr, send_tag = 061201 * 2, neigh_proc;
     unsigned **send, **recv;
     MPI_Request* request = new MPI_Request[2 * numprocs];
     
+
     /*************************************************************/
     /* so I won't have to waste time waiting for neighbor update */
     /* information from other processors later, we all send the  */
@@ -917,6 +920,20 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
     /*************************************************************/
     if(numprocs > 1)
     {
+        Element* EmFather;
+        Element* EmSon[4];
+        ti_ndx_t EmSonNdx[4];
+        Element* EmNeighNew[4];
+        ti_ndx_t EmNeighNewNdx[4];
+        Element* EmNeighOld[2];
+        ti_ndx_t EmNeighOldNdx[2];
+        Node* NdTemp;
+        ti_ndx_t NdTempNdx;
+
+
+        int ifather, iside, ineigh, ineighp4, isonA, isonB;
+        int ineighme, ineighmep4, ineighson, inewcase, inode;
+
         int ineighother;  //only need this variable inside this if statement
         //so declare here rather than up to and it will disapear when the loop
         //exits
@@ -1254,14 +1271,29 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                                  send_tag + myid, MPI_COMM_WORLD, (request + iproc));
         CDeAllocI1(isend);
     }	  //if(nump>1)
-    
+    PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_mpi_prep,pt_start);
     /*************************************************************/
     /* now do the on processor updates while I'm waiting to      */
     /* receive neighbor update information from other processors */
     /*************************************************************/
-
-    for(ti_ndx_t ifather:allRefinement)
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(int iElm=0;iElm<allRefinement.size();++iElm)
     {
+        Element* EmFather;
+        Element* EmSon[4];
+        ti_ndx_t EmSonNdx[4];
+        Element* EmNeighNew[4];
+        ti_ndx_t EmNeighNewNdx[4];
+        Element* EmNeighOld[2];
+        ti_ndx_t EmNeighOldNdx[2];
+        Node* NdTemp;
+        ti_ndx_t NdTempNdx;
+
+
+        int iside, ineigh, ineighp4, isonA, isonB;
+        int ineighme, ineighmep4, ineighson, inewcase, inode;
+
+        ti_ndx_t ifather=allRefinement[iElm];
         EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
         ASSERT2(ElemTable->adapted_[ifather]==OLDFATHER); //sanity check
         
@@ -1542,29 +1574,22 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                         //S_C_CON's
                         
                         inode = ineigh;
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(CORNER);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=CORNER;
                         
                         inode = ineighp4;
-                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(S_S_CON);
+                        ASSERT2(node_key_ndx[inode][EmSonNdx[isonA]]==NodeTable->lookup_ndx(node_key[inode][EmSonNdx[isonA]]));
+                        node_info[node_key_ndx[inode][EmSonNdx[isonA]]]=S_S_CON;
                         
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(S_C_CON);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=S_C_CON;
                         
-                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(S_S_CON);
+                        ASSERT2(node_key_ndx[inode][EmSonNdx[isonB]]==NodeTable->lookup_ndx(node_key[inode][EmSonNdx[isonB]]));
+                        node_info[node_key_ndx[inode][EmSonNdx[isonB]]]=S_S_CON;
                         
                         inode = (ineigh + 1) % 4;
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(CORNER);
-                        
-                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=CORNER;
                         
                         break;
                     case 2:
@@ -1625,23 +1650,19 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                             //as me, therefor this (the ineigh) node is a CORNER and not
                             //an S_C_CON node
                             inode = ineigh;
-                            NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                            assert(NdTemp);
-                            NdTemp->info(CORNER);
+                            ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                            node_info[node_key_ndx[inode][ifather]]=CORNER;
                         }
                         
                         inode = ineigh + 4;
-                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(SIDE);
+                        ASSERT2(node_key_ndx[inode][EmSonNdx[isonA]]==NodeTable->lookup_ndx(node_key[inode][EmSonNdx[isonA]]));
+                        node_info[node_key_ndx[inode][EmSonNdx[isonA]]]=SIDE;
                         
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(CORNER);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=CORNER;
                         
-                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(SIDE);
+                        ASSERT2(node_key_ndx[inode][EmSonNdx[isonB]]==NodeTable->lookup_ndx(node_key[inode][EmSonNdx[isonB]]));
+                        node_info[node_key_ndx[inode][EmSonNdx[isonB]]]=SIDE;
                         
                         if(EmSon[isonB]->neigh_gen((ineigh + 1) % 4) == EmSon[isonB]->generation())
                         {
@@ -1650,9 +1671,8 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                             //the same generation as me, therefore this (the
                             //(ineigh+1)%4) node is a CORNER and not an S_C_CON node
                             inode = (ineigh + 1) % 4;
-                            NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                            assert(NdTemp);
-                            NdTemp->info(CORNER);
+                            ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                            node_info[node_key_ndx[inode][ifather]]=CORNER;
                         }
                         
                         break;
@@ -1662,19 +1682,16 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                         //update the nodes on this side
                         
                         inode = ineigh; //father corner node
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(CORNER);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=CORNER;
                         
                         inode = ineighp4; //father edge node
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(CORNER);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=CORNER;
                         
                         inode = (ineigh + 1) % 4; //father corner node
-                        NdTemp = (Node*) NodeTable->lookup(EmFather->node_key(inode));
-                        assert(NdTemp);
-                        NdTemp->info(CORNER);
+                        ASSERT2(node_key_ndx[inode][ifather] == NodeTable->lookup_ndx(node_key[inode][ifather]));
+                        node_info[node_key_ndx[inode][ifather]]=CORNER;
                         
                             
                         EmNeighNew[0]->set_neighbor(ineighme, EmSon[isonA]->key());
@@ -1742,54 +1759,48 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                         //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
                         
                         inode = ineighp4; //sonA edge node
-                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonA]->node_key(inode));
-                        assert(NdTemp);
+                        ASSERT2(node_key_ndx[inode][EmSonNdx[isonA]]==NodeTable->lookup_ndx(node_key[inode][EmSonNdx[isonA]]));
+
                         if(EmSon[isonA]->neighbor(ineigh)==EmSon[isonA]->neighbor(ineighp4))
                         {
                             EmSon[isonA]->set_neigh_proc(ineighp4, -2);
-                            NdTemp->info(SIDE);
+                            node_info[node_key_ndx[inode][EmSonNdx[isonA]]]=SIDE;
                         }
                         else
                         {
                             EmSon[isonA]->set_neigh_proc(ineighp4, EmSon[isonA]->neigh_proc(ineigh));
                             
-                            NdTemp->info(S_C_CON);
+                            node_info[node_key_ndx[inode][EmSonNdx[isonA]]]=S_C_CON;
                             
                             inode = ineighmep4;
                             
-                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[0]->node_key(inode));
-                            assert(NdTemp);
-                            NdTemp->info(S_S_CON);
+                            ASSERT2(node_key_ndx[inode][EmNeighNewNdx[0]] == NodeTable->lookup_ndx(node_key[inode][EmNeighNewNdx[0]]));
+                            node_info[node_key_ndx[inode][EmNeighNewNdx[0]]]=S_S_CON;
                             
-                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[1]->node_key(inode));
-                            assert(NdTemp);
-                            NdTemp->info(S_S_CON);
+                            ASSERT2(node_key_ndx[inode][EmNeighNewNdx[1]] == NodeTable->lookup_ndx(node_key[inode][EmNeighNewNdx[1]]));
+                            node_info[node_key_ndx[inode][EmNeighNewNdx[1]]]=S_S_CON;
                         }
                         
-                        //if(Curr_El) if(IfNeighProcChange(El_Table,NodeTable,myid,Curr_El,EmFather)) assert(0);
                         inode = ineighp4; //sonB edge node
-                        NdTemp = (Node*) NodeTable->lookup(EmSon[isonB]->node_key(inode));
-                        assert(NdTemp);
+                        ASSERT2(node_key_ndx[inode][EmSonNdx[isonB]]==NodeTable->lookup_ndx(node_key[inode][EmSonNdx[isonB]]));
                         if(EmSon[isonB]->neighbor(ineigh)==EmSon[isonB]->neighbor(ineighp4))
                         {
                             EmSon[isonB]->set_neigh_proc(ineighp4, -2);
-                            NdTemp->info(SIDE);
+                            node_info[node_key_ndx[inode][EmSonNdx[isonB]]]=SIDE;
                         }
                         else
                         {
                             EmSon[isonB]->set_neigh_proc(ineighp4, EmSon[isonB]->neigh_proc(ineigh));
                             
-                            NdTemp->info(S_C_CON);
+                            node_info[node_key_ndx[inode][EmSonNdx[isonB]]]=S_C_CON;
                             
                             inode = ineighmep4;
                             
-                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[2]->node_key(inode));
-                            assert(NdTemp);
-                            NdTemp->info(S_S_CON);
+                            ASSERT2(node_key_ndx[inode][EmNeighNewNdx[2]] == NodeTable->lookup_ndx(node_key[inode][EmNeighNewNdx[2]]));
+                            node_info[node_key_ndx[inode][EmNeighNewNdx[2]]]=S_S_CON;
                             
-                            NdTemp = (Node*) NodeTable->lookup(EmNeighNew[3]->node_key(inode));
-                            assert(NdTemp);
-                            NdTemp->info(S_S_CON);
+                            ASSERT2(node_key_ndx[inode][EmNeighNewNdx[3]] == NodeTable->lookup_ndx(node_key[inode][EmNeighNewNdx[3]]));
+                            node_info[node_key_ndx[inode][EmNeighNewNdx[3]]]=S_S_CON;
                         }
                         
                         break;
@@ -1805,7 +1816,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         } //iside loop
         
     } //ifather loop
-    
+    PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_onproc_updates,pt_start);
     /*************************************************************/
     /* The interprocessor update information should be here by   */
     /* now or at the very least I won't have to weight very long */
@@ -1815,6 +1826,20 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
     //now complete the interprocessor update
     if(numprocs > 1)
     {
+        Element* EmFather;
+        Element* EmSon[4];
+        ti_ndx_t EmSonNdx[4];
+        Element* EmNeighNew[4];
+        ti_ndx_t EmNeighNewNdx[4];
+        Element* EmNeighOld[2];
+        ti_ndx_t EmNeighOldNdx[2];
+        Node* NdTemp;
+        ti_ndx_t NdTempNdx;
+
+
+        int iside, ineigh, ineighp4, isonA, isonB;
+        int ineighme, ineighmep4, ineighson, inewcase, inode;
+
         int NumProcsNotRecvd, ifrecvd, nodeorder, irecvd;
         MPI_Status status;
         Element *EmTemp, *EmNeigh;
@@ -2061,21 +2086,20 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         CDeAllocU2(recv);
         CDeAllocI1(num_recv);
     }		  //if(nump>1)
-    
-
+    PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_mpi_update,pt_start);
+#ifdef DEB2
     for(ti_ndx_t ifather:allRefinement)
     {
-            
-        EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
+        Element *EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
         assert(EmFather); //Help I've been abducted call the FBI!!!
         assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
         assert(EmFather->refined_flag() == 1);
-        EmFather->set_adapted_flag(TOBEDELETED); //I've lived a good life, it's my time to die
-        EmFather->void_bcptr();
-        ElemTable->removeElement(EmFather);
     }
+#endif
+    //remove OLDFATHERs
+    ElemTable->removeElements(&(allRefinement[0]),allRefinement.size());//I've lived a good life, it's my time to die
     //RefinedList->set_inewstart(RefinedList->get_num_elem());
-    
+    PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_removeElements,pt_start);
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
 
     //clear the refined list
@@ -2087,7 +2111,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         CDeAllocU2(send);
         CDeAllocI1(num_send);
     }
-    
+    PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts,pt_start);
     return;
 }
 
