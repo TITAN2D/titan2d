@@ -94,7 +94,7 @@ void HAdaptUnrefine::unrefine(const double target)
     for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
     {
         //don't need to check if element schedule for deletion
-        if(adapted[ndx] >= NEWFATHER)adapted[ndx] = NOTRECADAPTED;
+        if(adapted[ndx] == NEWFATHER)adapted[ndx] = NOTRECADAPTED;
     }
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_init,pt_start);
     
