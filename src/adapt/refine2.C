@@ -226,6 +226,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_init,pt_start);
 
 	//find position of corners, sides and bubbles
+    #pragma omp parallel for schedule(static)
 	for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
         ti_ndx_t ndx=ElemToRefine[iElm];
@@ -272,39 +273,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 	}
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_find_nodes,pt_start);
 
-    rE__alloc_new_nodes();
+    //rE__alloc_new_nodes();
 	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side0_add_new_nodes,pt_start);
-	//SIDE 2
-    #pragma omp parallel
-	{
-        int ithread=omp_get_thread_num();
-
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(int iElm=0;iElm<numElemToRefine;++iElm)
-        {
-            ti_ndx_t ndx=ElemToRefine[iElm];
-            if(ElemTable->neigh_proc_[2][ndx] == -1 || ElemTable->neigh_gen_[2][ndx] <= ElemTable->generation_[ndx])
-            {
-                //i.e. boundary of the computational domain or neighbor generation same or smaller then this one
-                rE__find_new_side_node_or_set_for_alloc_refcheck(
-                        iElm, 14/*which*/, ndx, 6 /*neigh*/, 4/*neigh_which*/,
-                        node_ndx_ref[iElm][3], node_ndx_ref[iElm][6],ithread);
-                rE__find_new_side_node_or_set_for_alloc_refcheck(
-                        iElm, 15/*which*/, ndx, 2 /*neigh*/, 5/*neigh_which*/,
-                        node_ndx_ref[iElm][2], node_ndx_ref[iElm][6],ithread);
-            }
-            else
-            {
-                //i.e. not boundary of the computational domain and neighbor generation higher then this one
-                rE__find_new_side_node(iElm,14/*which*/,ndx,6/*neigh*/,4/*neigh_which*/);
-                rE__find_new_side_node(iElm,15/*which*/,ndx,2/*neigh*/,4/*neigh_which*/);
-            }
-        }
-	}
-	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_find_nodes,pt_start);
-
-	rE__alloc_new_nodes();
-    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_add_new_nodes,pt_start);
     //SIDE 1
     #pragma omp parallel
     {
@@ -336,6 +306,38 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
     rE__alloc_new_nodes();
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side1_add_new_nodes,pt_start);
+	//SIDE 2
+    #pragma omp parallel
+	{
+        int ithread=omp_get_thread_num();
+
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(int iElm=0;iElm<numElemToRefine;++iElm)
+        {
+            ti_ndx_t ndx=ElemToRefine[iElm];
+            if(ElemTable->neigh_proc_[2][ndx] == -1 || ElemTable->neigh_gen_[2][ndx] <= ElemTable->generation_[ndx])
+            {
+                //i.e. boundary of the computational domain or neighbor generation same or smaller then this one
+                rE__find_new_side_node_or_set_for_alloc_refcheck(
+                        iElm, 14/*which*/, ndx, 6 /*neigh*/, 4/*neigh_which*/,
+                        node_ndx_ref[iElm][3], node_ndx_ref[iElm][6],ithread);
+                rE__find_new_side_node_or_set_for_alloc_refcheck(
+                        iElm, 15/*which*/, ndx, 2 /*neigh*/, 5/*neigh_which*/,
+                        node_ndx_ref[iElm][2], node_ndx_ref[iElm][6],ithread);
+            }
+            else
+            {
+                //i.e. not boundary of the computational domain and neighbor generation higher then this one
+                rE__find_new_side_node(iElm,14/*which*/,ndx,6/*neigh*/,4/*neigh_which*/);
+                rE__find_new_side_node(iElm,15/*which*/,ndx,2/*neigh*/,4/*neigh_which*/);
+            }
+        }
+	}
+	PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_find_nodes,pt_start);
+
+	//rE__alloc_new_nodes();
+    PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side2_add_new_nodes,pt_start);
+
     //SIDE 3
     #pragma omp parallel
     {
@@ -365,7 +367,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
     }
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side3_find_nodes,pt_start);
 
-    rE__alloc_new_nodes();
+    //rE__alloc_new_nodes();
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_side3_add_new_nodes,pt_start);
 
 	//INTERNAL SIDES and NEW BUBBLES
@@ -854,7 +856,9 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
     //first we will create 4 new elements and then init it as we will need indexes of brothers during initiation
     new_sons_ndx.resize(numElemToRefine);
-    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    ElemTable->groupCreateAddNode(new_sons_ndx,new_node_key,new_node_coord,
+            new_node_ndx,new_node_isnew);
+    /*for(int iElm=0;iElm<numElemToRefine;++iElm)
     {
         //---NEW ELEMENTS---
 		//check if such element exists (should not be such element)
@@ -868,7 +872,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		new_sons_ndx[iElm][1]=ElemTable->generateAddElement_ndx(new_node_key[iElm][1]);
 		new_sons_ndx[iElm][2]=ElemTable->generateAddElement_ndx(new_node_key[iElm][2]);
 		new_sons_ndx[iElm][3]=ElemTable->generateAddElement_ndx(new_node_key[iElm][3]);
-    }
+    }*/
     PROFILING3_STOPADD_RESTART(HAdapt_refineElements_new_elm_aloc,pt_start);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(int iElm=0;iElm<numElemToRefine;++iElm)

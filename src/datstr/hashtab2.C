@@ -461,7 +461,13 @@ void HashTable<T>::reserve_at_least_base(const tisize_t new_reserve_size)
     elenode_.reserve_at_least(new_reserve_size);
     status_.reserve_at_least(new_reserve_size);
 }
-
+template <typename T>
+void HashTable<T>::resize_base(const tisize_t new_resize)
+{
+    key_.resize(new_resize);
+    elenode_.resize(new_resize);
+    status_.resize(new_resize);
+}
 //explicit implementation
 template class HashTable<Node>;
 template class HashTable<Element>;
@@ -621,29 +627,125 @@ void NodeHashTable::reserve_at_least(const tisize_t new_reserve_size)
     reserve_at_least_base(new_reserve_size);
 }
 
-void NodeHashTable::groupCreateAddNode(vector<vector<int> > &create_node_ielm, vector<vector<int> > &create_node_iwhich,
+void NodeHashTable::groupCreateAddNode(vector<int> &create_node_ielm, vector<int> &create_node_iwhich,
                             vector<array<SFC_Key,16> > &new_node_key,
                             vector<array<array<double,2>, 16> > &new_node_coord,
                             vector<array<ti_ndx_t,16> > &new_node_ndx,
                             vector<array<bool, 16> > &new_node_isnew
                             )
 {
-    for(int ithread=0;ithread<threads_number;++ithread)
+    const int N=create_node_ielm.size();
+#ifdef DEB2
+    for(int i=0;i<N;++i)
     {
-        const int N=create_node_ielm[ithread].size();
-        for(int i=0;i<N;++i)
-        {
-            const int iElm=create_node_ielm[ithread][i];
-            const int which=create_node_iwhich[ithread][i];
-            ti_ndx_t ndx=createAddNode_ndx(new_node_key[iElm][which]);
-            new_node_ndx[iElm][which]=ndx;
-            for(int j=0;j<DIMENSION;++j)
-                coord_[j][ndx]=new_node_coord[iElm][which][j];
-            new_node_isnew[iElm][which]=true;
-        }
-        create_node_ielm[ithread].resize(0);
-        create_node_iwhich[ithread].resize(0);
+        const int iElm=create_node_ielm[i];
+        const int which=create_node_iwhich[i];
+        assert(ti_ndx_negative(lookup_ndx(new_node_key[iElm][which])));
     }
+#endif
+    ti_ndx_t ndx_start=size();
+    ti_ndx_t new_size=size()+N;
+
+    #pragma omp parallel
+    {
+        //get space
+        #pragma omp sections
+        {
+            //general hashtable
+            #pragma omp section
+            key_.resize(new_size);
+            #pragma omp section
+            elenode_.resize(new_size);
+            #pragma omp section
+            status_.resize(new_size);
+            //node specific hashtable
+            #pragma omp section
+            id_.resize(new_size);
+            #pragma omp section
+            num_assoc_elem_.resize(new_size);
+            #pragma omp section
+            info_.resize(new_size);
+            #pragma omp section
+            {
+                for(int j=0;j<DIMENSION;j++)
+                    coord_[j].resize(new_size);
+            }
+            #pragma omp section
+            elevation_.resize(new_size);
+            #pragma omp section
+            {
+                for(int j=0;j<NUM_STATE_VARS;j++)
+                    flux_[j].resize(new_size);
+            }
+            #pragma omp section
+            {
+                for(int j=0;j<NUM_STATE_VARS;j++)
+                   refinementflux_[j].resize(new_size);
+            }
+            #pragma omp section
+            connection_id_.resize(new_size);
+        }
+    }
+    //set values
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(int i=0;i<N;++i)
+    {
+        const int iElm=create_node_ielm[i];
+        const int which=create_node_iwhich[i];
+        const ti_ndx_t ndx=ndx_start+i;
+
+        SFC_Key keyi=new_node_key[iElm][which];
+
+        key_[ndx]=keyi;
+        status_[ndx]=CS_Added;
+
+        elenode_[ndx].ndx(ndx);
+
+        for(int j=0;j<DIMENSION;++j)
+              coord_[j][ndx]=new_node_coord[iElm][which][j];
+
+        new_node_ndx[iElm][which]=ndx;
+        new_node_isnew[iElm][which]=true;
+    }
+
+    //place to hash table
+    #pragma omp parallel for schedule(guided,TITAN2D_DINAMIC_CHUNK)
+    for(int i=0;i<N;++i)
+    {
+        const int iElm=create_node_ielm[i];
+        const int which=create_node_iwhich[i];
+        SFC_Key keyi=new_node_key[iElm][which];
+
+        int entry = hash(keyi);
+        IF_OMP(omp_set_lock(&(bucket_lock[entry])));
+        int entry_size = bucket[entry].key.size();
+
+        //get space
+        ti_ndx_t ndx=ndx_start+i;
+
+        //place to hash table
+        if(entry_size>0)
+        {
+            //this place is already occupied
+            //find proper place to insert it
+            int j;
+            SFC_Key *keyArr = &(bucket[entry].key[0]);
+            for(j=0;j<entry_size&&keyi>keyArr[j];++j){}
+
+            bucket[entry].key.insert(bucket[entry].key.begin() + j, keyi);
+            bucket[entry].ndx.insert(bucket[entry].ndx.begin() + j, ndx);
+        }
+        else
+        {
+            //will be first member of the bucket entry
+            bucket[entry].key.push_back(keyi);
+            bucket[entry].ndx.push_back(ndx);
+        }
+        IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+    }
+
+    ENTRIES+=N;
+    return;
 }
 ////////////////////////////////////////////////////////////////////////////////
 ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
@@ -1347,65 +1449,210 @@ void ElementsHashTable::reserve_at_least(const tisize_t new_reserve_size)
 {
     reserve(new_reserve_size);
     return;
-    reserve_at_least_base(new_reserve_size);
-
-    myprocess_.reserve_at_least(new_reserve_size);
-    generation_.reserve_at_least(new_reserve_size);
-    opposite_brother_flag_.reserve_at_least(new_reserve_size);
-    material_.reserve_at_least(new_reserve_size); /*! ! ! THE MAT. FLAG ! ! !*/
-    lb_weight_.reserve_at_least(new_reserve_size);
-    lb_key_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)node_key_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)node_keyPtr_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)node_key_ndx_[i].reserve_at_least(new_reserve_size);
-    node_bubble_ndx_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)neighbors_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)neighborPtr_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)neighbor_ndx_[i].reserve_at_least(new_reserve_size);
-    father_.reserve_at_least(new_reserve_size);
-    father_ndx_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<4;++i)son_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<4;++i)son_ndx_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)neigh_proc_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<8;++i)neigh_gen_[i].reserve_at_least(new_reserve_size);
-    bcptr_.reserve_at_least(new_reserve_size);
-    ndof_.reserve_at_least(new_reserve_size);
-    no_of_eqns_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<EQUATIONS;++i)el_error_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<EQUATIONS;++i)el_solution_[i].reserve_at_least(new_reserve_size);
-    refined_.reserve_at_least(new_reserve_size);
-    adapted_.reserve_at_least(new_reserve_size);
-    which_son_.reserve_at_least(new_reserve_size);
-    new_old_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<4;++i)brothers_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<4;++i)brothers_ndx_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)coord_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)elm_loc_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reserve_at_least(new_reserve_size);
-    shortspeed_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)dx_[i].reserve_at_least(new_reserve_size);
-    positive_x_side_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)kactxy_[i].reserve_at_least(new_reserve_size);
-    elevation_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)zeta_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)curvature_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<3;++i)gravity_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<DIMENSION;++i)d_gravity_[i].reserve_at_least(new_reserve_size);
-    stoppedflags_.reserve_at_least(new_reserve_size);
-    effect_bedfrict_.reserve_at_least(new_reserve_size);
-    effect_tanbedfrict_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<2;++i)effect_kactxy_[i].reserve_at_least(new_reserve_size);
-    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reserve_at_least(new_reserve_size);
-    ithelem_.reserve_at_least(new_reserve_size);
-    iwetnode_.reserve_at_least(new_reserve_size);
-    Awet_.reserve_at_least(new_reserve_size);
-    for(int i=0;i<2;++i)drypoint_[i].reserve_at_least(new_reserve_size);
-    Swet_.reserve_at_least(new_reserve_size);
 }
+void ElementsHashTable::resize(const tisize_t new_resize)
+{
+    //resize_base(new_resize);
+    #pragma omp parallel sections
+    {
+#pragma omp section
+        key_.resize(new_resize);
+#pragma omp section
+        elenode_.resize(new_resize);
+#pragma omp section
+        status_.resize(new_resize);
 
+#pragma omp section
+        myprocess_.resize(new_resize);
+#pragma omp section
+        generation_.resize(new_resize);
+#pragma omp section
+        opposite_brother_flag_.resize(new_resize);
+#pragma omp section
+        material_.resize(new_resize);
+#pragma omp section
+        lb_weight_.resize(new_resize);
+#pragma omp section
+        lb_key_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<8;++i)node_key_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<8;++i)node_keyPtr_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<8;++i)node_key_ndx_[i].resize(new_resize);}
+#pragma omp section
+        node_bubble_ndx_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<8;++i)neighbors_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<8;++i)neighborPtr_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<8;++i)neighbor_ndx_[i].resize(new_resize);}
+#pragma omp section
+        father_.resize(new_resize);
+#pragma omp section
+        father_ndx_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<4;++i)son_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<4;++i)son_ndx_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<8;++i)neigh_proc_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<8;++i)neigh_gen_[i].resize(new_resize);}
+#pragma omp section
+        bcptr_.resize(new_resize);
+#pragma omp section
+        ndof_.resize(new_resize);
+#pragma omp section
+        no_of_eqns_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<EQUATIONS;++i)el_error_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<EQUATIONS;++i)el_solution_[i].resize(new_resize);}
+#pragma omp section
+        refined_.resize(new_resize);
+#pragma omp section
+        adapted_.resize(new_resize);
+#pragma omp section
+        which_son_.resize(new_resize);
+#pragma omp section
+        new_old_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<4;++i)brothers_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<4;++i)brothers_ndx_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)coord_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)elm_loc_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].resize(new_resize);}
+#pragma omp section
+        shortspeed_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)dx_[i].resize(new_resize);}
+#pragma omp section
+        positive_x_side_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)kactxy_[i].resize(new_resize);}
+#pragma omp section
+        elevation_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)zeta_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)curvature_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<3;++i)gravity_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<DIMENSION;++i)d_gravity_[i].resize(new_resize);}
+#pragma omp section
+        stoppedflags_.resize(new_resize);
+#pragma omp section
+        effect_bedfrict_.resize(new_resize);
+#pragma omp section
+        effect_tanbedfrict_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<2;++i)effect_kactxy_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].resize(new_resize);}
+#pragma omp section
+        ithelem_.resize(new_resize);
+#pragma omp section
+        iwetnode_.resize(new_resize);
+#pragma omp section
+        Awet_.resize(new_resize);
+#pragma omp section
+        {for(int i=0;i<2;++i)drypoint_[i].resize(new_resize);}
+#pragma omp section
+        Swet_.resize(new_resize);
+    }
+}
+void ElementsHashTable::groupCreateAddNode(vector<array<ti_ndx_t,4> > &new_sons_ndx,
+                            vector<array<SFC_Key,16> > &new_node_key,
+                            vector<array<array<double,2>, 16> > &new_node_coord,
+                            vector<array<ti_ndx_t,16> > &new_node_ndx,
+                            vector<array<bool, 16> > &new_node_isnew
+                            )
+{
+    const int numElemToRefine=new_sons_ndx.size();
+#ifdef DEB2
+    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    {
+        for(int which=0;which<4;++which)
+            assert(ti_ndx_negative(lookup_ndx(new_node_key[iElm][which])));
+    }
+#endif
+    ti_ndx_t ndx_start=size();
+    ti_ndx_t new_size=size()+numElemToRefine*4;
+
+    resize(new_size);
+
+    //set values
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    {
+        for(int which=0;which<4;++which)
+        {
+            const ti_ndx_t ndx=ndx_start+iElm*4+which;
+
+            SFC_Key keyi=new_node_key[iElm][which];
+
+            key_[ndx]=keyi;
+            status_[ndx]=CS_Added;
+
+            elenode_[ndx].ndx(ndx);
+
+            new_sons_ndx[iElm][which]=ndx;
+        }
+    }
+
+    //place to hash table
+    #pragma omp parallel for schedule(guided,TITAN2D_DINAMIC_CHUNK)
+    for(int iElm=0;iElm<numElemToRefine;++iElm)
+    {
+        for(int which=0;which<4;++which)
+        {
+            SFC_Key keyi=new_node_key[iElm][which];
+
+            int entry = hash(keyi);
+            IF_OMP(omp_set_lock(&(bucket_lock[entry])));
+            int entry_size = bucket[entry].key.size();
+
+            //get space
+            ti_ndx_t ndx=ndx_start+iElm*4+which;
+
+            //place to hash table
+            if(entry_size>0)
+            {
+                //this place is already occupied
+                //find proper place to insert it
+                int j;
+                SFC_Key *keyArr = &(bucket[entry].key[0]);
+                for(j=0;j<entry_size&&keyi>keyArr[j];++j){}
+
+                bucket[entry].key.insert(bucket[entry].key.begin() + j, keyi);
+                bucket[entry].ndx.insert(bucket[entry].ndx.begin() + j, ndx);
+            }
+            else
+            {
+                //will be first member of the bucket entry
+                bucket[entry].key.push_back(keyi);
+                bucket[entry].ndx.push_back(ndx);
+            }
+            IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
+        }
+    }
+
+    ENTRIES+=numElemToRefine*4;
+    return;
+}
 EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
                 ElemTable(_ElemTable),
                 NodeTable(_NodeTable),

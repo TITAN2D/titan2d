@@ -320,24 +320,39 @@ private:
      */
     void rE__alloc_new_nodes()
     {
-        NodeTable->groupCreateAddNode(create_node_ielm, create_node_iwhich,new_node_key,new_node_coord,new_node_ndx,new_node_isnew);
-
-        /*for(int ithread=0;ithread<threads_number;++ithread)
+        ti_ndx_t number_of_new_elenodes=0;
+        #pragma omp parallel
         {
-            const int N=create_node_ielm[ithread].size();
-            for(int i=0;i<N;++i)
+            int ithread=omp_get_thread_num();
+            ti_ndx_t start=0;
+            if(ithread==0)
+                for(int jthread=0;jthread<threads_number;++jthread)
+                    number_of_new_elenodes+=create_node_ielm[jthread].size();
+            else
+                for(int jthread=0;jthread<ithread;++jthread)
+                    start+=create_node_ielm[jthread].size();
+            #pragma omp barrier
+            if(ithread==0)
             {
-                const int iElm=create_node_ielm[ithread][i];
-                const int which=create_node_iwhich[ithread][i];
-                ti_ndx_t ndx=NodeTable->createAddNode_ndx(new_node_key[iElm][which]);
-                new_node_ndx[iElm][which]=ndx;
-                for(int j=0;j<DIMENSION;++j)
-                    NodeTable->coord_[j][ndx]=new_node_coord[iElm][which][j];
-                new_node_isnew[iElm][which]=true;
+                create_node_ielm[0].resize(number_of_new_elenodes);
+                create_node_iwhich[0].resize(number_of_new_elenodes);
             }
-            create_node_ielm[ithread].resize(0);
-            create_node_iwhich[ithread].resize(0);
-        }*/
+            #pragma omp barrier
+            if(ithread!=0)
+            {
+                for(ti_ndx_t i=0;i<create_node_ielm[ithread].size();++i)
+                {
+                    create_node_ielm[0][start+i]=create_node_ielm[ithread][i];
+                    create_node_iwhich[0][start+i]=create_node_iwhich[ithread][i];
+                }
+                create_node_ielm[ithread].resize(0);
+                create_node_iwhich[ithread].resize(0);
+            }
+        }
+        NodeTable->groupCreateAddNode(create_node_ielm[0], create_node_iwhich[0],new_node_key,new_node_coord,new_node_ndx,new_node_isnew);
+
+        create_node_ielm[0].resize(0);
+        create_node_iwhich[0].resize(0);
     }
 };
 

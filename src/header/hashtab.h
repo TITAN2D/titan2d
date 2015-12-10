@@ -200,6 +200,7 @@ public:
 protected:
     void reserve_base(const tisize_t new_reserve_size);
     void reserve_at_least_base(const tisize_t new_reserve_size);
+    void resize_base(const tisize_t new_resize);
     void flushTable();//actually delete, removed nodes and rearrange added (sort according to keys)
 
 
@@ -246,7 +247,7 @@ public:
     ti_ndx_t createAddNode_ndx_locked(const SFC_Key& keyi, const double *coordi, const int inf, const MatProps *matprops_ptr);
 
     //!
-    void groupCreateAddNode(vector<vector<int> > &create_node_ielm, vector<vector<int> > &create_node_iwhich,
+    void groupCreateAddNode(vector<int> &create_node_ielm, vector<int> &create_node_iwhich,
                             vector<array<SFC_Key,16> > &new_node_key,
                             vector<array<array<double,2>, 16> > &new_node_coord,
                             vector<array<ti_ndx_t,16> > &new_node_ndx,
@@ -373,6 +374,12 @@ public:
     
     ti_ndx_t generateAddElement_ndx(const SFC_Key& keyi){return addElement_ndx(keyi);}
 
+    void groupCreateAddNode(vector<array<ti_ndx_t,4> > &new_sons_ndx,
+                                vector<array<SFC_Key,16> > &new_node_key,
+                                vector<array<array<double,2>, 16> > &new_node_coord,
+                                vector<array<ti_ndx_t,16> > &new_node_ndx,
+                                vector<array<bool, 16> > &new_node_isnew
+                                );
     //!should not be used
     void removeElement(Element* elm);
     
@@ -386,6 +393,7 @@ public:
 private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);
+     void resize(const tisize_t new_resize);
 public:
      //geometric structure id, every time starting adaptation conformation is increamented and  every time flushElemTable is called conformation is updated as well
      //should be used in routings which do some precalculation on fixed geometry
