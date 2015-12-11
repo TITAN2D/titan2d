@@ -1092,7 +1092,7 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
 
             }
 #endif
-            Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forceturbulencex);
+            Ustore[1] = Ustore[1] + dt * (forcegravx - forcecolumbfrictx - forceturbulencex);
 
 
 
@@ -1126,7 +1126,7 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
                 //    else
             }
 #endif
-            Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forceturbulencey);
+            Ustore[2] = Ustore[2] + dt * (forcegravy - forcecolumbfricty - forceturbulencey);
 
 #ifdef STOPPED_FLOWS
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
