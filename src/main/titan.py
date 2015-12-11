@@ -64,11 +64,12 @@ class TitanSimulationBase(object):
             ]
         },
         'Vollmey':{
-            'allParameters':('order','mu','xi'), 
+            'allParameters':('order','mu','xi','int_frict'), 
             'defaultParameters':{
                 'order':'First',
                 'mu' : 0.5,
-                'xi' : 120.0
+                'xi' : 120.0,
+                'int_frict':37.0
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
