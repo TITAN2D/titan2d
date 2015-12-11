@@ -386,6 +386,25 @@ bool HashTable<T>::check_that_all_elenodes_are_permanent()
     }
     return results;
 }
+struct KeyComparator
+{
+    vector<SFC_Key> & keys;
+
+    KeyComparator(vector<SFC_Key> & _keys):
+        keys(_keys) {}
+
+    bool operator()(ti_ndx_t i1, ti_ndx_t i2)
+    {
+        return keys[i1] < keys[i2];
+    }
+};
+struct KeyNdxPair {
+    SFC_Key key_;
+    ti_ndx_t ndx_;
+
+    bool operator<( const KeyNdxPair& rhs ) const
+        { return key_ < rhs.key_; }
+};
 template <typename T>
 void HashTable<T>::flushTable()
 {
@@ -401,7 +420,7 @@ void HashTable<T>::flushTable()
     for(int i=0;i<size_old;++i)
     {
         if(status_[i]<0)continue;
-        key_map[j]=key_map[i];
+        key_map[j]=key_[i];
         ndx_map[j]=i;
         ++j;
     }
@@ -409,11 +428,21 @@ void HashTable<T>::flushTable()
     ndx_map.resize(size);
     key_map.resize(size);
     
-    sort(ndx_map.begin(), ndx_map.end(),
-        [&](const int& a, const int& b) {
-            return (key_map[a] < key_map[b]);
-        }
-    );
+    //@TODO better sorting
+    vector<KeyNdxPair> v;
+    v.resize(size);
+    for(int i=0;i<size;++i)
+    {
+        v[i].key_=key_map[i];
+        v[i].ndx_=ndx_map[i];
+    }
+    sort( v.begin(), v.end() );
+    for(int i=0;i<size;++i)
+    {
+        ndx_map[i]=v[i].ndx_;
+    }
+    //sort(ndx_map.begin(), ndx_map.end(),KeyComparator(key_map));
+
     for(int i=0;i<size_old;++i)
     {
         ndx_map_old[i]=ti_ndx_doesnt_exist;
@@ -430,6 +459,9 @@ void HashTable<T>::flushTable()
     {
         elenode_[i].ndx(i);
     }
+    //for(int i=1;i<size;++i)
+    //    if(key_[i]<key_[i-1])
+    //        printf("key1<key0\n");
     
     status_.resize(size,false);
     status_.set(CS_Permanent);
