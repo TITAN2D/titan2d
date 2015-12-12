@@ -305,6 +305,13 @@ public:
         PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts);
         PROFILE3_TIMINGS_PRINTING(HAdaptUnrefine_unrefine_calc_wet_dry_orient);
 
+        PROFILE3_TIMINGS_PRINTING(flushTable_sort_prep);
+        PROFILE3_TIMINGS_PRINTING(flushTable_sort);
+        PROFILE3_TIMINGS_PRINTING(flushTable_sort_post);
+        PROFILE3_TIMINGS_PRINTING(flushTable_HashTable_reorder);
+        PROFILE3_TIMINGS_PRINTING(flushTable_NodeHashTable_reorder);
+        PROFILE3_TIMINGS_PRINTING(flushTable_ElementsHashTable_reorder);
+
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
     }
@@ -383,7 +390,12 @@ public:
         IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts = zero);
         IF_DEF_PROFILING3(HAdaptUnrefine_unrefine_calc_wet_dry_orient = zero);
 
-
+        IF_DEF_PROFILING3(flushTable_sort_prep = zero);
+        IF_DEF_PROFILING3(flushTable_sort = zero);
+        IF_DEF_PROFILING3(flushTable_sort_post = zero);
+        IF_DEF_PROFILING3(flushTable_HashTable_reorder = zero);
+        IF_DEF_PROFILING3(flushTable_NodeHashTable_reorder = zero);
+        IF_DEF_PROFILING3(flushTable_ElementsHashTable_reorder = zero);
 
         //IF_DEF_PROFILING1(=zero);
         //IF_DEF_PROFILING3(=zero);
@@ -463,6 +475,14 @@ public:
     IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_delete_oldsons);
     IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts);
     IF_DEF_PROFILING1(Clock::duration HAdaptUnrefine_unrefine_calc_wet_dry_orient);
+
+    IF_DEF_PROFILING1(Clock::duration flushTable_sort_prep);
+    IF_DEF_PROFILING1(Clock::duration flushTable_sort);
+    IF_DEF_PROFILING1(Clock::duration flushTable_sort_post);
+    IF_DEF_PROFILING1(Clock::duration flushTable_HashTable_reorder);
+    IF_DEF_PROFILING1(Clock::duration flushTable_NodeHashTable_reorder);
+    IF_DEF_PROFILING1(Clock::duration flushTable_ElementsHashTable_reorder);
+
     //IF_DEF_PROFILING1(Clock::duration );
     //IF_DEF_PROFILING3(Clock::duration );
 };
