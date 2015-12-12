@@ -451,9 +451,9 @@ void HashTable<T>::flushTable()
     PROFILING3_STOPADD_RESTART(flushTable_sort_prep,pt_start);
 
     //sort unsorted part with dissent algorithm
-    BottomUpSort(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),&(key_map_work[sorted_region]),&(ndx_map_work[sorted_region]));
+    MergeSort_BottomUp(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),&(key_map_work[sorted_region]),&(ndx_map_work[sorted_region]));
 
-
+    PROFILING3_STOPADD_RESTART(flushTable_sort,pt_start);
     //now do insert sort
     MergeSortedArraysToSortedArray(sorted_region,&(key_map[0]),&(ndx_map[0]),
                                    size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),
@@ -461,7 +461,7 @@ void HashTable<T>::flushTable()
 
     key_map.swap(key_map_work);
     ndx_map.swap(ndx_map_work);
-    PROFILING3_STOPADD_RESTART(flushTable_sort,pt_start);
+    PROFILING3_STOPADD_RESTART(flushTable_sort2,pt_start);
 #endif
 #ifdef SORTALL
     //@TODO better sorting
@@ -476,7 +476,7 @@ void HashTable<T>::flushTable()
     ndx_map_work.resize(size);
     key_map_work.resize(size);
     PROFILING3_STOPADD_RESTART(flushTable_sort_prep,pt_start);
-    BottomUpSort(size,&(key_map[0]),&(ndx_map[0]),&(key_map_work[0]),&(ndx_map_work[0]));
+    MergeSort_BottomUp(size,&(key_map[0]),&(ndx_map[0]),&(key_map_work[0]),&(ndx_map_work[0]));
     PROFILING3_STOPADD_RESTART(flushTable_sort,pt_start);
     /*for(int i=0;i<size;++i)
     {
@@ -504,11 +504,11 @@ void HashTable<T>::flushTable()
     {
         elenode_[i].ndx(i);
     }
-    /*for(int i=1;i<size;++i)
+    for(int i=1;i<size;++i)
         if(key_[i-1]>key_[i]){
             cout<<i<<" "<<key_[i-1]<<" "<<key_[i]<<" "<<(key_[i-1]>key_[i])<<"\n";
             assert(0);
-        }*/
+        }
     
     status_.resize(size,false);
     status_.set(CS_Permanent);

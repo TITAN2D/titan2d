@@ -307,6 +307,7 @@ public:
 
         PROFILE3_TIMINGS_PRINTING(flushTable_sort_prep);
         PROFILE3_TIMINGS_PRINTING(flushTable_sort);
+        PROFILE3_TIMINGS_PRINTING(flushTable_sort2);
         PROFILE3_TIMINGS_PRINTING(flushTable_sort_post);
         PROFILE3_TIMINGS_PRINTING(flushTable_HashTable_reorder);
         PROFILE3_TIMINGS_PRINTING(flushTable_NodeHashTable_reorder);
@@ -392,6 +393,7 @@ public:
 
         IF_DEF_PROFILING3(flushTable_sort_prep = zero);
         IF_DEF_PROFILING3(flushTable_sort = zero);
+        IF_DEF_PROFILING3(flushTable_sort2 = zero);
         IF_DEF_PROFILING3(flushTable_sort_post = zero);
         IF_DEF_PROFILING3(flushTable_HashTable_reorder = zero);
         IF_DEF_PROFILING3(flushTable_NodeHashTable_reorder = zero);
@@ -478,6 +480,7 @@ public:
 
     IF_DEF_PROFILING1(Clock::duration flushTable_sort_prep);
     IF_DEF_PROFILING1(Clock::duration flushTable_sort);
+    IF_DEF_PROFILING1(Clock::duration flushTable_sort2);
     IF_DEF_PROFILING1(Clock::duration flushTable_sort_post);
     IF_DEF_PROFILING1(Clock::duration flushTable_HashTable_reorder);
     IF_DEF_PROFILING1(Clock::duration flushTable_NodeHashTable_reorder);
