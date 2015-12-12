@@ -1,9 +1,19 @@
-/* 
- * File:   tivector.h
- * Author: mikola
+/*******************************************************************
+ * Copyright (C) 2015 University at Buffalo
  *
- * Created on August 30, 2015, 7:46 PM
+ * This software can be redistributed free of charge.  See COPYING
+ * file in the top distribution directory for more details.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Author:
+ * Description:
+ *
+ *******************************************************************
  */
+
 
 #ifndef TIVECTOR_H
 #define	TIVECTOR_H
@@ -284,7 +294,7 @@ public:
         return size_-1;
     }
     
-    void reorder(ti_ndx_t *new_order, tisize_t new_size)
+    void reorder(const ti_ndx_t *new_order, const tisize_t new_size)
     {
         swap_arrays();
         if(new_size>reserved_size_){
@@ -301,7 +311,7 @@ public:
             array_[i]=array_old_[new_order[i]];
         }
     }
-    void reorder_ndx(ti_ndx_t *new_order, ti_ndx_t *old_to_new, tisize_t new_size)
+    void reorder_ndx(const ti_ndx_t *new_order,const  ti_ndx_t *old_to_new,const  tisize_t new_size)
     {
         swap_arrays();
         if(new_size>reserved_size_){
