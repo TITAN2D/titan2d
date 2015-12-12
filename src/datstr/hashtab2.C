@@ -25,6 +25,7 @@
 #include "../header/boundary.h"
 #include "../header/elenode.hpp"
 #include "../header/titan2d_utils.h"
+#include "../header/ticore/tisort.hpp"
 
 /*#undef SEEK_SET
 #undef SEEK_END
@@ -405,17 +406,24 @@ struct KeyNdxPair {
     bool operator<( const KeyNdxPair& rhs ) const
         { return key_ < rhs.key_; }
 };
+
+
+//#include "../header/ticore/parallel_stable_sort.hpp"
+#include <bitset>
 template <typename T>
 void HashTable<T>::flushTable()
 {
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
     int size_old=key_.size();
     ndx_map.resize(size_old);
     key_map.resize(size_old);
     ndx_map_old.resize(size_old);
     
-    //key_.equate_reserved_size();
-    //status_.equate_reserved_size();
+    //sorting
+
     
+    //make key and ndx arrays without deleted elenodes
     int j=0;
     for(int i=0;i<size_old;++i)
     {
@@ -428,20 +436,57 @@ void HashTable<T>::flushTable()
     ndx_map.resize(size);
     key_map.resize(size);
     
+#define TWO_STEPS_SORT
+//#define  SORTALL
+#ifdef TWO_STEPS_SORT
+    ndx_map_work.resize(size);
+    key_map_work.resize(size);
+
+    //find sorted initial region, aside from initial run it should be mostly sorted, only new elenodes can be unsorted
+    int sorted_region=0;
+    for(sorted_region=1;sorted_region<size&&key_map[sorted_region]>=key_map[sorted_region-1];++sorted_region)
+    {
+    }
+
+    PROFILING3_STOPADD_RESTART(flushTable_sort_prep,pt_start);
+
+    //sort unsorted part with dissent algorithm
+    BottomUpSort(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),&(key_map_work[sorted_region]),&(ndx_map_work[sorted_region]));
+
+
+    //now do insert sort
+    MergeSortedArraysToSortedArray(sorted_region,&(key_map[0]),&(ndx_map[0]),
+                                   size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),
+                                   size,&(key_map_work[0]),&(ndx_map_work[0]));
+
+    key_map.swap(key_map_work);
+    ndx_map.swap(ndx_map_work);
+    PROFILING3_STOPADD_RESTART(flushTable_sort,pt_start);
+#endif
+#ifdef SORTALL
     //@TODO better sorting
-    vector<KeyNdxPair> v;
+    /*vector<KeyNdxPair> v;
     v.resize(size);
     for(int i=0;i<size;++i)
     {
         v[i].key_=key_map[i];
         v[i].ndx_=ndx_map[i];
-    }
-    sort( v.begin(), v.end() );
-    for(int i=0;i<size;++i)
+    }*/
+    //sort( v.begin(), v.end() );
+    ndx_map_work.resize(size);
+    key_map_work.resize(size);
+    PROFILING3_STOPADD_RESTART(flushTable_sort_prep,pt_start);
+    BottomUpSort(size,&(key_map[0]),&(ndx_map[0]),&(key_map_work[0]),&(ndx_map_work[0]));
+    PROFILING3_STOPADD_RESTART(flushTable_sort,pt_start);
+    /*for(int i=0;i<size;++i)
     {
         ndx_map[i]=v[i].ndx_;
-    }
+    }*/
     //sort(ndx_map.begin(), ndx_map.end(),KeyComparator(key_map));
+#endif
+
+
+
 
     for(int i=0;i<size_old;++i)
     {
@@ -451,7 +496,7 @@ void HashTable<T>::flushTable()
     {
         ndx_map_old[ndx_map[i]]=i;
     }
-    
+    PROFILING3_STOPADD_RESTART(flushTable_sort_post,pt_start);
     //reoder content
     key_.reorder(&(ndx_map[0]), size);
     elenode_.reorder(&(ndx_map[0]), size);
@@ -459,9 +504,11 @@ void HashTable<T>::flushTable()
     {
         elenode_[i].ndx(i);
     }
-    //for(int i=1;i<size;++i)
-    //    if(key_[i]<key_[i-1])
-    //        printf("key1<key0\n");
+    /*for(int i=1;i<size;++i)
+        if(key_[i-1]>key_[i]){
+            cout<<i<<" "<<key_[i-1]<<" "<<key_[i]<<" "<<(key_[i-1]>key_[i])<<"\n";
+            assert(0);
+        }*/
     
     status_.resize(size,false);
     status_.set(CS_Permanent);
@@ -478,6 +525,7 @@ void HashTable<T>::flushTable()
     }
 
     all_elenodes_are_permanent=true;
+    PROFILING3_STOPADD_RESTART(flushTable_HashTable_reorder,pt_start);
 }
 template <typename T>
 void HashTable<T>::reserve_base(const tisize_t new_reserve_size)
@@ -667,24 +715,36 @@ void NodeHashTable::flushNodeTable()
 {
     double t_start = MPI_Wtime();
     flushTable();
-    
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
     int size=ndx_map.size();
     
+#pragma omp sections
+{
+#pragma omp section
     id_.reorder(&(ndx_map[0]), size);
+#pragma omp section
     num_assoc_elem_.reorder(&(ndx_map[0]), size);
+#pragma omp section
     info_.reorder(&(ndx_map[0]), size);
+#pragma omp section
     for(int i=0;i<DIMENSION;i++)
         coord_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
     elevation_.reorder(&(ndx_map[0]), size);
+#pragma omp section
     for(int i=0;i<NUM_STATE_VARS;i++)
-    {
         flux_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+    for(int i=0;i<NUM_STATE_VARS;i++)
         refinementflux_[i].reorder(&(ndx_map[0]), size);
-    }
+#pragma omp section
     connection_id_.reorder(&(ndx_map[0]), size);
-    
+}
+    PROFILING3_STOPADD_RESTART(flushTable_NodeHashTable_reorder,pt_start);
     titanTimings.flushNodeTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushNodeTableTime += MPI_Wtime() - t_start;
+
 }
 void NodeHashTable::reserve(const tisize_t new_reserve_size)
 {
@@ -1366,90 +1426,153 @@ void ElementsHashTable::flushElemTable()
     //return;
     //@todo proper index reordering
     flushTable();
+    PROFILING3_DEFINE(pt_start);
+    PROFILING3_START(pt_start);
     int size=ndx_map.size();
-    myprocess_.reorder(&(ndx_map[0]), size);
-    generation_.reorder(&(ndx_map[0]), size);
-    opposite_brother_flag_.reorder(&(ndx_map[0]), size);
-    material_.reorder(&(ndx_map[0]), size); /*! ! ! THE MAT. FLAG ! ! !*/
-    lb_weight_.reorder(&(ndx_map[0]), size);
-    lb_key_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)node_keyPtr_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)node_key_ndx_[i].reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
-    node_bubble_ndx_.reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
-    for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)neighbor_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-    father_.reorder(&(ndx_map[0]), size);
-    father_ndx_.reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-    for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<4;++i)son_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-    for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
-    bcptr_.reorder(&(ndx_map[0]), size);
-    ndof_.reorder(&(ndx_map[0]), size);
-    no_of_eqns_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<EQUATIONS;++i)el_error_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<EQUATIONS;++i)el_solution_[i].reorder(&(ndx_map[0]), size);
-    refined_.reorder(&(ndx_map[0]), size);
-    adapted_.reorder(&(ndx_map[0]), size);
-    which_son_.reorder(&(ndx_map[0]), size);
-    new_old_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<4;++i)brothers_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<4;++i)brothers_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-    for(int i=0;i<DIMENSION;++i)coord_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)elm_loc_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reorder(&(ndx_map[0]), size);
-    shortspeed_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)dx_[i].reorder(&(ndx_map[0]), size);
-    positive_x_side_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)kactxy_[i].reorder(&(ndx_map[0]), size);
-    elevation_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)zeta_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)curvature_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<3;++i)gravity_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<DIMENSION;++i)d_gravity_[i].reorder(&(ndx_map[0]), size);
-    stoppedflags_.reorder(&(ndx_map[0]), size);
-    effect_bedfrict_.reorder(&(ndx_map[0]), size);
-    effect_tanbedfrict_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<2;++i)effect_kactxy_[i].reorder(&(ndx_map[0]), size);
-    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reorder(&(ndx_map[0]), size);
-    ithelem_.reorder(&(ndx_map[0]), size);
-    iwetnode_.reorder(&(ndx_map[0]), size);
-    Awet_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<2;++i)drypoint_[i].reorder(&(ndx_map[0]), size);
-    Swet_.reorder(&(ndx_map[0]), size);
-
-    for(ti_ndx_t ndx = 0; ndx < size; ndx++)
+    #pragma omp parallel sections
     {
-        if(status_[ndx]>=0)
+    #pragma omp section
+        myprocess_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        generation_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        opposite_brother_flag_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        material_.reorder(&(ndx_map[0]), size); /*! ! ! THE MAT. FLAG ! ! !*/
+#pragma omp section
+        lb_weight_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        lb_key_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)node_keyPtr_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)node_key_ndx_[i].reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
+#pragma omp section
+        node_bubble_ndx_.reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)neighbor_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
+#pragma omp section
+        father_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        father_ndx_.reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
+#pragma omp section
+        for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<4;++i)son_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        bcptr_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        ndof_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        no_of_eqns_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<EQUATIONS;++i)el_error_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<EQUATIONS;++i)el_solution_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        refined_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        adapted_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        which_son_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        new_old_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<4;++i)brothers_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<4;++i)brothers_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)coord_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)elm_loc_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        shortspeed_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)dx_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        positive_x_side_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)kactxy_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        elevation_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)zeta_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)curvature_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<3;++i)gravity_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<DIMENSION;++i)d_gravity_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        stoppedflags_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        effect_bedfrict_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        effect_tanbedfrict_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<2;++i)effect_kactxy_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        ithelem_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        iwetnode_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        Awet_.reorder(&(ndx_map[0]), size);
+#pragma omp section
+        for(int i=0;i<2;++i)drypoint_[i].reorder(&(ndx_map[0]), size);
+#pragma omp section
+        Swet_.reorder(&(ndx_map[0]), size);
+    }
+//#pragma omp section
+        for(ti_ndx_t ndx = 0; ndx < size; ndx++)
         {
-            //elements
-            for (int j = 0; j < 8; j++) {
-                ti_ndx_t neigh_ndx=neighbor_ndx_[j][ndx];
+            if(status_[ndx]>=0)
+            {
+                //elements
+                for (int j = 0; j < 8; j++) {
+                    ti_ndx_t neigh_ndx=neighbor_ndx_[j][ndx];
 
-                if(ti_ndx_not_negative(neigh_ndx))
-                    neighborPtr_[j][ndx] = &(elenode_[neigh_ndx]);
-                else
-                    neighborPtr_[j][ndx] = nullptr;
-            }
-            //nodes
-            for (int j = 0; j < 8; j++) {
-                ti_ndx_t node_ndx=node_key_ndx_[j][ndx];
+                    if(ti_ndx_not_negative(neigh_ndx))
+                        neighborPtr_[j][ndx] = &(elenode_[neigh_ndx]);
+                    else
+                        neighborPtr_[j][ndx] = nullptr;
+                }
+                //nodes
+                for (int j = 0; j < 8; j++) {
+                    ti_ndx_t node_ndx=node_key_ndx_[j][ndx];
 
-                if(ti_ndx_not_negative(node_ndx))
-                    node_keyPtr_[j][ndx] = &(NodeTable->elenode_[node_ndx]);
-                else
-                    node_keyPtr_[j][ndx] = nullptr;
+                    if(ti_ndx_not_negative(node_ndx))
+                        node_keyPtr_[j][ndx] = &(NodeTable->elenode_[node_ndx]);
+                    else
+                        node_keyPtr_[j][ndx] = nullptr;
+                }
             }
         }
-    }
+   // }
     updateLocalElements();
 
     conformation++;
+
+    PROFILING3_STOPADD_RESTART(flushTable_ElementsHashTable_reorder,pt_start);
     titanTimings.flushElemTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushElemTableTime += MPI_Wtime() - t_start;
 }
