@@ -150,6 +150,7 @@ inline SFC_Key sfc_key_read_from_space(const unsigned readspace[],int & pos)
 #else
 #include <stdio.h>
 #include <stdint.h>
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 typedef uint64_t SFC_Key;
 

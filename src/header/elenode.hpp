@@ -9,6 +9,8 @@
 #define	ELENODE_HPP
 
 //this header should be use instead of node.h element.h hashtab.h
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 
 #include "sfc.h"
