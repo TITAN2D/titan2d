@@ -21,6 +21,9 @@
  * =====================================================================================
  * $Id:$
  */
+#define __STDC_FORMAT_MACROS 
+#include <inttypes.h>
+
 #include <iostream>
 #include <fstream>
 #include <string>

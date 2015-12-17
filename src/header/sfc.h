@@ -15,6 +15,9 @@
 #ifndef SFC_H_
 #define SFC_H_
 
+#define __STDC_FORMAT_MACROS 
+#include <inttypes.h>
+
 #include "constant.h"
 #include <ostream>
 
