@@ -225,6 +225,9 @@ protected:
 
     vector<ti_ndx_t> ndx_map_work;
     vector<SFC_Key> key_map_work;
+
+    vector<ti_ndx_t> ndx_map_block0_work;
+    vector<ti_ndx_t> ndx_map_block1_work;
 };
 
 

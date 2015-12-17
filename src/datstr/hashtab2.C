@@ -451,24 +451,24 @@ void HashTable<T>::flushTable()
     PROFILING3_STOPADD_RESTART(flushTable_sort_prep,pt_start);
 
     //sort unsorted part with dissent algorithm
-    MergeSort_BottomUp_serial(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),&(key_map_work[sorted_region]),&(ndx_map_work[sorted_region]));
+    MergeSort_BottomUp(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),&(key_map_work[sorted_region]),&(ndx_map_work[sorted_region]));
 
     PROFILING3_STOPADD_RESTART(flushTable_sort,pt_start);
     //now do insert sort
     if(sorted_region>=size-sorted_region)
     {
-        //#pragma omp parallel
+        #pragma omp parallel
         {
-            MergeSortedArraysToSortedArray(sorted_region,&(key_map[0]),&(ndx_map[0]),
+            MergeSortedArraysToSortedArray_omp(sorted_region,&(key_map[0]),&(ndx_map[0]),
                                        size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),
                                        size,&(key_map_work[0]),&(ndx_map_work[0]));
         }
     }
     else
     {
-        //#pragma omp parallel
+        #pragma omp parallel
         {
-            MergeSortedArraysToSortedArray(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),
+            MergeSortedArraysToSortedArray_omp(size-sorted_region,&(key_map[sorted_region]),&(ndx_map[sorted_region]),
                                        sorted_region,&(key_map[0]),&(ndx_map[0]),
                                        size,&(key_map_work[0]),&(ndx_map_work[0]));
         }
