@@ -120,4 +120,6 @@ const int GHOST = -9876; //"refined" GHOST CELL FLAG
 #endif
 
 
+#define HASHTABLE_LOOKUP_LINSEARCH 8
+
 #endif

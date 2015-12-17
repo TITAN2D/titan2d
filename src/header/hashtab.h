@@ -44,8 +44,6 @@ using namespace std;
 #endif
 
 
-#define HASHTABLE_LOOKUP_LINSEARCH 8
-
 class Element;
 class Node;
 class BC;
