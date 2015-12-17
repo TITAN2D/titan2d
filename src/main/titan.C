@@ -15,6 +15,9 @@
  * $Id: hpfem.C 235 2012-03-29 07:04:35Z dkumar $ 
  */
 
+#define __STDC_FORMAT_MACROS 
+#include <inttypes.h>
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
