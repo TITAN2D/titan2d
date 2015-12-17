@@ -217,7 +217,9 @@ AC_CONFIG_FILES([Makefile
                  src/tecplot/Makefile
                  src/useful/Makefile
                  src/vectordatapreproc/Makefile
-                 src/main/titanvars.sh])
+                 src/main/titanvars.sh
+                 tests/Makefile
+                 tests/ticore/Makefile])
 
 
 AC_OUTPUT

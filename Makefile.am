@@ -7,4 +7,4 @@
 DIST_OTHER = config.h.in 
 EXTRA_DIST = install-titan.sh README.GRASS README.AUTOCONF titan.1.gz titan_gui.1.gz
 
-SUBDIRS = src scripts doc
+SUBDIRS = src scripts doc tests
