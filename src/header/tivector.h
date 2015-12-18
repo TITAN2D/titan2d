@@ -20,6 +20,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include "titan2d.h"
 #include "ticore.hpp"
 
 typedef int tisize_t;
@@ -294,8 +295,13 @@ public:
         return size_-1;
     }
     
+    /**
+     * reorder array content according to new_order
+     */
     void reorder(const ti_ndx_t *new_order, const tisize_t new_size)
     {
+        #pragma omp single
+        {
         swap_arrays();
         if(new_size>reserved_size_){
             //move to array_old_
@@ -305,13 +311,17 @@ public:
             array_=TI_ALLOC(T,reserved_size_);
         }
         size_=new_size;
-        
+        }
+        #pragma omp for
         for(ti_ndx_t i=0;i<new_size;i++)
         {
             array_[i]=array_old_[new_order[i]];
         }
     }
-    void reorder_ndx(const ti_ndx_t *new_order,const  ti_ndx_t *old_to_new,const  tisize_t new_size)
+    /**
+     * for omp optimized version of reorder, don't use it unless you know what you are doing
+     */
+    void __reorder_prolog(const tisize_t new_size)
     {
         swap_arrays();
         if(new_size>reserved_size_){
@@ -322,17 +332,94 @@ public:
             array_=TI_ALLOC(T,reserved_size_);
         }
         size_=new_size;
-
-        for(ti_ndx_t i=0;i<new_size;i++)
+    }
+    /**
+     * for omp optimized version of reorder, don't use it unless you know what you are doing
+     */
+    void __reorder_body(const ti_ndx_t *new_order)
+    {
+        #pragma omp for
+        for(ti_ndx_t i=0;i<size_;i++)
         {
             array_[i]=array_old_[new_order[i]];
         }
-        for(ti_ndx_t i=0;i<new_size;i++)
+    }
+    void __reorder_body_byblocks(const ti_ndx_t start, const ti_ndx_t end,const ti_ndx_t *new_order)
+    {
+        for(ti_ndx_t i=start;i<end;i++)
         {
-            if(array_[i]>=0)
-                array_[i]=old_to_new[array_[i]];
+            array_[i]=array_old_[new_order[i]];
         }
     }
+    /**
+     * reorder index array content according to new_order and old_to_new conversion
+     */
+    void reorder_ndx(const ti_ndx_t *new_order,const  ti_ndx_t *old_to_new,const  tisize_t new_size)
+    {
+        #pragma omp single
+        {
+            swap_arrays();
+            if(new_size>reserved_size_){
+                //move to array_old_
+                TI_FREE(array_);
+                //allocate new
+                reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
+                array_=TI_ALLOC(T,reserved_size_);
+            }
+            size_=new_size;
+        }
+        #pragma omp for
+        for(ti_ndx_t i=0;i<new_size;i++)
+        {
+            if(array_old_[new_order[i]]>=0)
+                array_[i]=old_to_new[array_old_[new_order[i]]];
+            else
+                array_[i]=array_old_[new_order[i]];
+        }
+    }
+    /**
+     * for omp optimized version of reorder_ndx, don't use it unless you know what you are doing
+     */
+    void __reorder_ndx_prolog(const  tisize_t new_size)
+    {
+        swap_arrays();
+        if(new_size>reserved_size_){
+            //move to array_old_
+            TI_FREE(array_);
+            //allocate new
+            reserved_size_=2*(new_size/reserved_size_)*reserved_size_;
+            array_=TI_ALLOC(T,reserved_size_);
+        }
+        size_=new_size;
+    }
+    /**
+     * for omp optimized version of reorder_ndx, don't use it unless you know what you are doing
+     */
+    void __reorder_ndx_body(const ti_ndx_t *new_order,const  ti_ndx_t *old_to_new)
+    {
+        #pragma omp for
+        for(ti_ndx_t i=0;i<size_;i++)
+        {
+            if(array_old_[new_order[i]]>=0)
+                array_[i]=old_to_new[array_old_[new_order[i]]];
+            else
+                array_[i]=array_old_[new_order[i]];
+        }
+    }
+    /**
+     * for omp optimized version of reorder_ndx, don't use it unless you know what you are doing
+     */
+    void __reorder_ndx_body_byblocks(const ti_ndx_t start, const ti_ndx_t end,const ti_ndx_t *new_order,const  ti_ndx_t *old_to_new)
+    {
+        for(ti_ndx_t i=start;i<end;i++)
+        {
+            if(array_old_[new_order[i]]>=0)
+                array_[i]=old_to_new[array_old_[new_order[i]]];
+            else
+                array_[i]=array_old_[new_order[i]];
+        }
+    }
+
     void set(const T& value)
     {
         for(ti_ndx_t i=0;i<size_;i++)

@@ -503,28 +503,64 @@ void HashTable<T>::flushTable()
 
 
 
-    for(int i=0;i<size_old;++i)
+    for(ti_ndx_t i=0;i<size_old;++i)
     {
         ndx_map_old[i]=ti_ndx_doesnt_exist;
     }
-    for(int i=0;i<size;++i)
+    for(ti_ndx_t i=0;i<size;++i)
     {
         ndx_map_old[ndx_map[i]]=i;
     }
+    //calculate blocks
+    /*ndx_map_block_starts_work.resize(0);
+    ndx_map_block_ends_work.resize(0);
+    ndx_map_old_block_starts_work.resize(0);
+
+    ti_ndx_t block_starts,block_ends;
+    block_starts=0;
+    block_ends=size;
+    for(ti_ndx_t i=1;i<size;++i)
+    {
+        if(ndx_map[i]-ndx_map[i-1]!=1)
+        {
+            block_ends=i;
+            ndx_map_block_starts_work.push_back(block_starts);
+            ndx_map_block_ends_work.push_back(block_ends);
+            ndx_map_old_block_starts_work.push_back(ndx_map[block_starts]);
+            block_starts=i;
+        }
+    }
+    ndx_map_block_starts_work.push_back(block_starts);
+    ndx_map_block_ends_work.push_back(size);
+    ndx_map_old_block_starts_work.push_back(ndx_map[block_starts]);
+
+    printf("size %d ndx_map_block_starts_work.size() %d\n",size,ndx_map_block_starts_work.size());*/
+    /*for(ti_ndx_t i=0;i<ndx_map_block_starts_work.size();++i)
+    {
+        printf("%6d %6d %6d %6d\n",i,ndx_map_block_starts_work[i],ndx_map_block_ends_work[i],ndx_map_old_block_starts_work[i]);
+        for(ti_ndx_t j=ndx_map_block_starts_work[i];j<ndx_map_block_ends_work[i];++j)
+        {
+            printf("\t%6d %6d\n",j,ndx_map[j]);
+        }
+
+    }*/
+
+
     PROFILING3_STOPADD_RESTART(flushTable_sort_post,pt_start);
     //reoder content
     key_.reorder(&(ndx_map[0]), size);
     elenode_.reorder(&(ndx_map[0]), size);
-    for(int i=0;i<size;++i)
+    for(ti_ndx_t i=0;i<size;++i)
     {
         elenode_[i].ndx(i);
     }
-    for(int i=1;i<size;++i)
+#ifdef DEB3
+    for(ti_ndx_t i=1;i<size;++i)
         if(key_[i-1]>key_[i]){
             cout<<i<<" "<<key_[i-1]<<" "<<key_[i]<<" "<<(key_[i-1]>key_[i])<<"\n";
             assert(0);
         }
-    
+#endif
     status_.resize(size,false);
     status_.set(CS_Permanent);
     //update baskets
@@ -734,26 +770,26 @@ void NodeHashTable::flushNodeTable()
     PROFILING3_START(pt_start);
     int size=ndx_map.size();
     
-#pragma omp sections
+#pragma omp parallel
 {
-#pragma omp section
+
     id_.reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     num_assoc_elem_.reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     info_.reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     for(int i=0;i<DIMENSION;i++)
         coord_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     elevation_.reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     for(int i=0;i<NUM_STATE_VARS;i++)
         flux_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     for(int i=0;i<NUM_STATE_VARS;i++)
         refinementflux_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
+
     connection_id_.reorder(&(ndx_map[0]), size);
 }
     PROFILING3_STOPADD_RESTART(flushTable_NodeHashTable_reorder,pt_start);
@@ -1301,6 +1337,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
 {
     ti_ndx_t ndx=add_ndx(keyi);
     
+
     myprocess_.push_back();
     generation_.push_back();
     opposite_brother_flag_.push_back();
@@ -1444,120 +1481,288 @@ void ElementsHashTable::flushElemTable()
     PROFILING3_DEFINE(pt_start);
     PROFILING3_START(pt_start);
     int size=ndx_map.size();
-    #pragma omp parallel sections
+    ti_ndx_t *new_order=&(ndx_map[0]);
+    ti_ndx_t *old_to_new=&(ndx_map_old[0]);
+    ti_ndx_t *old_to_new_node=&(NodeTable->ndx_map_old[0]);
+
+    for(int i=0;i<8;++i)node_key_ndx_[i].__reorder_ndx_prolog(size);
+    node_bubble_ndx_.__reorder_ndx_prolog(size);
+    for(int i=0;i<8;++i)neighbor_ndx_[i].__reorder_ndx_prolog(size);
+    father_ndx_.__reorder_ndx_prolog(size);
+    for(int i=0;i<4;++i)son_ndx_[i].__reorder_ndx_prolog(size);
+    for(int i=0;i<4;++i)brothers_ndx_[i].__reorder_ndx_prolog(size);
+
+    myprocess_.__reorder_prolog(size);
+    generation_.__reorder_prolog(size);
+    opposite_brother_flag_.__reorder_prolog(size);
+    material_.__reorder_prolog(size); /*! ! ! THE MAT. FLAG ! ! !*/
+    lb_weight_.__reorder_prolog(size);
+    lb_key_.__reorder_prolog(size);
+    for(int i=0;i<8;++i)node_key_[i].__reorder_prolog(size);
+    for(int i=0;i<8;++i)neighbors_[i].__reorder_prolog(size);
+    father_.__reorder_prolog(size);
+    for(int i=0;i<4;++i)son_[i].__reorder_prolog(size);
+    for(int i=0;i<8;++i)neigh_proc_[i].__reorder_prolog(size);
+    for(int i=0;i<8;++i)neigh_gen_[i].__reorder_prolog(size);
+    bcptr_.__reorder_prolog(size);
+    ndof_.__reorder_prolog(size);
+    no_of_eqns_.__reorder_prolog(size);
+    for(int i=0;i<EQUATIONS;++i)el_error_[i].__reorder_prolog(size);
+    for(int i=0;i<EQUATIONS;++i)el_solution_[i].__reorder_prolog(size);
+    refined_.__reorder_prolog(size);
+    adapted_.__reorder_prolog(size);
+    which_son_.__reorder_prolog(size);
+    new_old_.__reorder_prolog(size);
+    for(int i=0;i<4;++i)brothers_[i].__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)coord_[i].__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)elm_loc_[i].__reorder_prolog(size);
+    for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].__reorder_prolog(size);
+    for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].__reorder_prolog(size);
+    for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].__reorder_prolog(size);
+    shortspeed_.__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)dx_[i].__reorder_prolog(size);
+    positive_x_side_.__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)kactxy_[i].__reorder_prolog(size);
+    elevation_.__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)zeta_[i].__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)curvature_[i].__reorder_prolog(size);
+    for(int i=0;i<3;++i)gravity_[i].__reorder_prolog(size);
+    for(int i=0;i<DIMENSION;++i)d_gravity_[i].__reorder_prolog(size);
+    stoppedflags_.__reorder_prolog(size);
+    effect_bedfrict_.__reorder_prolog(size);
+    effect_tanbedfrict_.__reorder_prolog(size);
+    for(int i=0;i<2;++i)effect_kactxy_[i].__reorder_prolog(size);
+    for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].__reorder_prolog(size);
+    ithelem_.__reorder_prolog(size);
+    iwetnode_.__reorder_prolog(size);
+    Awet_.__reorder_prolog(size);
+    for(int i=0;i<2;++i)drypoint_[i].__reorder_prolog(size);
+    Swet_.__reorder_prolog(size);
+
+#if 0
+    //DIMENSION__MAX_NUM_STATE_VARS
+#pragma omp parallel
+{
+        node_bubble_ndx_.__reorder_ndx_body(new_order,old_to_new_node);
+        #pragma unroll (8)
+        for(int i=0;i<8;++i)
+        {
+            node_key_ndx_[i].__reorder_ndx_body(new_order,old_to_new_node);
+            neighbor_ndx_[i].__reorder_ndx_body(new_order,old_to_new);
+        }
+        father_ndx_.__reorder_ndx_body(new_order,old_to_new);
+        #pragma unroll (4)
+        for(int i=0;i<4;++i)
+        {
+            son_ndx_[i].__reorder_ndx_body(new_order,old_to_new);
+            brothers_ndx_[i].__reorder_ndx_body(new_order,old_to_new);
+        }
+
+        myprocess_.__reorder_body(new_order);
+        generation_.__reorder_body(new_order);
+        opposite_brother_flag_.__reorder_body(new_order);
+        material_.__reorder_body(new_order); /*! ! ! THE MAT. FLAG ! ! !*/
+        lb_weight_.__reorder_body(new_order);
+        lb_key_.__reorder_body(new_order);
+
+        #pragma unroll (8)
+        for(int i=0;i<8;++i)
+        {
+            node_key_[i].__reorder_body(new_order);
+            neighbors_[i].__reorder_body(new_order);
+            neigh_proc_[i].__reorder_body(new_order);
+            neigh_gen_[i].__reorder_body(new_order);
+        }
+        #pragma unroll (4)
+        for(int i=0;i<4;++i)
+        {
+            son_[i].__reorder_body(new_order);
+            brothers_[i].__reorder_body(new_order);
+        }
+        father_.__reorder_body(new_order);
+        bcptr_.__reorder_body(new_order);
+        ndof_.__reorder_body(new_order);
+        no_of_eqns_.__reorder_body(new_order);
+        #pragma unroll (EQUATIONS)
+        for(int i=0;i<EQUATIONS;++i)
+        {
+            el_error_[i].__reorder_body(new_order);
+            el_solution_[i].__reorder_body(new_order);
+        }
+        refined_.__reorder_body(new_order);
+        adapted_.__reorder_body(new_order);
+        which_son_.__reorder_body(new_order);
+        new_old_.__reorder_body(new_order);
+
+        #pragma unroll (DIMENSION)
+        for(int i=0;i<DIMENSION;++i)
+        {
+            coord_[i].__reorder_body(new_order);
+            elm_loc_[i].__reorder_body(new_order);
+            dx_[i].__reorder_body(new_order);
+            eigenvxymax_[i].__reorder_body(new_order);
+            kactxy_[i].__reorder_body(new_order);
+            zeta_[i].__reorder_body(new_order);
+            curvature_[i].__reorder_body(new_order);
+            d_gravity_[i].__reorder_body(new_order);
+        }
+        #pragma unroll (3)
+        for(int i=0;i<3;++i)
+            gravity_[i].__reorder_body(new_order);
+
+        #pragma unroll (2)
+        for(int i = 0; i < 2; ++i)
+        {
+            effect_kactxy_[i].__reorder_body( new_order);
+            drypoint_[i].__reorder_body(new_order);
+        }
+        for(int i=0;i<NUM_STATE_VARS;++i)
+        {
+            state_vars_[i].__reorder_body(new_order);
+            prev_state_vars_[i].__reorder_body(new_order);
+            Influx_[i].__reorder_body(new_order);
+            #pragma unroll (DIMENSION)
+            for(int j=0;j<DIMENSION;++j)
+            {
+                d_state_vars_[i*DIMENSION+j].__reorder_body(new_order);
+            }
+
+        }
+        shortspeed_.__reorder_body(new_order);
+        positive_x_side_.__reorder_body(new_order);
+        elevation_.__reorder_body(new_order);
+        stoppedflags_.__reorder_body(new_order);
+        effect_bedfrict_.__reorder_body(new_order);
+        effect_tanbedfrict_.__reorder_body(new_order);
+        ithelem_.__reorder_body(new_order);
+        iwetnode_.__reorder_body(new_order);
+        Awet_.__reorder_body(new_order);
+        Swet_.__reorder_body(new_order);
+}
+#endif
+#if 1
+#define ELEM_FLUSH_BLOCK_SIZE 256
+    ti_ndx_t portions=size/ELEM_FLUSH_BLOCK_SIZE;
+    if(portions*ELEM_FLUSH_BLOCK_SIZE!=size)
+        ++portions;
+    #pragma omp parallel
     {
-    #pragma omp section
-        myprocess_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        generation_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        opposite_brother_flag_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        material_.reorder(&(ndx_map[0]), size); /*! ! ! THE MAT. FLAG ! ! !*/
-#pragma omp section
-        lb_weight_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        lb_key_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)node_key_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)node_keyPtr_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)node_key_ndx_[i].reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
-#pragma omp section
-        node_bubble_ndx_.reorder_ndx(&(ndx_map[0]),&(NodeTable->ndx_map_old[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)neighbors_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)neighborPtr_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)neighbor_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-#pragma omp section
-        father_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        father_ndx_.reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-#pragma omp section
-        for(int i=0;i<4;++i)son_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<4;++i)son_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)neigh_proc_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<8;++i)neigh_gen_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        bcptr_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        ndof_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        no_of_eqns_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<EQUATIONS;++i)el_error_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<EQUATIONS;++i)el_solution_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        refined_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        adapted_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        which_son_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        new_old_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<4;++i)brothers_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<4;++i)brothers_ndx_[i].reorder_ndx(&(ndx_map[0]),&(ndx_map_old[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)coord_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)elm_loc_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<NUM_STATE_VARS;++i)state_vars_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<NUM_STATE_VARS;++i)prev_state_vars_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<NUM_STATE_VARS * DIMENSION;++i)d_state_vars_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        shortspeed_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)dx_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        positive_x_side_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)eigenvxymax_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)kactxy_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        elevation_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)zeta_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)curvature_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<3;++i)gravity_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<DIMENSION;++i)d_gravity_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        stoppedflags_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        effect_bedfrict_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        effect_tanbedfrict_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<2;++i)effect_kactxy_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<NUM_STATE_VARS;++i)Influx_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        ithelem_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        iwetnode_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        Awet_.reorder(&(ndx_map[0]), size);
-#pragma omp section
-        for(int i=0;i<2;++i)drypoint_[i].reorder(&(ndx_map[0]), size);
-#pragma omp section
-        Swet_.reorder(&(ndx_map[0]), size);
+        //int ithread=omp_get_thread_num();
+        //size
+
+        //for(ti_ndx_t start=ELEM_FLUSH_BLOCK_SIZE*ithread;start<size;start+=threads_number*ELEM_FLUSH_BLOCK_SIZE)
+#pragma omp for schedule(dynamic,1)
+        for(ti_ndx_t iportion=0;iportion<portions;++iportion)
+        {
+            ti_ndx_t start=ELEM_FLUSH_BLOCK_SIZE*iportion;
+            ti_ndx_t end=min(size,ELEM_FLUSH_BLOCK_SIZE*iportion+ELEM_FLUSH_BLOCK_SIZE);
+
+            node_bubble_ndx_.__reorder_ndx_body_byblocks(start, end,new_order,old_to_new_node);
+            #pragma unroll (8)
+            for(int i=0;i<8;++i)
+            {
+                node_key_ndx_[i].__reorder_ndx_body_byblocks(start, end,new_order,old_to_new_node);
+                neighbor_ndx_[i].__reorder_ndx_body_byblocks(start, end,new_order,old_to_new);
+            }
+            father_ndx_.__reorder_ndx_body_byblocks(start, end,new_order,old_to_new);
+            #pragma unroll (4)
+            for(int i=0;i<4;++i)
+            {
+                son_ndx_[i].__reorder_ndx_body_byblocks(start, end,new_order,old_to_new);
+                brothers_ndx_[i].__reorder_ndx_body_byblocks(start, end,new_order,old_to_new);
+            }
+
+            myprocess_.__reorder_body_byblocks(start, end,new_order);
+            generation_.__reorder_body_byblocks(start, end,new_order);
+            opposite_brother_flag_.__reorder_body_byblocks(start, end,new_order);
+            material_.__reorder_body_byblocks(start, end,new_order); /*! ! ! THE MAT. FLAG ! ! !*/
+            lb_weight_.__reorder_body_byblocks(start, end,new_order);
+            lb_key_.__reorder_body_byblocks(start, end,new_order);
+
+            #pragma unroll (8)
+            for(int i=0;i<8;++i)
+            {
+                node_key_[i].__reorder_body_byblocks(start, end,new_order);
+                neighbors_[i].__reorder_body_byblocks(start, end,new_order);
+                neigh_proc_[i].__reorder_body_byblocks(start, end,new_order);
+                neigh_gen_[i].__reorder_body_byblocks(start, end,new_order);
+            }
+            #pragma unroll (4)
+            for(int i=0;i<4;++i)
+            {
+                son_[i].__reorder_body_byblocks(start, end,new_order);
+                brothers_[i].__reorder_body_byblocks(start, end,new_order);
+            }
+            father_.__reorder_body_byblocks(start, end,new_order);
+            bcptr_.__reorder_body_byblocks(start, end,new_order);
+            ndof_.__reorder_body_byblocks(start, end,new_order);
+            no_of_eqns_.__reorder_body_byblocks(start, end,new_order);
+            #pragma unroll (EQUATIONS)
+            for(int i=0;i<EQUATIONS;++i)
+            {
+                el_error_[i].__reorder_body_byblocks(start, end,new_order);
+                el_solution_[i].__reorder_body_byblocks(start, end,new_order);
+            }
+            refined_.__reorder_body_byblocks(start, end,new_order);
+            adapted_.__reorder_body_byblocks(start, end,new_order);
+            which_son_.__reorder_body_byblocks(start, end,new_order);
+            new_old_.__reorder_body_byblocks(start, end,new_order);
+
+            #pragma unroll (DIMENSION)
+            for(int i=0;i<DIMENSION;++i)
+            {
+                coord_[i].__reorder_body_byblocks(start, end,new_order);
+                elm_loc_[i].__reorder_body_byblocks(start, end,new_order);
+                dx_[i].__reorder_body_byblocks(start, end,new_order);
+                eigenvxymax_[i].__reorder_body_byblocks(start, end,new_order);
+                kactxy_[i].__reorder_body_byblocks(start, end,new_order);
+                zeta_[i].__reorder_body_byblocks(start, end,new_order);
+                curvature_[i].__reorder_body_byblocks(start, end,new_order);
+                d_gravity_[i].__reorder_body_byblocks(start, end,new_order);
+            }
+            #pragma unroll (3)
+            for(int i=0;i<3;++i)
+                gravity_[i].__reorder_body_byblocks(start, end,new_order);
+
+            #pragma unroll (2)
+            for(int i = 0; i < 2; ++i)
+            {
+                effect_kactxy_[i].__reorder_body_byblocks(start, end, new_order);
+                drypoint_[i].__reorder_body_byblocks(start, end,new_order);
+            }
+            for(int i=0;i<NUM_STATE_VARS;++i)
+            {
+                state_vars_[i].__reorder_body_byblocks(start, end,new_order);
+                prev_state_vars_[i].__reorder_body_byblocks(start, end,new_order);
+                Influx_[i].__reorder_body_byblocks(start, end,new_order);
+                #pragma unroll (DIMENSION)
+                for(int j=0;j<DIMENSION;++j)
+                {
+                    d_state_vars_[i*DIMENSION+j].__reorder_body_byblocks(start, end,new_order);
+                }
+
+            }
+            shortspeed_.__reorder_body_byblocks(start, end,new_order);
+            positive_x_side_.__reorder_body_byblocks(start, end,new_order);
+            elevation_.__reorder_body_byblocks(start, end,new_order);
+            stoppedflags_.__reorder_body_byblocks(start, end,new_order);
+            effect_bedfrict_.__reorder_body_byblocks(start, end,new_order);
+            effect_tanbedfrict_.__reorder_body_byblocks(start, end,new_order);
+            ithelem_.__reorder_body_byblocks(start, end,new_order);
+            iwetnode_.__reorder_body_byblocks(start, end,new_order);
+            Awet_.__reorder_body_byblocks(start, end,new_order);
+            Swet_.__reorder_body_byblocks(start, end,new_order);
+        }
     }
-//#pragma omp section
+#endif
+
+PROFILING3_STOPADD_RESTART(flushTable_ElementsHashTable_reorder,pt_start);
+
+    #pragma omp parallel
+    {
+
+#pragma omp for
         for(ti_ndx_t ndx = 0; ndx < size; ndx++)
         {
             if(status_[ndx]>=0)
@@ -1582,12 +1787,13 @@ void ElementsHashTable::flushElemTable()
                 }
             }
         }
-   // }
+    }
+    PROFILING3_STOPADD_RESTART(flushTable_ElementsHashTable_reorder2,pt_start);
     updateLocalElements();
 
     conformation++;
 
-    PROFILING3_STOPADD_RESTART(flushTable_ElementsHashTable_reorder,pt_start);
+    PROFILING3_STOPADD_RESTART(flushTable_ElementsHashTable_updateLocalElements,pt_start);
     titanTimings.flushElemTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushElemTableTime += MPI_Wtime() - t_start;
 }

@@ -312,6 +312,8 @@ public:
         PROFILE3_TIMINGS_PRINTING(flushTable_HashTable_reorder);
         PROFILE3_TIMINGS_PRINTING(flushTable_NodeHashTable_reorder);
         PROFILE3_TIMINGS_PRINTING(flushTable_ElementsHashTable_reorder);
+        PROFILE3_TIMINGS_PRINTING(flushTable_ElementsHashTable_reorder2);
+        PROFILE3_TIMINGS_PRINTING(flushTable_ElementsHashTable_updateLocalElements);
 
         //PROFILE1_TIMINGS_PRINTING();
         //PROFILE3_TIMINGS_PRINTING();
@@ -398,7 +400,8 @@ public:
         IF_DEF_PROFILING3(flushTable_HashTable_reorder = zero);
         IF_DEF_PROFILING3(flushTable_NodeHashTable_reorder = zero);
         IF_DEF_PROFILING3(flushTable_ElementsHashTable_reorder = zero);
-
+        IF_DEF_PROFILING3(flushTable_ElementsHashTable_reorder2 = zero);
+        IF_DEF_PROFILING3(flushTable_ElementsHashTable_updateLocalElements = zero);
         //IF_DEF_PROFILING1(=zero);
         //IF_DEF_PROFILING3(=zero);
     }
@@ -485,7 +488,8 @@ public:
     IF_DEF_PROFILING1(Clock::duration flushTable_HashTable_reorder);
     IF_DEF_PROFILING1(Clock::duration flushTable_NodeHashTable_reorder);
     IF_DEF_PROFILING1(Clock::duration flushTable_ElementsHashTable_reorder);
-
+    IF_DEF_PROFILING1(Clock::duration flushTable_ElementsHashTable_reorder2);
+    IF_DEF_PROFILING1(Clock::duration flushTable_ElementsHashTable_updateLocalElements);
     //IF_DEF_PROFILING1(Clock::duration );
     //IF_DEF_PROFILING3(Clock::duration );
 };

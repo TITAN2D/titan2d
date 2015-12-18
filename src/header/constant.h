@@ -84,6 +84,7 @@ extern void fhsfc2d_(double*, unsigned*, unsigned*);
 /* geoflow data */
 
 const int MAX_NUM_STATE_VARS = 6;
+const int DIMENSION__MAX_NUM_STATE_VARS = MAX_NUM_STATE_VARS*DIMENSION;
 /* NUM_STATE_VARS 3 for single phase 6 for two phases; */
 extern int NUM_STATE_VARS;
 extern bool SHORTSPEED;
