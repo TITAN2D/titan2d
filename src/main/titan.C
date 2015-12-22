@@ -95,6 +95,8 @@ int main(int argc, char *argv[])
     elementsHashTable=nullptr;
     nodeHashTable=nullptr;
     
+    init_TiH5();
+
     bool printUsage=false;
 
     if(argc > 1)

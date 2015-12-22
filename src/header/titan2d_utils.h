@@ -24,8 +24,11 @@
 #include <chrono>
 #include <iostream>
 
+using namespace std;
+
 #include "titan2d.h"
 #include "ticore.hpp"
+#include "constant.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -592,4 +595,9 @@ void merge_vectors_from_threads_to0_omp(vector< vector<T> > &vec)
 #define ASSERT3(statement) {}
 #endif
 
+//!string conversions
+
+extern vector<string> coord_names;
+extern vector<string> SinglePhaseVarNames;
+extern vector<string> TwoPhasesVarNames;
 #endif

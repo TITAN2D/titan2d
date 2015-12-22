@@ -34,7 +34,7 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include "hd5calls.h"
 
 #include "constant.h"
 #include "tivector.h"
@@ -164,6 +164,9 @@ public:
     ti_ndx_t lookup_ndx_locked(const SFC_Key& keyi);
     T* lookup(const SFC_Key& keyi);
     //T lookup(const SFC_Key& keyi);
+
+    //dump HashTable content to hdf5 group
+    virtual void h5write(H5::Group &group);
 protected:
     /**
      * add elenode with key keyi to hashtable and reserve storage
@@ -284,12 +287,18 @@ public:
     void flushNodeTable();
     void reserve(const tisize_t new_reserve_size);
     void reserve_at_least(const tisize_t new_reserve_size);
+
+    //dump NodeHashTable content to hdf5 group
+    virtual void h5write(H5::Group &group);
+    void set_element_type(const ElementType m_elementType);
 private:
      Node* addNode(const SFC_Key& keyi);
      ti_ndx_t addNode_ndx(const SFC_Key& keyi);
      //!thread safe version of addNode_ndx
      ti_ndx_t addNode_ndx_locked(const SFC_Key& keyi);
-public: 
+public:
+    //! Element type
+    ElementType elementType_;
     //! used in delete_unused_nodes_and_elements() function 
     tivector<int> id_;
 
@@ -421,6 +430,8 @@ public:
     Element& elem(const ti_ndx_t ndx){return elenode_[ndx];}
     Element* elemPtr(const ti_ndx_t ndx){return elenode_.array_+ndx;}
 
+    //dump ElementsHashTable content to hdf5 group
+    virtual void h5write(H5::Group &group);
 private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);

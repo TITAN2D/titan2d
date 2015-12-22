@@ -99,10 +99,12 @@ if test "x$with_hdf5" != "xno"; then
         CPPFLAGS="$CPPFLAGS  -I$with_hdf5/include -DH5_USE_16_API"
         LDFLAGS="$LDFLAGS -L$with_hdf5/lib"
     fi
+    
     AC_CHECK_LIB([hdf5],[H5open],,
                   AC_MSG_FAILURE([HDF5 is strongly recommended for paraview support.]
                   [Re-run configure --with-hdf5=/path/to/hdf5.]
                   [Re-run configure --without-hdf5 to get rid of this message]))
+    LIBS="-lhdf5_cpp $LIBS"
 fi
 AM_CONDITIONAL([BUILD_HDF5], test "x$with_hdf5" != "xno")
 

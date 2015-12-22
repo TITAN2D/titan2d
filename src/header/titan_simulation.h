@@ -19,6 +19,9 @@
 
 #include <string>
 #include <vector>
+
+#include "hd5calls.h"
+
 #include "../gisapi/GisApi.h"
 
 #include "integrators.h"
@@ -45,6 +48,8 @@ public:
 
     void run();
     void input_summary();
+
+    void save_restart_file();
 
 
     int myid;
@@ -132,10 +137,15 @@ protected:
      * refinement and unrefinement would otherwise occur.
      */
     void init_piles();
+    /**
+     * write some of the content to h5group
+     */
+    void h5write(H5::Group &group);
 
     ElementType elementType;
 
 
 
 };
+
 #endif

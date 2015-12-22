@@ -20,8 +20,14 @@
 
 #include <string.h>
 #include <assert.h>
+#include <vector>
+#include <string>
+using namespace std;
+
 #include "titan2d.h"
 #include "ticore.hpp"
+#include "hd5calls.h"
+#include "constant.h"
 
 typedef int tisize_t;
 typedef int ti_ndx_t;
@@ -178,6 +184,10 @@ public:
     }
     const tisize_t& size() const {return size_;}
 public:
+    T* get_ptr()
+    {
+        return array_;
+    }
     void swap_arrays(){
         tisize_t tmp_size_=size_;
         tisize_t tmp_reserved_size_=reserved_size_;
@@ -436,6 +446,84 @@ public:
 #endif
     
 };
+
+inline void TiH5_writeTiVector__(H5::Group &group, tivector<int> &value, const char *name, const hsize_t dims)
+{
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(1, &dims);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_I32LE, dataspace);
+    // Write the attribute data.
+    dataset.write(value.get_ptr(), H5::PredType::NATIVE_INT);
+}
+inline void TiH5_writeTiVector__(H5::Group &group, tivector<double> &value, const char *name, const hsize_t dims)
+{
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(1, &dims);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace);
+    // Write the attribute data.
+    dataset.write(value.get_ptr(), H5::PredType::NATIVE_DOUBLE);
+}
+inline void TiH5_writeTiVector__(H5::Group &group, tivector<unsigned long long int> &value, const char *name, const hsize_t dims)
+{
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(1, &dims);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace);
+    // Write the attribute data.
+    dataset.write(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
+}
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+inline void TiH5_writeTiVector__(H5::Group &group, tivector<uint64_t> &value, const char *name, const hsize_t dims)
+{
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(1, &dims);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace);
+    // Write the attribute data.
+    dataset.write(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
+}
+inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<int> *value, const char *name, const hsize_t dim1, const hsize_t dim2, vector<string> *comp_names=NULL)
+{
+    for(int i=0;i<dim1;++i)
+    {
+        string namecomp=name;
+        if(comp_names==NULL)
+            namecomp+=to_string(i);
+        else
+            namecomp+=(*comp_names)[i];
+        TiH5_writeTiVector__(group,value[i],namecomp.c_str(),dim2);
+    }
+}
+inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<double> *value, const char *name, const hsize_t dim1, const hsize_t dim2, vector<string> *comp_names=NULL)
+{
+    for(int i=0;i<dim1;++i)
+    {
+        string namecomp=name;
+        if(comp_names==NULL)
+            namecomp+=to_string(i);
+        else
+            namecomp+=(*comp_names)[i];
+        TiH5_writeTiVector__(group,value[i],namecomp.c_str(),dim2);
+    }
+}
+inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<uint64_t> *value, const char *name, const hsize_t dim1, const hsize_t dim2, vector<string> *comp_names=NULL)
+{
+    for(int i=0;i<dim1;++i)
+    {
+        string namecomp=name;
+        if(comp_names==NULL)
+            namecomp+=to_string(i);
+        else
+            namecomp+=(*comp_names)[i];
+        TiH5_writeTiVector__(group,value[i],namecomp.c_str(),dim2);
+    }
+}
+#define TiH5_writeTiVector(group,value,size) TiH5_writeTiVector__(group, value, #value,size)
+#define TiH5_writeTiVectorArray(group,value,size1,size2) TiH5_writeTiVectorArray__(group, value, #value,size1,size2)
+#define TiH5_writeTiVectorArrayCompName(group,value,size1,comp_names,size2) TiH5_writeTiVectorArray__(group, value, #value,size1,size2,comp_names)
 #endif
 #endif	/* TIVECTOR_H */
 

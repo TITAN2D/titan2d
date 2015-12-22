@@ -96,4 +96,65 @@ hid_t GH5_open_group(hid_t fp, const char *name);
  */
 hid_t GH5_createdataset(hid_t gid, hid_t spcid, const char *dsetname, unsigned type);
 
+
+
+#ifdef __cplusplus
+#include <H5Cpp.h>
+
+extern H5::EnumType datatypeElementType;
+
+/**
+ * initialize all hdf5 enum datatypes
+ */
+void init_TiH5();
+
+#define TiH5_writeIntAttribute(group,value) TiH5_writeScalarAttribute(group, &value, #value,H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT)
+#define TiH5_writeDoubleAttribute(group,value) TiH5_writeScalarAttribute(group, &value, #value,H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE)
+#define TiH5_writeBoolAttribute(group,value) TiH5_writeBoolAttribute__(group, value, #value)
+#define TiH5_writeScalarDataTypeAttribute(group,value,type) TiH5_writeScalarDataTypeAttribute__(group, &value, #value,type)
+
+#define TiH5_writeIntArrayAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, value, #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+#define TiH5_writeDoubleArrayAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, value, #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);
+
+inline void TiH5_writeScalarAttribute(H5::Group &group, const void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
+{
+    hsize_t dims = 1;
+    // Create the data space for the attribute.
+    H5::DataSpace attr_dataspace = H5::DataSpace (1, &dims );
+
+    // Create a dataset attribute.
+    H5::Attribute attribute = group.createAttribute(name, typeRecord, attr_dataspace);
+
+    // Write the attribute data.
+    attribute.write(typeNative, value);
+}
+inline void TiH5_writeBoolAttribute__(H5::Group &group, const int value, const char *name)
+{
+    TiH5_writeScalarAttribute(group,&value,name,H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+}
+
+inline void TiH5_writeScalarDataTypeAttribute__(H5::Group &group, const void *value, const char *name, const H5::DataType& type)
+{
+    hsize_t dims = 1;
+    H5::DataSpace attr_dataspace = H5::DataSpace (1, &dims );
+
+    // Create a dataset attribute.
+    H5::Attribute attribute = group.createAttribute(name, type, attr_dataspace);
+
+    // Write the attribute data.
+    attribute.write(type, value);
+}
+
+inline void TiH5_writeArrayAttribute(H5::Group &group, const hsize_t dims, const void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
+{
+    // Create the data space for the attribute.
+    H5::DataSpace attr_dataspace = H5::DataSpace (1, &dims );
+
+    // Create a dataset attribute.
+    H5::Attribute attribute = group.createAttribute(name, typeRecord, attr_dataspace);
+
+    // Write the attribute data.
+    attribute.write(typeNative, value);
+}
+#endif
 #endif
