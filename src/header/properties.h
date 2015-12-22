@@ -693,6 +693,8 @@ public:
     //! 2-d array holding the maximum throughout time kinetice energy at every point
     double *max_kinergy;
 
+    //! 2-d array holding the maximum throughout time kinetice energy at every point
+    double *max_dynamic_pressure;
 
     //! 2-d array holding the cummulative kinetic energy at every point
     double *cum_kinergy;
@@ -744,10 +746,15 @@ protected:
     double **max_kinergy_loc;
     vector<double, AlignmentAllocator<double> > max_kinergy_by_elm;
 
+    //! 2-d array holding the maximum throughout time kinetice energy at every point
+    double **max_dynamic_pressure_loc;
+    vector<double, AlignmentAllocator<double> > max_dynamic_pressure_by_elm;
 
     //! 2-d array holding the cummulative kinetic energy at every point
     double **cum_kinergy_loc;
     vector<double, AlignmentAllocator<double> > cum_kinergy_by_elm;
+
+
 
     vector<int> el_x_start;
     vector<int> el_x_stop;

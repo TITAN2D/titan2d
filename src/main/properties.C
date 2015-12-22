@@ -367,10 +367,12 @@ OutLine::OutLine()
 
     pileheight=nullptr;
     max_kinergy=nullptr;
+    max_dynamic_pressure=nullptr;
     cum_kinergy=nullptr;
 
     pileheight_loc=nullptr;
     max_kinergy_loc=nullptr;
+    max_dynamic_pressure_loc=nullptr;
     cum_kinergy_loc=nullptr;
 
     elementType=ElementType::SinglePhase;
@@ -404,6 +406,15 @@ OutLine::~OutLine()
         }
     }
     TI_FREE(max_kinergy_loc);
+    if (max_dynamic_pressure_loc != nullptr)
+    {
+        for (int j = 0; j < threads_number; j++)
+        {
+            TI_FREE(max_dynamic_pressure_loc[j]);
+        }
+    }
+    TI_FREE(max_dynamic_pressure_loc);
+
     if (cum_kinergy_loc != nullptr)
     {
         for (int j = 0; j < threads_number; j++)
@@ -450,10 +461,12 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     size=Ny*stride;
     pileheight = TI_ALLOC(double, size);
     max_kinergy = TI_ALLOC(double, size);
+    max_dynamic_pressure = TI_ALLOC(double, size);
     cum_kinergy = TI_ALLOC(double, size);
 
     pileheight_loc = TI_ALLOC(double*, threads_number);
     max_kinergy_loc = TI_ALLOC(double*, threads_number);
+    max_dynamic_pressure_loc = TI_ALLOC(double*, threads_number);
     cum_kinergy_loc = TI_ALLOC(double*, threads_number);
 
 
@@ -461,12 +474,14 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     {
         pileheight_loc[j] = TI_ALLOC(double, size);
         max_kinergy_loc[j] = TI_ALLOC(double, size);
+        max_dynamic_pressure_loc[j] = TI_ALLOC(double, size);
         cum_kinergy_loc[j] = TI_ALLOC(double, size);
 
         for(int i = 0; i < size; i++)
         {
             pileheight_loc[j][i] = 0.0;
             max_kinergy_loc[j][i] = 0.0;
+            max_dynamic_pressure_loc[j][i] = 0.0;
             cum_kinergy_loc[j][i] = 0.0;
         }
     }
@@ -476,6 +491,7 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     {
         pileheight[i] = 0.0;
         max_kinergy[i] = 0.0;
+        max_dynamic_pressure[i] = 0.0;
         cum_kinergy[i] = 0.0;
     }
     return;
@@ -501,12 +517,14 @@ void OutLine::init2(const double *dxy, double *XRange, double *YRange)
     int size=Ny*stride;
     pileheight = TI_ALLOC(double, size);
     max_kinergy = TI_ALLOC(double, size);
+    max_dynamic_pressure = TI_ALLOC(double, size);
     cum_kinergy = TI_ALLOC(double, size);
 
     for(int i = 0; i < size; i++)
     {
         pileheight[i] = 0.0;
         max_kinergy[i] = 0.0;
+        max_dynamic_pressure[i] = 0.0;
         cum_kinergy[i] = 0.0;
     }
     return;
@@ -569,10 +587,12 @@ void OutLine::update_on_changed_geometry(ElementsHashTable* ElemTable, NodeHashT
 
     pileheight_by_elm.resize(N);
     max_kinergy_by_elm.resize(N);
+    max_dynamic_pressure_by_elm.resize(N);
     cum_kinergy_by_elm.resize(N);
 
     double * RESTRICT m_pileheight_by_elm=&(pileheight_by_elm[0]);
     double * RESTRICT m_max_kinergy_by_elm=&(max_kinergy_by_elm[0]);
+    double * RESTRICT m_max_dynamic_pressure_by_elm=&(max_dynamic_pressure_by_elm[0]);
     double * RESTRICT m_cum_kinergy_by_elm=&(cum_kinergy_by_elm[0]);
 
     TI_ASSUME_ALIGNED(m_pileheight_by_elm);
@@ -588,6 +608,7 @@ void OutLine::update_on_changed_geometry(ElementsHashTable* ElemTable, NodeHashT
         {
             m_pileheight_by_elm[ndx]=0.0;
             m_max_kinergy_by_elm[ndx]=0.0;
+            m_max_dynamic_pressure_by_elm[ndx]=0.0;
             m_cum_kinergy_by_elm[ndx]=0.0;
         }
 
@@ -645,10 +666,12 @@ void OutLine::update_single_phase(ElementsHashTable* ElemTable, NodeHashTable* N
 
     double * RESTRICT m_pileheight_by_elm=&(pileheight_by_elm[0]);
     double * RESTRICT m_max_kinergy_by_elm=&(max_kinergy_by_elm[0]);
+    double * RESTRICT m_max_dynamic_pressure_by_elm=&(max_dynamic_pressure_by_elm[0]);
     double * RESTRICT m_cum_kinergy_by_elm=&(cum_kinergy_by_elm[0]);
 
     TI_ASSUME_ALIGNED(m_pileheight_by_elm);
     TI_ASSUME_ALIGNED(m_max_kinergy_by_elm);
+    TI_ASSUME_ALIGNED(m_max_dynamic_pressure_by_elm);
     TI_ASSUME_ALIGNED(m_cum_kinergy_by_elm);
 
     if(numprocs>1)
@@ -660,9 +683,11 @@ void OutLine::update_single_phase(ElementsHashTable* ElemTable, NodeHashTable* N
 
             //update the record of maximum pileheight in the area covered by this element
             double ke = (h[ndx] > 1.0E-04) * 0.5 * (hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+            double dp = ke / h[ndx];
 
             m_cum_kinergy_by_elm[ndx] += ke;
             m_pileheight_by_elm[ndx] = max(m_pileheight_by_elm[ndx], h[ndx]);
+            m_max_dynamic_pressure_by_elm[ndx] = max(m_max_dynamic_pressure_by_elm[ndx],dp);
             m_max_kinergy_by_elm[ndx] = max(m_max_kinergy_by_elm[ndx],ke);
         }
     }
@@ -673,9 +698,11 @@ void OutLine::update_single_phase(ElementsHashTable* ElemTable, NodeHashTable* N
         {
             //update the record of maximum pileheight in the area covered by this element
             double ke = (h[ndx] > 1.0E-04) * 0.5 * (hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+            double dp = ke / h[ndx];
 
             m_cum_kinergy_by_elm[ndx] += ke;
             m_pileheight_by_elm[ndx] = max(m_pileheight_by_elm[ndx], h[ndx]);
+            m_max_dynamic_pressure_by_elm[ndx] = max(m_max_dynamic_pressure_by_elm[ndx],dp);
             m_max_kinergy_by_elm[ndx] = max(m_max_kinergy_by_elm[ndx],ke);
         }
     }
@@ -687,10 +714,12 @@ void OutLine::flush_stats(bool zero_old_arrays)
     const ti_ndx_t N=pileheight_by_elm.size();
     double * RESTRICT m_pileheight_by_elm=&(pileheight_by_elm[0]);
     double * RESTRICT m_max_kinergy_by_elm=&(max_kinergy_by_elm[0]);
+    double * RESTRICT m_max_dynamic_pressure_by_elm=&(max_kinergy_by_elm[0]);
     double * RESTRICT m_cum_kinergy_by_elm=&(cum_kinergy_by_elm[0]);
 
     TI_ASSUME_ALIGNED(m_pileheight_by_elm);
     TI_ASSUME_ALIGNED(m_max_kinergy_by_elm);
+    TI_ASSUME_ALIGNED(m_max_dynamic_pressure_by_elm);
     TI_ASSUME_ALIGNED(m_cum_kinergy_by_elm);
 
     int * RESTRICT ix_start=&(el_x_start[0]);
@@ -703,6 +732,7 @@ void OutLine::flush_stats(bool zero_old_arrays)
         int ithread=omp_get_thread_num();
         double *m_pileheight=pileheight_loc[ithread];
         double *m_max_kinergy=max_kinergy_loc[ithread];
+        double *m_max_dynamic_pressure=max_dynamic_pressure_loc[ithread];
         double *m_cum_kinergy=cum_kinergy_loc[ithread];
 
         #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
@@ -717,6 +747,8 @@ void OutLine::flush_stats(bool zero_old_arrays)
                         m_pileheight[iy*stride+ix] = m_pileheight_by_elm[ndx];
                     if( m_max_kinergy_by_elm[ndx]> m_max_kinergy[iy*stride+ix])
                         m_max_kinergy[iy*stride+ix] = m_max_kinergy_by_elm[ndx];
+                    if( m_max_dynamic_pressure_by_elm[ndx]> m_max_dynamic_pressure[iy*stride+ix])
+                        m_max_dynamic_pressure[iy*stride+ix] = m_max_dynamic_pressure_by_elm[ndx];
                 }
             }
         }
@@ -727,6 +759,7 @@ void OutLine::flush_stats(bool zero_old_arrays)
             {
                 m_pileheight_by_elm[ndx]=0.0;
                 m_max_kinergy_by_elm[ndx]=0.0;
+                m_max_dynamic_pressure_by_elm[ndx]=0.0;
                 m_cum_kinergy_by_elm[ndx]=0.0;
             }
         }
@@ -746,9 +779,11 @@ void OutLine::combine_results_from_threads()
                 cum_kinergy[i] += cum_kinergy_loc[j][i];
                 pileheight[i] = max(pileheight[i], pileheight_loc[j][i]);
                 max_kinergy[i] = max(max_kinergy[i], max_kinergy_loc[j][i]);
+                max_dynamic_pressure[i] = max(max_dynamic_pressure[i], max_dynamic_pressure_loc[j][i]);
 
                 pileheight_loc[j][i] = 0.0;
                 max_kinergy_loc[j][i] = 0.0;
+                max_dynamic_pressure_loc[j][i] = 0.0;
                 cum_kinergy_loc[j][i] = 0.0;
             }
         }
@@ -775,10 +810,12 @@ void OutLine::update_two_phases(ElementsHashTable* ElemTable, NodeHashTable* Nod
 
     double * RESTRICT m_pileheight_by_elm=&(pileheight_by_elm[0]);
     double * RESTRICT m_max_kinergy_by_elm=&(max_kinergy_by_elm[0]);
+    double * RESTRICT m_max_dynamic_pressure_by_elm=&(max_dynamic_pressure_by_elm[0]);
     double * RESTRICT m_cum_kinergy_by_elm=&(cum_kinergy_by_elm[0]);
 
     TI_ASSUME_ALIGNED(m_pileheight_by_elm);
     TI_ASSUME_ALIGNED(m_max_kinergy_by_elm);
+    TI_ASSUME_ALIGNED(m_max_dynamic_pressure_by_elm);
     TI_ASSUME_ALIGNED(m_cum_kinergy_by_elm);
 
 
@@ -789,12 +826,14 @@ void OutLine::update_two_phases(ElementsHashTable* ElemTable, NodeHashTable* Nod
 
         //@TODO check ke for two phases
         double ke = (h[ndx] > 1.0E-04) * 0.5 * (hVx_sol[ndx] * hVx_sol[ndx] + hVy_sol[ndx] * hVy_sol[ndx] + hVx_liq[ndx] * hVx_liq[ndx] + hVy_liq[ndx] * hVy_liq[ndx]) / h[ndx];
-
+        double dp = ke / h[ndx];
         m_cum_kinergy_by_elm[ndx] += ke;
         if(h[ndx] > m_pileheight_by_elm[ndx])
             m_pileheight_by_elm[ndx] = h[ndx];
         if(ke > m_max_kinergy_by_elm[ndx])
             m_max_kinergy_by_elm[ndx] = ke;
+        if(dp > m_max_dynamic_pressure_by_elm[ndx])
+            m_max_dynamic_pressure_by_elm[ndx] = dp;
     }
 }
 
@@ -839,6 +878,23 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
         for(ix = 0; ix < Nx - 1; ix++)
             fprintf(fp, "%g ", max_kinergy[iy*stride+ix] * ENERGY_SCALE);
         fprintf(fp, "%g\n", max_kinergy[iy*stride+ix] * ENERGY_SCALE);
+    }
+    fclose(fp);
+
+    sprintf(filename, "max_dynamic_pressure_record.%06d", statprops_ptr->runid);
+    fp = fopen(filename, "w");
+
+    //!todo dynamic_pressure scale?
+    fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+            "Ny=%d: Y={%20.14g,%20.14g}\n"
+            "dynamic_pressure=\n",
+            Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+            yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+    for(iy = 0; iy < Ny; iy++)
+    {
+        for(ix = 0; ix < Nx - 1; ix++)
+            fprintf(fp, "%g ", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
+        fprintf(fp, "%g\n", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
     }
     fclose(fp);
 
