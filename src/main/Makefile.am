@@ -12,7 +12,7 @@ titan_SOURCES = titan.C cxxtitan_wrap.cxx titan_simulation.C delete_tab.C datrea
 titan_CXXFLAGS = -fpic -I$(srcdir)/../gisapi -I@PYTHON_ROOT@/include/python@PYTHON_VERSION@
 titan_cxxtitan_wrap_o_CXXFLAGS = -O0
 
-titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a @FLIBS@ \
+titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a \
   ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
   ../repartition/librepartition.a ../tecplot/libtecplot.a \
   ../vectordatapreproc/libvectordatpreproc.a \
