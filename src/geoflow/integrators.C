@@ -1022,14 +1022,8 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
         unitvx = 0.0;
         unitvy = 0.0;
         elem_eroded = 0.0;
-
-        //     xi and mu should be given as inputs by user
-        //     mu = 0.5
-        //     xi = 120.d0
-        //     xi = xi/9.8
-        //     inv_xi= 1.d0/xi
-
-
+        
+        
         if(h[ndx] > tiny)
         {
             // S terms
@@ -1054,15 +1048,15 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
             // x direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // the gravity force in the x direction
-            forcegravx=g[0][ndx] * h[ndx];
+            forcegravx = g[0][ndx] * h[ndx];
 
             //the coulomb friction type force
 
-            forcecolumbfrictx= unitvx*mu*g[2][ndx] * h[ndx];
+            forcecolumbfrictx = unitvx * mu * g[2][ndx] * h[ndx];
 
             //the turbulent type force for fast moving flow
 
-            forceturbulencex= unitvx*speed*speed*inv_xi;
+            forceturbulencex = unitvx * speed * speed * inv_xi;
 
 
 #ifdef STOPPED_FLOWS
@@ -1369,7 +1363,7 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
         double es, totalShear;
 
         double mu;
-        double gama, gama_11, gama_21, gama_22, I_1;
+        double gama, gama_11, gama_12, gama_22, I_1;
         double du_dx[2], du_dy[2];
 
 
@@ -1403,9 +1397,9 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
         mu=0.0;
         gama=0.0;
         gama_11=0.0;
-        gama_21=0.0;
+        gama_12=0.0;
         gama_22=0.0;
-
+        
         if(h[ndx] > tiny)
         {
             // S terms
@@ -1434,17 +1428,32 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
             du_dy[1] = (dhVy_dy[ndx] - hVy[ndx] * dh_dy[ndx]) * h_inv;
 
             // Calculation of strain rate
-            gama_11 = 2.0 * du_dx[0];
-            gama_21 = du_dx[1] + du_dy[0];
-            gama_22 = 2.0 * du_dy[1];
-            gama = sqrt(0.5*(gama_11*gama_11 + 2.0*gama_21*gama_21 + gama_22*gama_22));
-
+            gama_11 = du_dx[0];
+            gama_12 = 0.5 * (du_dx[1] + du_dy[0]);
+            gama_22 = du_dy[1];
+            
+            gama = sqrt(gama_11 * gama_11 + 2.0 * gama_12 * gama_12 + gama_22 * gama_22);
+            
             // Defining Inertial Number
             I_1 = gama * partdiam / sqrt(0.5 * h[ndx] * g[2][ndx]);
-
+            
             // Defining drag coefficient function
-            mu = tan(phi1) + (tan(phi2) - tan(phi1)) / (I_O / I_1);
-
+            mu = tan(phi1) + (tan(phi2) - tan(phi1)) / (1.0 + (I_O / I_1));
+            
+            // STOPPING CRITERIA
+            double dtmp1 = Ustore[1] + dt * g[0][ndx] * Ustore[0];
+            double dtmp2 = Ustore[2] + dt * g[1][ndx] * Ustore[0];
+            
+            double shearstress=sqrt(dtmp1 * dtmp1 + dtmp2 * dtmp2);
+            
+            if (shearstress < (mu * Ustore[1] * g[2][ndx] * dt))
+            {
+                  Ustore[1] = 0.0;
+                  Ustore[2] = 0.0;
+            }
+            else
+            {
+            
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // x direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1452,7 +1461,8 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
             forcegrav = g[0][ndx] * h[ndx];
 
             // the bed friction force for fast moving flow
-            forcebedx= h[ndx]*g[2][ndx]*unitvx*mu;
+            forcebedx = h[ndx] * (g[2][ndx] * unitvx * mu - g[0][ndx] * kactxy[ndx] * dh_dx[ndx]);
+            
 #ifdef STOPPED_FLOWS
             if (IF_STOPPED == 2 && 1 == 0) {
                 // the bed friction force for stopped or nearly stopped flow
@@ -1460,10 +1470,10 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
                 // the static friction force is LESS THAN or equal to the friction
                 // coefficient times the normal force but it can NEVER exceed the
                 // NET force it is opposing
-
+                
                 // maximum friction force the bed friction can support
                 forcebedmax = g[2][ndx] * h[ndx] * tanbed;
-
+                
                 // the NET force the bed friction force is opposing
                 forcebedequil = forcegrav - forceintx;
                 // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
@@ -1473,11 +1483,11 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
                 // (determined by stopping criteria) amount of momentum in the cell
                 forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
                 // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
-
+                
                 // not really 1 but this makes friction statistics accurate
                 unitvx = 1.0;
                 // else
-
+                
             }
 #endif
             Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx);
@@ -1489,7 +1499,8 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
             forcegrav = g[1][ndx] * h[ndx];
 
             // the bed friction force for fast moving flow
-            forcebedy= h[ndx]*g[2][ndx]*unitvy*mu;
+            forcebedy = h[ndx] * (g[2][ndx] * unitvy * mu - g[1][ndx] * kactxy[ndx] * dh_dy[ndx]);
+            
 #ifdef STOPPED_FLOWS
             if (IF_STOPPED == 2 && 1 == 0) {
                 // the bed friction force for stopped or nearly stopped flow
