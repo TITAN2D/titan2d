@@ -358,20 +358,65 @@ void cxxTitanSimulation::set_integrator(Integrator* m_integrator)
     FREE_VAR_IF_NOT_NULLPTR(integrator);
     integrator=m_integrator;
 }
-void cxxTitanSimulation::h5write(H5::Group &group)
+void cxxTitanSimulation::h5write(H5::CommonFG *parent) const
 {
-    TiH5_writeIntAttribute(group, NUM_STATE_VARS);
-    TiH5_writeIntAttribute(group, SHORTSPEED);
-    TiH5_writeIntAttribute(group, myid);
-    TiH5_writeIntAttribute(group, numprocs);
-    TiH5_writeBoolAttribute(group, use_gis_matmap);
-    TiH5_writeIntAttribute(group, vizoutput);
+    ///////////////////////////////////////////////////////////////////////////
+    //write cxxTitanSimulation
+    H5::Group groupTitanSimulation(parent->createGroup("TitanSimulation"));
+
+    TiH5_writeIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
+    TiH5_writeIntAttribute(groupTitanSimulation, SHORTSPEED);
+    TiH5_writeIntAttribute(groupTitanSimulation, myid);
+    TiH5_writeIntAttribute(groupTitanSimulation, numprocs);
+    TiH5_writeBoolAttribute(groupTitanSimulation, use_gis_matmap);
+    TiH5_writeIntAttribute(groupTitanSimulation, vizoutput);
+    TiH5_writeIntAttribute(groupTitanSimulation, adapt);
 
     int titan2d_version[3]={TITAN2D_VERSION_MAJOR,TITAN2D_VERSION_MINOR,TITAN2D_VERSION_REVISION};
-    TiH5_writeIntArrayAttribute(group, titan2d_version, 3);
-    TiH5_writeScalarDataTypeAttribute(group, elementType, datatypeElementType);
-}
+    TiH5_writeIntArrayAttribute(groupTitanSimulation, titan2d_version, 3);
+    TiH5_writeScalarDataTypeAttribute(groupTitanSimulation, elementType, datatypeElementType);
 
+    ///////////////////////////////////////////////////////////////////////////
+    NodeTable->h5write(parent);
+    ElemTable->h5write(parent);
+
+    timeprops.h5write(parent);
+    scale_.h5write(parent);
+    integrator->h5write(parent);
+    //pileprops->h5write(parent);
+    //fluxprops.h5write(parent);
+    //discharge_planes.h5write(parent);
+    //matprops->h5write(parent);
+    //statprops->h5write(parent);
+    //mapnames.h5write(parent);
+    //outline.h5write(parent);
+
+
+}
+void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
+{
+    ///////////////////////////////////////////////////////////////////////////
+    //read cxxTitanSimulation
+    H5::Group groupTitanSimulation(parent->openGroup("TitanSimulation"));
+
+    TiH5_readIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
+    TiH5_readIntAttribute(groupTitanSimulation, SHORTSPEED);
+    TiH5_readIntAttribute(groupTitanSimulation, myid);
+    TiH5_readIntAttribute(groupTitanSimulation, numprocs);
+    TiH5_readBoolAttribute(groupTitanSimulation, use_gis_matmap);
+    TiH5_readIntAttribute(groupTitanSimulation, vizoutput);
+    TiH5_readIntAttribute(groupTitanSimulation, adapt);
+    TiH5_readScalarDataTypeAttribute(groupTitanSimulation, elementType, datatypeElementType);
+
+    ///////////////////////////////////////////////////////////////////////////
+    NodeTable=new NodeHashTable(parent);
+    ElemTable=new ElementsHashTable(NodeTable,parent);
+
+    timeprops.h5read(parent);
+    scale_.h5read(parent);
+    integrator=Integrator::creteIntegrator(parent,this);
+
+}
 void xmdfScalarAttribute(ofstream &xmdf,const char *name, const char *hf5_filename, const char *h5ref, const int dim,
         const char *DataType,const int Precision, const char *Center)
 {
@@ -432,27 +477,69 @@ void xmdfNScalarAttributes(ofstream &xmdf,const char *name_prefix, const char *h
         xmdfScalarAttribute(xmdf,name.c_str(), hf5_filename, h5ref.c_str(), dim,DataType,Precision, Center);
     }
 }
+void cxxTitanSimulation::xmdfWrite()
+{
 
+}
 
+void cxxTitanSimulation::xmdfWriteHeader()
+{
+
+}
+void cxxTitanSimulation::xmdfWriteBody()
+{
+
+}
+void cxxTitanSimulation::xmdfWriteFooter()
+{
+
+}
+void cxxTitanSimulation::save_restart_file_writeheader()
+{
+    char xmdf_filename[128];
+    sprintf(xmdf_filename, "restart_%04d.xmf", myid);
+    ofstream xmdf(xmdf_filename);
+
+    xmdf<<"<?xml version=\"1.0\" ?>\n";
+    xmdf<<"<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\"[]> \n";
+    xmdf<<"<Xdmf Version=\"3.0\">\n";
+    xmdf<<"<Domain>\n";
+    xmdf<<"<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n";
+
+    xmdf.close();
+
+}
+void cxxTitanSimulation::save_restart_file_writefooter()
+{
+    char xmdf_filename[128];
+    sprintf(xmdf_filename, "restart_%04d.xmf", myid);
+    ofstream xmdf(xmdf_filename,ios_base::app);
+
+    xmdf<<"</Grid>\n";
+    xmdf<<"</Domain>\n";
+    xmdf<<"</Xdmf>\n";
+
+    xmdf.close();
+}
 
 void cxxTitanSimulation::save_restart_file()
 {
     char hf5_filename[128];
     char xmdf_filename[128];
+    char xmdf_filename2[128];
 
     sprintf(hf5_filename, "restart_%04d_%08d.h5", myid, timeprops.iter);
-    sprintf(xmdf_filename, "restart_%04d_%08d.xmf", myid, timeprops.iter);
+    sprintf(xmdf_filename, "restart_%04d.xmf", myid);
+    sprintf(xmdf_filename2, "restart_%04d_%08d.xmf", myid, timeprops.iter);
 
     // Create a new file using the default property lists.
     H5::H5File file(hf5_filename, H5F_ACC_TRUNC);
 
-    H5::Group groupTitanSimulation(file.createGroup("TitanSimulation"));
-    h5write(groupTitanSimulation);
+    h5write(&file);
 
-    H5::Group groupElemTable(file.createGroup("ElemTable"));
-    ElemTable->h5write(groupElemTable);
-    H5::Group groupNodeTable(file.createGroup("NodeTable"));
-    NodeTable->h5write(groupNodeTable);
+    file.close();
+
+
 
     // File and group will be closed as their instances go out of scope.
 
@@ -465,40 +552,72 @@ void cxxTitanSimulation::save_restart_file()
         ElementTypesVarNames=&TwoPhasesVarNames;
 
     //stringstream xmdf;
-    ofstream xmdf(xmdf_filename);
+    ofstream xmdf(xmdf_filename,ios_base::app);
 
     int NumberOfElements=ElemTable->size();
     int NumberOfNodes=NodeTable->size();
 
     //write heeder
-    xmdf<<"<?xml version=\"1.0\" ?>\n";
+    /*xmdf<<"<?xml version=\"1.0\" ?>\n";
     xmdf<<"<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\"[]> \n";
     xmdf<<"<Xdmf Version=\"3.0\">\n";
     xmdf<<"<Domain>\n";
     xmdf<<"<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n";
-
+*/
     //write body
-    xmdf<<"\t<Grid Type=\"Uniform\">\n";
+    xmdf<<"\t<Grid Name=\"TimeSeriesA\">\n";
     xmdf<<"\t\t<Time Value=\""<<timeprops.timesec()<<"\"/>\n";
 
 
     //Topology
+#if 0
     xmdf<<"\t\t<Topology TopologyType=\"Quad_9\" NodesPerElement=\"9\" NumberOfElements=\""<<NumberOfElements<<"\">\n";
-    xmdf<<"\t\t\t<DataItem ItemType=\"Function\" Function=\"JOIN($0,$1,$2,$3,$4,$5,$6,$7,$8)\" Dimensions=\""<<NumberOfNodes<<" 9\">\n";
-    for( int i=0;i<8;i++)
+    if(0)
+    {
+        xmdf<<"\t\t\t\t<DataItem Name=\"Connections\" DataType=\"Int\" Precision=\"4\" Dimensions=\""<<NumberOfElements<<" 9\" Format=\"HDF\">\n";
+        xmdf<<"\t\t\t\t\t"<<hf5_filename<<":/ElemTable/Quad9\n";
+        xmdf<<"\t\t\t\t</DataItem>\n";
+    }
+    if(1)
+    {
+        xmdf<<"\t\t\t<DataItem Name=\"Connections\" ItemType=\"Function\" Function=\"JOIN($0,$1,$2,$3,$4,$5,$6,$7,$8)\" Dimensions=\""<<NumberOfElements<<" 9\">\n";
+        for( int i=0;i<8;i++)
+        {
+            xmdf<<"\t\t\t\t<DataItem DataType=\"Int\" Precision=\"4\" Dimensions=\""<<NumberOfElements<<"\" Format=\"HDF\">\n";
+            xmdf<<"\t\t\t\t\t"<<hf5_filename<<":/ElemTable/node_key_ndx_"<<i<<"\n";
+            xmdf<<"\t\t\t\t</DataItem>\n";
+        }
+        xmdf<<"\t\t\t\t<DataItem DataType=\"Int\" Precision=\"4\" Dimensions=\""<<NumberOfElements<<"\" Format=\"HDF\">\n";
+        xmdf<<"\t\t\t\t\t"<<hf5_filename<<":/ElemTable/node_bubble_ndx_\n";
+        xmdf<<"\t\t\t\t</DataItem>\n";
+        xmdf<<"\t\t\t</DataItem>\n";
+    }
+    xmdf<<"\t\t</Topology>\n";
+#endif
+    xmdf<<"\t\t<Topology TopologyType=\"Quadrilateral\" NodesPerElement=\"4\" NumberOfElements=\""<<NumberOfElements<<"\" Order=\"0 3 2 1\">\n";
+
+    xmdf<<"\t\t\t<DataItem Name=\"Connections\" ItemType=\"Function\" Function=\"JOIN($0,$1,$2,$3)\" Dimensions=\""<<NumberOfElements<<" 4\">\n";
+    for( int i=0;i<4;i++)
     {
         xmdf<<"\t\t\t\t<DataItem DataType=\"Int\" Precision=\"4\" Dimensions=\""<<NumberOfElements<<"\" Format=\"HDF\">\n";
         xmdf<<"\t\t\t\t\t"<<hf5_filename<<":/ElemTable/node_key_ndx_"<<i<<"\n";
         xmdf<<"\t\t\t\t</DataItem>\n";
     }
-    xmdf<<"\t\t\t\t<DataItem DataType=\"Int\" Precision=\"4\" Dimensions=\""<<NumberOfElements<<"\" Format=\"HDF\">\n";
-    xmdf<<"\t\t\t\t\t"<<hf5_filename<<":/ElemTable/node_bubble_ndx_\n";
-    xmdf<<"\t\t\t\t</DataItem>\n";
     xmdf<<"\t\t\t</DataItem>\n";
+
     xmdf<<"\t\t</Topology>\n";
     //Geometry
     xmdf<<"\t\t<Geometry Type=\"XYZ\">\n";
-    xmdf<< "\t\t\t<DataItem ItemType=\"Function\" Function=\"JOIN($0,$1,$2)\" Dimensions=\""<<NumberOfNodes<<" 3\">\n";
+
+    if(0)
+    {
+    xmdf<< "\t\t\t<DataItem Name=\"Coordinates\" DataType=\"Float\" Precision=\"8\" Dimensions=\""<<NumberOfNodes<<" 3\" Format=\"HDF\">\n";
+    xmdf<< "\t\t\t\t"<<hf5_filename<<":/NodeTable/crd\n";
+    xmdf<< "\t\t\t</DataItem>\n";
+    }
+    if(1)
+    {
+    xmdf<< "\t\t\t<DataItem Name=\"Coordinates\" ItemType=\"Function\" Function=\"JOIN($0,$1,$2)\" Dimensions=\""<<NumberOfNodes<<" 3\">\n";
     xmdf<< "\t\t\t\t<DataItem Name=\"X\" DataType=\"Float\" Precision=\"8\" Dimensions=\""<<NumberOfNodes<<"\" Format=\"HDF\">\n";
     xmdf<< "\t\t\t\t\t"<<hf5_filename<<":/NodeTable/coord_X\n";
     xmdf<< "\t\t\t\t</DataItem>\n";
@@ -509,6 +628,7 @@ void cxxTitanSimulation::save_restart_file()
     xmdf<< "\t\t\t\t\t"<<hf5_filename<<":/NodeTable/elevation_\n";
     xmdf<< "\t\t\t\t</DataItem>\n";
     xmdf<< "\t\t\t</DataItem>\n";
+    }
     xmdf<< "\t\t</Geometry>\n";
     //Attributes
     xmdfScalarAttribute(xmdf,"myprocess", hf5_filename, "/ElemTable/myprocess_", NumberOfElements, "Int",4, "Cell");
@@ -560,15 +680,28 @@ void cxxTitanSimulation::save_restart_file()
     {
         xmdfNScalarAttributes(xmdf,"state_vars_", hf5_filename, "/ElemTable/state_vars_",EQUATIONS, NumberOfElements, "Float",8, "Cell",ElementTypesVarNames);
     }
+    /*xmdfScalarAttribute(xmdf,"h", hf5_filename, "/ElemTable/state_vars_h", NumberOfElements, "Float",8, "Cell");
+    xmdfScalarAttribute(xmdf,"hVx", hf5_filename, "/ElemTable/state_vars_hVx", NumberOfElements, "Float",8, "Cell");
+    xmdfScalarAttribute(xmdf,"hVy", hf5_filename, "/ElemTable/state_vars_hVy", NumberOfElements, "Float",8, "Cell");*/
 
 
     xmdf<<"\t</Grid>\n";
+    xmdf.close();
     //write footer
-    xmdf<<"</Grid>\n";
+    /*xmdf<<"</Grid>\n";
     xmdf<<"</Domain>\n";
-    xmdf<<"</Xdmf>\n";
+    xmdf<<"</Xdmf>\n";*/
     //xmdf.
     //cout<< xmdf.str();
+}
+void cxxTitanSimulation::load_restart(const char * restartFilename)
+{
+    // Create a new file using the default property lists.
+    H5::H5File file(restartFilename, H5F_ACC_RDONLY);
+
+    h5read(&file);
+
+    file.close();
 }
 void cxxTitanSimulation::run()
 {
@@ -632,18 +765,21 @@ void cxxTitanSimulation::run()
 
 
 
-    int result=0;
+    bool start_from_restart=false;
 
     //check if restart is available
     //result=loadrun(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
     //              &statprops, &discharge_planes, &outline);
 
-    if(result==0)
+    if(ElemTable==nullptr)
+        start_from_restart=true;
+
+    if(start_from_restart==false)
         Read_grid(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &outline);
     
     
 
-    if(result==0)
+    if(start_from_restart==false)
     {
         setup_geoflow(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops);
 
@@ -752,6 +888,7 @@ void cxxTitanSimulation::run()
     int ifstop = 0;
     double max_momentum = 100;  //nondimensional
 
+    save_restart_file_writeheader();
     save_restart_file();
 
     /* ifend(0.5*statprops.vmean) is a hack, the original intent (when we were
@@ -944,7 +1081,7 @@ void cxxTitanSimulation::run()
      * save a restart file
      */
     save_restart_file();
-
+    save_restart_file_writefooter();
     MPI_Barrier(MPI_COMM_WORLD);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);

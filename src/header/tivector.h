@@ -188,6 +188,11 @@ public:
     {
         return array_;
     }
+    //!same as previous but read only access
+    T* get_ptr() const
+    {
+        return array_;
+    }
     void swap_arrays(){
         tisize_t tmp_size_=size_;
         tisize_t tmp_reserved_size_=reserved_size_;
@@ -447,7 +452,7 @@ public:
     
 };
 
-inline void TiH5_writeTiVector__(H5::Group &group, tivector<int> &value, const char *name, const hsize_t dims)
+inline void TiH5_writeTiVector__(H5::Group &group, const tivector<int> &value, const char *name, const hsize_t dims)
 {
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
@@ -456,7 +461,17 @@ inline void TiH5_writeTiVector__(H5::Group &group, tivector<int> &value, const c
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_INT);
 }
-inline void TiH5_writeTiVector__(H5::Group &group, tivector<double> &value, const char *name, const hsize_t dims)
+inline void TiH5_readTiVector__(const H5::Group &group, tivector<int> &value, const char *name)
+{
+    H5::DataSet dataset = group.openDataSet(name);
+    H5::DataSpace dataspace=dataset.getSpace();
+    hsize_t dims;
+    dataspace.getSimpleExtentDims(&dims);
+    value.resize(dims,false);
+    // Write the attribute data.
+    dataset.read(value.get_ptr(), H5::PredType::NATIVE_INT);
+}
+inline void TiH5_writeTiVector__(H5::Group &group, const tivector<double> &value, const char *name, const hsize_t dims)
 {
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
@@ -465,7 +480,17 @@ inline void TiH5_writeTiVector__(H5::Group &group, tivector<double> &value, cons
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_DOUBLE);
 }
-inline void TiH5_writeTiVector__(H5::Group &group, tivector<unsigned long long int> &value, const char *name, const hsize_t dims)
+inline void TiH5_readTiVector__(const H5::Group &group, tivector<double> &value, const char *name)
+{
+    H5::DataSet dataset = group.openDataSet(name);
+    H5::DataSpace dataspace=dataset.getSpace();
+    hsize_t dims;
+    dataspace.getSimpleExtentDims(&dims);
+    value.resize(dims,false);
+    // Write the attribute data.
+    dataset.read(value.get_ptr(), H5::PredType::NATIVE_DOUBLE);
+}
+inline void TiH5_writeTiVector__(H5::Group &group, const tivector<unsigned long long int> &value, const char *name, const hsize_t dims)
 {
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
@@ -476,7 +501,7 @@ inline void TiH5_writeTiVector__(H5::Group &group, tivector<unsigned long long i
 }
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-inline void TiH5_writeTiVector__(H5::Group &group, tivector<uint64_t> &value, const char *name, const hsize_t dims)
+inline void TiH5_writeTiVector__(H5::Group &group, const tivector<uint64_t> &value, const char *name, const hsize_t dims)
 {
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
@@ -484,6 +509,16 @@ inline void TiH5_writeTiVector__(H5::Group &group, tivector<uint64_t> &value, co
     H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace);
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
+}
+inline void TiH5_readTiVector__(const H5::Group &group, tivector<uint64_t> &value, const char *name)
+{
+    H5::DataSet dataset = group.openDataSet(name);
+    H5::DataSpace dataspace=dataset.getSpace();
+    hsize_t dims;
+    dataspace.getSimpleExtentDims(&dims);
+    value.resize(dims,false);
+    // Write the attribute data.
+    dataset.read(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
 }
 inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<int> *value, const char *name, const hsize_t dim1, const hsize_t dim2, vector<string> *comp_names=NULL)
 {
@@ -495,6 +530,18 @@ inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<int> *value, co
         else
             namecomp+=(*comp_names)[i];
         TiH5_writeTiVector__(group,value[i],namecomp.c_str(),dim2);
+    }
+}
+inline void TiH5_readTiVectorArray__(H5::Group &group, tivector<int> *value, const char *name, const hsize_t dim1, vector<string> *comp_names=NULL)
+{
+    for(int i=0;i<dim1;++i)
+    {
+        string namecomp=name;
+        if(comp_names==NULL)
+            namecomp+=to_string(i);
+        else
+            namecomp+=(*comp_names)[i];
+        TiH5_readTiVector__(group,value[i],namecomp.c_str());
     }
 }
 inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<double> *value, const char *name, const hsize_t dim1, const hsize_t dim2, vector<string> *comp_names=NULL)
@@ -509,6 +556,18 @@ inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<double> *value,
         TiH5_writeTiVector__(group,value[i],namecomp.c_str(),dim2);
     }
 }
+inline void TiH5_readTiVectorArray__(H5::Group &group, tivector<double> *value, const char *name, const hsize_t dim1, vector<string> *comp_names=NULL)
+{
+    for(int i=0;i<dim1;++i)
+    {
+        string namecomp=name;
+        if(comp_names==NULL)
+            namecomp+=to_string(i);
+        else
+            namecomp+=(*comp_names)[i];
+        TiH5_readTiVector__(group,value[i],namecomp.c_str());
+    }
+}
 inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<uint64_t> *value, const char *name, const hsize_t dim1, const hsize_t dim2, vector<string> *comp_names=NULL)
 {
     for(int i=0;i<dim1;++i)
@@ -521,9 +580,27 @@ inline void TiH5_writeTiVectorArray__(H5::Group &group, tivector<uint64_t> *valu
         TiH5_writeTiVector__(group,value[i],namecomp.c_str(),dim2);
     }
 }
+inline void TiH5_readTiVectorArray__(H5::Group &group, tivector<uint64_t> *value, const char *name, const hsize_t dim1, vector<string> *comp_names=NULL)
+{
+    for(int i=0;i<dim1;++i)
+    {
+        string namecomp=name;
+        if(comp_names==NULL)
+            namecomp+=to_string(i);
+        else
+            namecomp+=(*comp_names)[i];
+        TiH5_readTiVector__(group,value[i],namecomp.c_str());
+    }
+}
 #define TiH5_writeTiVector(group,value,size) TiH5_writeTiVector__(group, value, #value,size)
+#define TiH5_readTiVector(group,value) TiH5_readTiVector__(group, value, #value)
+
 #define TiH5_writeTiVectorArray(group,value,size1,size2) TiH5_writeTiVectorArray__(group, value, #value,size1,size2)
+#define TiH5_readTiVectorArray(group,value,size1) TiH5_readTiVectorArray__(group, value, #value,size1)
+
 #define TiH5_writeTiVectorArrayCompName(group,value,size1,comp_names,size2) TiH5_writeTiVectorArray__(group, value, #value,size1,size2,comp_names)
+#define TiH5_readTiVectorArrayCompName(group,value,size1,comp_names) TiH5_readTiVectorArray__(group, value, #value,size1,comp_names)
+
 #endif
 #endif	/* TIVECTOR_H */
 

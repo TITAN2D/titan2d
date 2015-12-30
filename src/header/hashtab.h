@@ -166,7 +166,9 @@ public:
     //T lookup(const SFC_Key& keyi);
 
     //dump HashTable content to hdf5 group
-    virtual void h5write(H5::Group &group);
+    virtual void h5write(H5::CommonFG *parent, const string group_name="HashTable") const;
+    //read HashTable content from hdf5 group
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="HashTable");
 protected:
     /**
      * add elenode with key keyi to hashtable and reserve storage
@@ -175,6 +177,8 @@ protected:
      */
     ti_ndx_t add_ndx(const SFC_Key& keyi);
     ti_ndx_t add_ndx_locked(const SFC_Key& keyi);
+    //!place ndx-the element to buckets
+    void place_ndx_to_bucket(const ti_ndx_t ndx);
     T* add(const SFC_Key& keyi);
     
     /**
@@ -246,7 +250,8 @@ public:
     friend class ElementsHashTable;
 
     NodeHashTable();
-    ~NodeHashTable();
+    NodeHashTable(const H5::CommonFG *parent, const  string group_name="NodeTable");
+    virtual ~NodeHashTable();
     
     void init(double *doublekeyrangein, int size, double XR[], double YR[]);
 
@@ -288,8 +293,10 @@ public:
     void reserve(const tisize_t new_reserve_size);
     void reserve_at_least(const tisize_t new_reserve_size);
 
-    //dump NodeHashTable content to hdf5 group
-    virtual void h5write(H5::Group &group);
+    //dump NodeTable content to hdf5 group
+    virtual void h5write(H5::CommonFG *parent, const string group_name="NodeTable");
+    //read HashTable content from hdf5 group
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="NodeTable");
     void set_element_type(const ElementType m_elementType);
 private:
      Node* addNode(const SFC_Key& keyi);
@@ -326,6 +333,9 @@ public:
 
     //! node number for connection data -- varies with adaptation
     tivector<int> connection_id_;
+
+    vector<double> coord_buffer;
+
 };
 extern NodeHashTable *nodeHashTable;
 
@@ -347,7 +357,8 @@ protected:
     vector<Element*> localElements;
 public:
     ElementsHashTable(NodeHashTable* nodeTable);
-    ~ElementsHashTable();
+    ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonFG *parent, const  string group_name="ElemTable");
+    virtual ~ElementsHashTable();
 
     void init(double *doublekeyrangein, int size, double XR[], double YR[]);
 
@@ -431,7 +442,9 @@ public:
     Element* elemPtr(const ti_ndx_t ndx){return elenode_.array_+ndx;}
 
     //dump ElementsHashTable content to hdf5 group
-    virtual void h5write(H5::Group &group);
+    virtual void h5write(H5::CommonFG *parent, const string group_name="ElemTable");
+    //read ElementsHashTable content from hdf5 group
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="ElemTable");
 private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);
@@ -619,6 +632,9 @@ public:
 
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
     tivector<double> Swet_;
+
+    //!used for hdf5 writing
+    vector<ti_ndx_t> node_ndx_buffer;
 };
 
 

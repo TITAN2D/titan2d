@@ -238,6 +238,57 @@ void Integrator::step()
 
     return;
 }
+void Integrator::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator","Type");
+    TiH5_writeDoubleAttribute(group,  int_frict);
+    TiH5_writeDoubleAttribute(group,  frict_tiny);
+    TiH5_writeIntAttribute(group,  order);
+    TiH5_writeDoubleAttribute(group,  tiny);
+}
+void Integrator::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group,  int_frict);
+    TiH5_readDoubleAttribute(group,  frict_tiny);
+    TiH5_readIntAttribute(group,  order);
+    TiH5_readDoubleAttribute(group,  tiny);
+}
+Integrator* Integrator::creteIntegrator(const H5::CommonFG *parent, cxxTitanSimulation *_titanSimulation, const  string group_name)
+{
+    Integrator* integrator=nullptr;
+    string integratorType;
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readStringAttribute__(group,integratorType,"Type");
+
+    if (integratorType == "Integrator_SinglePhase_Coulomb")
+    {
+        integrator = new Integrator_SinglePhase_Coulomb(_titanSimulation);
+    }
+    else if (integratorType == "Integrator_SinglePhase_Vollmey")
+    {
+        integrator = new Integrator_SinglePhase_Vollmey_FirstOrder(_titanSimulation);
+    }
+    else if (integratorType == "Integrator_SinglePhase_Pouliquen")
+    {
+        integrator = new Integrator_SinglePhase_Pouliquen_FirstOrder(_titanSimulation);
+    }
+    else if (integratorType == "Integrator_SinglePhase_Maeno")
+    {
+        integrator = new Integrator_SinglePhase_Maeno_FirstOrder(_titanSimulation);
+    }
+    else if (integratorType == "Integrator_TwoPhases_Coulomb")
+    {
+        integrator = new Integrator_TwoPhases_Coulomb(_titanSimulation);
+    }
+    else
+    {
+        cout << "ERROR: Unknown type of integrator:" << integratorType << "\n";
+        assert(integrator != nullptr);
+    }
+    return integrator;
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase::Integrator_SinglePhase(cxxTitanSimulation *_titanSimulation):
         Integrator(_titanSimulation),
@@ -265,6 +316,23 @@ void Integrator_SinglePhase::predictor()
 void Integrator_SinglePhase::corrector()
 {
 
+}
+void Integrator_SinglePhase::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase","Type");
+    TiH5_writeDoubleAttribute(group,  threshold);
+    TiH5_writeDoubleAttribute(group,  erosion_rate);
+    TiH5_writeIntAttribute(group, do_erosion);
+}
+void Integrator_SinglePhase::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group,  threshold);
+    TiH5_readDoubleAttribute(group,  erosion_rate);
+    TiH5_readIntAttribute(group, do_erosion);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Coulomb::Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation):
@@ -838,7 +906,17 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
 
 }
-
+void Integrator_SinglePhase_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Coulomb","Type");
+}
+void Integrator_SinglePhase_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Vollmey_FirstOrder::Integrator_SinglePhase_Vollmey_FirstOrder(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
@@ -1201,6 +1279,21 @@ void Integrator_SinglePhase_Vollmey_FirstOrder::corrector()
     eroded = m_eroded;
     deposited = m_deposited;
     realvolume = m_realvolume;
+}
+void Integrator_SinglePhase_Vollmey_FirstOrder::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Vollmey","Type");
+    TiH5_writeDoubleAttribute(group, mu);
+    TiH5_writeDoubleAttribute(group, xi);
+}
+void Integrator_SinglePhase_Vollmey_FirstOrder::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group, mu);
+    TiH5_readDoubleAttribute(group, xi);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Pouliquen_FirstOrder::Integrator_SinglePhase_Pouliquen_FirstOrder(cxxTitanSimulation *_titanSimulation):
@@ -1584,6 +1677,25 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
     deposited = m_deposited;
     realvolume = m_realvolume;
 }
+void Integrator_SinglePhase_Pouliquen_FirstOrder::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Pouliquen","Type");
+    TiH5_writeDoubleAttribute(group, phi1);
+    TiH5_writeDoubleAttribute(group, phi2);
+    TiH5_writeDoubleAttribute(group, partdiam);
+    TiH5_writeDoubleAttribute(group, I_O);
+}
+void Integrator_SinglePhase_Pouliquen_FirstOrder::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group, phi1);
+    TiH5_readDoubleAttribute(group, phi2);
+    TiH5_readDoubleAttribute(group, partdiam);
+    TiH5_readDoubleAttribute(group, I_O);
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Maeno_FirstOrder::Integrator_SinglePhase_Maeno_FirstOrder(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
@@ -1960,6 +2072,25 @@ void Integrator_SinglePhase_Maeno_FirstOrder::corrector()
     realvolume = m_realvolume;
 
 }
+void Integrator_SinglePhase_Maeno_FirstOrder::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Maeno","Type");
+    TiH5_writeDoubleAttribute(group, phis);
+    TiH5_writeDoubleAttribute(group, phi2);
+    TiH5_writeDoubleAttribute(group, partdiam);
+    TiH5_writeDoubleAttribute(group, I_not);
+}
+void Integrator_SinglePhase_Maeno_FirstOrder::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group, phis);
+    TiH5_readDoubleAttribute(group, phi2);
+    TiH5_readDoubleAttribute(group, partdiam);
+    TiH5_readDoubleAttribute(group, I_not);
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_TwoPhases::Integrator_TwoPhases(cxxTitanSimulation *_titanSimulation):
         Integrator(_titanSimulation),
@@ -1992,6 +2123,17 @@ void Integrator_TwoPhases::predictor()
 void Integrator_TwoPhases::corrector()
 {
 
+}
+void Integrator_TwoPhases::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_TwoPhases","Type");
+}
+void Integrator_TwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_TwoPhases_Coulomb::Integrator_TwoPhases_Coulomb(cxxTitanSimulation *_titanSimulation):
@@ -2361,6 +2503,17 @@ void Integrator_TwoPhases_Coulomb::corrector()
     eroded = m_eroded;
     deposited = m_deposited;
     realvolume = m_realvolume;
+}
+void Integrator_TwoPhases_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_TwoPhases::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_TwoPhases_Coulomb","Type");
+}
+void Integrator_TwoPhases_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_TwoPhases::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

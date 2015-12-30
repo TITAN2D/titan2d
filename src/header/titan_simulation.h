@@ -50,7 +50,10 @@ public:
     void input_summary();
 
     void save_restart_file();
+    void save_restart_file_writeheader();
+    void save_restart_file_writefooter();
 
+    void load_restart(const char * restartFilename);
 
     int myid;
     int numprocs;
@@ -140,7 +143,13 @@ protected:
     /**
      * write some of the content to h5group
      */
-    void h5write(H5::Group &group);
+    void h5write(H5::CommonFG *parent) const;
+    void h5read(const H5::CommonFG *parent);
+
+    void xmdfWrite();
+    void xmdfWriteHeader();
+    void xmdfWriteBody();
+    void xmdfWriteFooter();
 
     ElementType elementType;
 

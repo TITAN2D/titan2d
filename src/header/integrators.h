@@ -46,6 +46,13 @@ public:
     virtual bool unscale();
     virtual void print0(int spaces=0);
 
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
+    static Integrator* creteIntegrator(const H5::CommonFG *parent, cxxTitanSimulation *_titanSimulation, const  string group_name="Integrator");
+
 public:
     //!internal friction for Coulomb model, some other function uses it for other models after cleaning
     //!up it should be only in Coulomb models
@@ -72,6 +79,7 @@ protected:
     //! allowable timestep for this iteration.
     //! should be implemented in derivative class
     virtual double get_coef_and_eigen(int ghost_flag)=0;
+
 
 protected:
     //!references to members of other classes
@@ -114,6 +122,10 @@ class Integrator_SinglePhase:public Integrator
 public:
     Integrator_SinglePhase(cxxTitanSimulation *_titanSimulation);
 
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -128,6 +140,7 @@ protected:
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
     virtual double get_coef_and_eigen(int ghost_flag);
+
 
 public:
     double threshold;
@@ -228,6 +241,12 @@ public:
     Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation);
 
     virtual void print0(int spaces=0);
+
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
 protected:
 
     /**
@@ -241,8 +260,6 @@ protected:
      * Corrector step for second order of whole step for first order
      */
     virtual void corrector();
-
-
 };
 
 /**
@@ -256,6 +273,11 @@ public:
     virtual bool scale();
     virtual bool unscale();
     virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -282,6 +304,11 @@ public:
     virtual bool scale();
     virtual bool unscale();
     virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -310,6 +337,11 @@ public:
     virtual bool scale();
     virtual bool unscale();
     virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -335,6 +367,11 @@ class Integrator_TwoPhases:public Integrator
 {
 public:
     Integrator_TwoPhases(cxxTitanSimulation *_titanSimulation);
+
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
 protected:
     /**
@@ -461,6 +498,11 @@ public:
     virtual bool scale();
     virtual bool unscale();
     virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
 protected:
     /**
      * Predictor step for second order of nothing for first order

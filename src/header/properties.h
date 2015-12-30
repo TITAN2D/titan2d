@@ -30,9 +30,12 @@
 #include<time.h>  //for TimeProps
 #include<math.h>
 #include "../gisapi/GisApi.h"
+#include "hd5calls.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
+using namespace std;
 
 #include "constant.h"
 
@@ -80,6 +83,31 @@ public:
     double frict_tiny;
 
     virtual void print0(int spaces=0);
+
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="Scale") const
+    {
+        H5::Group group(parent->createGroup(group_name));
+        TiH5_writeDoubleAttribute(group, length);
+        TiH5_writeDoubleAttribute(group, height);
+        TiH5_writeDoubleAttribute(group, epsilon);
+        TiH5_writeDoubleAttribute(group, gravity);
+        TiH5_writeBoolAttribute(group, auto_calc_height_scale);
+        TiH5_writeDoubleAttribute(group, max_negligible_height);
+        TiH5_writeDoubleAttribute(group, frict_tiny);
+    }
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="Scale")
+    {
+        H5::Group group(parent->openGroup(group_name));
+        TiH5_readDoubleAttribute(group, length);
+        TiH5_readDoubleAttribute(group, height);
+        TiH5_readDoubleAttribute(group, epsilon);
+        TiH5_readDoubleAttribute(group, gravity);
+        TiH5_readBoolAttribute(group, auto_calc_height_scale);
+        TiH5_readDoubleAttribute(group, max_negligible_height);
+        TiH5_readDoubleAttribute(group, frict_tiny);
+    }
 };
 
 class TiScalableObject:public TiObject
@@ -479,7 +507,46 @@ public:
     {
         return (cur_time * TIME_SCALE);
     }
-
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="TimeProps") const
+    {
+        H5::Group group(parent->createGroup(group_name));
+        TiH5_writeIntAttribute(group, maxiter);
+        TiH5_writeIntAttribute(group, iter);
+        TiH5_writeDoubleAttribute(group, maxtime);
+        TiH5_writeDoubleAttribute(group, ndmaxtime);
+        TiH5_writeDoubleAttribute(group, timeoutput);
+        TiH5_writeDoubleAttribute(group, timesave);
+        TiH5_writeIntAttribute(group, ioutput);
+        TiH5_writeIntAttribute(group, isave);
+        TiH5_writeDoubleAttribute(group, ndnextoutput);
+        TiH5_writeDoubleAttribute(group, ndnextsave);
+        TiH5_writeDoubleAttribute(group, TIME_SCALE);
+        TiH5_writeDoubleAttribute(group, cur_time);
+        TiH5_writeDoubleAttribute(group, dtime);
+        TiH5_writeDoubleAttribute(group, vstarmax);
+        //time_t starttime;
+    }
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="TimeProps")
+    {
+        H5::Group group(parent->openGroup(group_name));
+        TiH5_readIntAttribute(group, maxiter);
+        TiH5_readIntAttribute(group, iter);
+        TiH5_readDoubleAttribute(group, maxtime);
+        TiH5_readDoubleAttribute(group, ndmaxtime);
+        TiH5_readDoubleAttribute(group, timeoutput);
+        TiH5_readDoubleAttribute(group, timesave);
+        TiH5_readIntAttribute(group, ioutput);
+        TiH5_readIntAttribute(group, isave);
+        TiH5_readDoubleAttribute(group, ndnextoutput);
+        TiH5_readDoubleAttribute(group, ndnextsave);
+        TiH5_readDoubleAttribute(group, TIME_SCALE);
+        TiH5_readDoubleAttribute(group, cur_time);
+        TiH5_readDoubleAttribute(group, dtime);
+        TiH5_readDoubleAttribute(group, vstarmax);
+        //time_t starttime;
+    }
 };
 
 /*****************************************************************************/

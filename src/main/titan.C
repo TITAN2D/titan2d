@@ -99,6 +99,12 @@ int main(int argc, char *argv[])
 
     bool printUsage=false;
 
+    //variables for restart command line
+    bool restart=false;
+    string restartFilename="";
+    int addIterations=-1;
+    double addTime=-1.0;
+
     if(argc > 1)
     {
     	int argc4py=0;
@@ -109,6 +115,11 @@ int main(int argc, char *argv[])
     	for(int i=0;i<argc;i++){
     		string arg(argv[i]);
     		//strip off arguments which should not make to python
+            if(arg=="-h")
+            {
+                printUsage=true;//print usage and exit
+                break;
+            }
     		if(arg=="-nt")
     		{
 
@@ -136,6 +147,38 @@ int main(int argc, char *argv[])
 #endif
     			continue;
     		}
+            if(arg=="-restart")
+            {
+                for(int i=0;i<argc;i++)
+                {
+                    arg=argv[i];
+                    if(arg=="-add-iter")
+                    {
+                        ++i;
+                        arg=argv[i];
+                        addIterations=stoi(arg);
+                    }
+                    else if(arg=="-add-time")
+                    {
+                        ++i;
+                        arg=argv[i];
+                        addTime=stoi(arg);
+                    }
+                    else
+                    {
+                        restartFilename=argv[i];
+                    }
+                }
+                if(restartFilename=="")
+                {
+                    printUsage=true;//print usage and exit
+                    printf("Error: Incorrect command line format\n");
+                    break;
+                }
+
+                restart=true;
+                continue;
+            }
     		argv4py[argc4py]=argv[i];
     		++argc4py;
     	}
@@ -146,11 +189,37 @@ int main(int argc, char *argv[])
 #else
         threads_number=1;
 #endif
-    	if(argc4py > 1){
+
+        if(printUsage)
+        {
+            //print usage and exit
+        }
+        else if(restart)
+        {
+            //restart
+            printf("restart %s %d %f\n",restartFilename.c_str(),addIterations,addTime);
+            cxxTitanSimulation sim;
+            sim.load_restart(restartFilename.c_str());
+            if(addIterations>0)
+            {
+                sim.timeprops.maxiter+=addIterations;
+            }
+            if(addTime>0)
+            {
+                sim.timeprops.maxtime+=addTime/sim.timeprops.TIME_SCALE;
+            }
+            //sim.run();
+
+        }
+        else if(argc4py > 1)
+        {
+            //execute user script
     		Py_Main(argc4py, argv4py);
     	}
-    	else{
-    		printUsage=true;//print usage and exit
+    	else
+    	{
+    	    //print usage and exit
+    		printUsage=true;
     	}
 
         delete [] argv4py;
@@ -164,7 +233,7 @@ int main(int argc, char *argv[])
 		if(myid == 0)
 		{
 			printf("Usage:\n");
-			printf("\t%s [-nt <number of threads>] <run_script>\n", argv[0]);
+			printf("\t%s [-nt <number of threads>] [-restart [-add-iter <iter>] [-add-time <time>] | <run_script>]\n", argv[0]);
 		}
     }
     

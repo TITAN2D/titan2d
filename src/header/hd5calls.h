@@ -28,7 +28,10 @@ const int XDMF_CLOSE = 2;
 
 #include <hdf5.h>
 
+
+
 #ifdef __cplusplus
+#include <string>
 extern "C"
 {
 #endif
@@ -109,12 +112,26 @@ extern H5::EnumType datatypeElementType;
 void init_TiH5();
 
 #define TiH5_writeIntAttribute(group,value) TiH5_writeScalarAttribute(group, &value, #value,H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT)
+#define TiH5_readIntAttribute(group,value) TiH5_readScalarAttribute(group, &value, #value,H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT)
 #define TiH5_writeDoubleAttribute(group,value) TiH5_writeScalarAttribute(group, &value, #value,H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE)
+#define TiH5_readDoubleAttribute(group,value) TiH5_readScalarAttribute(group, &value, #value,H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE)
+
 #define TiH5_writeBoolAttribute(group,value) TiH5_writeBoolAttribute__(group, value, #value)
+#define TiH5_readBoolAttribute(group,value) TiH5_readBoolAttribute__(group, value, #value)
 #define TiH5_writeScalarDataTypeAttribute(group,value,type) TiH5_writeScalarDataTypeAttribute__(group, &value, #value,type)
+#define TiH5_readScalarDataTypeAttribute(group,value,type) TiH5_readScalarDataTypeAttribute__(group, &value, #value,type)
 
 #define TiH5_writeIntArrayAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, value, #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+#define TiH5_readIntArrayAttribute(group,value,size) TiH5_readArrayAttribute(group, size, value, #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
 #define TiH5_writeDoubleArrayAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, value, #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);
+#define TiH5_readDoubleArrayAttribute(group,value,size) TiH5_readArrayAttribute(group, size, value, #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);
+
+#define TiH5_writeStringAttribute(group,value) TiH5_writeStringAttribute__(group, &value, #value)
+#define TiH5_readStringAttribute(group,value) TiH5_readStringAttribute__(group, &value, #value)
+
+#define TiH5_writeStringAttribute(group,value,length) TiH5_writeStringAttribute__(group, &value, #value,length)
+#define TiH5_readStringAttribute(group,value,length) TiH5_readStringAttribute__(group, &value, #value,length)
+
 
 inline void TiH5_writeScalarAttribute(H5::Group &group, const void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
 {
@@ -128,9 +145,24 @@ inline void TiH5_writeScalarAttribute(H5::Group &group, const void *value, const
     // Write the attribute data.
     attribute.write(typeNative, value);
 }
+inline void TiH5_readScalarAttribute(const H5::Group &group, void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
+{
+    // Create a dataset attribute.
+    H5::Attribute attribute = group.openAttribute(name);
+
+    // Read the attribute data.
+    attribute.read(typeNative, value);
+}
 inline void TiH5_writeBoolAttribute__(H5::Group &group, const int value, const char *name)
 {
     TiH5_writeScalarAttribute(group,&value,name,H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+}
+inline void TiH5_readBoolAttribute__(const H5::Group &group, bool &value, const char *name)
+{
+    int rvalue;
+    TiH5_readScalarAttribute(group,&rvalue,name,H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+    if(rvalue==0)value=false;
+    else value=true;
 }
 
 inline void TiH5_writeScalarDataTypeAttribute__(H5::Group &group, const void *value, const char *name, const H5::DataType& type)
@@ -144,6 +176,11 @@ inline void TiH5_writeScalarDataTypeAttribute__(H5::Group &group, const void *va
     // Write the attribute data.
     attribute.write(type, value);
 }
+inline void TiH5_readScalarDataTypeAttribute__(const H5::Group &group, void *value, const char *name, const H5::DataType& type)
+{
+    H5::Attribute attribute = group.openAttribute(name);
+    attribute.read(type, value);
+}
 
 inline void TiH5_writeArrayAttribute(H5::Group &group, const hsize_t dims, const void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
 {
@@ -155,6 +192,29 @@ inline void TiH5_writeArrayAttribute(H5::Group &group, const hsize_t dims, const
 
     // Write the attribute data.
     attribute.write(typeNative, value);
+}
+inline void TiH5_readArrayAttribute(const H5::Group &group, const hsize_t dims, void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
+{
+    H5::Attribute attribute = group.openAttribute(name);
+    attribute.read(typeNative, value);
+}
+inline void TiH5_writeStringAttribute__(H5::Group &group, const std::string &value, const char *name, const int length=256)
+{
+    if(group.attrExists(name))
+        group.removeAttr(name);
+    H5::DataSpace attr_dataspace = H5::DataSpace (H5S_SCALAR);
+    H5::StrType type(H5::PredType::C_S1, length);
+    const H5std_string strwritebuf(value);
+    H5::Attribute attribute = group.createAttribute(name, type, attr_dataspace);
+    attribute.write(type, strwritebuf);
+}
+inline void TiH5_readStringAttribute__(const H5::Group &group, std::string &value, const char *name, const int length=256)
+{
+    H5::Attribute attribute = group.openAttribute(name);
+    H5::StrType type(H5::PredType::C_S1, length);
+    H5std_string strreadbuf ("");
+    attribute.read(type, strreadbuf);
+    value=strreadbuf;
 }
 #endif
 #endif

@@ -49,7 +49,7 @@ HashTable<T>::HashTable(tisize_t reserved_size)
 : elenode_(reserved_size)
 {
     all_elenodes_are_permanent=false;
-
+    ENTRIES = 0;
 }
 template <typename T>
 void HashTable<T>::init(double *doublekeyrangein, int size, double XR[], double YR[])
@@ -298,6 +298,38 @@ ti_ndx_t HashTable<T>::add_ndx(const SFC_Key& keyi)
 
     elenode_[ndx].ndx(ndx);
     return ndx;
+}
+template <typename T>
+void HashTable<T>::place_ndx_to_bucket(const ti_ndx_t ndx)
+{
+    const SFC_Key keyi=key_[ndx];
+    ti_ndx_t ndx2=lookup_ndx(keyi);
+    if(ti_ndx_not_negative(ndx2))
+        return;
+
+    int entry = hash(keyi);
+    int entry_size = bucket[entry].key.size();
+
+
+    //place to hash table
+    if(entry_size>0)
+    {
+        //this place is already occupied
+        //find proper place to insert it
+        int i;
+        SFC_Key *keyArr = &(bucket[entry].key[0]);
+        for(i=0;i<entry_size&&keyi>keyArr[i];++i){}
+
+        bucket[entry].key.insert(bucket[entry].key.begin() + i, keyi);
+        bucket[entry].ndx.insert(bucket[entry].ndx.begin() + i, ndx);
+    }
+    else
+    {
+        //will be first member of the bucket entry
+        bucket[entry].key.push_back(keyi);
+        bucket[entry].ndx.push_back(ndx);
+    }
+    ENTRIES+=1;
 }
 template <typename T>
 ti_ndx_t HashTable<T>::add_ndx_locked(const SFC_Key& keyi)
@@ -600,8 +632,10 @@ void HashTable<T>::resize_base(const tisize_t new_resize)
     status_.resize(new_resize);
 }
 template <typename T>
-void HashTable<T>::h5write(H5::Group &group)
+void HashTable<T>::h5write(H5::CommonFG *parent, const string group_name) const
 {
+    //group should be already created by child class
+    H5::Group group(parent->openGroup(group_name));
     hsize_t dims = size();
 
     TiH5_writeTiVector(group,key_,dims);
@@ -618,7 +652,42 @@ void HashTable<T>::h5write(H5::Group &group)
 
     TiH5_writeIntAttribute(group, NBUCKETS);
 }
+template <typename T>
+void HashTable<T>::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+    all_elenodes_are_permanent=true;
 
+    TiH5_readTiVector(group,key_);
+    //elenode_ should be regenerated
+    elenode_.resize(key_.size());
+    for(ti_ndx_t ndx=0;ndx<key_.size();++ndx)
+    {
+        elenode_[ndx].ndx(ndx);
+    }
+    //status_ should be regenerated
+    status_.resize(key_.size());
+    status_.set(CS_Permanent);
+
+    TiH5_readDoubleArrayAttribute(group,  doublekeyrange, 2);
+    TiH5_readDoubleAttribute(group, hashconstant);
+    TiH5_readDoubleArrayAttribute(group,  Xrange, 2);
+    TiH5_readDoubleArrayAttribute(group,  Yrange, 2);
+
+    TiH5_readDoubleAttribute(group, invdxrange);
+    TiH5_readDoubleAttribute(group, invdyrange);
+
+    TiH5_readIntAttribute(group, NBUCKETS);
+
+    //resize and fill buckets
+    bucket.resize(NBUCKETS);
+
+    for(ti_ndx_t ndx=0;ndx<key_.size();++ndx)
+    {
+        place_ndx_to_bucket(ndx);
+    }
+
+}
 //explicit implementation
 template class HashTable<Node>;
 template class HashTable<Element>;
@@ -628,6 +697,13 @@ NodeHashTable::NodeHashTable()
 {
     nodeHashTable=this;
     elementType_=ElementType::UnknownElementType;
+}
+NodeHashTable::NodeHashTable(const H5::CommonFG *parent, const  string group_name)
+    :HashTable<Node>(node_reserved_size)
+{
+    nodeHashTable=this;
+    elementType_=ElementType::UnknownElementType;
+    h5read(parent,group_name);
 }
 NodeHashTable::~NodeHashTable()
 {
@@ -947,11 +1023,12 @@ void NodeHashTable::groupCreateAddNode(vector<int> &create_node_ielm, vector<int
     ENTRIES+=N;
     return;
 }
-void NodeHashTable::h5write(H5::Group &group)
+void NodeHashTable::h5write(H5::CommonFG *parent, string const group_name)
 {
     if(all_elenodes_are_permanent==false)
         flushNodeTable();
-    HashTable<Node>::h5write(group);
+    H5::Group group(parent->createGroup(group_name));
+    HashTable<Node>::h5write(parent,group_name);
 
     //atributes
     TiH5_writeScalarDataTypeAttribute(group, elementType_, datatypeElementType);
@@ -971,10 +1048,68 @@ void NodeHashTable::h5write(H5::Group &group)
     TiH5_writeTiVectorArrayCompName(group,coord_,DIMENSION,&coord_names, dims);
     TiH5_writeTiVector(group,elevation_, dims);
 
+    /* playing around with ways to record coords
+    size_t n=dims;
+    coord_buffer.resize(n*3);
+    for(size_t i=0;i<n;++i)
+    {
+        coord_buffer[i*3]=coord_[0][i];
+        coord_buffer[i*3+1]=coord_[1][i];
+        coord_buffer[i*3+2]=elevation_[i];
+    }
+    hsize_t dims2[2];
+    dims2[0]=n;
+    dims2[1]=3;
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(2, dims2);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet("crd", H5::PredType::IEEE_F64LE, dataspace);
+    // Write the attribute data.
+    dataset.write(&(coord_buffer[0]), H5::PredType::NATIVE_DOUBLE);
+
+    dataset.close();
+    dataspace.close();*/
+
+
     TiH5_writeTiVectorArrayCompName(group,flux_,NUM_STATE_VARS,ElementTypesVarNames, dims);
 
     TiH5_writeTiVectorArrayCompName(group,refinementflux_,NUM_STATE_VARS,ElementTypesVarNames, dims);
     TiH5_writeTiVector(group,connection_id_, dims);
+
+}
+void NodeHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    HashTable<Node>::h5read(parent,group_name);
+
+    //atributes
+    TiH5_readScalarDataTypeAttribute(group, elementType_, datatypeElementType);
+
+    hsize_t dims = size();
+
+    //datasets
+    vector<string> *ElementTypesVarNames=nullptr;
+    if(elementType_==ElementType::SinglePhase)
+    {
+        ElementTypesVarNames=&SinglePhaseVarNames;
+    }
+    else if(elementType_==ElementType::TwoPhases)
+    {
+        ElementTypesVarNames=&TwoPhasesVarNames;
+    }
+    NUM_STATE_VARS=ElementTypesVarNames->size();
+
+    TiH5_readTiVector(group,id_);
+    TiH5_readTiVector(group,num_assoc_elem_);
+    TiH5_readTiVector(group,info_);
+    TiH5_readTiVectorArrayCompName(group,coord_,DIMENSION,&coord_names);
+    TiH5_readTiVector(group,elevation_);
+
+    TiH5_readTiVectorArrayCompName(group,flux_,NUM_STATE_VARS,ElementTypesVarNames);
+
+    TiH5_readTiVectorArrayCompName(group,refinementflux_,NUM_STATE_VARS,ElementTypesVarNames);
+    TiH5_readTiVector(group,connection_id_);
 
 }
 void NodeHashTable::set_element_type(const ElementType m_elementType)
@@ -1006,6 +1141,19 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     elementType_=ElementType::UnknownElementType;
     conformation=0;
 }
+ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonFG *parent, const  string group_name)
+        :HashTable<Element>(elem_reserved_size)
+{
+    NlocalElements = 0;
+    NodeTable = nodeTable;
+    elementsHashTable=this;
+
+    elementType_=ElementType::UnknownElementType;
+    conformation=0;
+
+    h5read(parent,group_name);
+}
+
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table
 {
@@ -2167,18 +2315,49 @@ void ElementsHashTable::removeElements(const ti_ndx_t *elements_to_delete, const
     if(Nelements_to_delete>0)
         all_elenodes_are_permanent=false;
 }
-void ElementsHashTable::h5write(H5::Group &group)
+void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
 {
     if(all_elenodes_are_permanent==false)
         flushElemTable();
-    HashTable<Element>::h5write(group);
+    H5::Group group(parent->createGroup(group_name));
+    HashTable<Element>::h5write(parent,group_name);
 
     //atributes
     TiH5_writeScalarDataTypeAttribute(group, elementType_, datatypeElementType);
+    TiH5_writeIntAttribute(group, conformation);
 
     hsize_t dims = size();
 
     //datasets
+    /* playing arout ways to record elements' nodes
+    size_t n=dims;
+    node_ndx_buffer.resize(n*9);
+    for(size_t i=0;i<n;++i)
+    {
+        node_ndx_buffer[i*9  ]=node_key_ndx_[0][i];
+        node_ndx_buffer[i*9+1]=node_key_ndx_[1][i];
+        node_ndx_buffer[i*9+2]=node_key_ndx_[2][i];
+        node_ndx_buffer[i*9+3]=node_key_ndx_[3][i];
+        node_ndx_buffer[i*9+4]=node_key_ndx_[4][i];
+        node_ndx_buffer[i*9+5]=node_key_ndx_[5][i];
+        node_ndx_buffer[i*9+6]=node_key_ndx_[6][i];
+        node_ndx_buffer[i*9+7]=node_key_ndx_[7][i];
+        node_ndx_buffer[i*9+8]=node_bubble_ndx_[i];
+    }
+    hsize_t dims2[2];
+    dims2[0]=n;
+    dims2[1]=9;
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(2, dims2);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet("Quad9", H5::PredType::STD_I32LE, dataspace);
+    // Write the attribute data.
+    dataset.write(&(node_ndx_buffer[0]), H5::PredType::NATIVE_INT);
+
+    dataset.close();
+    dataspace.close();*/
+
+
     vector<string> *ElementTypesVarNames=nullptr;
     if(elementType_==ElementType::SinglePhase)
         ElementTypesVarNames=&SinglePhaseVarNames;
@@ -2240,6 +2419,84 @@ void ElementsHashTable::h5write(H5::Group &group)
     TiH5_writeTiVector(group,Awet_,dims);
     TiH5_writeTiVectorArray(group,drypoint_,2,dims);
     TiH5_writeTiVector(group,Swet_,dims);
+}
+void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    HashTable<Element>::h5read(parent,group_name);
+
+    //atributes
+    TiH5_readScalarDataTypeAttribute(group, elementType_, datatypeElementType);
+    TiH5_readIntAttribute(group, conformation);
+
+    vector<string> *ElementTypesVarNames=nullptr;
+    if(elementType_==ElementType::SinglePhase)
+        ElementTypesVarNames=&SinglePhaseVarNames;
+    else if(elementType_==ElementType::TwoPhases)
+        ElementTypesVarNames=&TwoPhasesVarNames;
+    NUM_STATE_VARS=ElementTypesVarNames->size();
+
+
+    //datasets
+    TiH5_readTiVectorArray(group,node_key_ndx_,8);
+    TiH5_readTiVector(group,node_bubble_ndx_);
+    TiH5_readTiVectorArray(group,neighbor_ndx_,8);
+    TiH5_readTiVector(group,father_ndx_);
+    TiH5_readTiVectorArray(group,son_ndx_,4);
+    TiH5_readTiVectorArray(group,brothers_ndx_,4);
+//
+    TiH5_readTiVector(group,myprocess_);
+    TiH5_readTiVector(group,generation_);
+    TiH5_readTiVector(group,opposite_brother_flag_);
+    TiH5_readTiVector(group,material_);
+    TiH5_readTiVector(group,lb_weight_);
+    TiH5_readTiVector(group,lb_key_);
+    TiH5_readTiVectorArray(group,node_key_,8);
+    TiH5_readTiVectorArray(group,neighbors_,8);
+    TiH5_readTiVector(group,father_);
+    TiH5_readTiVectorArray(group,son_,4);
+    TiH5_readTiVectorArray(group,neigh_proc_,8);
+    TiH5_readTiVectorArray(group,neigh_gen_,8);
+    //@TODO do something about bc
+    //TiH5_readTiVector(group,bcptr_);
+    TiH5_readTiVector(group,ndof_);
+    TiH5_readTiVector(group,no_of_eqns_);
+    TiH5_readTiVectorArray(group,el_error_,EQUATIONS);
+    TiH5_readTiVectorArray(group,el_solution_,EQUATIONS);
+    TiH5_readTiVector(group,refined_);
+    TiH5_readTiVector(group,adapted_);
+    TiH5_readTiVector(group,which_son_);
+    TiH5_readTiVector(group,new_old_);
+    TiH5_readTiVectorArray(group,brothers_,4);
+    TiH5_readTiVectorArrayCompName(group,coord_,DIMENSION,&coord_names);
+    TiH5_readTiVectorArrayCompName(group,elm_loc_,DIMENSION,&coord_names);
+    TiH5_readTiVectorArrayCompName(group,state_vars_,NUM_STATE_VARS,ElementTypesVarNames);
+    TiH5_readTiVectorArrayCompName(group,prev_state_vars_,NUM_STATE_VARS,ElementTypesVarNames);
+    TiH5_readTiVectorArray(group,d_state_vars_,NUM_STATE_VARS * DIMENSION);
+    TiH5_readTiVector(group,shortspeed_);
+    TiH5_readTiVectorArrayCompName(group,dx_,DIMENSION,&coord_names);
+    TiH5_readTiVector(group,positive_x_side_);
+    TiH5_readTiVectorArrayCompName(group,eigenvxymax_,DIMENSION,&coord_names);
+    TiH5_readTiVectorArrayCompName(group,kactxy_,DIMENSION,&coord_names);
+    TiH5_readTiVector(group,elevation_);
+    TiH5_readTiVectorArrayCompName(group,zeta_,DIMENSION,&coord_names);
+    TiH5_readTiVectorArrayCompName(group,curvature_,DIMENSION,&coord_names);
+    TiH5_readTiVectorArrayCompName(group,gravity_,3,&coord_names);
+    TiH5_readTiVectorArrayCompName(group,d_gravity_,DIMENSION,&coord_names);
+    TiH5_readTiVector(group,stoppedflags_);
+    TiH5_readTiVector(group,effect_bedfrict_);
+    TiH5_readTiVector(group,effect_tanbedfrict_);
+    TiH5_readTiVectorArray(group,effect_kactxy_,2);
+    TiH5_readTiVectorArrayCompName(group,Influx_,NUM_STATE_VARS,ElementTypesVarNames);
+    TiH5_readTiVector(group,ithelem_);
+    TiH5_readTiVector(group,iwetnode_);
+    TiH5_readTiVector(group,Awet_);
+    TiH5_readTiVectorArray(group,drypoint_,2);
+    TiH5_readTiVector(group,Swet_);
+
+    updateLocalElements();
+    updateNeighboursIndexes();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
