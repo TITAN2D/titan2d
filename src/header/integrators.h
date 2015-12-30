@@ -51,7 +51,8 @@ public:
     //! Load object content from hdf5 file
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
-    static Integrator* creteIntegrator(const H5::CommonFG *parent, cxxTitanSimulation *_titanSimulation, const  string group_name="Integrator");
+    //! Create integrater from hdf file content, will instantiate proper integrator class
+    static Integrator* createIntegrator(const H5::CommonFG *parent, cxxTitanSimulation *_titanSimulation, const  string group_name="Integrator");
 
 public:
     //!internal friction for Coulomb model, some other function uses it for other models after cleaning

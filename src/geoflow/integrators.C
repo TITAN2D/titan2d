@@ -255,7 +255,7 @@ void Integrator::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readIntAttribute(group,  order);
     TiH5_readDoubleAttribute(group,  tiny);
 }
-Integrator* Integrator::creteIntegrator(const H5::CommonFG *parent, cxxTitanSimulation *_titanSimulation, const  string group_name)
+Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSimulation *_titanSimulation, const  string group_name)
 {
     Integrator* integrator=nullptr;
     string integratorType;

@@ -193,6 +193,7 @@ struct LHS_Props
 class PileProps
 {
 public:
+    //!pile types on change don't forget to update H5::EnumType datatypePileType
     enum PileType {PARABALOID=1, CYLINDER=2,PLANE=3,CASITA=4,POPO=5,ID1=6,ID2=7 };
     //! the number of piles
     int numpiles;
@@ -257,6 +258,14 @@ public:
     virtual void print_pile(int i);
     virtual void print0();
     virtual PileProps::PileType get_default_piletype(){return CYLINDER;}
+
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="PileProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="PileProps");
+    //! Create PileProps from hdf file content, will instantiate proper PileProps class
+    static PileProps* createPileProps(const H5::CommonFG *parent, const  string group_name="PileProps");
+
 };
 
 //! the PilePropsTwoPhases is PileProps for TwoPhases
@@ -288,6 +297,10 @@ public:
     {
         return PARABALOID;
     }
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="PileProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="PileProps");
 };
 
 /*************************************************************************/
@@ -1355,6 +1368,10 @@ public:
 
         return (maxinflux);
     }
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="FluxProps") const;
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="FluxProps");
 
 };
 

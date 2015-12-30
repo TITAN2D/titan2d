@@ -105,6 +105,8 @@ hid_t GH5_createdataset(hid_t gid, hid_t spcid, const char *dsetname, unsigned t
 #include <H5Cpp.h>
 
 extern H5::EnumType datatypeElementType;
+extern H5::EnumType datatypePileType;
+
 
 /**
  * initialize all hdf5 enum datatypes
@@ -123,8 +125,22 @@ void init_TiH5();
 
 #define TiH5_writeIntArrayAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, value, #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
 #define TiH5_readIntArrayAttribute(group,value,size) TiH5_readArrayAttribute(group, size, value, #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+
 #define TiH5_writeDoubleArrayAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, value, #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);
 #define TiH5_readDoubleArrayAttribute(group,value,size) TiH5_readArrayAttribute(group, size, value, #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);
+
+#define TiH5_writeDataTypeArrayAttribute(group,value,type,size) TiH5_writeArrayAttribute(group, size, value, #value, type, type);
+#define TiH5_readDataTypeArrayAttribute(group,value,type,size) TiH5_readArrayAttribute(group, size, value, #value, type, type);
+
+#define TiH5_writeIntVectorAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, &(value[0]), #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);
+#define TiH5_readIntVectorAttribute(group,value,size) {value.resize(size);TiH5_readArrayAttribute(group, size, &(value[0]), #value, H5::PredType::STD_I32LE, H5::PredType::NATIVE_INT);}
+
+#define TiH5_writeDoubleVectorAttribute(group,value,size) TiH5_writeArrayAttribute(group, size, &(value[0]), #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);
+#define TiH5_readDoubleVectorAttribute(group,value,size) {value.resize(size);TiH5_readArrayAttribute(group, size, &(value[0]), #value, H5::PredType::IEEE_F64LE, H5::PredType::NATIVE_DOUBLE);}
+
+#define TiH5_writeDataTypeVectorAttribute(group,value,type,size) TiH5_writeArrayAttribute(group, size, &(value[0]), #value, type, type);
+#define TiH5_readDataTypeVectorAttribute(group,value,type,size) {value.resize(size);TiH5_readArrayAttribute(group, size, &(value[0]), #value, type, type);}
+
 
 #define TiH5_writeStringAttribute(group,value) TiH5_writeStringAttribute__(group, &value, #value)
 #define TiH5_readStringAttribute(group,value) TiH5_readStringAttribute__(group, &value, #value)
@@ -184,19 +200,25 @@ inline void TiH5_readScalarDataTypeAttribute__(const H5::Group &group, void *val
 
 inline void TiH5_writeArrayAttribute(H5::Group &group, const hsize_t dims, const void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
 {
-    // Create the data space for the attribute.
-    H5::DataSpace attr_dataspace = H5::DataSpace (1, &dims );
+    if(dims>0)
+    {
+        // Create the data space for the attribute.
+        H5::DataSpace attr_dataspace = H5::DataSpace (1, &dims );
 
-    // Create a dataset attribute.
-    H5::Attribute attribute = group.createAttribute(name, typeRecord, attr_dataspace);
+        // Create a dataset attribute.
+        H5::Attribute attribute = group.createAttribute(name, typeRecord, attr_dataspace);
 
-    // Write the attribute data.
-    attribute.write(typeNative, value);
+        // Write the attribute data.
+        attribute.write(typeNative, value);
+    }
 }
 inline void TiH5_readArrayAttribute(const H5::Group &group, const hsize_t dims, void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
 {
-    H5::Attribute attribute = group.openAttribute(name);
-    attribute.read(typeNative, value);
+    if(dims>0)
+    {
+        H5::Attribute attribute = group.openAttribute(name);
+        attribute.read(typeNative, value);
+    }
 }
 inline void TiH5_writeStringAttribute__(H5::Group &group, const std::string &value, const char *name, const int length=256)
 {

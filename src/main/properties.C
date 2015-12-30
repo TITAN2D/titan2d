@@ -313,6 +313,72 @@ double PileProps::get_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element
 
     return pileheight;
 }
+void PileProps::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+    TiH5_writeStringAttribute__(group,"PileProps","Type");
+    TiH5_writeIntAttribute(group, numpiles);
+    TiH5_writeDoubleAttribute(group, height_scale);
+    TiH5_writeDoubleAttribute(group, length_scale);
+    TiH5_writeDoubleAttribute(group, velocity_scale);
+
+    TiH5_writeDoubleVectorAttribute(group, pileheight, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, xCen, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, yCen, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, majorrad, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, minorrad, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, cosrot, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, sinrot, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, initialVx, numpiles);
+    TiH5_writeDoubleVectorAttribute(group, initialVy, numpiles);
+
+    TiH5_writeDataTypeVectorAttribute(group,pile_type,datatypePileType,numpiles);
+}
+void PileProps::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, numpiles);
+    TiH5_readDoubleAttribute(group, height_scale);
+    TiH5_readDoubleAttribute(group, length_scale);
+    TiH5_readDoubleAttribute(group, velocity_scale);
+
+    TiH5_readDoubleVectorAttribute(group, pileheight, numpiles);
+    TiH5_readDoubleVectorAttribute(group, xCen, numpiles);
+    TiH5_readDoubleVectorAttribute(group, yCen, numpiles);
+    TiH5_readDoubleVectorAttribute(group, majorrad, numpiles);
+    TiH5_readDoubleVectorAttribute(group, minorrad, numpiles);
+    TiH5_readDoubleVectorAttribute(group, cosrot, numpiles);
+    TiH5_readDoubleVectorAttribute(group, sinrot, numpiles);
+    TiH5_readDoubleVectorAttribute(group, initialVx, numpiles);
+    TiH5_readDoubleVectorAttribute(group, initialVy, numpiles);
+
+    TiH5_readDataTypeVectorAttribute(group,pile_type,datatypePileType,numpiles);
+}
+PileProps* PileProps::createPileProps(const H5::CommonFG *parent, const  string group_name)
+{
+    PileProps *pileProps=nullptr;
+    string PilePropsType;
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readStringAttribute__(group,PilePropsType,"Type");
+
+    if (PilePropsType == "PileProps")
+    {
+        pileProps = new PileProps();
+    }
+    else if (PilePropsType == "PilePropsTwoPhases")
+    {
+        pileProps = new PilePropsTwoPhases();
+    }
+    else
+    {
+        cout << "ERROR: Unknown type of PileProps:" << PilePropsType << "\n";
+    }
+    assert(pileProps != nullptr);
+    pileProps->h5read(parent,group_name);
+
+    return pileProps;
+}
 
 PilePropsTwoPhases::PilePropsTwoPhases() :
         PileProps()
@@ -358,7 +424,66 @@ void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(NodeHashTa
     }
     m_EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
 }
+void PilePropsTwoPhases::h5write(H5::CommonFG *parent, string group_name) const
+{
+    PileProps::h5write(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"PilePropsTwoPhases","Type");
+    TiH5_writeDoubleVectorAttribute(group, vol_fract, numpiles);
+}
+void PilePropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    PileProps::h5read(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleVectorAttribute(group, vol_fract, numpiles);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void FluxProps::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+    TiH5_writeIntAttribute(group, no_of_sources);
 
+    TiH5_writeDoubleVectorAttribute(group, influx, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, start_time, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, end_time, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, xCen, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, yCen, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, majorrad, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, minorrad, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, cosrot, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, sinrot, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, xVel, no_of_sources);
+    TiH5_writeDoubleVectorAttribute(group, yVel, no_of_sources);
+
+    TiH5_writeDoubleAttribute(group, height_scale);
+    TiH5_writeDoubleAttribute(group,  length_scale);
+    TiH5_writeDoubleAttribute(group,  velocity_scale);
+    TiH5_writeDoubleAttribute(group,  time_scale);
+
+}
+void FluxProps::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, no_of_sources);
+
+    TiH5_readDoubleVectorAttribute(group, influx, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, start_time, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, end_time, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, xCen, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, yCen, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, majorrad, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, minorrad, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, cosrot, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, sinrot, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, xVel, no_of_sources);
+    TiH5_readDoubleVectorAttribute(group, yVel, no_of_sources);
+
+    TiH5_readDoubleAttribute(group, height_scale);
+    TiH5_readDoubleAttribute(group,  length_scale);
+    TiH5_readDoubleAttribute(group,  velocity_scale);
+    TiH5_readDoubleAttribute(group,  time_scale);
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 OutLine::OutLine()
 {

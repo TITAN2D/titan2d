@@ -17,8 +17,10 @@
 
 #include "../header/hd5calls.h"
 #include "../header/titan2d_utils.h"
+#include "../header/properties.h"
 
 H5::EnumType datatypeElementType;
+H5::EnumType datatypePileType;
 
 vector<string> coord_names;
 vector<string> SinglePhaseVarNames;
@@ -27,14 +29,32 @@ vector<string> TwoPhasesVarNames;
 void init_TiH5()
 {
     //init enums
-    datatypeElementType=H5::EnumType(sizeof(ElementType));
     ElementType val;
+
+    datatypeElementType=H5::EnumType(sizeof(ElementType));
     val=ElementType::UnknownElementType;
     datatypeElementType.insert("UnknownElementType",&val);
     val=ElementType::SinglePhase;
     datatypeElementType.insert("SinglePhase",&val);
     val=ElementType::TwoPhases;
     datatypeElementType.insert("TwoPhases",&val);
+
+    datatypePileType=H5::EnumType(sizeof(PileProps::PileType));
+    PileProps::PileType pile_type;
+    pile_type=PileProps::PARABALOID;
+    datatypePileType.insert("PARABALOID",&pile_type);
+    pile_type=PileProps::CYLINDER;
+    datatypePileType.insert("CYLINDER",&pile_type);
+    pile_type=PileProps::PLANE;
+    datatypePileType.insert("PLANE",&pile_type);
+    pile_type=PileProps::CASITA;
+    datatypePileType.insert("CASITA",&pile_type);
+    pile_type=PileProps::POPO;
+    datatypePileType.insert("POPO",&pile_type);
+    pile_type=PileProps::ID1;
+    datatypePileType.insert("ID1",&pile_type);
+    pile_type=PileProps::ID2;
+    datatypePileType.insert("ID2",&pile_type);
 
     //init indexes to char* conversions
     coord_names.push_back("X");

@@ -383,8 +383,8 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent) const
     timeprops.h5write(parent);
     scale_.h5write(parent);
     integrator->h5write(parent);
-    //pileprops->h5write(parent);
-    //fluxprops.h5write(parent);
+    pileprops->h5write(parent);
+    fluxprops.h5write(parent);
     //discharge_planes.h5write(parent);
     //matprops->h5write(parent);
     //statprops->h5write(parent);
@@ -410,11 +410,14 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
 
     ///////////////////////////////////////////////////////////////////////////
     NodeTable=new NodeHashTable(parent);
+    //@TODO do something about bc
     ElemTable=new ElementsHashTable(NodeTable,parent);
 
     timeprops.h5read(parent);
     scale_.h5read(parent);
-    integrator=Integrator::creteIntegrator(parent,this);
+    integrator=Integrator::createIntegrator(parent,this);
+    pileprops=PileProps::createPileProps(parent);
+    fluxprops.h5read(parent);
 
 }
 void xmdfScalarAttribute(ofstream &xmdf,const char *name, const char *hf5_filename, const char *h5ref, const int dim,
