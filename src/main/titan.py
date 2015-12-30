@@ -84,7 +84,8 @@ class TitanSimulationBase(object):
                 'phi1':24.0,
                 'phi2':30.0,
                 'partdiam':1.0E-4,
-                'I_O':0.3
+                'I_O':0.3,
+                'int_frict':37.0
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
@@ -99,7 +100,8 @@ class TitanSimulationBase(object):
                 'phis':24.0,
                 'phi2':30.0,
                 'partdiam':1.0E-4,
-                'I_not':0.3
+                'I_not':0.3,
+                'int_frict':37.0
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
