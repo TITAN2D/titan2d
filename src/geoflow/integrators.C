@@ -1546,100 +1546,99 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
             }
             else
             {
-            
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // x direction source terms
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // the gravity force in the x direction
-            forcegrav = g[0][ndx] * h[ndx];
+                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                // x direction source terms
+                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                // the gravity force in the x direction
+                forcegrav = g[0][ndx] * h[ndx];
 
-            // the bed friction force for fast moving flow
-            forcebedx = h[ndx] * (g[2][ndx] * unitvx * mu - g[0][ndx] * kactxy[ndx] * dh_dx[ndx]);
-            
+                // the bed friction force for fast moving flow
+                forcebedx = h[ndx] * (g[2][ndx] * unitvx * mu - g[0][ndx] * kactxy[ndx] * dh_dx[ndx]);
+
 #ifdef STOPPED_FLOWS
-            if (IF_STOPPED == 2 && 1 == 0) {
-                // the bed friction force for stopped or nearly stopped flow
+                if (IF_STOPPED == 2 && 1 == 0) {
+                    // the bed friction force for stopped or nearly stopped flow
 
-                // the static friction force is LESS THAN or equal to the friction
-                // coefficient times the normal force but it can NEVER exceed the
-                // NET force it is opposing
-                
-                // maximum friction force the bed friction can support
-                forcebedmax = g[2][ndx] * h[ndx] * tanbed;
-                
-                // the NET force the bed friction force is opposing
-                forcebedequil = forcegrav - forceintx;
-                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
+                    // the static friction force is LESS THAN or equal to the friction
+                    // coefficient times the normal force but it can NEVER exceed the
+                    // NET force it is opposing
 
-                // the "correct" stopped or nearly stopped flow bed friction force
-                // (this force is not entirely "correct" it will leave a "negligible"
-                // (determined by stopping criteria) amount of momentum in the cell
-                forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
-                // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
-                
-                // not really 1 but this makes friction statistics accurate
-                unitvx = 1.0;
-                // else
-                
-            }
+                    // maximum friction force the bed friction can support
+                    forcebedmax = g[2][ndx] * h[ndx] * tanbed;
+
+                    // the NET force the bed friction force is opposing
+                    forcebedequil = forcegrav - forceintx;
+                    // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
+
+                    // the "correct" stopped or nearly stopped flow bed friction force
+                    // (this force is not entirely "correct" it will leave a "negligible"
+                    // (determined by stopping criteria) amount of momentum in the cell
+                    forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
+                    // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
+
+                    // not really 1 but this makes friction statistics accurate
+                    unitvx = 1.0;
+                    // else
+
+                }
 #endif
-            Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx);
+                Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx);
 
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // y direction source terms
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // the gravity force in the y direction
-            forcegrav = g[1][ndx] * h[ndx];
+                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                // y direction source terms
+                //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                // the gravity force in the y direction
+                forcegrav = g[1][ndx] * h[ndx];
 
-            // the bed friction force for fast moving flow
-            forcebedy = h[ndx] * (g[2][ndx] * unitvy * mu - g[1][ndx] * kactxy[ndx] * dh_dy[ndx]);
-            
+                // the bed friction force for fast moving flow
+                forcebedy = h[ndx] * (g[2][ndx] * unitvy * mu - g[1][ndx] * kactxy[ndx] * dh_dy[ndx]);
+                
 #ifdef STOPPED_FLOWS
-            if (IF_STOPPED == 2 && 1 == 0) {
-                // the bed friction force for stopped or nearly stopped flow
+                if (IF_STOPPED == 2 && 1 == 0) {
+                    // the bed friction force for stopped or nearly stopped flow
 
-                // the NET force the bed friction force is opposing
-                forcebedequil = forcegrav - forceinty;
-                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dy
+                    // the NET force the bed friction force is opposing
+                    forcebedequil = forcegrav - forceinty;
+                    // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dy
 
-                // the "correct" stopped or nearly stopped flow bed friction force
-                // (this force is not entirely "correct" it will leave a "negligible"
-                // (determined by stopping criteria) amount of momentum in the cell
-                forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedy) + fabs(forcebedequil)));
+                    // the "correct" stopped or nearly stopped flow bed friction force
+                    // (this force is not entirely "correct" it will leave a "negligible"
+                    // (determined by stopping criteria) amount of momentum in the cell
+                    forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedy) + fabs(forcebedequil)));
 
-                // not really 1 but this makes friction statistics accurate
-                unitvy = 1.0;
-                //    else
-            }
+                    // not really 1 but this makes friction statistics accurate
+                    unitvy = 1.0;
+                    //    else
+                }
 #endif
-            Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy);
+                Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy);
 
 #ifdef STOPPED_FLOWS
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // (erosion terms) this is Camil's logic, Keith changed some variable
-            //names for clarity
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            if ((false) && (do_erosion != 0) && (IF_STOPPED == 0)) {
-                totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
-                if ((totalShear > threshold) && (h[ndx] > 0.004)) {
+                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                // (erosion terms) this is Camil's logic, Keith changed some variable
+                //names for clarity
+                //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                if ((false) && (do_erosion != 0) && (IF_STOPPED == 0)) {
+                    totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
+                    if ((totalShear > threshold) && (h[ndx] > 0.004)) {
 
-                    es = erosion_rate * sqrt(fabs(totalShear - threshold));
-                    elem_eroded = dt*es;
-                    Ustore[0] = Ustore[0] + elem_eroded;
-                    Ustore[1] = Ustore[1] + elem_eroded * VxVy[0];
-                    Ustore[2] = Ustore[2] + elem_eroded * VxVy[1];
-                    //write (*,*) 'Doing Keith Erosion Model'
+                        es = erosion_rate * sqrt(fabs(totalShear - threshold));
+                        elem_eroded = dt*es;
+                        Ustore[0] = Ustore[0] + elem_eroded;
+                        Ustore[1] = Ustore[1] + elem_eroded * VxVy[0];
+                        Ustore[2] = Ustore[2] + elem_eroded * VxVy[1];
+                        //write (*,*) 'Doing Keith Erosion Model'
+                    }
+                }
+#endif
+                if ((do_erosion != 0) && (h[ndx] > threshold)) {
+                    es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+                    Ustore[0] = Ustore[0] + dt * es;
+                    Ustore[1] = Ustore[1] + dt * es * Ustore[1];
+                    Ustore[2] = Ustore[2] + dt * es * Ustore[2];
+                    //write (*,*) 'Doing Camil Erosion Model'
                 }
             }
-#endif
-            if ((do_erosion != 0) && (h[ndx] > threshold)) {
-                es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
-                Ustore[0] = Ustore[0] + dt * es;
-                Ustore[1] = Ustore[1] + dt * es * Ustore[1];
-                Ustore[2] = Ustore[2] + dt * es * Ustore[2];
-                //write (*,*) 'Doing Camil Erosion Model'
-            }
-
         }
 
 
