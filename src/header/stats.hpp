@@ -19,7 +19,7 @@
 #define SRC_HEADER_STATS_HPP_
 
 #include "hpfem.h"
-
+#include "hd5calls.h"
 //! the StatProps structure holds statistics about the flow
 class StatProps: public EleNodeRef
 {
@@ -115,6 +115,8 @@ public:
 
     //! the constructor initializes a few statistics
     StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable);
+    //! the constructor from hd5
+    StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, const H5::CommonFG *parent, const  string group_name="StatProps");
     ~StatProps();
     void set(const double edge_height, const double test_height, const double test_location_x, const double test_location_y);
     void scale(const MatProps* matprops_ptr);
@@ -125,6 +127,10 @@ public:
      */
     void calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
             DischargePlanes* discharge, double d_time);
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="StatProps") const;
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="StatProps");
 };
 
 

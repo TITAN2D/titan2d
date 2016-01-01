@@ -23,6 +23,7 @@
 #include "../header/stats.hpp"
 #include "../header/properties.h"
 
+
 #include <cmath>
 
 //#include <advisor-annotate.h>
@@ -43,6 +44,19 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
     runid = -1;
+}
+StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, const H5::CommonFG *parent, const  string group_name):
+    EleNodeRef(_ElemTable, _NodeTable)
+{
+    timereached = -1.0;
+    xcen = ycen = xvar = yvar = rmean = area = vmean = vxmean = vymean = slopemean = vstar = 0.0;
+    realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
+    piler = hmax = vmax = forceint = forcebed = 0.0;
+    heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
+    xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
+    lhs.refnum = lhs.runid = -1;
+    runid = -1;
+    h5read(parent, group_name);
 }
 StatProps::~StatProps()
 {
@@ -563,4 +577,75 @@ void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *t
     }
 
     return;
+}
+void StatProps::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+
+    TiH5_writeIntAttribute(group, runid);
+    TiH5_writeDoubleAttribute(group, xcen);
+    TiH5_writeDoubleAttribute(group, ycen);
+    TiH5_writeDoubleAttribute(group, xvar);
+    TiH5_writeDoubleAttribute(group, yvar);
+    TiH5_writeDoubleAttribute(group, rmean);
+    TiH5_writeDoubleAttribute(group, area);
+    TiH5_writeDoubleAttribute(group, vmean);
+    TiH5_writeDoubleAttribute(group, vxmean);
+    TiH5_writeDoubleAttribute(group, vymean);
+    TiH5_writeDoubleAttribute(group, slopemean);
+    TiH5_writeDoubleAttribute(group, vstar);
+    TiH5_writeDoubleAttribute(group, realvolume);
+    TiH5_writeDoubleAttribute(group, statvolume);
+    TiH5_writeDoubleAttribute(group, outflowvol);
+    TiH5_writeDoubleAttribute(group, erodedvol);
+    TiH5_writeDoubleAttribute(group, depositedvol);
+    TiH5_writeDoubleAttribute(group, cutoffheight);
+    TiH5_writeDoubleAttribute(group, piler);
+    TiH5_writeDoubleAttribute(group, hmax);
+    TiH5_writeDoubleAttribute(group, vmax);
+    TiH5_writeDoubleAttribute(group, forceint);
+    TiH5_writeDoubleAttribute(group, forcebed);
+    TiH5_writeDoubleAttribute(group, heightifreach);
+    TiH5_writeDoubleAttribute(group, xyifreach[2]);
+    TiH5_writeDoubleAttribute(group, timereached);
+    TiH5_writeDoubleAttribute(group, xyminmax[4]);
+    TiH5_writeDoubleAttribute(group, hxyminmax);
+
+    lhs.h5write(&group);
+}
+void StatProps::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, runid);
+    TiH5_readDoubleAttribute(group, xcen);
+    TiH5_readDoubleAttribute(group, ycen);
+    TiH5_readDoubleAttribute(group, xvar);
+    TiH5_readDoubleAttribute(group, yvar);
+    TiH5_readDoubleAttribute(group, rmean);
+    TiH5_readDoubleAttribute(group, area);
+    TiH5_readDoubleAttribute(group, vmean);
+    TiH5_readDoubleAttribute(group, vxmean);
+    TiH5_readDoubleAttribute(group, vymean);
+    TiH5_readDoubleAttribute(group, slopemean);
+    TiH5_readDoubleAttribute(group, vstar);
+    TiH5_readDoubleAttribute(group, realvolume);
+    TiH5_readDoubleAttribute(group, statvolume);
+    TiH5_readDoubleAttribute(group, outflowvol);
+    TiH5_readDoubleAttribute(group, erodedvol);
+    TiH5_readDoubleAttribute(group, depositedvol);
+    TiH5_readDoubleAttribute(group, cutoffheight);
+    TiH5_readDoubleAttribute(group, piler);
+    TiH5_readDoubleAttribute(group, hmax);
+    TiH5_readDoubleAttribute(group, vmax);
+    TiH5_readDoubleAttribute(group, forceint);
+    TiH5_readDoubleAttribute(group, forcebed);
+    TiH5_readDoubleAttribute(group, heightifreach);
+    TiH5_readDoubleAttribute(group, xyifreach[2]);
+    TiH5_readDoubleAttribute(group, timereached);
+    TiH5_readDoubleAttribute(group, xyminmax[4]);
+    TiH5_readDoubleAttribute(group, hxyminmax);
+
+    lhs.h5read(&group);
+
 }

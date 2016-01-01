@@ -36,7 +36,11 @@
 
  */
 
-//! the BC structure contains members: "type[4]" identifying type of boundary condition as essential=1, natural=2, or both=3; and "value[4][2][2]": identifying the element-side, type (0=natural, 1=essential), and load component (0=x, 1=y) comprising the boundary condition.
+/** the BC structure contains members: "type[4]" identifying type of boundary condition
+ * as essential=1, natural=2, or both=3; and "value[4][2][2]": identifying the element-side,
+ * type (0=natural, 1=essential), and load component (0=x, 1=y)
+ * comprising the boundary condition.
+ */
 struct BC
 {
     int type[4];
@@ -55,4 +59,6 @@ struct BC
                     value[i][j][k] = 0.0;
     }
 };
+
+
 #endif

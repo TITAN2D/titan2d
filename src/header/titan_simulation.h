@@ -143,7 +143,7 @@ protected:
     /**
      * write some of the content to h5group
      */
-    void h5write(H5::CommonFG *parent) const;
+    void h5write(H5::CommonFG *parent);
     void h5read(const H5::CommonFG *parent);
 
     void xmdfWrite();

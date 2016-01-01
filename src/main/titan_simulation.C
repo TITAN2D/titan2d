@@ -358,7 +358,7 @@ void cxxTitanSimulation::set_integrator(Integrator* m_integrator)
     FREE_VAR_IF_NOT_NULLPTR(integrator);
     integrator=m_integrator;
 }
-void cxxTitanSimulation::h5write(H5::CommonFG *parent) const
+void cxxTitanSimulation::h5write(H5::CommonFG *parent)
 {
     ///////////////////////////////////////////////////////////////////////////
     //write cxxTitanSimulation
@@ -385,11 +385,11 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent) const
     integrator->h5write(parent);
     pileprops->h5write(parent);
     fluxprops.h5write(parent);
-    //discharge_planes.h5write(parent);
-    //matprops->h5write(parent);
-    //statprops->h5write(parent);
-    //mapnames.h5write(parent);
-    //outline.h5write(parent);
+    discharge_planes.h5write(parent);
+    matprops->h5write(parent);
+    statprops->h5write(parent);
+    mapnames.h5write(parent);
+    outline.h5write(parent);
 
 
 }
@@ -418,7 +418,12 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     integrator=Integrator::createIntegrator(parent,this);
     pileprops=PileProps::createPileProps(parent);
     fluxprops.h5read(parent);
-
+    discharge_planes.h5read(parent);
+    matprops=MatProps::createMatProps(parent,scale_);
+    statprops=new StatProps(ElemTable,NodeTable,parent);
+    mapnames.h5read(parent);
+    outline.setElemNodeTable(ElemTable,NodeTable);
+    outline.h5read(parent);
 }
 void xmdfScalarAttribute(ofstream &xmdf,const char *name, const char *hf5_filename, const char *h5ref, const int dim,
         const char *DataType,const int Precision, const char *Center)
@@ -806,6 +811,8 @@ void cxxTitanSimulation::run()
 
     HAdapt hadapt(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr,5);
     HAdaptUnrefine Unrefine(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr);
+
+    outline.setElemNodeTable(ElemTable,NodeTable);
 
     /*FREE_VAR_IF_NOT_NULLPTR(integrator);
     if(elementType == ElementType::TwoPhases)

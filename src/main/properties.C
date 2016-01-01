@@ -79,6 +79,42 @@ void MapNames::print0()
     }
     return;
 }
+
+void MapNames::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+
+    TiH5_writeStringAttribute(group, gis_main);
+    TiH5_writeStringAttribute(group, gis_sub);
+    TiH5_writeStringAttribute(group, gis_mapset);
+    TiH5_writeStringAttribute(group, gis_map);
+    TiH5_writeStringAttribute(group, gis_vector);
+    TiH5_writeIntAttribute(group, gis_format);
+    TiH5_writeIntAttribute(group, extramaps);
+    TiH5_writeBoolAttribute(group, region_limits_set);
+    TiH5_writeDoubleAttribute(group, min_location_x);
+    TiH5_writeDoubleAttribute(group, min_location_y);
+    TiH5_writeDoubleAttribute(group, max_location_x);
+    TiH5_writeDoubleAttribute(group, max_location_y);
+}
+void MapNames::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readStringAttribute(group, gis_main);
+    TiH5_readStringAttribute(group, gis_sub);
+    TiH5_readStringAttribute(group, gis_mapset);
+    TiH5_readStringAttribute(group, gis_map);
+    TiH5_readStringAttribute(group, gis_vector);
+    TiH5_readIntAttribute(group, gis_format);
+    TiH5_readIntAttribute(group, extramaps);
+    TiH5_readBoolAttribute(group, region_limits_set);
+    TiH5_readDoubleAttribute(group, min_location_x);
+    TiH5_readDoubleAttribute(group, min_location_y);
+    TiH5_readDoubleAttribute(group, max_location_x);
+    TiH5_readDoubleAttribute(group, max_location_y);
+}
+
 PileProps::PileProps()
 {
     numpiles = 0;
@@ -485,8 +521,126 @@ void FluxProps::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group,  time_scale);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void DischargePlanes::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+    TiH5_writeIntAttribute(group, num_planes);
+
+    TiH5_writeVectorArrayAttribute(group, planes);
+}
+void DischargePlanes::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, num_planes);
+
+    TiH5_readVectorArrayAttribute(group, planes);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+MatProps* MatProps::createMatProps(const H5::CommonFG *parent,TiScale &_scale, const  string group_name)
+{
+    MatProps *matProps=nullptr;
+    string matPropsType;
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readStringAttribute__(group,matPropsType,"Type");
+
+    if (matPropsType == "MatProps")
+    {
+        matProps = new MatProps(_scale);
+    }
+    else if (matPropsType == "MatPropsTwoPhases")
+    {
+        matProps = new MatPropsTwoPhases(_scale);
+    }
+    else
+    {
+        cout << "ERROR: Unknown type of MatProps:" << matPropsType << "\n";
+    }
+    assert(matProps != nullptr);
+    matProps->h5read(parent,group_name);
+
+    return matProps;
+}
+void MatProps::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+    TiH5_writeStringAttribute__(group,"MatProps","Type");
+
+    TiH5_writeIntAttribute(group, number_of_cells_across_axis);
+    TiH5_writeDoubleAttribute(group, smallest_axis);
+    TiH5_writeIntAttribute(group, material_count);
+    TiH5_writeVectorStringAttribute(group, matnames);
+    TiH5_writeDoubleVectorAttribute(group, bedfrict, material_count);
+    TiH5_writeDoubleVectorAttribute(group, tanbedfrict, material_count);
+    TiH5_writeDoubleAttribute(group, porosity);
+    TiH5_writeDoubleAttribute(group, mu);
+    TiH5_writeDoubleAttribute(group, rho);
+    TiH5_writeDoubleAttribute(group, gamma);
+    TiH5_writeDoubleAttribute(group, Vslump);
+
+}
+void MatProps::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, number_of_cells_across_axis);
+    TiH5_readDoubleAttribute(group, smallest_axis);
+    TiH5_readIntAttribute(group, material_count);
+    TiH5_readVectorStringAttribute(group, matnames);
+    TiH5_readDoubleVectorAttribute(group, bedfrict, material_count);
+    TiH5_readDoubleVectorAttribute(group, tanbedfrict, material_count);
+    TiH5_readDoubleAttribute(group, porosity);
+    TiH5_readDoubleAttribute(group, mu);
+    TiH5_readDoubleAttribute(group, rho);
+    TiH5_readDoubleAttribute(group, gamma);
+    TiH5_readDoubleAttribute(group, Vslump);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MatPropsTwoPhases::h5write(H5::CommonFG *parent, string group_name) const
+{
+    MatProps::h5write(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"MatPropsTwoPhases","Type");
+
+    TiH5_writeDoubleAttribute(group, den_solid);
+    TiH5_writeDoubleAttribute(group, den_fluid);
+    TiH5_writeDoubleAttribute(group, viscosity);
+    TiH5_writeDoubleAttribute(group, v_terminal);
+    TiH5_writeIntAttribute(group, flow_type);
+}
+void MatPropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    MatProps::h5read(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readDoubleAttribute(group, den_solid);
+    TiH5_readDoubleAttribute(group, den_fluid);
+    TiH5_readDoubleAttribute(group, viscosity);
+    TiH5_readDoubleAttribute(group, v_terminal);
+    TiH5_readIntAttribute(group, flow_type);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void LHS_Props::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+
+    TiH5_writeIntAttribute(group, refnum);
+    TiH5_writeIntAttribute(group, runid);
+
+}
+void LHS_Props::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, refnum);
+    TiH5_readIntAttribute(group, runid);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 OutLine::OutLine()
 {
+    ElemTable=nullptr;
+    NodeTable=nullptr;
     conformation=-1;
     Nx = Ny = stride = size = 0;
 
@@ -550,7 +704,11 @@ OutLine::~OutLine()
     TI_FREE(cum_kinergy_loc);
     return;
 }
-
+void OutLine::setElemNodeTable(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable)
+{
+    ElemTable=_ElemTable;
+    NodeTable=_NodeTable;
+}
 //! this function initializes the OutLine map/2-dimensional array
 void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
 {
@@ -584,6 +742,11 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
 
     size=Ny*stride;
+
+    alloc_arrays();
+}
+void OutLine::alloc_arrays()
+{
     pileheight = TI_ALLOC(double, size);
     max_kinergy = TI_ALLOC(double, size);
     max_dynamic_pressure = TI_ALLOC(double, size);
@@ -654,19 +817,19 @@ void OutLine::init2(const double *dxy, double *XRange, double *YRange)
     }
     return;
 }
-void OutLine::update(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
+void OutLine::update()
 {
     if(ElemTable->conformation!=conformation)
     {
-        update_on_changed_geometry(ElemTable, NodeTable);
+        update_on_changed_geometry();
     }
     if(elementType == ElementType::TwoPhases)
     {
-        update_two_phases(ElemTable, NodeTable);
+        update_two_phases();
     }
     else if(elementType == ElementType::SinglePhase)
     {
-        update_single_phase(ElemTable, NodeTable);
+        update_single_phase();
     }
     else
     {
@@ -674,7 +837,7 @@ void OutLine::update(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
     }
 }
 
-void OutLine::update_on_changed_geometry(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
+void OutLine::update_on_changed_geometry()
 {
     //we here because geometry was changed
     flush_stats(false);
@@ -774,7 +937,7 @@ void OutLine::update_on_changed_geometry(ElementsHashTable* ElemTable, NodeHashT
     }
     conformation=ElemTable->conformation;
 }
-void OutLine::update_single_phase(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
+void OutLine::update_single_phase()
 {
     const ti_ndx_t N=pileheight_by_elm.size();
 
@@ -914,7 +1077,7 @@ void OutLine::combine_results_from_threads()
         }
     }
 }
-void OutLine::update_two_phases(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
+void OutLine::update_two_phases()
 {
     const ti_ndx_t N=pileheight_by_elm.size();
 
@@ -1119,6 +1282,54 @@ void OutLine::reload(MatProps* matprops_ptr, StatProps* statprops_ptr)
     return;
 }
 
+void OutLine::h5write(H5::CommonFG *parent, string group_name)
+{
+    H5::Group group(parent->createGroup(group_name));
+
+    combine_results_from_threads();
+
+    TiH5_writeIntAttribute(group, conformation);
+    TiH5_writeIntAttribute(group, Nx);
+    TiH5_writeIntAttribute(group, Ny);
+    TiH5_writeIntAttribute(group, stride);
+    TiH5_writeIntAttribute(group, size);
+    TiH5_writeDoubleAttribute(group, dx);
+    TiH5_writeDoubleAttribute(group, dy);
+    TiH5_writeDoubleAttribute(group, xminmax[2]);
+    TiH5_writeDoubleAttribute(group, yminmax[2]);
+
+    TiH5_writeArray2DDataSet(group, pileheight,Ny,stride);
+    TiH5_writeArray2DDataSet(group, max_kinergy,Ny,stride);
+    TiH5_writeArray2DDataSet(group, max_dynamic_pressure,Ny,stride);
+    TiH5_writeArray2DDataSet(group, cum_kinergy,Ny,stride);
+
+    TiH5_writeScalarDataTypeAttribute(group, elementType, datatypeElementType);
 
 
+}
+void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readScalarDataTypeAttribute(group, elementType, datatypeElementType);
+
+    TiH5_readIntAttribute(group, conformation);
+    TiH5_readIntAttribute(group, Nx);
+    TiH5_readIntAttribute(group, Ny);
+    TiH5_readIntAttribute(group, stride);
+    TiH5_readIntAttribute(group, size);
+    TiH5_readDoubleAttribute(group, dx);
+    TiH5_readDoubleAttribute(group, dy);
+    TiH5_readDoubleAttribute(group, xminmax[2]);
+    TiH5_readDoubleAttribute(group, yminmax[2]);
+
+    alloc_arrays();
+
+    TiH5_readArray2DDataSet(group, pileheight,Ny,stride);
+    TiH5_readArray2DDataSet(group, max_kinergy,Ny,stride);
+    TiH5_readArray2DDataSet(group, max_dynamic_pressure,Ny,stride);
+    TiH5_readArray2DDataSet(group, cum_kinergy,Ny,stride);
+
+    update_on_changed_geometry();
+}
 

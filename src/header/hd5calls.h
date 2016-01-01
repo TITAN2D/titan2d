@@ -104,6 +104,13 @@ hid_t GH5_createdataset(hid_t gid, hid_t spcid, const char *dsetname, unsigned t
 #ifdef __cplusplus
 #include <H5Cpp.h>
 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <array>
+
+#include <string.h>
+#include <assert.h>
 extern H5::EnumType datatypeElementType;
 extern H5::EnumType datatypePileType;
 
@@ -142,11 +149,8 @@ void init_TiH5();
 #define TiH5_readDataTypeVectorAttribute(group,value,type,size) {value.resize(size);TiH5_readArrayAttribute(group, size, &(value[0]), #value, type, type);}
 
 
-#define TiH5_writeStringAttribute(group,value) TiH5_writeStringAttribute__(group, &value, #value)
-#define TiH5_readStringAttribute(group,value) TiH5_readStringAttribute__(group, &value, #value)
-
-#define TiH5_writeStringAttribute(group,value,length) TiH5_writeStringAttribute__(group, &value, #value,length)
-#define TiH5_readStringAttribute(group,value,length) TiH5_readStringAttribute__(group, &value, #value,length)
+#define TiH5_writeStringAttribute(group,value) TiH5_writeStringAttribute__(group, value, #value)
+#define TiH5_readStringAttribute(group,value) TiH5_readStringAttribute__(group, value, #value)
 
 
 inline void TiH5_writeScalarAttribute(H5::Group &group, const void *value, const char *name, const H5::DataType& typeRecord,const H5::DataType& typeNative)
@@ -220,6 +224,143 @@ inline void TiH5_readArrayAttribute(const H5::Group &group, const hsize_t dims, 
         attribute.read(typeNative, value);
     }
 }
+#define TiH5_writeVectorArrayAttribute(group,value) TiH5_writeVectorArrayAttribute__(group, value, #value);
+#define TiH5_readVectorArrayAttribute(group,value)  TiH5_readVectorArrayAttribute__(group, value, #value);
+
+template<std::size_t N>
+inline void TiH5_writeVectorArrayAttribute__(H5::Group &group, const std::vector<std::array<double,N> > &value, const char *name)
+{
+    const hsize_t dims[2]={value.size(),N};
+    double *v=nullptr;
+    if(dims[0]>0)
+    {
+        if(dims[0]>1)
+        {
+            v=new double[dims[0]*dims[1]];
+            for(std::size_t i=0;i<dims[0];++i)
+                for(std::size_t j=0;j<dims[1];++j)
+                    v[i*dims[1]+j]=value[i][j];
+        }
+        // Create the data space for the attribute.
+        H5::DataSpace attr_dataspace = H5::DataSpace (2, dims );
+
+        // Create a dataset attribute.
+        H5::Attribute attribute = group.createAttribute(name, H5::PredType::IEEE_F64LE, attr_dataspace);
+
+        // Write the attribute data.
+        if(dims[0]>1)
+            attribute.write(H5::PredType::NATIVE_DOUBLE, v);
+        else
+            attribute.write(H5::PredType::NATIVE_DOUBLE, &(value[0][0]));
+
+        if(dims[0]>1)delete [] v;
+    }
+}
+template<std::size_t N>
+inline void TiH5_readVectorArrayAttribute__(const H5::Group &group, std::vector<std::array<double,N> > &value, const char *name)
+{
+    if(!group.attrExists(name))
+    {
+        value.resize(0);
+        return;
+    }
+
+    H5::Attribute attribute = group.openAttribute(name);
+    H5::DataSpace attr_dataspace=attribute.getSpace();
+
+
+    hsize_t dims[2];
+    attr_dataspace.getSimpleExtentDims(dims);
+    if(dims[1]!=N)
+    {
+        std::cout<<"ERROR:dimentions in hdf do not match the program\n";
+        assert(0);
+    }
+
+    value.resize(dims[0]);
+    if(dims[0]>0)
+    {
+        if(dims[0]>1)
+        {
+            double *v=new double[dims[0]*dims[1]];
+            attribute.read(H5::PredType::NATIVE_DOUBLE, v);
+            for(std::size_t i=0;i<dims[0];++i)
+                for(std::size_t j=0;j<dims[1];++j)
+                    value[i][j]=v[i*dims[1]+j];
+            delete [] v;
+        }
+        else
+        {
+            attribute.read(H5::PredType::NATIVE_DOUBLE, &(value[0][0]));
+        }
+    }
+}
+#define TiH5_writeVectorStringAttribute(group,value) TiH5_writeVectorStringAttribute__(group, value, #value)
+inline void TiH5_writeVectorStringAttribute__(H5::Group &group, const std::vector<std::string> &value, const char *name)
+{
+    if(value.size()==0)
+    {
+        return;
+    }
+
+    std::size_t max_string_size=0;
+    for(std::size_t i=0;i<value.size();++i)
+    {
+        if(value[i].size()>max_string_size)max_string_size=value[i].size();
+    }
+    ++max_string_size;
+
+    char *v=new char[value.size()*max_string_size];
+
+    for(std::size_t i=0;i<value.size();++i)
+    {
+        memcpy(v+i*max_string_size,value[i].c_str(),value[i].size());
+        for(std::size_t j=value[i].size();j<max_string_size;++j)
+            v[i*max_string_size+j]='\0';
+    }
+    H5::StrType strtype=H5::StrType(H5::PredType::C_S1,max_string_size);
+    H5::CompType datatype=H5::CompType(max_string_size);
+    datatype.insertMember("string",0,strtype);
+    hsize_t dims[1]={value.size()};
+    H5::DataSpace dataspace = H5::DataSpace (1, dims );
+    H5::Attribute attribute = group.createAttribute(name, datatype, dataspace);
+    attribute.write(datatype, v);
+
+    delete [] v;
+}
+#define TiH5_readVectorStringAttribute(group,value) TiH5_readVectorStringAttribute__(&group, value, #value)
+inline void TiH5_readVectorStringAttribute__(const H5::Group *group, std::vector<std::string> &value, const char *name)
+{
+    if(!group->attrExists(name))
+    {
+        value.resize(0);
+        return;
+    }
+
+    H5::Attribute attribute = group->openAttribute(name);
+    H5::DataSpace dataspace=attribute.getSpace();
+    H5::DataType datatype=attribute.getDataType();
+
+    hsize_t dims[1];
+    dataspace.getSimpleExtentDims(dims);
+
+    value.resize(dims[0]);
+    std::size_t max_string_size=datatype.getSize();
+
+    char *v=new char[value.size()*max_string_size];
+    attribute.read(datatype, v);
+
+    for(std::size_t i=0;i<value.size();++i)
+    {
+        value[i]=v+i*max_string_size;
+    }
+    for(std::size_t i=0;i<value.size();++i)
+    {
+        printf("%d |%s|%s|\n",i,value[i].c_str(),v+i*max_string_size);
+    }
+
+    delete [] v;
+}
 inline void TiH5_writeStringAttribute__(H5::Group &group, const std::string &value, const char *name, const int length=256)
 {
     if(group.attrExists(name))
@@ -238,5 +379,52 @@ inline void TiH5_readStringAttribute__(const H5::Group &group, std::string &valu
     attribute.read(type, strreadbuf);
     value=strreadbuf;
 }
+
+#define TiH5_writeArrayDataSet(group,value,size) TiH5_writeArray2DDataSet__(group, value, #value,size)
+inline void TiH5_writeArrayDataSet__(H5::Group &group, const double *value, const char *name, const hsize_t dims)
+{
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(1, &dims);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace);
+    // Write the attribute data.
+    dataset.write(value, H5::PredType::NATIVE_DOUBLE);
+}
+#define TiH5_writeArray2DDataSet(group,value,size1,size2) TiH5_writeArray2DDataSet__(group, value, #value,size1,size2)
+inline void TiH5_writeArray2DDataSet__(H5::Group &group, const double *value, const char *name, const hsize_t dims1, const hsize_t dims2)
+{
+    const hsize_t dims[2]={dims1,dims2};
+    // Create the data space for the dataset
+    H5::DataSpace dataspace(2, dims);
+    // Create the dataset.
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace);
+    // Write the attribute data.
+    dataset.write(value, H5::PredType::NATIVE_DOUBLE);
+}
+#define TiH5_readArray2DDataSet(group,value,size1,size2) TiH5_readArray2DDataSet__(group, value, #value,size1,size2)
+inline void TiH5_readArray2DDataSet__(const H5::Group &group, double *value, const char *name, const hsize_t dims1, const hsize_t dims2)
+{
+    if(dims1*dims2>0)
+    {
+        hsize_t dims[2]={dims1,dims2};
+        H5::DataSet dataset = group.openDataSet(name);
+        H5::DataSpace dataspace=dataset.getSpace();
+
+        dataspace.getSimpleExtentDims(dims);
+
+        if(dims[0]!=dims1||dims[1]!=dims2)
+        {
+            std::cout<<"Error: dimension(s) in hdf file is different when in program\n";
+            assert(0);
+        }
+        dataset.read(value, H5::PredType::NATIVE_DOUBLE);
+    }
+}
+
+
+
+
+
+
 #endif
 #endif

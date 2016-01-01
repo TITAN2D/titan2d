@@ -35,6 +35,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <array>
 using namespace std;
 
 #include "constant.h"
@@ -184,7 +185,10 @@ struct LHS_Props
     {
         refnum = runid = -1;
     }
-    
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="LHS_Props") const;
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="LHS_Props");
 };
 
 
@@ -350,6 +354,10 @@ public:
              const int extramaps_in);
     void set_region_limits(double min_location_x, double min_location_y, double max_location_x, double max_location_y);
     void print0();
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="MapNames") const;
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="MapNames");
 };
 
 /**************************************************************************/
@@ -678,6 +686,13 @@ public:
             printf("\t\t%d %s %f\n", i, matnames[i].c_str(), bedfrict[i] * 180.0 / PI);
         }
     }
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="MatProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="MatProps");
+    //! Create MatProps from hdf file content, will instantiate proper MatProps class
+    static MatProps* createMatProps(const H5::CommonFG *parent,TiScale &_scale, const  string group_name="MatProps");
+
 
 };
 
@@ -724,6 +739,10 @@ public:
     }
     virtual inline void set_scale(const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
     virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="MatProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="MatProps");
 };
 
 #ifndef SWIG
@@ -787,6 +806,8 @@ public:
     //! this is the OutLine it deallocates the 2 dimensional array holding maximum throughout time pileheight in every cell on the map
     ~OutLine();
     
+    void setElemNodeTable(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable);
+
     //! this function initializes the OutLine map/2-dimensional array 
     void init(const double *dxy, int power, double *XRange, double *YRange);
     
@@ -794,7 +815,7 @@ public:
     void init2(const double *dxy, double *XRange, double *YRange);
 
     //! this function updates the maximum throughout time pileheight in every cell covered by an arbitrary element
-    void update(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+    void update();
 
     /*! this function outputs the maximum over time map of pileheights
      *  to the file pileheightrecord.xxxxxx
@@ -806,13 +827,23 @@ public:
     
     void combine_results_from_threads();
 
-protected:
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="OutLine");
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="OutLine");
 
-    void update_on_changed_geometry(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+protected:
+    //!allocate internal arrays for new size
+    void alloc_arrays();
+
+    void update_on_changed_geometry();
     void flush_stats(bool zero_old_arrays=true);
 
-    void update_single_phase(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
-    void update_two_phases(ElementsHashTable* ElemTable, NodeHashTable* NodeTable);
+    void update_single_phase();
+    void update_two_phases();
+
+    ElementsHashTable* ElemTable;
+    NodeHashTable* NodeTable;
 
     int myid;
     int numprocs;
@@ -853,7 +884,7 @@ public:
 
     //! the discharge planes are lines (with planes normal to the surface intersecting the surface passing through the lines), this holds a lot of information associated with each planes, a lot of precomputed quantities to make updating the flux through the planes fast.
     //double **planes;
-    std::vector<std::vector<double> > planes;
+    std::vector<std::array<double,10> > planes;
 
     //! this constructor initializes the number of planes to zero
     DischargePlanes()
@@ -870,11 +901,7 @@ public:
     void allocate(int m_num_planes)
     {
         num_planes = m_num_planes;
-        planes.resize(num_planes);    // = CAllocD2(num_planes, 10);
-        for(int iplane = 0; iplane < num_planes; iplane++)
-        {
-            planes[iplane].resize(10);
-        }
+        planes.resize(num_planes);
     }
 private:
     void calculateDerivativeProps(int i)
@@ -894,8 +921,7 @@ public:
 
     void addDischargePlane(const double m_x_a, const double m_y_a, const double m_x_b, const double m_y_b)
     {
-        std::vector<double> plane;
-        plane.resize(10);
+        std::array<double,10> plane;
 
         plane[0] = m_x_a; //xa
         plane[1] = m_y_a; //xb
@@ -1138,6 +1164,10 @@ public:
         planes.resize(0);
         return;
     }
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="DischargePlanes") const;
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="DischargePlanes");
 };
 
 //! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance.
