@@ -32,6 +32,7 @@
 #undef SEEK_CUR*/
 #include <mpi.h>
 #include <limits.h>
+#include <set>
 
 #define HASHTABLE_EXTENDER 1000000
 #define MaxBits ( sizeof(unsigned) * CHAR_BIT )
@@ -456,15 +457,15 @@ void HashTable<T>::flushTable()
 
     
     //make key and ndx arrays without deleted elenodes
-    int j=0;
-    for(int i=0;i<size_old;++i)
+    ti_ndx_t j=0;
+    for(ti_ndx_t i=0;i<size_old;++i)
     {
         if(status_[i]<0)continue;
         key_map[j]=key_[i];
         ndx_map[j]=i;
         ++j;
     }
-    int size=j;
+    ti_ndx_t size=j;
     ndx_map.resize(size);
     key_map.resize(size);
     
@@ -475,7 +476,7 @@ void HashTable<T>::flushTable()
     key_map_work.resize(size);
 
     //find sorted initial region, aside from initial run it should be mostly sorted, only new elenodes can be unsorted
-    int sorted_region=0;
+    ti_ndx_t sorted_region=0;
     for(sorted_region=1;sorted_region<size&&key_map[sorted_region]>=key_map[sorted_region-1];++sorted_region)
     {
     }
@@ -1140,6 +1141,7 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     
     elementType_=ElementType::UnknownElementType;
     conformation=0;
+    bccount=0;
 }
 ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonFG *parent, const  string group_name)
         :HashTable<Element>(elem_reserved_size)
@@ -1692,8 +1694,17 @@ void ElementsHashTable::removeElement(Element* elm)
 void ElementsHashTable::flushElemTable()
 {
     double t_start = MPI_Wtime();
-    //return;
-    //@todo proper index reordering
+
+    ti_ndx_t j=0;
+    for(ti_ndx_t i=0;i<size();++i)
+    {
+        if(status_[i]<0)
+        {
+            elenode_[i].delete_bcptr();
+        }
+    }
+
+
     flushTable();
     PROFILING3_DEFINE(pt_start);
     PROFILING3_START(pt_start);
@@ -2383,6 +2394,7 @@ void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
     TiH5_writeTiVectorArray(group,son_,4,dims);
     TiH5_writeTiVectorArray(group,neigh_proc_,8,dims);
     TiH5_writeTiVectorArray(group,neigh_gen_,8,dims);
+
     //@TODO do something about bc
     //TiH5_writeTiVector(group,bcptr_,dims);
     TiH5_writeTiVector(group,ndof_,dims);
@@ -2459,6 +2471,7 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVectorArray(group,neigh_proc_,8);
     TiH5_readTiVectorArray(group,neigh_gen_,8);
     //@TODO do something about bc
+
     //TiH5_readTiVector(group,bcptr_);
     TiH5_readTiVector(group,ndof_);
     TiH5_readTiVector(group,no_of_eqns_);
@@ -2497,6 +2510,16 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
 
     updateLocalElements();
     updateNeighboursIndexes();
+}
+BC* ElementsHashTable::createBC()
+{
+    bccount++;
+    return new BC();
+}
+void ElementsHashTable::deleteBC(BC* bc)
+{
+    bccount--;
+    delete bc;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):

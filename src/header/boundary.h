@@ -41,11 +41,14 @@
  * type (0=natural, 1=essential), and load component (0=x, 1=y)
  * comprising the boundary condition.
  */
-struct BC
+class BC
 {
+public:
+    friend class ElementsHashTable;
     int type[4];
     float value[4][2][2];
 
+private:
     //! this function is a constuctor initializes the type and value of the boundary condition to zero
     BC()
     {
@@ -57,6 +60,9 @@ struct BC
             for(int j = 0; j < 2; j++)
                 for(int k = 0; k < 2; k++)
                     value[i][j][k] = 0.0;
+    }
+    ~BC()
+    {
     }
 };
 

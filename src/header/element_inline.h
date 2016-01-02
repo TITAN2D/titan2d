@@ -236,7 +236,7 @@ inline void Element::void_bcptr() {
 
 inline void Element::delete_bcptr() {
     if(bcptr()!=nullptr)
-        delete bcptr();
+        elementsHashTable->deleteBC(bcptr());
     void_bcptr();
 }
 

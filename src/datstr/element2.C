@@ -4722,7 +4722,7 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
 
 void Element::init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, int myid)
 {
-    set_father(sfc_key_zero);
+    /*set_father(sfc_key_zero);
     father_ndx(ti_ndx_doesnt_exist);
 
     for(int i = 0; i < 4; i++){
@@ -4878,7 +4878,7 @@ void Element::init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, i
     if(readspace[Itemp] > 0)
     {
         int num_extra = readspace[Itemp];
-        fread(readspace, sizeof(unsigned), num_extra, fp);
+        fread(readelete_bcptrdspace, sizeof(unsigned), num_extra, fp);
         Itemp = 0;
         
         bcptr(new BC);
@@ -4914,7 +4914,7 @@ void Element::init(FILE* fp, NodeHashTable* NodeTable, MatProps* matprops_ptr, i
     calculate_dx(NodeTable);
     calc_topo_data(matprops_ptr);
     calc_gravity_vector(matprops_ptr);
-    calc_which_son();
+    calc_which_son();*/
     return;
 }
 

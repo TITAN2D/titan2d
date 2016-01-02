@@ -261,7 +261,12 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
     
     if((elem2->bc) != 0)
     {
-        BC* newbc = new BC;
+        BC* newbc=newelement->bcptr();
+        if(newbc==nullptr)
+        {
+            newbc = elementsHashTable->createBC();
+            newelement->bcptr(newbc);
+        }
         for(i = 0; i < 4; i++)
         {
             newbc->type[i] = elem2->bc_type[i];
@@ -269,11 +274,11 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
                 for(int k = 0; k < 2; k++)
                     newbc->value[i][j][k] = elem2->bc_value[i][j][k];
         }
-        newelement->bcptr(newbc);
     }
-    
     else
+    {
         newelement->void_bcptr();
+    }
     
     *e_error = newelement->el_error(0);
     

@@ -957,7 +957,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//boundary conditions
 		if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
 		{
-			bcptr = new BC;
+			bcptr = ElemTable->createBC();
 			bcptr->type[0] = orig_bcptr->type[0];
 			bcptr->type[3] = orig_bcptr->type[3];
 			for(i = 0; i < 2; i++)
@@ -1053,7 +1053,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//boundary conditions
 		if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[1])) //else bcptr is a NULL pointer by default
 		{
-			bcptr = new BC;
+			bcptr = ElemTable->createBC();
 			bcptr->type[0] = orig_bcptr->type[0];
 			bcptr->type[1] = orig_bcptr->type[1];
 			for(i = 0; i < 2; i++)
@@ -1141,7 +1141,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//boundary conditions
 		if(orig_bcptr && (orig_bcptr->type[1] || orig_bcptr->type[2])) //else bcptr is a NULL pointer by default
 		{
-			bcptr = new BC;
+			bcptr = ElemTable->createBC();
 			bcptr->type[1] = orig_bcptr->type[1];
 			bcptr->type[2] = orig_bcptr->type[2];
 			for(i = 0; i < 2; i++)
@@ -1230,7 +1230,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		//boundary conditions
 		if(orig_bcptr && (orig_bcptr->type[2] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default
 		{
-			bcptr = new BC;
+			bcptr = ElemTable->createBC();
 			bcptr->type[2] = orig_bcptr->type[2];
 			bcptr->type[3] = orig_bcptr->type[3];
 			for(i = 0; i < 2; i++)
@@ -1932,7 +1932,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     //boundary conditions
     if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
     {
-        bcptr = new BC;
+        bcptr = HT_Elem_Ptr->createBC();
         bcptr->type[0] = orig_bcptr->type[0];
         bcptr->type[3] = orig_bcptr->type[3];
         for(i = 0; i < 2; i++)
@@ -2021,7 +2021,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     //boundary conditions
     if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[1])) //else bcptr is a NULL pointer by default
     {
-        bcptr = new BC;
+        bcptr = HT_Elem_Ptr->createBC();
         bcptr->type[0] = orig_bcptr->type[0];
         bcptr->type[1] = orig_bcptr->type[1];
         for(i = 0; i < 2; i++)
@@ -2106,7 +2106,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     //boundary conditions
     if(orig_bcptr && (orig_bcptr->type[1] || orig_bcptr->type[2])) //else bcptr is a NULL pointer by default
     {
-        bcptr = new BC;
+        bcptr = HT_Elem_Ptr->createBC();
         bcptr->type[1] = orig_bcptr->type[1];
         bcptr->type[2] = orig_bcptr->type[2];
         for(i = 0; i < 2; i++)
@@ -2194,7 +2194,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     //boundary conditions
     if(orig_bcptr && (orig_bcptr->type[2] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default
     {
-        bcptr = new BC;
+        bcptr = HT_Elem_Ptr->createBC();
         bcptr->type[2] = orig_bcptr->type[2];
         bcptr->type[3] = orig_bcptr->type[3];
         for(i = 0; i < 2; i++)

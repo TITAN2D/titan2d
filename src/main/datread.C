@@ -213,7 +213,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
             if(temp2 != -1) //--there is bound constraint
             {
                 if(!bcf)
-                    bcptr = new BC();
+                    bcptr = (*ElemTable)->createBC();
                 bcptr->type[j] = 1; //--intialize type
                         
                 /* "value" is a FLOAT so DON'T use freadD when DoublesFromFloats
@@ -235,7 +235,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
             if(temp2 != -1) //--there is bound constraint
             {
                 if(!bcf)
-                    bcptr = new BC();
+                    bcptr = (*ElemTable)->createBC();
                 if(bcptr->type[j] == 0)
                     bcptr->type[j] = 2; //--intialize type
                 else

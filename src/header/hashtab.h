@@ -445,6 +445,9 @@ public:
     virtual void h5write(H5::CommonFG *parent, const string group_name="ElemTable");
     //read ElementsHashTable content from hdf5 group
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="ElemTable");
+
+    BC* createBC();
+    void deleteBC(BC* bc);
 private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);
@@ -635,6 +638,8 @@ public:
 
     //!used for hdf5 writing
     vector<ti_ndx_t> node_ndx_buffer;
+
+    int bccount;
 };
 
 
