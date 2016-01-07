@@ -315,7 +315,6 @@ void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*
             EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
             if(EmTemp->refined_flag() != 0)
             {  // not an active element
-                EmTemp->void_bcptr();  // don't remove bc's
                 HT_Elem_Ptr->removeElement(EmTemp);
                 --ielm;
                 ++deleted_elements;

@@ -751,7 +751,6 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
             else
             {
                 //delete the non active elements
-                EmTemp->void_bcptr();
                 El_Table->removeElement(EmTemp);
                 ielm--;
             }
@@ -1939,7 +1938,6 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
     if(num_send[0] > 0)
         for(ielem = 0; ielem <= isend[0]; ielem++)
         {
-            ElemArray[ielem]->void_bcptr();
             El_Table->removeElement(ElemArray[ielem]);
         }
     
@@ -2552,7 +2550,6 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
     // remove second-send elements from my hashtable
     for(ielem = 0; ielem < NotMyElem.get_num_elem(); ielem++)
     {
-        NotMyElem.get(ielem)->void_bcptr();
         El_Table->removeElement(NotMyElem.get(ielem));
     }
     

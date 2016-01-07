@@ -884,8 +884,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		SFC_Key neigh[8];
 		ti_ndx_t neigh_ndx[8];
 		int neigh_proc[8];
-		BC* bcptr = NULL;
-		BC* orig_bcptr = ElemTable->bcptr_[ndx];
 		int generation = ElemTable->generation_[ndx] + 1;
 		int neigh_gen[4];
 		int material = ElemTable->material_[ndx];
@@ -954,19 +952,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_gen[2] = generation;
 		neigh_gen[3] = ElemTable->neigh_gen_[3][ndx];
 
-		//boundary conditions
-		if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
-		{
-			bcptr = ElemTable->createBC();
-			bcptr->type[0] = orig_bcptr->type[0];
-			bcptr->type[3] = orig_bcptr->type[3];
-			for(i = 0; i < 2; i++)
-				for(int j = 0; j < 2; j++)
-				{
-					bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
-					bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
-				}
-		}
 
 		double err = ElemTable->el_error_[0][ndx] * .5; //added by jp oct11
 		double sol = ElemTable->el_solution_[0][ndx] * .5; //added by jp oct11
@@ -983,7 +968,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
 		//init new element
 		ndxQuad9P = ndxSons[0];
-		ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, elm_loc, NULL, neigh_gen, material,
+		ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, generation, elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		ElemTable->which_son_[ndxQuad9P]=0;  //--by jp, 0 means son 0
@@ -1049,21 +1034,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_gen[2] = generation;
 		neigh_gen[3] = generation;
 
-		bcptr = NULL;
-		//boundary conditions
-		if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[1])) //else bcptr is a NULL pointer by default
-		{
-			bcptr = ElemTable->createBC();
-			bcptr->type[0] = orig_bcptr->type[0];
-			bcptr->type[1] = orig_bcptr->type[1];
-			for(i = 0; i < 2; i++)
-				for(int j = 0; j < 2; j++)
-				{
-					bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
-					bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
-				}
-
-		}
 		my_elm_loc[0] = elm_loc[0] + 1;
 		my_elm_loc[1] = elm_loc[1];
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
@@ -1071,7 +1041,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
         //init new element
         ndxQuad9P = ndxSons[1];
-        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
+        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		ElemTable->which_son_[ndxQuad9P]=1;  //--by jp
@@ -1137,21 +1107,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_gen[2] = ElemTable->neigh_gen_[2][ndx];
 		neigh_gen[3] = generation;
 
-		bcptr = NULL;
-		//boundary conditions
-		if(orig_bcptr && (orig_bcptr->type[1] || orig_bcptr->type[2])) //else bcptr is a NULL pointer by default
-		{
-			bcptr = ElemTable->createBC();
-			bcptr->type[1] = orig_bcptr->type[1];
-			bcptr->type[2] = orig_bcptr->type[2];
-			for(i = 0; i < 2; i++)
-				for(int j = 0; j < 2; j++)
-				{
-					bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
-					bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
-				}
-
-		}
 		my_elm_loc[0] = elm_loc[0] + 1;
 		my_elm_loc[1] = elm_loc[1] + 1;
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 - 0.5;
@@ -1159,7 +1114,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
         //init new element
         ndxQuad9P = ndxSons[2];
-        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
+        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		ElemTable->which_son_[ndxQuad9P]=2;  //--by jp
@@ -1226,22 +1181,6 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_gen[2] = ElemTable->neigh_gen_[2][ndx];
 		neigh_gen[3] = ElemTable->neigh_gen_[3][ndx];
 
-		bcptr = NULL;
-		//boundary conditions
-		if(orig_bcptr && (orig_bcptr->type[2] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default
-		{
-			bcptr = ElemTable->createBC();
-			bcptr->type[2] = orig_bcptr->type[2];
-			bcptr->type[3] = orig_bcptr->type[3];
-			for(i = 0; i < 2; i++)
-				for(int j = 0; j < 2; j++)
-				{
-					bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
-					bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
-				}
-
-		}
-
 		my_elm_loc[0] = elm_loc[0];
 		my_elm_loc[1] = elm_loc[1] + 1;
 		dpson[0] = ElemTable->drypoint_[0][ndx] * 2 + 0.5;
@@ -1249,7 +1188,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 
         //init new element
         ndxQuad9P = ndxSons[3];
-        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, bcptr, generation, my_elm_loc, NULL, neigh_gen, material,
+        ElemTable->elenode_[ndxQuad9P].init(nodes, nodes_ndx, neigh, neigh_ndx, neigh_proc, generation, my_elm_loc, NULL, neigh_gen, material,
 							 ndx, coord, ElemTable, NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
 							 dpson);
 		ElemTable->which_son_[ndxQuad9P]=3;  //--by jp
@@ -1879,8 +1818,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     SFC_Key nodes[9];
     SFC_Key neigh[8];
     int neigh_proc[8];
-    BC* bcptr = NULL;
-    BC* orig_bcptr = EmTemp->bcptr();
     int generation = EmTemp->generation() + 1;
     int neigh_gen[4];
     int material = EmTemp->material();
@@ -1929,20 +1866,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     neigh_gen[2] = generation;
     neigh_gen[3] = EmTemp->neigh_gen(3);
     
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default, ERROR this should crash if orig_bcptr==NULL
-    {
-        bcptr = HT_Elem_Ptr->createBC();
-        bcptr->type[0] = orig_bcptr->type[0];
-        bcptr->type[3] = orig_bcptr->type[3];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
-                bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
-            }
-    }
-    
     double err = EmTemp->el_error(0) * .5; //added by jp oct11
     double sol = EmTemp->el_solution(0) * .5; //added by jp oct11
     // son 0 can use elm_loc
@@ -1956,15 +1879,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     if(old_elm != NULL)
     {
         //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
+        //old_elm->void_bcptr();
         //HT_Elem_Ptr->removeElement(old_elm);
-        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+        old_elm->init(nodes, neigh, neigh_proc, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
         Quad9P = old_elm;
     }
     else{
-        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, generation, elm_loc, &NewOrder[0][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     }
@@ -2017,21 +1940,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     neigh_gen[2] = generation;
     neigh_gen[3] = generation;
     
-    bcptr = NULL;
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[0] || orig_bcptr->type[1])) //else bcptr is a NULL pointer by default
-    {
-        bcptr = HT_Elem_Ptr->createBC();
-        bcptr->type[0] = orig_bcptr->type[0];
-        bcptr->type[1] = orig_bcptr->type[1];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[0][i][j] = orig_bcptr->value[0][i][j];
-                bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
-            }
-        
-    }
     my_elm_loc[0] = elm_loc[0] + 1;
     my_elm_loc[1] = elm_loc[1];
     dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
@@ -2041,15 +1949,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     if(old_elm != NULL)
     {
         //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
+        //old_elm->void_bcptr();
         //HT_Elem_Ptr->removeElement(old_elm);
-        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+        old_elm->init(nodes, neigh, neigh_proc, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
         Quad9P = old_elm;
     }
     else{
-        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, generation, my_elm_loc, &NewOrder[1][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     }
@@ -2102,21 +2010,6 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     neigh_gen[2] = EmTemp->neigh_gen(2);
     neigh_gen[3] = generation;
     
-    bcptr = NULL;
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[1] || orig_bcptr->type[2])) //else bcptr is a NULL pointer by default
-    {
-        bcptr = HT_Elem_Ptr->createBC();
-        bcptr->type[1] = orig_bcptr->type[1];
-        bcptr->type[2] = orig_bcptr->type[2];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[1][i][j] = orig_bcptr->value[1][i][j];
-                bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
-            }
-        
-    }
     my_elm_loc[0] = elm_loc[0] + 1;
     my_elm_loc[1] = elm_loc[1] + 1;
     dpson[0] = EmTemp->drypoint(0) * 2 - 0.5;
@@ -2126,16 +2019,16 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     if(old_elm != NULL)
     {
         //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
+        //old_elm->void_bcptr();
         //HT_Elem_Ptr->removeElement(old_elm);
         
-        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+        old_elm->init(nodes, neigh, neigh_proc, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
         Quad9P = old_elm;
     }
     else{
-        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, generation, my_elm_loc, &NewOrder[2][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     }
@@ -2189,23 +2082,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     neigh_gen[1] = generation;
     neigh_gen[2] = EmTemp->neigh_gen(2);
     neigh_gen[3] = EmTemp->neigh_gen(3);
-    
-    bcptr = NULL;
-    //boundary conditions
-    if(orig_bcptr && (orig_bcptr->type[2] || orig_bcptr->type[3])) //else bcptr is a NULL pointer by default
-    {
-        bcptr = HT_Elem_Ptr->createBC();
-        bcptr->type[2] = orig_bcptr->type[2];
-        bcptr->type[3] = orig_bcptr->type[3];
-        for(i = 0; i < 2; i++)
-            for(int j = 0; j < 2; j++)
-            {
-                bcptr->value[2][i][j] = orig_bcptr->value[2][i][j];
-                bcptr->value[3][i][j] = orig_bcptr->value[3][i][j];
-            }
-        
-    }
-    
+
     my_elm_loc[0] = elm_loc[0];
     my_elm_loc[1] = elm_loc[1] + 1;
     dpson[0] = EmTemp->drypoint(0) * 2 + 0.5;
@@ -2215,15 +2092,15 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     if(old_elm != NULL)
     {
         //old_elm->set_adapted_flag(TOBEDELETED); //this line shouldn't be necessary just being redundantly careful
-        old_elm->void_bcptr();
+        //old_elm->void_bcptr();
         //HT_Elem_Ptr->removeElement(old_elm);
-        old_elm->init(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+        old_elm->init(nodes, neigh, neigh_proc, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
         Quad9P = old_elm;
     }
     else{
-        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, bcptr, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
+        Quad9P = HT_Elem_Ptr->generateAddElement(nodes, neigh, neigh_proc, generation, my_elm_loc, &NewOrder[3][0], neigh_gen, material,
                          EmTemp, coord, HT_Elem_Ptr, HT_Node_Ptr, myid, matprops_ptr, iwetnodefather, Awetfather,
                          dpson);
     }

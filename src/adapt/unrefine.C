@@ -338,7 +338,6 @@ void HAdaptUnrefine::delete_oldsons()
                 }
 
                 //Now delete this oldson Element
-                EmSon->void_bcptr();
                 elementsToDelete[ithread].push_back(EmSon->ndx());
                 EmFather->son_ndx(ison,ti_ndx_doesnt_exist);
             }

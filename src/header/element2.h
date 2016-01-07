@@ -19,7 +19,6 @@
 #define ELEMENT_H
 #include <math.h>
 #include <assert.h>
-#include "boundary.h"
 #include "struct.h"
 #include "tivector.h"
 
@@ -99,25 +98,6 @@ protected:
     Element(const SFC_Key& key) {
         init(key);
     }
-    //! constructor that creates an original element when funky is read in
-    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
-            double pile_height, int myid, const SFC_Key& opposite_brother)
-    {
-        init(nodekeys, neigh, n_pro, b, mat, elm_loc_in,
-            pile_height, myid, opposite_brother);
-    }
-
-    //! constructor that creates a son element from its father during refinement
-    Element(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
-            int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
-            NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
-            double *drypoint_in)
-    {
-        init(nodekeys, neigh, n_pro, b, gen, elm_loc_in,
-            ord, gen_neigh, mat, fthTemp, coord_in, El_Table,
-            NodeTable, myid, matprops_ptr, iwetnodefather, Awetfather,
-            drypoint_in);
-    }
 
     //! constructor that creates a father element from its four sons during unrefinement
     Element(ti_ndx_t *sons_ndx, NodeHashTable *NodeTable, ElementsHashTable *El_Table, MatProps *matprops_ptr)
@@ -173,23 +153,23 @@ public:
         set_key(key);
     }
     //! constructor that creates an original element when funky is read in
-    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int mat, int *elm_loc_in,
             double pile_height, int myid, const SFC_Key& opposite_brother);
 
     //! old constructor that creates a son element from its father during refinement
-    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
             NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
     
     //! constructor that creates a son element from its father during refinement
-    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    void init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *ElemTable,
             NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
 
     //! constructor that creates a son element from its father during refinement
-    void init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    void init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], int gen, int elm_loc_in[],
             int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *ElemTable,
             NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
             double *drypoint_in);
@@ -335,22 +315,8 @@ public:
 
     void neighbor_ndx(const int i, const ti_ndx_t &new_ndx);
 
-    //! returns the pointer to this element's array of boundary conditions, not really all that important in titan since any flow that goes beyond the boundary of the GIS map leaves the computational domain.
-
-    BC* bcptr();
-
-    void bcptr(BC* new_bcptr);
-    //! this function sets the pointer to an element's boundary conditions to NULL
-
-    void void_bcptr();
-
-    void delete_bcptr();
     //! compare the FindNeigh key against the keys of this element's 8 neighbors to determine which if any neighbor FindNeigh is
     int which_neighbor(const SFC_Key &FindNeigh);
-
-
-
-
 
     //! call this function after this element's neighbor(s) have been refined, proc is processor id for neighbor[which_side+4]
     void change_neighbor(const SFC_Key *newneighbs, int which_side, int proc, int reg);

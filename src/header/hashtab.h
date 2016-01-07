@@ -391,21 +391,21 @@ public:
     Element* generateAddElement(const SFC_Key& keyi);
 
     //! constructor that creates an original element when funky is read in
-    Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int mat, int *elm_loc_in,
+    Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int mat, int *elm_loc_in,
                              double pile_height, int myid, const SFC_Key& opposite_brother);
 
     //! constructor that creates a son element from its father during refinement
-    Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    Element* generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
     //! constructor that creates a son element from its father during refinement
-    ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in);
     //! constructor that creates a son element from its father during refinement
-    ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen, int elm_loc_in[],
+    ti_ndx_t generateAddElement_ndx(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], int gen, int elm_loc_in[],
                     int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
                     NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                     double *drypoint_in);
@@ -445,9 +445,6 @@ public:
     virtual void h5write(H5::CommonFG *parent, const string group_name="ElemTable");
     //read ElementsHashTable content from hdf5 group
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="ElemTable");
-
-    BC* createBC();
-    void deleteBC(BC* bc);
 private:
      Element* addElement(const SFC_Key& keyi);
      ti_ndx_t addElement_ndx(const SFC_Key& keyi);
@@ -518,9 +515,6 @@ public:
 
     //! neigh_gen is an array that holds the "generation" (how refined it is) of this element's 8 neighbors, there can-be/are 2 neighbors to a side because of the 1 irregularity rule
     tivector<int> neigh_gen_[8];
-
-    //! pointer to the boundary condition class, if this element is not a boundary element the pointer holds the NULL value
-    tivector<BC*> bcptr_;
 
     //! the number of degrees of freedom, since Titan is a finite difference/volume code, ndof is afeapi legacy, but the DG (Discontinuous Galerkin) version of Titan actually uses this
     tivector<int> ndof_;
@@ -636,10 +630,9 @@ public:
     //! when an element edge is partially wet and partially dry... Swet is the fraction of a cell edge that is partially wet, because it can only be horizontal, vertical, or parallel to either diagonal, all of one element's partially wet sides are have the same fraction of wetness.  The state variables (used to compute the physical fluxes) at the element/cell edge are adjusted to be the weighted by wetness average over an element/cell edge.  As such physical fluxes through completely dry edges of partially wet elements/cells are zeroed, while physical fluxes through completely wet edges are left unchanged.  Because of the definition as "wetness weighted average" physical fluxes through a partially wet edge shared with a neighbor of the same generation is also left left unchanged but, when a partially wet edge is shared with two more refined neighbors the total mass and momentum at the edge is split between the two neighbors in proportion to how much of their boundary shared with this element is wet.  This "scaling" of the physical fluxes is the "adjustment of fluxes in partially wetted cells" facet of our multifaceted thin-layer problem mitigation approach.  And it has been shown to significantly reduce the area covered by a thin layer of material.  Keith wrote this May 2007.
     tivector<double> Swet_;
 
-    //!used for hdf5 writing
+    //!used for hdf5 writing, temporary array
     vector<ti_ndx_t> node_ndx_buffer;
 
-    int bccount;
 };
 
 

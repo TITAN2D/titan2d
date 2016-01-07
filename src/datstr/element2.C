@@ -31,7 +31,7 @@
 //#define PRINT_GIS_ERRORS
 
 /*  original element   */
-void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
+void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int mat,
                  int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
     int ikey;
@@ -81,8 +81,6 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
             set_neighbor(i + 4, sfc_key_zero);
         }
     }
-    
-    bcptr(b);
                 
     for(i = 0; i < 8; i++)
         get_neigh_gen(i, 0);
@@ -200,7 +198,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
 }
 
 //used for refinement
-void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
+void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
                  ElementsHashTable *El_Table, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
@@ -262,9 +260,6 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         get_neigh_gen(i + 4, gen_neigh[i]);
     }
     
-    bcptr(b);
-    
-    
     set_no_of_eqns(EQUATIONS);
     
     set_ndof(0);
@@ -321,7 +316,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     return;
 }
 //used for refinement
-void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
+void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in,
                  ElementsHashTable *ElemTable, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
@@ -383,7 +378,6 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
         get_neigh_gen(i + 4, gen_neigh[i]);
     }
     
-    bcptr(b);
     
     set_no_of_eqns(EQUATIONS);
     
@@ -441,7 +435,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], B
     return;
 }
 //used for refinement
-void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen,
+void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in,
                  ElementsHashTable *ElemTable, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
@@ -512,8 +506,6 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
         get_neigh_gen(i, gen_neigh[i]);
         get_neigh_gen(i + 4, gen_neigh[i]);
     }
-
-    bcptr(b);
 
     set_no_of_eqns(EQUATIONS);
 
@@ -661,7 +653,6 @@ void Element::init(ti_ndx_t *sons_ndx, NodeHashTable* NodeTable, ElementsHashTab
     set_no_of_eqns(EQUATIONS);
     
     calc_which_son();
-    bcptr(sons[0]->bcptr());
     
     set_ndof(0);
     
@@ -1060,25 +1051,7 @@ void Element::get_nelb_icon(NodeHashTable* NodeTable, ElementsHashTable* HT_Elem
         if(neigh_proc(i) == -1)
         {
             
-            if(bcptr() == nullptr)
-                Nelb[i] = 2; //the element has no bc at all
-            else
-            {
-                if(bcptr()->type[i] == 0)
-                    Nelb[i] = 2; //no bc at that side
-                            
-                else if(bcptr()->type[i] == 2)
-                    Nelb[i] = 1; //stress applied
-                            
-                else if(bcptr()->type[i] == 1 && bcptr()->value[i][0][0] == UN_CONSTRAINED)
-                    Nelb[i] = 4; //y constrined
-                            
-                else if(bcptr()->type[i] == 1 && bcptr()->value[i][0][1] == UN_CONSTRAINED)
-                    Nelb[i] = 3; //x constrined
-                            
-                else if(bcptr()->type[i] == 1)
-                    Nelb[i] = 5; //x, y constrained
-            }
+            Nelb[i] = 2; //the element has no bc at all
         }
         
         bc_value[i] = 0;
@@ -4664,53 +4637,10 @@ void Element::save_elem(FILE* fp, FILE *fptxt)
     //assert(Itemp == 101);
     
     //boundary conditions start here
-    if(bcptr() == nullptr)
-    {
+
         writespace[Itemp++] = 0;
         //assert(Itemp==118);
         //assert(Itemp == 102);
-#ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"num_extra=0\n");
-#endif
-    }
-    else
-    {
-        writespace[Itemp++] = 20;
-#ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"num_extra=20\nbcptr->type={ ");
-#endif
-        for(itemp = 0; itemp < 4; itemp++)
-        {
-            temp4.i = bcptr()->type[itemp];
-            writespace[Itemp++] = temp4.u;
-#ifdef DEBUG_SAVE_ELEM
-            fprintf(fpdb,"%d ",bcptr()->type[itemp]);
-#endif
-        }
-        //assert(Itemp==122);
-        //assert(Itemp == 106);
-#ifdef DEBUG_SAVE_ELEM
-        fprintf(fpdb,"}\n");
-#endif
-        for(itemp = 0; itemp < 4; itemp++)
-        {
-            temp4.f = bcptr()->value[itemp][0][0];
-            writespace[Itemp++] = temp4.u;
-            temp4.f = bcptr()->value[itemp][0][1];
-            writespace[Itemp++] = temp4.u;
-            temp4.f = bcptr()->value[itemp][1][0];
-            writespace[Itemp++] = temp4.u;
-            temp4.f = bcptr()->value[itemp][1][1];
-            writespace[Itemp++] = temp4.u;
-#ifdef DEBUG_SAVE_ELEM
-            fprintf(fpdb,"bcptr->value={ %f %f %f %f }\n",
-                    bcptr()->value[itemp][0][0],bcptr()->value[itemp][0][1],
-                    bcptr()->value[itemp][1][0],bcptr()->value[itemp][1][1]);
-#endif      
-        }
-        //assert(Itemp==138);
-        //assert(Itemp == 122);
-    }
 #ifdef DEBUG_SAVE_ELEM
     //fclose(fpdb);
 #endif

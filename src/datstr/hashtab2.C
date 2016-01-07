@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../header/boundary.h"
 #include "../header/elenode.hpp"
 #include "../header/titan2d_utils.h"
 #include "../header/ticore/tisort.hpp"
@@ -1141,7 +1140,6 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     
     elementType_=ElementType::UnknownElementType;
     conformation=0;
-    bccount=0;
 }
 ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonFG *parent, const  string group_name)
         :HashTable<Element>(elem_reserved_size)
@@ -1576,7 +1574,6 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     for(int i=0;i<4;++i)son_ndx_[i].push_back();
     for(int i=0;i<8;++i)neigh_proc_[i].push_back();
     for(int i=0;i<8;++i)neigh_gen_[i].push_back();
-    bcptr_.push_back();
     ndof_.push_back();
     no_of_eqns_.push_back();
     for(int i=0;i<EQUATIONS;++i)el_error_[i].push_back();
@@ -1628,45 +1625,45 @@ Element* ElementsHashTable::generateAddElement(const SFC_Key& keyi)
     return elm;
 }
     
-Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC* b, int mat,
+Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int mat,
                                             int* elm_loc_in, double pile_height, int myid, const SFC_Key& opposite_brother)
 {
     Element* elm=addElement(nodekeys[8]); //--using bubble key to represent the element
-    elm->init(nodekeys, neigh, n_pro, b, mat, elm_loc_in, pile_height, myid, opposite_brother);
+    elm->init(nodekeys, neigh, n_pro, mat, elm_loc_in, pile_height, myid, opposite_brother);
     return elm;    
 }
-Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen,
+Element* ElementsHashTable::generateAddElement(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen,
                  int elm_loc_in[], int *ord, int gen_neigh[], int mat, Element *fthTemp, double *coord_in,
                  ElementsHashTable *El_Table, NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather,
                  double Awetfather, double *drypoint_in)
 {
     
     Element* elm=addElement(nodekeys[8]); //--using bubble key to represent the element
-    elm->init(nodekeys, neigh, n_pro, b, gen,
+    elm->init(nodekeys, neigh, n_pro, gen,
                                   elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
     return elm;
 }
-ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], BC *b, int gen, int elm_loc_in[],
+ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in)
 {
     ti_ndx_t ndx=addElement_ndx(nodekeys[8]); //--using bubble key to represent the element
-    elenode_[ndx].init(nodekeys, neigh, n_pro, b, gen,
+    elenode_[ndx].init(nodekeys, neigh, n_pro, gen,
                                   elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
     return ndx;
 }
-ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], BC *b, int gen, int elm_loc_in[],
+ti_ndx_t ElementsHashTable::generateAddElement_ndx(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC_Key* neigh, const ti_ndx_t* neigh_ndx, int n_pro[], int gen, int elm_loc_in[],
                 int *ord, int gen_neigh[], int mat, ti_ndx_t fthTemp, double *coord_in, ElementsHashTable *El_Table,
                 NodeHashTable *NodeTable, int myid, MatProps *matprops_ptr, int iwetnodefather, double Awetfather,
                 double *drypoint_in)
 {
     ti_ndx_t ndx=addElement_ndx(nodekeys[8]); //--using bubble key to represent the element
-    elenode_[ndx].init(nodekeys, nodes_ndx, neigh, neigh_ndx, n_pro, b, gen,
+    elenode_[ndx].init(nodekeys, nodes_ndx, neigh, neigh_ndx, n_pro, gen,
                                   elm_loc_in, ord, gen_neigh, mat, fthTemp, coord_in,
                                   El_Table, NodeTable, myid, matprops_ptr, iwetnodefather,
                                   Awetfather, drypoint_in);
@@ -1695,16 +1692,6 @@ void ElementsHashTable::flushElemTable()
 {
     double t_start = MPI_Wtime();
 
-    ti_ndx_t j=0;
-    for(ti_ndx_t i=0;i<size();++i)
-    {
-        if(status_[i]<0)
-        {
-            elenode_[i].delete_bcptr();
-        }
-    }
-
-
     flushTable();
     PROFILING3_DEFINE(pt_start);
     PROFILING3_START(pt_start);
@@ -1732,7 +1719,6 @@ void ElementsHashTable::flushElemTable()
     for(int i=0;i<4;++i)son_[i].__reorder_prolog(size);
     for(int i=0;i<8;++i)neigh_proc_[i].__reorder_prolog(size);
     for(int i=0;i<8;++i)neigh_gen_[i].__reorder_prolog(size);
-    bcptr_.__reorder_prolog(size);
     ndof_.__reorder_prolog(size);
     no_of_eqns_.__reorder_prolog(size);
     for(int i=0;i<EQUATIONS;++i)el_error_[i].__reorder_prolog(size);
@@ -1923,7 +1909,6 @@ void ElementsHashTable::flushElemTable()
                 brothers_[i].__reorder_body_byblocks(start, end,new_order);
             }
             father_.__reorder_body_byblocks(start, end,new_order);
-            bcptr_.__reorder_body_byblocks(start, end,new_order);
             ndof_.__reorder_body_byblocks(start, end,new_order);
             no_of_eqns_.__reorder_body_byblocks(start, end,new_order);
             #pragma unroll (EQUATIONS)
@@ -2048,7 +2033,6 @@ void ElementsHashTable::reserve(const tisize_t new_reserve_size)
     for(int i=0;i<4;++i)son_ndx_[i].reserve(new_reserve_size);
     for(int i=0;i<8;++i)neigh_proc_[i].reserve(new_reserve_size);
     for(int i=0;i<8;++i)neigh_gen_[i].reserve(new_reserve_size);
-    bcptr_.reserve(new_reserve_size);
     ndof_.reserve(new_reserve_size);
     no_of_eqns_.reserve(new_reserve_size);
     for(int i=0;i<EQUATIONS;++i)el_error_[i].reserve(new_reserve_size);
@@ -2140,8 +2124,6 @@ void ElementsHashTable::resize(const tisize_t new_resize)
         {for(int i=0;i<8;++i)neigh_proc_[i].resize(new_resize);}
 #pragma omp section
         {for(int i=0;i<8;++i)neigh_gen_[i].resize(new_resize);}
-#pragma omp section
-        bcptr_.resize(new_resize);
 #pragma omp section
         ndof_.resize(new_resize);
 #pragma omp section
@@ -2300,8 +2282,6 @@ void ElementsHashTable::removeElements(const ti_ndx_t *elements_to_delete, const
     {
         ti_ndx_t ndx=elements_to_delete[i];
         ASSERT2(status_[ndx]>=0);
-
-        elenode_[ndx].void_bcptr();
 
         SFC_Key keyi=key_[ndx];
         int entry = hash(keyi);
@@ -2510,16 +2490,6 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
 
     updateLocalElements();
     updateNeighboursIndexes();
-}
-BC* ElementsHashTable::createBC()
-{
-    bccount++;
-    return new BC();
-}
-void ElementsHashTable::deleteBC(BC* bc)
-{
-    bccount--;
-    delete bc;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):

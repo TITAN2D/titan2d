@@ -38,6 +38,7 @@ struct ElemPack
     int new_old;                                                // 30
     int n_order[9];                                             // 39
     int n_info[9];                                              // 48
+    //@todo remove bc from mpi ElemPack
     int bc; /*flag indicating if there is or there is no bc*/   // 49
     int bc_type[4];                                             // 53
     int positive_x_side;                                        // 54

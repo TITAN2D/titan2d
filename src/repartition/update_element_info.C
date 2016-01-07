@@ -257,28 +257,7 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
     else if(newelement->refined_flag() != 0) // only update if this is from an active element
         node->info(elem2->n_info[8]);
     
-    //The boundary conditions
-    
-    if((elem2->bc) != 0)
-    {
-        BC* newbc=newelement->bcptr();
-        if(newbc==nullptr)
-        {
-            newbc = elementsHashTable->createBC();
-            newelement->bcptr(newbc);
-        }
-        for(i = 0; i < 4; i++)
-        {
-            newbc->type[i] = elem2->bc_type[i];
-            for(int j = 0; j < 2; j++)
-                for(int k = 0; k < 2; k++)
-                    newbc->value[i][j][k] = elem2->bc_value[i][j][k];
-        }
-    }
-    else
-    {
-        newelement->void_bcptr();
-    }
+    //here used to be boundary conditions
     
     *e_error = newelement->el_error(0);
     

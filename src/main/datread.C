@@ -162,6 +162,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     int neighbor_proc[4];
     
     int temp2;
+    float tempF;
     int interflag;
     
     freadI(fp, &Elem_Num);  //--number of the elements assigned to the proc
@@ -201,26 +202,21 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
             SET_NEWKEY(neigh[j],neigh_old[j]);
         }
         
-        BC* bcptr = 0;
-        int bcf = 0;
         
+        //leftovers from boundary conditions
         //.....the essential boundary conditions....
-        
+        int bcf = 0;
         for(j = 0; j < 4; j++)
         {
             freadI(fp, &temp2);
             
             if(temp2 != -1) //--there is bound constraint
             {
-                if(!bcf)
-                    bcptr = (*ElemTable)->createBC();
-                bcptr->type[j] = 1; //--intialize type
-                        
                 /* "value" is a FLOAT so DON'T use freadD when DoublesFromFloats
                  is false (and obviously don't use freadD when it's true 
                  either) */
                 for(k = 0; k < 2; k++)
-                    freadF(fp, &(bcptr->value[j][0][k])); //--j: edge number
+                    freadF(fp, &(tempF)); //--j: edge number
                            
                 bcf = 1;
             }
@@ -234,18 +230,11 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
             
             if(temp2 != -1) //--there is bound constraint
             {
-                if(!bcf)
-                    bcptr = (*ElemTable)->createBC();
-                if(bcptr->type[j] == 0)
-                    bcptr->type[j] = 2; //--intialize type
-                else
-                    bcptr->type[j] = 3; //--intialize type
-                            
                 /* "value" is a FLOAT so DON'T use freadD when DoublesFromFloats
                  is false (and obviously don't use freadD when it's true 
                  either) */
                 for(k = 0; k < 2; k++)
-                    freadF(fp, &(bcptr->value[j][1][k])); //--j: edge number
+                    freadF(fp, &(tempF)); //--j: edge number
                            
                 bcf = 1;
             }
@@ -258,10 +247,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
         freadI(fp, &material);
         double pile_height = 0.0;
         
-        if(!bcf)
-            bcptr = NULL; //--this element is not on the bound
-
-        Quad9P = (*ElemTable)->generateAddElement(nodes, neigh, neighbor_proc, bcptr, material, elm_loc, pile_height, myid,
+        Quad9P = (*ElemTable)->generateAddElement(nodes, neigh, neighbor_proc, material, elm_loc, pile_height, myid,
                                                sfc_key_from_oldkey(opposite_brother));
         Quad9P->find_positive_x_side(*NodeTable);
         Quad9P->calculate_dx(*NodeTable);

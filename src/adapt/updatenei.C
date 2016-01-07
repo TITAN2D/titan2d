@@ -1916,7 +1916,6 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                                     ElemBackgroundCheck(ElemTable, NodeTable, EmNeigh->key(), stdout);
                                     assert(EmNeigh);
                                 }
-                                EmNeigh->void_bcptr();
                                 ElemTable->removeElement(EmNeigh);
                             }
                             
@@ -3147,7 +3146,6 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
                                     ElemBackgroundCheck(El_Table, NodeTable, EmNeigh->key(), stdout);
                                     assert(EmNeigh);
                                 }
-                                EmNeigh->void_bcptr();
                                 El_Table->removeElement(EmNeigh);
                             }
                             
@@ -3503,7 +3501,6 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
         assert(EmFather->adapted_flag()==OLDFATHER); //sanity check
         assert(EmFather->refined_flag() == 1);
         EmFather->set_adapted_flag(TOBEDELETED); //I've lived a good life, it's my time to die
-        EmFather->void_bcptr();
         El_Table->removeElement(EmFather);
     }
     //RefinedList->set_inewstart(RefinedList->get_num_elem());

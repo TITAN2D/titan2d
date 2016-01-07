@@ -578,7 +578,7 @@ void cxxTitanSimulation::save_restart_file()
 
 
     //Topology
-#if 0
+#if 1
     xmdf<<"\t\t<Topology TopologyType=\"Quad_9\" NodesPerElement=\"9\" NumberOfElements=\""<<NumberOfElements<<"\">\n";
     if(0)
     {
@@ -601,7 +601,7 @@ void cxxTitanSimulation::save_restart_file()
         xmdf<<"\t\t\t</DataItem>\n";
     }
     xmdf<<"\t\t</Topology>\n";
-#endif
+#else
     xmdf<<"\t\t<Topology TopologyType=\"Quadrilateral\" NodesPerElement=\"4\" NumberOfElements=\""<<NumberOfElements<<"\" Order=\"0 3 2 1\">\n";
 
     xmdf<<"\t\t\t<DataItem Name=\"Connections\" ItemType=\"Function\" Function=\"JOIN($0,$1,$2,$3)\" Dimensions=\""<<NumberOfElements<<" 4\">\n";
@@ -612,8 +612,9 @@ void cxxTitanSimulation::save_restart_file()
         xmdf<<"\t\t\t\t</DataItem>\n";
     }
     xmdf<<"\t\t\t</DataItem>\n";
-
+#endif
     xmdf<<"\t\t</Topology>\n";
+
     //Geometry
     xmdf<<"\t\t<Geometry Type=\"XYZ\">\n";
 

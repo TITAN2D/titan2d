@@ -71,21 +71,7 @@ void Pack_element(void *sendel_in, ElemPack* elem, NodeHashTable* HT_Node_Ptr, i
         elem->n_coord[8][j] = node->coord(j);
     elem->node_elevation[8] = node->elevation();
     
-    if(sendel->bcptr() != nullptr)
-    {
-        elem->bc = 1;
-        for(i = 0; i < 4; i++)
-        {
-            elem->bc_type[i] = sendel->bcptr()->type[i];
-            for(j = 0; j < 2; j++)
-                for(int k = 0; k < 2; k++)
-                    elem->bc_value[i][j][k] = sendel->bcptr()->value[i][j][k];
-            
-        }
-    }
-    
-    else
-        elem->bc = 0;
+    elem->bc = 0;
     
     //geoflow stuff
     elem->positive_x_side = sendel->positive_x_side();

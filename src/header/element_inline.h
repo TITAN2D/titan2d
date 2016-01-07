@@ -220,26 +220,6 @@ inline void Element::neighbor_ndx(const int i, const ti_ndx_t &new_ndx) {
     elementsHashTable->neighbor_ndx_[i][ndx_] = new_ndx;
 }
 
-
-inline BC* Element::bcptr() {
-    return elementsHashTable->bcptr_[ndx_];
-}
-
-inline void Element::bcptr(BC* new_bcptr) {
-    elementsHashTable->bcptr_[ndx_] = new_bcptr;
-}
-//! this function sets the pointer to an element's boundary conditions to NULL
-
-inline void Element::void_bcptr() {
-    elementsHashTable->bcptr_[ndx_] = nullptr;
-}
-
-inline void Element::delete_bcptr() {
-    if(bcptr()!=nullptr)
-        elementsHashTable->deleteBC(bcptr());
-    void_bcptr();
-}
-
 //! refined, get_refined_flag(), put_refined_flag() are the partly replaced predecessors of adapted, get_adapted_flag(), and put_adapted_flag().  refined can be permanently set to GHOST (defined in constant.h) or zero or temporarily set to 1 (with in the refinement and unrefinement routines), Keith believes it's not being unset (set from 1 to 0) when it should be after the refinement is done.  Keith believes the problem is located within H_adapt() or a function called from within it, recurse down.
 //get_refined_flag
 inline int Element::refined_flag() const {
