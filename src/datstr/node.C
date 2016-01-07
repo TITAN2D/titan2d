@@ -25,10 +25,7 @@
 #include "../gisapi/GisApi.h"
 #include "../header/properties.h"
 
-/*#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR*/
-#include <mpi.h>
+#include "../header/ticore/omp_mpi.hpp"
 #include <assert.h>
 
 void Node::init()

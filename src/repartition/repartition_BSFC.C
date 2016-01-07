@@ -71,6 +71,7 @@ void BSFC_update_element_proc(int myid, int numprocs, ElementsHashTable* HT_Elem
 
 void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int time_step)
 {
+#ifdef USE_MPI
     int ierr, i, j, k; /* local variables */
     int num_local_objects; /* the number of objects this processor owns */
     BSFC_VERTEX_PTR sfc_vert_ptr; /* array that stores the sfc objects */
@@ -375,7 +376,7 @@ void repartition(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int
     free(sfc_vert_ptr);
     
     BSFC_update_and_send_elements(myid, numprocs, HT_Elem_Ptr, HT_Node_Ptr, time_step);
-    
+#endif
     return;
 }
 
@@ -633,6 +634,7 @@ void repartition2(ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimePro
 int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr,
                    double *NewProcDoubleKeyBoundaries, int iseqsend)
 {
+#ifdef USE_MPI
     int no_of_buckets = El_Table->get_no_of_buckets();
     vector<HashEntryLine> &bucket=El_Table->bucket;
     tivector<Element> &elenode_=El_Table->elenode_;
@@ -2273,6 +2275,9 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
 #endif
     
     return ifrepeat;
+#else
+    return 0;
+#endif
 }
 
 //bob
@@ -2280,6 +2285,7 @@ int SequentialSend(int numprocs, int myid, ElementsHashTable* El_Table, NodeHash
 void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable,
                                      TimeProps* timeprops_ptr, double *NewProcDoubleKeyBoundaries)
 {
+#ifdef USE_MPI
     int no_of_buckets = El_Table->get_no_of_buckets();
     vector<HashEntryLine> &bucket=El_Table->bucket;
     tivector<Element> &elenode_=El_Table->elenode_;
@@ -2796,6 +2802,7 @@ void NonSequentialSendAndUpdateNeigh(int numprocs, int myid, ElementsHashTable* 
 
     //assert(0); //just here to stop code, useful in debugging
     return;
+#endif
 }
 
 void IncorporateNewElements(ElementsHashTable* El_Table, NodeHashTable* NodeTable, int myid, int num_recv, ElemPack *recv_array,

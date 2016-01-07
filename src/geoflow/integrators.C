@@ -220,7 +220,11 @@ void Integrator::step()
     tempin[4] = forceint;   //internal friction force
     tempin[5] = forcebed;   //bed friction force
 
+#ifdef USE_MPI
     MPI_Reduce(tempin, tempout, 6, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i=0;i<6;++i)tempout[i]=tempin[i];
+#endif //USE_MPI
 
     statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
                                  * (matprops_ptr->scale.length);
@@ -2613,7 +2617,13 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
     send[1] = volume2;
     send[2] = v_ave;
     send[3] = g_ave;
+
+#ifdef USE_MPI
     i = MPI_Reduce(send, receive, 4, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i=0;i<4;++i)receive[i]=send[i];
+#endif //USE_MPI
+
     gl_volume = receive[0];
     gl_volume2 = receive[1];
     gl_v_ave = receive[2];
@@ -2626,7 +2636,11 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
     send[0] = max_height;
     send[1] = v_max;
     
+#ifdef USE_MPI
     i = MPI_Reduce(send, receive, 2, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i=0;i<2;++i)receive[i]=send[i];
+#endif //USE_MPI
     gl_max_height = receive[0];
     gl_v_max = receive[1];
     /*  i = MPI_Reduce(&max_height, &gl_max_height, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -2716,6 +2730,7 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
     
     max_mom = sqrt(max_mom);
     
+#ifdef USE_MPI
     if(numprocs > 1)
     {
         if(myid == 0)
@@ -2728,7 +2743,9 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
     }
     else
         gl_max_mom = max_mom;
-    
+#else //USE_MPI
+    gl_max_mom = max_mom;
+#endif //USE_MPI
     return (gl_max_mom * matprops_ptr->scale.height * sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity)));
     
 }
@@ -2743,7 +2760,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
 {
     FILE *fp;
     int myid, numprocs;
-    MPI_Status status;
+    IF_MPI(MPI_Status status);
     
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
@@ -2830,7 +2847,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
     /* get the max value accross all processors */
     send.val = v_max;
     send.rank = myid;
-    
+#ifdef USE_MPI
     if(numprocs > 1)
     {
         MPI_Allreduce(&send, &receive, 1, MPI_DOUBLE_INT, MPI_MAXLOC, MPI_COMM_WORLD);
@@ -2846,7 +2863,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
                 MPI_Recv(xy_v_max, 2, MPI_DOUBLE, receive.rank, 0, MPI_COMM_WORLD, &status);
         }
     }
-    
+#endif //USE_MPI
     // print the rest of the warning
     if(myid == 0)
     {

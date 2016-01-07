@@ -353,11 +353,17 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     }
     //ANNOTATE_TASK_END(StatProps_calc_stats_loop);
     //ANNOTATE_SITE_END(StatProps_calc_stats);
-
+#ifdef USE_MPI
     MPI_Reduce(&m_x_min, xyminmax, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Reduce(&m_x_max, xyminmax+1, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     MPI_Reduce(&m_y_min, xyminmax+2, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Reduce(&m_y_max, xyminmax+3, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    xyminmax[0]=m_x_min;
+    xyminmax[1]=m_x_max;
+    xyminmax[2]=m_y_min;
+    xyminmax[3]=m_y_max;
+#endif //USE_MPI
     if(myid == 0)
     {
         xyminmax[0] *= matprops->scale.length;
@@ -370,14 +376,21 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     double tempin[14], tempout[14], temp2in[2], temp2out[2];
 
     //find the minimum distance (squared) to the test point
+#ifdef USE_MPI
     MPI_Allreduce(&testpointmindist2, tempout, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
+#else //USE_MPI
+    tempout[0]=testpointmindist2;
+#endif //USE_MPI
     //if this processor isn't the closest to the test point it doesn't count as it's flow reaching the point
     if(tempout[0] < testpointmindist2)
         testpointreach = 0;
 
     //did the closest point to the test point get reached by the flow?
+#ifdef USE_MPI
     MPI_Reduce(&testpointreach, &inttempout, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    inttempout=testpointreach;
+#endif //USE_MPI
     testpointreach = inttempout;
 
     tempin[0] = xC;
@@ -395,10 +408,18 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     tempin[12] = m_yVar;
     tempin[13] = ElemTable->get_no_of_entries();
 
+#ifdef USE_MPI
     i = MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i=0;i<14;++i)tempout[i]=tempin[i];
+#endif //USE_MPI
     temp2in[0] = m_max_height;
     temp2in[1] = m_v_max;
+#ifdef USE_MPI
     i = MPI_Reduce(temp2in, temp2out, 2, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i=0;i<2;++i)temp2out[i]=temp2in[i];
+#endif //USE_MPI
 
     if(myid == 0)
     {

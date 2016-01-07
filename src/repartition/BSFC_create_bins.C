@@ -43,6 +43,7 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
                       float* total_weight_ptr, int* balanced_flag, unstructured_communication* verts_in_cut_info,
                       int* number_of_cuts, int bins_per_proc, int myid, int numprocs)
 {
+#ifdef USE_MPI
     int i, j, number_of_bins, ierr = 0;
     int array_location = 0;
     int comm_tag = 4190;
@@ -90,7 +91,12 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
     }
     tmp_float_array[number_of_bins] = *total_weight_ptr;
     binned_weight_array = (float*) malloc(sizeof(float) * (number_of_bins + 1));
+#ifdef USE_MPI
     i = MPI_Allreduce(tmp_float_array, binned_weight_array, number_of_bins + 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+#else
+    for(i = 0; i <= number_of_bins; i++)
+        binned_weight_array[i]=tmp_float_array[i];
+#endif
     delete[] tmp_float_array;
     *total_weight_ptr = binned_weight_array[number_of_bins];
     /* global weight array has been created,
@@ -194,8 +200,11 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
     local_balanced_flag = BSFC_find_imbalance(work_percent_array, global_actual_work_allocated[myid], *total_weight_ptr,
                                               myid, numprocs);
     
+#ifdef USE_MPI
     ierr = MPI_Allreduce(&local_balanced_flag, balanced_flag, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    
+#else
+    *balanced_flag=local_balanced_flag;
+#endif
     free(bin_proc_array);
     free(binned_weight_array);
     
@@ -230,9 +239,12 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
         { // this vert is in a cut... 
             verts_in_cut_info->send_procs_ptr[sfc_vert_ptr[i].destination_proc] += 1;
         }
-    
+#ifdef USE_MPI
     i = MPI_Alltoall(verts_in_cut_info->send_procs_ptr, 1, MPI_INT, verts_in_cut_info->recv_procs_ptr, 1, MPI_INT,
                      MPI_COMM_WORLD);
+#else
+    verts_in_cut_info->recv_procs_ptr[0]=verts_in_cut_info->send_procs_ptr[0];
+#endif
     
     //recalculate send_procs because it probably got changed
     for(i = 0; i < numprocs; i++)
@@ -333,6 +345,7 @@ void BSFC_create_bins(int num_local_objects, BSFC_VERTEX_PTR sfc_vert_ptr, int* 
     
     //*balanced_flag = BSFC_BALANCED;
     return;
+#endif
 }
 
 /*  done sfc_create_bins routine */
@@ -375,7 +388,6 @@ int BSFC_get_array_location(int number_of_bins, int number_of_bits, int prev_use
         int myid;
         ilocation = number_of_bins - 1;
     }
-    
     return (ilocation);
 }
 

@@ -293,7 +293,12 @@ double ElementsProperties::element_weight()
     }
 
     double global_weight[2];
+#ifdef USE_MPI
     i = MPI_Allreduce(sub_weight, global_weight, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    global_weight[0]=sub_weight[0];
+    global_weight[1]=sub_weight[1];
+#endif
 
     //global_weight[0] = (global_weight[0]-global_weight[1])/global_weight[1];
     if(global_weight[1] > 0.0)

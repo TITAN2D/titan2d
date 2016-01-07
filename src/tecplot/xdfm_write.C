@@ -30,7 +30,7 @@
 using namespace std;
 
 #include <hdf5.h>
-#include <mpi.h>
+#include "../header/ticore/omp_mpi.hpp"
 
 #include "../header/elenode.hpp"
 #include <GisApi.h>

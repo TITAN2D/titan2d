@@ -213,8 +213,11 @@ void cxxTitanSimulation::init_piles()
     tempin[0] = realvolume;
     tempin[1] = forcebed;
     tempin[2] = depositedvol;
-    
+#ifdef USE_MPI
     MPI_Reduce(tempin, tempout, 3, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i9=0;i9<3;++i9)tempout[i9]=tempin[i9];
+#endif //USE_MPI
     
     statprops_ptr->realvolume = tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length) * (matprops_ptr->scale.length);
     statprops_ptr->outflowvol = 0.0;

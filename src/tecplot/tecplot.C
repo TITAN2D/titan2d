@@ -82,7 +82,6 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     int done = 1;
     unsigned key[2];
     int TECTAG = 123;
-    MPI_Status status;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     
@@ -313,7 +312,7 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     fclose(fp);
     assert(num_tec_elem2 == num_tec_elem);
     
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
     
     return;
 }
@@ -759,7 +758,6 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
     int material;
     int done = 1;
     int TECTAG = 123;
-    MPI_Status status;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     int element_counter = 0;
@@ -776,7 +774,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 1.0\n");
         fflush(stdout);
     }
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
     
     sprintf(filename, "mshpl%02d%08d.tec", myid, timeprops->iter);
     
@@ -795,7 +793,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 2.0\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     int hours, minutes;
     double seconds;
@@ -812,7 +810,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 3.0\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     
     
@@ -832,7 +830,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 4.0\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     fprintf(fp, "\n");
     fprintf(fp, "ZONE N=%d, E=%d, F=FEPOINT, ET=QUADRILATERAL\n", element_counter * 4, element_counter);
@@ -844,7 +842,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 4.1\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
@@ -969,7 +967,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 5.0\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     fprintf(fp, "\n");
     
@@ -985,7 +983,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 6.0\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     fclose(fp);
     
@@ -994,7 +992,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
         printf("at meshplotter 7.0\n");
         fflush(stdout);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     return;
 }
@@ -1013,7 +1011,9 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
     int material;
     int done = 1;
     int TECTAG = 123;
+#ifdef USE_MPI
     MPI_Status status;
+#endif //USE_MPI
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     int element_counter = 0;
@@ -1045,7 +1045,9 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
     }
     else
     {
+#ifdef USE_MPI
         MPI_Recv(&done, 1, MPI_INT, myid - 1, TECTAG, MPI_COMM_WORLD, &status);
+#endif //USE_MPI
         //outData.open(filename, ios::app);
         fp = fopen(filename, "a+");
     }
@@ -1123,8 +1125,9 @@ void vizplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProp
     }
     
     fclose(fp);
-    
+#ifdef USE_MPI
     if(myid != numprocs - 1)
         MPI_Send(&done, 1, MPI_INT, myid + 1, TECTAG, MPI_COMM_WORLD);
+#endif //USE_MPI
     
 }

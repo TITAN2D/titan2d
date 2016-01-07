@@ -39,9 +39,7 @@ using namespace std;
 #include "constant.h"
 #include "tivector.h"
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "../header/ticore/omp_mpi.hpp"
 
 
 class Element;

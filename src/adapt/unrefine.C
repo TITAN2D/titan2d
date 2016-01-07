@@ -454,6 +454,7 @@ void HAdaptUnrefine::unrefine_neigh_update()
 //make this a Node and Element friend fucntion
 void HAdaptUnrefine::unrefine_interp_neigh_update()
 {
+#ifdef USE_MPI
     if(numprocs < 2)
         return;
     
@@ -796,4 +797,5 @@ void HAdaptUnrefine::unrefine_interp_neigh_update()
     MPI_Barrier(MPI_COMM_WORLD);
     
     return;
+#endif //USE_MPI
 }

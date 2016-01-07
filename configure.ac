@@ -8,13 +8,6 @@ AM_INIT_AUTOMAKE
 #===================================================================================
 AC_CANONICAL_HOST
 case $host in
-  *-*-irix*)
-    CFLAGS="$CFLAGS -woff all"
-    CXXFLAGS="$CXXFLAGS -LANG:std -woff all"
-    LDFLAGS="$LDFLAGS -LANG:std -w -lc -lC -lscs -lmpi++ "
-    CXX="CC"
-    F77="f77"
-    ;;
   *-*-linux*)
     dnl better remove -w
     test_CFLAGS=${CFLAGS+set}
@@ -28,8 +21,6 @@ case $host in
     else
     	CXXFLAGS="-std=c++11 $CXXFLAGS"
     fi
-    
-    CPPFLAGS="$CPPFLAGS -DMPICH_IGNORE_CXX_SEEK"
     
     test_LDFLAGS=${LDFLAGS+set}
     if test "$test_LDFLAGS" != set; then
@@ -58,53 +49,50 @@ PYTHON_BIN_DIR=`AS_DIRNAME($PYTHON)`
 PYTHON_ROOT=`AS_DIRNAME($PYTHON_BIN_DIR)`
 AC_SUBST([PYTHON_ROOT],[$PYTHON_ROOT])
 
-
-
+## debug option
+#======================================================================================
 
 ## checks for libraries
 #======================================================================================
-# checks for mpich installation
-AC_CHECK_LIB([pthread],[pthread_create])
 
-# in all likelyhood pkg-module is not going to find anything,
-# this check has been included to build .rpm and .deb
-#PKG_CHECK_MODULES([MPICH2], [mpich2-ch3])
-CPPFLAGS="$CPPFLAGS $MPICH2_CFLAGS"
-LDFLAGS="$LDFLAGS $MPICH2_LIBS"
-
-# if MPI is installed in non-standard location
-AC_ARG_WITH([mpi-includes],[AS_HELP_STRING([--with-mpi-includes],[path to mpi headers])])
-if  test -n "$with_mpi_includes"; then
-    CPPFLAGS="$CPPFLAGS -I$with_mpi_includes"
-fi
-
-AC_ARG_WITH([mpi-libs],[AS_HELP_STRING([--with-mpi-libs],[path to mpi libraries])])
-if  test -n "$with_mpi_libs"; then
-    LDFLAGS="$LDFLAGS -L$with_mpi_libs"
-fi
-
-#AC_CHECK_LIB([mpich],[MPI_Init],, \
-#                   AC_CHECK_LIB([mpi],[MPI_Init],, \
-#                                  AC_MSG_FAILURE([could not find MPI libraries.])))
-## checks for HDF5 intalltion
+# checks for omp
 #------------------------------------------------------------------------------------
-AC_CHECK_LIB([z], [gzread])
+AC_ARG_ENABLE(openmp,
+	[AS_HELP_STRING([--enable-openmp],[Compile with OpenMP support])],
+	[
+	AC_OPENMP()
+	CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+	AC_CHECK_FUNCS([omp_get_num_threads],,AC_MSG_FAILURE([Can not compile simple OpenMP program]))
+	],)
+#AC_CHECK_LIB([pthread],[pthread_create])
+# checks for mpich installation
+#------------------------------------------------------------------------------------
+AC_ARG_ENABLE(mpi,
+	[AS_HELP_STRING([--enable-mpi],[Compile with MPI support CXX variable should point to MPI enabled compiler])],
+	[
+	CPPFLAGS="$CPPFLAGS -DUSE_MPI -DMPICH_IGNORE_CXX_SEEK"
+	AC_CHECK_FUNCS([MPI_Init],,AC_MSG_FAILURE([Can not compile simple MPI program]))
+	],)
+    
+
+# checks for HDF5 intalltion
+#------------------------------------------------------------------------------------
+AC_CHECK_LIB([z], [gzread],,AC_MSG_FAILURE([Can not find libz]),)
 AC_ARG_WITH([hdf5],
             [AS_HELP_STRING([--with-hdf5],[HDF5 is needed for paraview support. \
-                            Provide absolute HDF5 location --with-hdf5=/path/to/hdf5])])
-if test "x$with_hdf5" != "xno"; then
-    if test -n "$with_hdf5"; then
-        CPPFLAGS="$CPPFLAGS  -I$with_hdf5/include -DH5_USE_16_API"
-        LDFLAGS="$LDFLAGS -L$with_hdf5/lib"
-    fi
-    
-    AC_CHECK_LIB([hdf5],[H5open],,
-                  AC_MSG_FAILURE([HDF5 is strongly recommended for paraview support.]
-                  [Re-run configure --with-hdf5=/path/to/hdf5.]
-                  [Re-run configure --without-hdf5 to get rid of this message]))
-    LIBS="-lhdf5_cpp $LIBS"
+                            Provide absolute HDF5 location --with-hdf5=/path/to/hdf5])],)
+
+if test -n "$with_hdf5"; then
+    CPPFLAGS="$CPPFLAGS  -I$with_hdf5/include -DH5_USE_16_API"
+    LDFLAGS="$LDFLAGS -L$with_hdf5/lib"
 fi
-AM_CONDITIONAL([BUILD_HDF5], test "x$with_hdf5" != "xno")
+
+AC_CHECK_LIB([hdf5],[H5open],,
+              AC_MSG_FAILURE([HDF5 is strongly recommended for paraview support.]
+              [Re-run configure --with-hdf5=/path/to/hdf5.]
+              [Re-run configure --without-hdf5 to get rid of this message]))
+LIBS="-lhdf5_cpp $LIBS"
+
 
 ## checks for GRASS
 #------------------------------------------------------------------------------------

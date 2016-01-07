@@ -24,7 +24,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <mpi.h>
+
+#include "../header/ticore/omp_mpi.hpp"
 
 #include <Python.h>
 
@@ -40,24 +41,16 @@
 
 #include "../header/titan_simulation.h"
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-
 extern "C" void init_cxxtitan();
 
 int main(int argc, char *argv[])
 {
     int myid, master, numprocs;
     int namelen;
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    MPI_Status status;
     
-    MPI_Init(&argc, &argv);
+    IF_MPI(MPI_Init(&argc, &argv);)
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    MPI_Get_processor_name(processor_name, &namelen);
     
     //set program full name
     int i;
@@ -242,7 +235,7 @@ int main(int argc, char *argv[])
     {
         printf("Done\n");
     }
-    MPI_Finalize();
+    IF_MPI(MPI_Finalize());
     return 0;
 }
 

@@ -27,7 +27,7 @@
 
 void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops_ptr)
 {
-    
+#ifdef USE_MPI
     if(numprocs < 2)
         return;
     
@@ -324,6 +324,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     MPI_Barrier (MPI_COMM_WORLD);
     
     return;
+#endif //USE_MPI
 }
 
 /* delete the ghost elements that were put in the element hashtable */
@@ -358,18 +359,5 @@ void delete_ghost_elms(ElementsHashTable* El_Table, int myid)
 #ifdef PRINT_MOVE
     printf("proc %d has deleted %d ghost elms \n",myid, delete_counter);
 #endif
-    return;
-}
-
-void create_delete_memory()
-{
-    
-    int myid;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    
-    double* junk = new double[100000];
-    junk[0] = 0;
-    delete[] junk;
-    
     return;
 }

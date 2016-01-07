@@ -73,9 +73,11 @@ void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes*
         receive = CAllocD1(num_planes);
         for(iplane = 0; iplane < num_planes; iplane++)
             send[iplane] = discharge->planes[iplane][9];
-        
+#ifdef USE_MPI
         MPI_Reduce(send, receive, num_planes, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        
+#else //USE_MPI
+    for(int i=0;i<num_planes;++i)receive[i]=send[i];
+#endif //USE_MPI
         if(myid == 0)
         {
             doubleswap = (matprops->scale.length) * (matprops->scale.length) * (matprops->scale.height);
@@ -117,7 +119,7 @@ void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes*
 void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, TimeProps* timeprops_ptr, StatProps* statprops_ptr)
 {
     int myid, numprocs;
-    MPI_Status status;
+    IF_MPI(MPI_Status status);
     
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
@@ -209,7 +211,7 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
     xyv_hmax[2] = sqrt(xyv_hmax[2]);
     
     /* get the max value accross all processors */
-
+#ifdef USE_MPI
     if(numprocs > 1)
     {
         send.rank = myid;
@@ -254,6 +256,7 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
                 MPI_Recv(xyv_hmax, 3, MPI_DOUBLE, receive.rank, 0, MPI_COMM_WORLD, &status);
         }
     }
+#endif //USE_MPI
     
     if(myid == 0)
     {

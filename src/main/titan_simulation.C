@@ -52,7 +52,7 @@ int threads_number;
 
 #include <stdio.h>
 #include <string.h>
-#include <mpi.h>
+#include "../header/ticore/omp_mpi.hpp"
 #include "../header/titan_simulation.h"
 #include <math.h>
 #include "../header/constant.h"
@@ -74,7 +74,7 @@ cxxTitanSimulation::cxxTitanSimulation() :
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 
 
 
@@ -91,7 +91,7 @@ cxxTitanSimulation::cxxTitanSimulation() :
 
     statprops=new StatProps(ElemTable,NodeTable);
 
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 }
 cxxTitanSimulation::~cxxTitanSimulation()
 {
@@ -714,12 +714,12 @@ void cxxTitanSimulation::load_restart(const char * restartFilename)
 }
 void cxxTitanSimulation::run()
 {
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 
     int i; //-- counters
 
     //-- MPI
-    MPI_Status status;
+    IF_MPI(MPI_Status status);
 
     TIMING1_DEFINE(start);
     TIMING1_DEFINE(end);
@@ -730,7 +730,7 @@ void cxxTitanSimulation::run()
     TIMING1_START(start);
 
     /* create new MPI datastructures for class objects */
-    MPI_New_Datatype();
+    IF_MPI(MPI_New_Datatype());
 
     /* read original data from serial preprocessing
      code and then initialize element
@@ -848,7 +848,7 @@ void cxxTitanSimulation::run()
         printf("REFINE_LEVEL=%d\n", REFINE_LEVEL);
     }
 
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
     statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
@@ -1093,10 +1093,10 @@ void cxxTitanSimulation::run()
      */
     save_restart_file();
     save_restart_file_writefooter();
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     if(myid == 0)
         output_summary(&timeprops, statprops, savefileflag);
@@ -1130,28 +1130,29 @@ void cxxTitanSimulation::run()
         grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     // write out ending warning, maybe flow hasn't finished moving
     sim_end_warning(elementType, ElemTable, matprops_ptr, &timeprops, statprops->vstar);
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     //write out the final pile statistics (and run time)
     if(myid == 0)
         out_final_stats(&timeprops, statprops);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     //write out stochastic simulation statistics
     if(myid == 0)
         output_stoch_stats(matprops_ptr, statprops);
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     //output maximum flow depth a.k.a. flow outline
     PROFILING3_START(pt_start1);
     outline.combine_results_from_threads();
     PROFILING3_STOPADD(step_outline,pt_start1);
 
+#ifdef USE_MPI
     if(numprocs > 1)
     {
         OutLine outline2;
@@ -1172,6 +1173,9 @@ void cxxTitanSimulation::run()
     {
         outline.output(matprops_ptr, statprops);
     }
+#else //USE_MPI
+    outline.output(matprops_ptr, statprops);
+#endif //USE_MPI
 
 #ifdef PERFTEST
     long m = element_counter, ii;
@@ -1190,7 +1194,7 @@ void cxxTitanSimulation::run()
     if(myid == 0)
         titanProfiling.print();
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     
     return;
 }
@@ -1206,6 +1210,6 @@ void cxxTitanSimulation::input_summary()
         get_integrator()->print0();
         get_matprops()->print0();
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
     return;
 }

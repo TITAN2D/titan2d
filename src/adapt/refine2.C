@@ -19,13 +19,11 @@
 # include <config.h>
 #endif
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "../header/ticore/omp_mpi.hpp"
 
-#include"../header/ticore.hpp"
+#include "../header/ticore.hpp"
 
-#include"../header/hpfem.h"
+#include "../header/hpfem.h"
 #include "../header/hadapt.h"
 
 extern void fhsfc2d_(double, unsigned, unsigned);

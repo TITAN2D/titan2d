@@ -908,9 +908,11 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
     int *num_send, *num_recv, *isend;
     int iproc, ineighm4, ierr, send_tag = 061201 * 2, neigh_proc;
     unsigned **send, **recv;
+#ifdef USE_MPI
     MPI_Request* request = new MPI_Request[2 * numprocs];
-    
+#endif //USE_MPI
 
+#ifdef USE_MPI
     /*************************************************************/
     /* so I won't have to waste time waiting for neighbor update */
     /* information from other processors later, we all send the  */
@@ -1272,6 +1274,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         CDeAllocI1(isend);
     }	  //if(nump>1)
     PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_mpi_prep,pt_start);
+#endif //USE_MPI
     /*************************************************************/
     /* now do the on processor updates while I'm waiting to      */
     /* receive neighbor update information from other processors */
@@ -1817,6 +1820,8 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         
     } //ifather loop
     PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_onproc_updates,pt_start);
+
+#ifdef USE_MPI
     /*************************************************************/
     /* The interprocessor update information should be here by   */
     /* now or at the very least I won't have to weight very long */
@@ -2086,6 +2091,8 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
         CDeAllocI1(num_recv);
     }		  //if(nump>1)
     PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_mpi_update,pt_start);
+#endif //USE_MPI
+
 #ifdef DEB2
     for(ti_ndx_t ifather:allRefinement)
     {
@@ -2103,13 +2110,14 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
 
     //clear the refined list
     //RefinedList->trashlist();
-    
+#ifdef USE_MPI
     if(numprocs > 1)
     {
         MPI_Barrier (MPI_COMM_WORLD);
         CDeAllocU2(send);
         CDeAllocI1(num_send);
     }
+#endif //USE_MPI
     PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_update_neighbours_ndx_on_ghosts,pt_start);
     return;
 }
@@ -2131,8 +2139,9 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
     int *num_send, *num_recv, *isend;
     int iproc, ineighm4, ierr, send_tag = 061201 * 2, neigh_proc;
     unsigned **send, **recv;
+#ifdef USE_MPI
     MPI_Request* request = new MPI_Request[2 * nump];
-    
+#endif //USE_MPI
     //printf("myid=%d, nump=%d\n",myid,nump);
     
     //unsigned ElemDebugKey[2]={1897922560,         0};
@@ -2214,7 +2223,7 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
     }*/
     
     //printf("myid=%d nump=%d\n",myid,nump);
-    
+#ifdef USE_MPI
     /*************************************************************/
     /* so I won't have to waste time waiting for neighbor update */
     /* information from other processors later, we all send the  */
@@ -2563,7 +2572,7 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
                                  send_tag + myid, MPI_COMM_WORLD, (request + iproc));
         CDeAllocI1(isend);
     }	  //if(nump>1)
-    
+#endif //USE_MPI
     /*************************************************************/
     /* now do the on processor updates while I'm waiting to      */
     /* receive neighbor update information from other processors */
@@ -3061,6 +3070,7 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
         
     } //ifather loop
     
+#ifdef USE_MPI
     /*************************************************************/
     /* The interprocessor update information should be here by   */
     /* now or at the very least I won't have to weight very long */
@@ -3304,7 +3314,7 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
         CDeAllocU2(recv);
         CDeAllocI1(num_recv);
     }		  //if(nump>1)
-    
+#endif //USE_MPI
     
     /*
      if(timeprops_ptr->iter==2389) {
@@ -3513,13 +3523,14 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
     //clear the refined list
     RefinedList->trashlist();
     
+#ifdef USE_MPI
     if(nump > 1)
     {
         MPI_Barrier (MPI_COMM_WORLD);
         CDeAllocU2(send);
         CDeAllocI1(num_send);
     }
-    
+#endif //USE_MPI
     /*
      if(timeprops_ptr->iter==2389) {
      ElemDebugFatherNeigh=ElemDebugFather=NULL;
@@ -3818,7 +3829,7 @@ void update_neighbor_info(NodeHashTable* HT_Elem_Ptr, ElemPtrList* RefinedList, 
         }
     }
     
-    MPI_Barrier (MPI_COMM_WORLD);
+    IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
     update_neighbor_interprocessor(HT_Elem_Ptr, HT_Node_Ptr, refined_start, myid, nump);
     delete refined_start;
     //cout<<"ready with update: "<<myid<<"\n\n"<<flush;

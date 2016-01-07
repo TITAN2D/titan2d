@@ -22,7 +22,7 @@
 
 #include "tisearch.hpp"
 
-#include <omp.h>
+#include "omp_mpi.hpp"
 #include <cmath>
 
 

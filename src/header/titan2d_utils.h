@@ -30,10 +30,8 @@ using namespace std;
 #include "ticore.hpp"
 #include "constant.h"
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
+#include "ticore/omp_mpi.hpp"
+#include "tivector.h"
 
 #define TIMING1_DEFINE(t_start) double t_start
 #define TIMING1_START(t_start) t_start=MPI_Wtime()

@@ -789,7 +789,11 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
         }
         
         intswap = mincentergen;
+#ifdef USE_MPI
         MPI_Allreduce(&mincentergen, &intswap, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+#else //USE_MPI
+        intswap=mincentergen;
+#endif //USE_MPI
         mincentergen = intswap;
         
         //printf("icounter=%d\n",icounter);
@@ -1092,7 +1096,11 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
         //printf("myid=%d Initial_H_adapt() after second if_pile_boundary()\n",myid);
         
         intswap = minboundarygen;
+#ifdef USE_MPI
         MPI_Allreduce(&minboundarygen, &intswap, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+#else //USE_MPI
+        intswap=minboundarygen;
+#endif //USE_MPI
         minboundarygen = intswap;
         
         //if(myid==0) printf("initial_H_adapt %d\n",9); fflush(stdout)

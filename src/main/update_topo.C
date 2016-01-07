@@ -43,9 +43,11 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
             inp.close();
         }
     }
-    
+
+#ifdef USE_MPI
     if(nump > 0)
         MPI_Bcast(gis_update_map, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+#endif //USE_MPI
     //printf("update_topo.C 5\n"); fflush(stdout);
     
     //check for a update map to open
@@ -88,6 +90,7 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
         }	  //closes: for(int ibucket=0; ibucket<num_buckets; ibucket++)
         double tock = MPI_Wtime() - tick;
         //long tock=(long) time(NULL);
+#ifdef USE_MPI
         if(nump > 1)
         {
             /* long tempin[2], tempout[2];
@@ -100,6 +103,7 @@ int update_topo(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int 
             tock = tick;
             
         }
+#endif //USE_MPI
         
         if(myid == 0)
         {

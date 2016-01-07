@@ -125,9 +125,13 @@ double Integrator_SinglePhase::get_coef_and_eigen(int ghost_flag)
 
     dt[1] = -0.9 * sqrt(hmax * scale_.epsilon * scale_.gravity / 9.8); //find the negative of the max not the positive min
 
-
+#ifdef USE_MPI
     ierr = MPI_Allreduce(dt, global_dt, 3, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
+#else //USE_MPI
+    global_dt[0]=dt[0];
+    global_dt[1]=dt[1];
+    global_dt[2]=dt[2];
+#endif //USE_MPI
     dt[0] = 0.5 * c_dmin1(global_dt[0], -global_dt[1]);
     if(dt[0] == 0.0)
         dt[0] = 0.5 * global_dt[2];
@@ -248,8 +252,13 @@ double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
     
     dt[1] = -0.9 * sqrt(hmax * scale_.epsilon * scale_.gravity / 9.8); //find the negative of the max not the positive min
             
-
+#ifdef USE_MPI
     ierr = MPI_Allreduce(dt, global_dt, 3, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else //USE_MPI
+    global_dt[0]=dt[0];
+    global_dt[1]=dt[1];
+    global_dt[2]=dt[2];
+#endif //USE_MPI
     
     dt[0] = 0.5 * c_dmin1(global_dt[0], -global_dt[1]);
     if(dt[0] == 0.0)

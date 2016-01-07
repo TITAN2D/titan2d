@@ -24,15 +24,18 @@
 #include "../header/refined_neighbor_info.h"
 #include "./repartition_BSFC.h"
 
+#ifdef USE_MPI
 MPI_Datatype ELEMTYPE;
 MPI_Datatype NEIGHTYPE;
 MPI_Datatype REFINED_INFO;
 MPI_Datatype ENRICHED_INFO;
 MPI_Datatype NSOLTYPE;
 MPI_Datatype LB_VERT_TYPE;
+#endif
 
 void MPI_New_Datatype()
 {
+#ifdef USE_MPI
     /* Create new MPI datatype: ElemPack type definition in struct.h
      so structures of ElemPack and NeighborPack can be sent and received */
     /*  MPI_Datatype ELEMTYPE;
@@ -160,5 +163,5 @@ void MPI_New_Datatype()
     MPI_Type_commit(&LB_VERT_TYPE);
     
     //New data types are created at this point
-    
+#endif
 }

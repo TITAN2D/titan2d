@@ -25,6 +25,7 @@
 void update_neighbor_interprocessor(NodeHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, refined_neighbor* refined_start,
                                     int myid, int numprocs)
 {
+#ifdef USE_MPI
     int SIDE_SONS[4][2] =
     {
     { 0, 1 },
@@ -224,4 +225,5 @@ void update_neighbor_interprocessor(NodeHashTable* HT_Elem_Ptr, NodeHashTable* H
     delete[] request;
     delete[] request2;
     return;
+#endif //USE_MPI
 }

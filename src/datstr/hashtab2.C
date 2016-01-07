@@ -26,10 +26,8 @@
 #include "../header/titan2d_utils.h"
 #include "../header/ticore/tisort.hpp"
 
-/*#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR*/
-#include <mpi.h>
+#include "../header/ticore/omp_mpi.hpp"
+
 #include <limits.h>
 #include <set>
 
@@ -867,28 +865,28 @@ void NodeHashTable::flushNodeTable()
     PROFILING3_START(pt_start);
     int size=ndx_map.size();
     
-#pragma omp parallel
-{
+    #pragma omp parallel
+    {
 
-    id_.reorder(&(ndx_map[0]), size);
+        id_.reorder(&(ndx_map[0]), size);
 
-    num_assoc_elem_.reorder(&(ndx_map[0]), size);
+        num_assoc_elem_.reorder(&(ndx_map[0]), size);
 
-    info_.reorder(&(ndx_map[0]), size);
+        info_.reorder(&(ndx_map[0]), size);
 
-    for(int i=0;i<DIMENSION;i++)
-        coord_[i].reorder(&(ndx_map[0]), size);
+        for(int i=0;i<DIMENSION;i++)
+            coord_[i].reorder(&(ndx_map[0]), size);
 
-    elevation_.reorder(&(ndx_map[0]), size);
+        elevation_.reorder(&(ndx_map[0]), size);
 
-    for(int i=0;i<NUM_STATE_VARS;i++)
-        flux_[i].reorder(&(ndx_map[0]), size);
+        for(int i=0;i<NUM_STATE_VARS;i++)
+            flux_[i].reorder(&(ndx_map[0]), size);
 
-    for(int i=0;i<NUM_STATE_VARS;i++)
-        refinementflux_[i].reorder(&(ndx_map[0]), size);
+        for(int i=0;i<NUM_STATE_VARS;i++)
+            refinementflux_[i].reorder(&(ndx_map[0]), size);
 
-    connection_id_.reorder(&(ndx_map[0]), size);
-}
+        connection_id_.reorder(&(ndx_map[0]), size);
+    }
     PROFILING3_STOPADD_RESTART(flushTable_NodeHashTable_reorder,pt_start);
     titanTimings.flushNodeTableTime += MPI_Wtime() - t_start;
     titanTimingsAlongSimulation.flushNodeTableTime += MPI_Wtime() - t_start;

@@ -19,14 +19,7 @@
 #define  SUNOS  //definition for gmake architecture
 #define TOPO_DATA
 
-/*#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR*/
-#include <mpi.h>
-
-#ifdef CRAY
-#include <fortran.h>
-#endif 
+#include "ticore/omp_mpi.hpp"
 
 #include <iostream>
 #include <iomanip>

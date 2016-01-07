@@ -28,6 +28,7 @@ void create_element(ElemPack* elem2, ElementsHashTable* HT_Elem_Ptr, NodeHashTab
 void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                                    int time_step)
 {
+#ifdef USE_MPI
     int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
     vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
     tivector<Element> &elenode_=HT_Elem_Ptr->elenode_;
@@ -284,6 +285,7 @@ void BSFC_update_and_send_elements(int myid, int numprocs, ElementsHashTable* HT
     delete[] send_elm_array;
     
     return;
+#endif //USE_MPI
 }
 
 void delete_unused_elements_nodes(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid)
