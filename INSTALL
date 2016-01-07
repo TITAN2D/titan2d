@@ -72,9 +72,15 @@ make install
 # ====================================================================
 # hdf5 installation
 # ====================================================================
-# serial version of hdf5 needed to be installed 
+# serial version of hdf5 with C++ support needed to be installed 
+cd $TITAN_WSP
 export TITAN_HDF5=$TITAN_WSP/hdf5
-
+wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.16.tar
+tar xvzf hdf5-1.8.16.tar
+cd hdf5-1.8.16
+./configure --prefix=$TITAN_HDF5 --enable-cxx
+make -j 8
+make install
 # ====================================================================
 # GRASS installation
 # ====================================================================
@@ -107,19 +113,25 @@ aclocal;autoheader;autoconf;automake --add-missing --copy
 cd $TITAN_WSP
 mkdir titan2d_bld
 cd titan2d_bld
-mkdir iccopt
-cd iccopt
+mkdir iccoptompmpi
+cd iccoptompmpi
 
 #
 #../../titan2d/configure --with-grass=<path_to_grass_installation> --without-gdal \
-#--with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
-#CC=mpicc CXX=mpic++ F77=mpif90 PYTHON=<path to python2.7>
+#    --with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
+#    PYTHON=<path to python2.7> SWIG=<path to swig>\
+#    [--enable-mpi] [--enable-openmp] \
+#    [CXX=<path to non-default c++ compiler, mpic++ for example> ] \
+#    [CXXFLAGS=<non-default optimization flags, for example "-g -O0" for no optimization or "-O3" for heavy optimization ]\
+#    [CPPGLAGS=<non-default preprocessor flags, for example "-DDEB2" for extra debuging information]
 #
-#for example:
+#for example hybrid MPI/OpenMP:
 ../../titan2d/configure --with-grass=$TITAN_GRASS --without-gdal \
 --with-hdf5=$TITAN_HDF5 --prefix=`pwd`  \
-CC=mpicc CXX=mpic++ F77=mpif90 PYTHON=$TITAN_PYTHON/bin/python2.7 \
-SWIG=$TITAN_SWIG/bin/swig CXXFLAGS=-O3 CFLAGS=-O3
+--enable-mpi --enable-openmp \
+CXX=mpic++ \
+PYTHON=$TITAN_PYTHON/bin/python2.7 \
+SWIG=$TITAN_SWIG/bin/swig CXXFLAGS=-O3
 
 # Now compile it:
 make -j <number of proccesses to use>

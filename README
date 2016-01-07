@@ -1,3 +1,26 @@
+Installation
+=====================================
+See INSTALL for compilation instruction
+
+Execution
+=====================================
+In order to run Titan in openMP mode (prefered at this time):
+
+source <path_to_titan>/bin/titanvars.sh
+<path_to_titan>/bin/titan -nt <number of threads> <input python script>
+
+In order to run Titan in hybrid MPI/OpenMP mode:
+
+source <path_to_titan>/bin/titanvars.sh
+mpirun -np <number of processes> <path_to_titan>/bin/titan -nt <number of threads> <input python script>
+
+
+
+
+
+
+Bellow is old read me
+=====================================
 The code currently simulates granular flows.  It runs in parallel with mesh refinement and unrefinement.  The maximum refinement level is set by the user when specifying the Number of Computational Cells Across Smallest Pile/Flux-Source.  Mesh repartitioning is also used to maintain a good load-balance.  A python script is included to organize the preprocessing and launching of jobs on different computers, including all available computers at the Center for Computational Research (CCR) at UB.  GRASS is now used as the GIS.  The python script can also be run directly from GRASS.  Instructions for this are in the README.GRASS file.
   
 The python script is located in the bin directory and is run by 

@@ -30,11 +30,9 @@ const int XDMF_CLOSE = 2;
 
 
 
-#ifdef __cplusplus
+
 #include <string>
-extern "C"
-{
-#endif
+
 
 /*! GH5_openfile opens hdf file for reading or writing.
  * mode can have "n" or "o" values
@@ -73,9 +71,7 @@ void GH5_write_mesh_data(hid_t fp, int conns, int points, int *conndata, double 
  */
 void GH5_write_state_vars(hid_t fp, int num_elms, double *state_var, const char *var_names);
 
-#ifdef __cplusplus
-}
-#endif
+
 /*************************************************************
  *
  *      FOLLOWING CALLS ARE NOT EXPECTED TO BE MADE

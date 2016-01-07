@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(titan, 3.0.0)
+AC_INIT(titan, 3.1.0)
 AM_INIT_AUTOMAKE
 
 ## Host specific stuff
@@ -36,7 +36,6 @@ AC_LANG_CPLUSPLUS
 
 # Checks for programs.
 AC_PROG_CXX
-AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
