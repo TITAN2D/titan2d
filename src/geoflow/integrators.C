@@ -1557,7 +1557,7 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
                 forcegrav = g[0][ndx] * h[ndx];
 
                 // the bed friction force for fast moving flow
-                forcebedx = h[ndx] * (g[2][ndx] * unitvx * mu - g[0][ndx] * kactxy[ndx] * dh_dx[ndx]);
+                forcebedx = h[ndx] * g[2][ndx] * (unitvx * mu + kactxy[ndx] * dh_dx[ndx]);
 
 #ifdef STOPPED_FLOWS
                 if (IF_STOPPED == 2 && 1 == 0) {
@@ -1595,7 +1595,7 @@ void Integrator_SinglePhase_Pouliquen_FirstOrder::corrector()
                 forcegrav = g[1][ndx] * h[ndx];
 
                 // the bed friction force for fast moving flow
-                forcebedy = h[ndx] * (g[2][ndx] * unitvy * mu - g[1][ndx] * kactxy[ndx] * dh_dy[ndx]);
+                forcebedy = h[ndx] * g[2][ndx] * (unitvy * mu + kactxy[ndx] * dh_dy[ndx]);
                 
 #ifdef STOPPED_FLOWS
                 if (IF_STOPPED == 2 && 1 == 0) {
