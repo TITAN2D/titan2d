@@ -15,7 +15,9 @@
  */
 
 %module cxxtitan
-
+%begin %{
+#define __STDC_FORMAT_MACROS
+%}
 %{
 #include "../header/constant.h"
 #include "../header/properties.h"

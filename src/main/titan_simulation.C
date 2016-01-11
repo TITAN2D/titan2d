@@ -612,8 +612,8 @@ void cxxTitanSimulation::save_restart_file()
         xmdf<<"\t\t\t\t</DataItem>\n";
     }
     xmdf<<"\t\t\t</DataItem>\n";
-#endif
     xmdf<<"\t\t</Topology>\n";
+#endif
 
     //Geometry
     xmdf<<"\t\t<Geometry Type=\"XYZ\">\n";

@@ -23,6 +23,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "../header/ticore/omp_mpi.hpp"
@@ -45,6 +46,7 @@ extern "C" void init_cxxtitan();
 
 int main(int argc, char *argv[])
 {
+    printf("Titan2d\n");
     int myid, master, numprocs;
     int namelen;
     
@@ -55,12 +57,33 @@ int main(int argc, char *argv[])
     //set program full name
     int i;
     char executable[1028];
+    char python_home[1028];
     char buffer[1028];
     
     i = readlink("/proc/self/exe", executable, 1028);
     executable[i] = '\0';
     Py_SetProgramName(executable);
-    
+
+//#define MAKE_PORTABLE
+#ifdef MAKE_PORTABLE
+    strncpy(python_home,executable,1028);
+    printf("%s\n",python_home);
+    int count=0;
+    for(i=strlen(python_home);i>=0;--i)
+    {
+        if(python_home[i]=='/')
+        {
+            python_home[i]='\0';
+            ++count;
+            if(count==2)break;
+        }
+    }
+
+    printf("%s\n",python_home);
+    sprintf(python_home+strlen(python_home),"/lib/python");
+    printf("%s\n",python_home);
+    Py_SetPythonHome(python_home);
+#endif
     Py_Initialize();
     
     if(myid == 0)

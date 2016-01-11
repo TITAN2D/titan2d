@@ -154,23 +154,45 @@ else
 fi
 AM_CONDITIONAL([WITH_GDAL], test "x$with_gdal" != "xno")
 
-
+#SWIG
 #-------------------------------------------------------------------------------------
-AC_ARG_VAR([SWIG],[path to swig, python api generator])
-AC_PATH_PROG([SWIG],[swig],[])
-if test "x$SWIG" = "x"; then
-	AC_MSG_ERROR([swig is not found, set SWIG variable!])
-fi
-SWIG_VERSION=`$SWIG -version|grep ersion|cut -d ' ' -f 3`
-SWIG_VERSION_MAJOR=`echo $SWIG_VERSION|cut -d . -f1`
-if test "x$SWIG_VERSION_MAJOR" != "x3"; then
-	AC_MSG_ERROR([swig is too old should be at least 3.0, set SWIG variable for custom location!])
-fi
-AC_MSG_NOTICE([swig version: $SWIG_VERSION])
+AC_ARG_WITH(swig,
+            AS_HELP_STRING([--with-swig=<path to swig executable>],
+            [Specify path to SWIG executable. ]
+            [If set will (re)generate python API, otherwise will try to use previously generated sources. ]
+            [Note that github repository do not track them.]),)
+#only developers/advanced user should call swig
+#the public source code releases should come with swig generated files
+if test -n "$with_swig"; then
+    SWIG=$with_swig
+    AC_PATH_PROG([SWIG],[swig],[])
+	if test "x$SWIG" = "x"; then
+		AC_MSG_ERROR([swig is not found, set SWIG variable!])
+	fi
+	SWIG_VERSION=`$SWIG -version|grep ersion|cut -d ' ' -f 3`
+	SWIG_VERSION_MAJOR=`echo $SWIG_VERSION|cut -d . -f1`
+	if test "x$SWIG_VERSION_MAJOR" != "x3"; then
+		AC_MSG_ERROR([swig is too old should be at least 3.0, set SWIG variable for custom location!])
+	fi
+	AC_MSG_NOTICE([swig: $SWIG])
+	AC_MSG_NOTICE([swig version: $SWIG_VERSION])
+else
+    #check for swig generated files presence
+    AC_CHECK_FILE($srcdir/src/main/cxxtitan_wrap.cxx,
+    	AC_MSG_NOTICE([found cxxtitan_wrap.cxx]),
+    	AC_MSG_FAILURE([Couldn't find SWIG generated python API sources.]
+    	[Set --with-swig to SWIG to regenerate interface.])
+    )
+    AC_CHECK_FILE($srcdir/src/main/cxxtitan.py,
+    	AC_MSG_NOTICE([found cxxtitan_wrap.cxx]),
+    	AC_MSG_FAILURE([Couldn't find SWIG generated python API sources.]
+    	[Set --with-swig to SWIG to regenerate interface.])
+    )
+fi           
+AM_CONDITIONAL([WITH_SWIG], test "x$with_swig" != "xno")
 
 #-------------------------------------------------------------------------------------
 AC_CHECK_LIB(m,matherr)
-AC_CHECK_LIB(nsl, inet_ntoa)
 
 ## Checks for header files
 #=====================================================================================

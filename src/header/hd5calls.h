@@ -26,6 +26,7 @@ const int XDMF_NEW = 0;
 const int XDMF_OLD = 1;
 const int XDMF_CLOSE = 2;
 
+#define __STDC_FORMAT_MACROS
 #include <hdf5.h>
 
 
@@ -97,7 +98,6 @@ hid_t GH5_createdataset(hid_t gid, hid_t spcid, const char *dsetname, unsigned t
 
 
 
-#ifdef __cplusplus
 #include <H5Cpp.h>
 
 #include <iostream>
@@ -422,5 +422,4 @@ inline void TiH5_readArray2DDataSet__(const H5::Group &group, double *value, con
 
 
 
-#endif
 #endif

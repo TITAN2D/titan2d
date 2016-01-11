@@ -16,13 +16,14 @@ titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/li
   ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
   ../repartition/librepartition.a ../tecplot/libtecplot.a \
   ../vectordatapreproc/libvectordatpreproc.a \
-  -L@PYTHON_ROOT@/lib -lpython@PYTHON_VERSION@ -lutil
+  -L@PYTHON_ROOT@/lib -lpython@PYTHON_VERSION@
 
 #titan_simulation_CXXFLAGS = -fpic
 
+if WITH_SWIG
 cxxtitan_wrap.cxx:cxxtitan.i ../header/properties.h ../header/titan_simulation.h ../preproc/preproc.h
 	@SWIG@ $(CPPFLAGS) -c++ -v -python -o $(srcdir)/cxxtitan_wrap.cxx -oh $(srcdir)/cxxtitan.py $(srcdir)/cxxtitan.i
-
+endif
 
 
 pyfilesdir=$(pythondir)/titan
