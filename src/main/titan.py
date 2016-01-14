@@ -854,6 +854,12 @@ class TitanSimulationBase(object):
         check_and_remove_filedir_by_wildcard("%s_Quad[49]_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
         
         os.mkdir(output_prefix)
+        #visoutput
+        output_prefix=self.ui_TimeSeriesOutput['output_prefix']
+        check_and_remove_filedir(output_prefix)
+        check_and_remove_filedir_by_wildcard("%s_xdmf_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
+        
+        os.mkdir(output_prefix)
         
 class TitanSimulation(TitanSimulationBase):
     def __init__(self,overwrite_output=False):

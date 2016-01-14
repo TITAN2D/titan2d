@@ -702,6 +702,7 @@ void cxxTitanSimulation::save_restart_file()
 
     if(restart_keep_all)
     {
+        //@todo writes xdmf file in a such way that it is complete after each snaphsot
         xmdfWriteBody(xmdf_Quad9_filename,hf5_filename,true);
         xmdfWriteBody(xmdf_Quad4_filename,hf5_filename,false);
     }
@@ -728,6 +729,46 @@ void cxxTitanSimulation::load_restart(const char * restartFilename)
 
     file.close();
 }
+void cxxTitanSimulation::save_vizoutput_file(const int mode)
+{
+    int savefileflag=1;
+    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+
+    output_discharge(matprops, &timeprops, &discharge_planes, myid);
+
+    if(myid == 0)
+        output_summary(&timeprops, statprops, savefileflag);
+
+    if(vizoutput & 1)
+        tecplotter(elementType, ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar);
+
+    if(vizoutput & 2)
+        meshplotter(ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar);
+
+#if HAVE_LIBHDF5
+    if(vizoutput & 4)
+    {
+        if(elementType == ElementType::TwoPhases)
+        {
+            write_xdmf_two_phases(ElemTable, NodeTable, &timeprops,
+                    matprops, &mapnames, mode,vizoutput_prefix.c_str());
+        }
+        if(elementType == ElementType::SinglePhase)
+        {
+            write_xdmf_single_phase(ElemTable, NodeTable, &timeprops,
+                    matprops, &mapnames, mode,vizoutput_prefix.c_str());
+        }
+    }
+#endif
+
+    if(vizoutput & 8)
+    {
+        if(myid == 0)
+            grass_sites_header_output(&timeprops);
+        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops);
+    }
+}
+
 void cxxTitanSimulation::run()
 {
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
@@ -831,20 +872,6 @@ void cxxTitanSimulation::run()
 
     outline.setElemNodeTable(ElemTable,NodeTable);
 
-    /*FREE_VAR_IF_NOT_NULLPTR(integrator);
-    if(elementType == ElementType::TwoPhases)
-    {
-        if(order==1)integrator=new Integrator(this);
-    }
-    if(elementType == ElementType::SinglePhase)
-    {
-        //if(order==1)integrator=new Integrator_SinglePhase_Vollmey_FirstOrder(this);
-        //if(order==1)integrator=new Integrator_SinglePhase_Pouliquen_FirstOrder(this);
-        //if(order==1)integrator=new Integrator_SinglePhase_Maeno_FirstOrder(this);
-        if(order==1)integrator=new Integrator_SinglePhase_Coulomb_FirstOrder(this);
-        if(order==2)integrator=new Integrator(this);
-
-    }*/
     assert(integrator!=nullptr);
 
     /* for debug only, to check if exactly what's loaded will be saved again
@@ -870,36 +897,7 @@ void cxxTitanSimulation::run()
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
-    if(myid == 0)
-        output_summary(&timeprops, statprops, savefileflag);
-
-    if(vizoutput & 1)
-        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
-
-    if(vizoutput & 2)
-        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
-
-#if HAVE_LIBHDF5
-    if(vizoutput & 4)
-    {
-        if(elementType == ElementType::TwoPhases)
-        {
-            xdmerr=write_xdmf_two_phases(ElemTable,NodeTable,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
-        }
-        if(elementType == ElementType::SinglePhase)
-        {
-            xdmerr=write_xdmf_single_phase(ElemTable,NodeTable,&timeprops,matprops_ptr,&mapnames,XDMF_NEW);
-        }
-    }
-
-#endif
-
-    if(vizoutput & 8)
-    {
-        if(myid == 0)
-            grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
-    }
+    save_vizoutput_file(XDMF_NEW);
 
     /*
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1024,43 +1022,7 @@ void cxxTitanSimulation::run()
          * output results to file
          */
         if(timeprops.ifTimeForTimeSeriesOutput())
-        {
-            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
-
-            output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
-
-            if(myid == 0)
-                output_summary(&timeprops, statprops, savefileflag);
-
-            if(vizoutput & 1)
-                tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
-
-            if(vizoutput & 2)
-                meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
-
-#if HAVE_LIBHDF5
-            if(vizoutput & 4)
-            {
-                if(elementType == ElementType::TwoPhases)
-                {
-                    xdmerr=write_xdmf_two_phases(ElemTable, NodeTable, &timeprops,
-                                        matprops_ptr, &mapnames, XDMF_OLD);
-                }
-                if(elementType == ElementType::SinglePhase)
-                {
-                    xdmerr=write_xdmf_single_phase(ElemTable, NodeTable, &timeprops,
-                                        matprops_ptr, &mapnames, XDMF_OLD);
-                }
-            }
-#endif
-
-            if(vizoutput & 8)
-            {
-                if(myid == 0)
-                    grass_sites_header_output(&timeprops);
-                grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
-            }
-        }
+            save_vizoutput_file(XDMF_OLD);
         PROFILING1_STOPADD_RESTART(tsim_iter_output,pt_start);
 #ifdef PERFTEST
         int countedvalue=timeprops.iter%2+1;
@@ -1114,37 +1076,7 @@ void cxxTitanSimulation::run()
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
-    if(myid == 0)
-        output_summary(&timeprops, statprops, savefileflag);
-
-    if(vizoutput & 1)
-        tecplotter(elementType, ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
-
-    if(vizoutput & 2)
-        meshplotter(ElemTable, NodeTable, matprops_ptr, &timeprops, &mapnames, statprops->vstar);
-
-#if HAVE_LIBHDF5
-    if(vizoutput & 4)
-    {
-        if(elementType == ElementType::TwoPhases)
-        {
-            xdmerr=write_xdmf_two_phases(ElemTable, NodeTable, &timeprops,
-                        matprops_ptr, &mapnames, XDMF_CLOSE);
-        }
-        if(elementType == ElementType::SinglePhase)
-        {
-            xdmerr=write_xdmf_single_phase(ElemTable, NodeTable, &timeprops,
-                        matprops_ptr, &mapnames, XDMF_CLOSE);
-        }
-    }
-#endif
-
-    if(vizoutput & 8)
-    {
-        if(myid == 0)
-            grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops_ptr, &timeprops);
-    }
+    save_vizoutput_file(XDMF_CLOSE);
 
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 

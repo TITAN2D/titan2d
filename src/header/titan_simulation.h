@@ -55,6 +55,8 @@ public:
 
     void load_restart(const char * restartFilename);
 
+    void save_vizoutput_file(const int mode);
+
     int myid;
     int numprocs;
 

@@ -42,7 +42,7 @@ void xdmf_fopen(char *);
 void xdmf_fclose(ofstream &);
 
 int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
-               MapNames *mapnames, const int mode)
+               MapNames *mapnames, const int mode, const char * output_prefix)
 {
     //if Need to have generic form, do vector of vectors
     vector<double> pheight, xmom, ymom, xcoord, ycoord, zcoord;
@@ -104,8 +104,8 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     /* 
      * Write HDF5 File 
      */
-    char hdf5file[20];
-    sprintf(hdf5file, "xdmf%02d%08d.h5", myid, timeprops_ptr->iter);
+    char hdf5file[64];
+    sprintf(hdf5file, "%s/xdmf_p%04d_i%08d.h5", output_prefix, myid, timeprops_ptr->iter);
     hid_t h5fid = GH5_fopen(hdf5file, 'n');
     
     //allocate memory for xyz points
@@ -155,7 +155,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     /* generate XML file if required */
     ofstream xmlf;
     char filename[20];
-    sprintf(filename, "xdmf%02d00000000.xmf", myid);
+    sprintf(filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
     if(mode == XDMF_NEW)
         xdmf_fopen(filename);
     xmlf.open(filename, ios::app);
@@ -211,7 +211,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     return 0;
 }
 int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
-               MapNames *mapnames, const int mode)
+               MapNames *mapnames, const int mode, const char * output_prefix)
 {
     int i, j, k;
     double elevation;
@@ -225,8 +225,8 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     int myid;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     ofstream xmlf;
-    char filename[20];
-    sprintf(filename, "xdmf%03d.xmf", myid);
+    char filename[64];
+    sprintf(filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
     if(mode == XDMF_NEW)
         xdmf_fopen(filename);
     xmlf.open(filename, ios::app);
@@ -335,8 +335,8 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     /* 
      * Write HDF5 File 
      */
-    char hdf5file[20];
-    sprintf(hdf5file, "xdmf%02d%08d.h5", myid, timeprops_ptr->iter);
+    char hdf5file[64];
+    sprintf(hdf5file, "%s/xdmf_p%04d_i%08d.h5", output_prefix, myid, timeprops_ptr->iter);
     hid_t h5fid = GH5_fopen(hdf5file, 'n');
     
     // Write Mesh data
