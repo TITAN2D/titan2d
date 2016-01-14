@@ -91,6 +91,12 @@ cxxTitanSimulation::cxxTitanSimulation() :
 
     statprops=new StatProps(ElemTable,NodeTable);
 
+    vizoutput_prefix="";
+    restart_prefix="";
+
+    restart_keep_all=false;
+    restart_keep_redundant_data=false;
+
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 }
 cxxTitanSimulation::~cxxTitanSimulation()
@@ -370,6 +376,10 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent)
     TiH5_writeIntAttribute(groupTitanSimulation, numprocs);
     TiH5_writeBoolAttribute(groupTitanSimulation, use_gis_matmap);
     TiH5_writeIntAttribute(groupTitanSimulation, vizoutput);
+    TiH5_writeStringAttribute(groupTitanSimulation, vizoutput_prefix);
+    TiH5_writeStringAttribute(groupTitanSimulation, restart_prefix);
+    TiH5_writeBoolAttribute(groupTitanSimulation, restart_keep_all);
+    TiH5_writeBoolAttribute(groupTitanSimulation, restart_keep_redundant_data);
     TiH5_writeIntAttribute(groupTitanSimulation, adapt);
 
     int titan2d_version[3]={TITAN2D_VERSION_MAJOR,TITAN2D_VERSION_MINOR,TITAN2D_VERSION_REVISION};
@@ -405,6 +415,10 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     TiH5_readIntAttribute(groupTitanSimulation, numprocs);
     TiH5_readBoolAttribute(groupTitanSimulation, use_gis_matmap);
     TiH5_readIntAttribute(groupTitanSimulation, vizoutput);
+    TiH5_readStringAttribute(groupTitanSimulation, vizoutput_prefix);
+    TiH5_readStringAttribute(groupTitanSimulation, restart_prefix);
+    TiH5_readBoolAttribute(groupTitanSimulation, restart_keep_all);
+    TiH5_readBoolAttribute(groupTitanSimulation, restart_keep_redundant_data);
     TiH5_readIntAttribute(groupTitanSimulation, adapt);
     TiH5_readScalarDataTypeAttribute(groupTitanSimulation, elementType, datatypeElementType);
 
@@ -996,7 +1010,7 @@ void cxxTitanSimulation::run()
         /*
          * save a restart file
          */
-        if(timeprops.ifsave())
+        if(timeprops.ifTimeForRestartOutput())
         {
             save_restart_file();
             //saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
@@ -1007,7 +1021,7 @@ void cxxTitanSimulation::run()
         /*
          * output results to file
          */
-        if(timeprops.ifoutput())
+        if(timeprops.ifTimeForTimeSeriesOutput())
         {
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 

@@ -75,7 +75,10 @@ public:
      */
     int vizoutput;
 
-
+    std::string vizoutput_prefix;
+    std::string restart_prefix;
+    bool restart_keep_all;
+    bool restart_keep_redundant_data;
 
     //!Integrator
     Integrator *integrator;

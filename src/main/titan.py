@@ -488,9 +488,12 @@ class TitanSimulationBase(object):
                 'max_time':{'desc':'',
                     'validator':VarType(float,conditions=[{'f':lambda v: v > 0.0,'msg':'should be positive or None!'}],CanBeNone=True).chk
                 }
-            }               
+            },  
+            defaultParameters={'max_iter':None,'max_time':None},  
         )
+        self.setTimeProps()
         #setRestartOutput
+        self.ui_RestartOutput=None
         self.chk_RestartOutput=TiArgCheckerAndSetter(
             sectionName="setRestartOutput",
             levelZeroParameters={
@@ -506,13 +509,13 @@ class TitanSimulationBase(object):
                 'keep_redundant_data':{'desc':'',
                     'validator':VarType(bool).chk
                 },
-                'dirname':{'desc':'',
+                'output_prefix':{'desc':'',
                     'validator':VarTypeString
                 },             
             },
-            defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'dirname':'restart'}
+            defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'output_prefix':'restart'}
         )
-        self.ui_RestartOutput=self.chk_RestartOutput.process({})
+        self.setRestartOutput()
         #setTimeSeriesOutput
         self.ui_TimeSeriesOutput=None
         self.chk_TimeSeriesOutput=TiArgCheckerAndSetter(
@@ -527,13 +530,14 @@ class TitanSimulationBase(object):
                 'dtime':{'desc':'',
                     'validator':VarType(float,conditions=[{'f':lambda v: v > 0.0,'msg':'should be positive or None!'}],CanBeNone=True).chk
                 },
-                'dirname':{'desc':'',
+                'output_prefix':{'desc':'',
                     'validator':VarTypeString
                 },             
             },
-            defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'dirname':'restart'}
+            defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'output_prefix':'vizout'}
         )
         #setStatProps
+        self.ui_StatProps=None
         self.chk_StatProps=TiArgCheckerAndSetter(
             sectionName="setStatProps",
             levelZeroParameters={
@@ -552,8 +556,9 @@ class TitanSimulationBase(object):
             },
             defaultParameters={'enabled':True,'edge_height':None, 'test_height':None, 'test_location':None}
         )
-        self.ui_StatProps=self.chk_StatProps.process({})
+        self.setStatProps(True)
         #setOutlineProps
+        self.ui_OutlineProps=None
         self.chk_OutlineProps=TiArgCheckerAndSetter(
             sectionName="setOutlineProps",
             levelZeroParameters={
@@ -569,7 +574,7 @@ class TitanSimulationBase(object):
             },
             defaultParameters={'enabled':True,'max_linear_size':1024, 'use_DEM_resolution':False}
         )
-        self.ui_OutlineProps=self.chk_OutlineProps.process({})
+        self.setOutlineProps(True)
         #addPile
         self.ui_Pile=[]
         self.chk_Pile=TiArgCheckerAndSetter(
@@ -729,8 +734,16 @@ class TitanSimulationBase(object):
             self.ui_TimeProps['max_time']=-1.0
     def setRestartOutput(self,**kwarg):
         self.ui_RestartOutput=self.chk_RestartOutput.process(kwarg)
+        if self.ui_RestartOutput['dtime']==None:
+            self.ui_RestartOutput['dtime']=-1.0
+        if self.ui_RestartOutput['diter']==None:
+            self.ui_RestartOutput['diter']=-1
     def setTimeSeriesOutput(self,**kwarg):
         self.ui_TimeSeriesOutput=self.chk_TimeSeriesOutput.process(kwarg)
+        if self.ui_TimeSeriesOutput['dtime']==None:
+            self.ui_TimeSeriesOutput['dtime']=-1.0
+        if self.ui_TimeSeriesOutput['diter']==None:
+            self.ui_TimeSeriesOutput['diter']=-1
     def setStatProps(self,enabled,**kwarg):
         args=copy.deepcopy(kwarg)
         args['enabled']=enabled
@@ -826,8 +839,8 @@ class TitanSimulation(TitanSimulationBase):
             print self.ui_NumProp
             print self.ui_MatModel
             print self.ui_TimeProps
-            print self.ui_RestartOutput
-            print self.ui_TimeSeriesOutput
+            print 'ui_RestartOutput',self.ui_RestartOutput
+            print 'ui_TimeSeriesOutput',self.ui_TimeSeriesOutput
             print self.ui_StatProps
             print self.ui_OutlineProps
             print self.ui_Pile
@@ -948,19 +961,19 @@ class TitanSimulation(TitanSimulationBase):
         
         #######################################################################
         # TimeProps
-        # @todo implement TimeProps
-        self.sim.get_timeprops().set_time(
-            ui_TimeProps['max_iter'],ui_TimeProps['max_time'],
-            ui_TimeSeriesOutput['dtime'],ui_RestartOutput['dtime'])
+        self.sim.get_timeprops().setTime(ui_TimeProps['max_iter'],ui_TimeProps['max_time'])
         
         #######################################################################
-        # @todo implement RestartOutput
-        
+        # RestartOutput
+        self.sim.get_timeprops().setRestartOutput(ui_RestartOutput['diter'],ui_RestartOutput['dtime'])
+        self.sim.restart_prefix=ui_RestartOutput['output_prefix']
+        self.sim.restart_keep_all=ui_RestartOutput['keep_all']
+        self.sim.restart_keep_redundant_data=ui_RestartOutput['keep_redundant_data']
         #######################################################################
-        # @todo implement TimeSeriesOutput
-        ui_TimeProps
-        ui_RestartOutput
-        ui_TimeSeriesOutput
+        # TimeSeriesOutput
+        self.sim.get_timeprops().setTimeSeriesOutput(ui_TimeSeriesOutput['diter'],ui_TimeSeriesOutput['dtime'])
+        self.sim.vizoutput = ui_TimeSeriesOutput['vizoutput']
+        self.sim.vizoutput_prefix=ui_TimeSeriesOutput['output_prefix'];
         
         #######################################################################
         # ui_StatProps

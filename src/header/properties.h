@@ -370,34 +370,43 @@ class TimeProps
 public:
 
     //! the maximum # of iterations (a.k.a. time steps) before the simulation ends
+    //! if negative don't consider maxiter for stopping
     int maxiter;
 
     //! the current number of iterations
     int iter;
 
     //! the maximum amount of time (in seconds) before the simulation ends
+    //! if negative don't consider maxtime for stopping
     double maxtime;
 
     //! the non-dimensional maxtime
+    //! if negative don't consider ndmaxtime for stopping
     double ndmaxtime;
 
     //! the amount of time (in seconds) between subsequent outputs (with one exception... when the simulation ends one final output is performed and that one will be less than "timeoutput" seconds after the previous one
-    double timeoutput;
+    double dTimeVizOutSaving;
+
+    //!frequency of time series for visualization file savings in iterations, if negative don't consider this criteria for saving
+    int dIterVizOutSaving;
 
     //! the amount of time (in seconds) between subsequent saves (with one exception... when the simulation ends one final save is performed and that one will be less than "timeoutput" seconds after the previous one
-    double timesave;
+    double dTimeRestartSaving;
+
+    //!frequency of restart file savings in iterations, if negative don't consider this criteria for saving
+    int dIterRestartSaving;
 
     //! count of the number of times output has been done
-    int ioutput;
+    int iVizOutSaved;
 
     //! count of the number of times saving has been done
-    int isave;
+    int iRestartSaved;
 
     //! the non-dimensional time at which the next output should occur
-    double ndnextoutput;
+    double ndNextVizOutput;
 
     //! the non-dimensional time at which the next save should occur
-    double ndnextsave;
+    double ndNextRestartSave;
 
     //! the value used to nondimensionalize time
     double TIME_SCALE;
@@ -418,47 +427,63 @@ public:
     {
         starttime = time(NULL);
         TIME_SCALE = 1.0;
-        set_time(0, 0.0, 0.0, 0.0);
+        setTime(0, 0.0);
+        setRestartOutput(-1,-1.0);
+        setTimeSeriesOutput(-1,-1.0);
     }
     ~TimeProps()
     {
 
     }
     //! this function initializes the time properties at the beginning of the simulation
-    void set_time(int maxiterin, double maxtimein, double timeoutputin, double timesavein)
+    void setTime(int maxiterin, double maxtimein)
     {
         maxiter = maxiterin;
         maxtime = maxtimein;
-        timeoutput = timeoutputin;
-        timesave = timesavein;
         ndmaxtime = maxtime / TIME_SCALE;
-        ndnextoutput = timeoutput / TIME_SCALE;
-        ndnextsave = timesave / TIME_SCALE;
         iter = 0;
-        ioutput = 0;
-        isave = 0;
         cur_time = 0.0;
         dtime = 0.0;
         vstarmax = 0.0;
     }
+    //! frequency of restart files output
+    void setRestartOutput(int dIterOut, double dTimeOut)
+    {
+        dTimeRestartSaving = dTimeOut;
+        dIterRestartSaving=dIterOut;
+        ndNextRestartSave = dTimeRestartSaving / TIME_SCALE;
+        iRestartSaved = 0;
+    }
+    //! frequency of time series output
+    void setTimeSeriesOutput(int dIterOut, double dTimeOut)
+    {
+        dTimeVizOutSaving = dTimeOut;
+        dIterVizOutSaving=dIterOut;
+        ndNextVizOutput = dTimeVizOutSaving / TIME_SCALE;
+        iVizOutSaved = 0;
+    }
+
     void scale(double TIME_SCALEin)
     {
         TIME_SCALE = TIME_SCALEin;
         ndmaxtime = maxtime / TIME_SCALE;
-        ndnextoutput = timeoutput / TIME_SCALE;
-        ndnextsave = timesave / TIME_SCALE;
+        ndNextVizOutput = dTimeVizOutSaving / TIME_SCALE;
+        ndNextRestartSave = dTimeRestartSaving / TIME_SCALE;
     }
 
     //! this function increments the time step, after, if neccessary, decreasing the time step to land evenly on the next time to output save or end the simulation
     void incrtime(double *dt)
     {
         // first reduce dt to hit output or end time "exactly"
-        if(cur_time + *dt > ndnextoutput)
-            *dt = ndnextoutput - cur_time;
-        if(cur_time + *dt > ndnextsave)
-            *dt = ndnextsave - cur_time;
-        if(cur_time + *dt > ndmaxtime)
-            *dt = ndmaxtime - cur_time;
+        if(dTimeVizOutSaving>0.0)
+            if(cur_time + *dt > ndNextVizOutput)
+                *dt = ndNextVizOutput - cur_time;
+        if(dTimeRestartSaving>0.0)
+            if(cur_time + *dt > ndNextRestartSave)
+                *dt = ndNextRestartSave - cur_time;
+        if(maxtime>=0.0)
+            if(cur_time + *dt > ndmaxtime)
+                *dt = ndmaxtime - cur_time;
         dtime = *dt;
         // then increment time
         cur_time += *dt;
@@ -479,7 +504,15 @@ public:
     {
         if(vstar > vstarmax)
             vstarmax = vstar;
-        return ((cur_time >= ndmaxtime) || (iter > maxiter) || ((vstarmax > 2.0) && !(vstar > 1.0)));
+        if(ndmaxtime>=0.0)
+            if(cur_time >= ndmaxtime)
+                return 1;
+        if(maxiter>=0)
+            if(iter > maxiter)
+                return 1;
+        if((vstarmax > 2.0) && !(vstar > 1.0))
+            return 1;
+        return 0;
     }
 
     //! checks if the simulation has passed 1/10th of the maximum time allowed
@@ -489,29 +522,43 @@ public:
     }
 
     //! checks if the restart file should be saved now
-    int ifsave()
+    int ifTimeForRestartOutput()
     {
-        if(cur_time >= ndnextsave)
+        if(dTimeRestartSaving>0.0)
         {
-            isave++; //using isave eliminates roundoff
-            ndnextsave = ((isave + 1) * timesave) / TIME_SCALE;
-            return (1);
+            if(cur_time >= ndNextRestartSave)
+            {
+                iRestartSaved++; //using isave eliminates roundoff
+                ndNextRestartSave = ((iRestartSaved + 1) * dTimeRestartSaving) / TIME_SCALE;
+                return 1;
+            }
         }
-        else
-            return (0);
+        if(dIterRestartSaving>0)
+        {
+            if(iter%dIterRestartSaving==0)
+                return 1;
+        }
+        return 0;
     }
 
     //! checks if the output files should be written now
-    int ifoutput()
+    int ifTimeForTimeSeriesOutput()
     {
-        if(cur_time >= ndnextoutput)
+        if(dTimeVizOutSaving>0.0)
         {
-            ioutput++; //using ioutput eliminates roundoff
-            ndnextoutput = ((ioutput + 1) * timeoutput) / TIME_SCALE;
-            return (1);
+            if(cur_time >= ndNextVizOutput)
+            {
+                iVizOutSaved++; //using ioutput eliminates roundoff
+                ndNextVizOutput = ((iVizOutSaved + 1) * dTimeVizOutSaving) / TIME_SCALE;
+                return (1);
+            }
         }
-        else
-            return (0);
+        if(dIterVizOutSaving>0)
+        {
+            if(iter%dIterVizOutSaving==0)
+                return 1;
+        }
+        return 0;
     }
 
     //! chunk simulated time into hours minutes and seconds
@@ -536,12 +583,14 @@ public:
         TiH5_writeIntAttribute(group, iter);
         TiH5_writeDoubleAttribute(group, maxtime);
         TiH5_writeDoubleAttribute(group, ndmaxtime);
-        TiH5_writeDoubleAttribute(group, timeoutput);
-        TiH5_writeDoubleAttribute(group, timesave);
-        TiH5_writeIntAttribute(group, ioutput);
-        TiH5_writeIntAttribute(group, isave);
-        TiH5_writeDoubleAttribute(group, ndnextoutput);
-        TiH5_writeDoubleAttribute(group, ndnextsave);
+        TiH5_writeDoubleAttribute(group, dTimeVizOutSaving);
+        TiH5_writeIntAttribute(group, dIterVizOutSaving);
+        TiH5_writeDoubleAttribute(group, dTimeRestartSaving);
+        TiH5_writeIntAttribute(group, dIterRestartSaving);
+        TiH5_writeIntAttribute(group, iVizOutSaved);
+        TiH5_writeIntAttribute(group, iRestartSaved);
+        TiH5_writeDoubleAttribute(group, ndNextVizOutput);
+        TiH5_writeDoubleAttribute(group, ndNextRestartSave);
         TiH5_writeDoubleAttribute(group, TIME_SCALE);
         TiH5_writeDoubleAttribute(group, cur_time);
         TiH5_writeDoubleAttribute(group, dtime);
@@ -556,12 +605,14 @@ public:
         TiH5_readIntAttribute(group, iter);
         TiH5_readDoubleAttribute(group, maxtime);
         TiH5_readDoubleAttribute(group, ndmaxtime);
-        TiH5_readDoubleAttribute(group, timeoutput);
-        TiH5_readDoubleAttribute(group, timesave);
-        TiH5_readIntAttribute(group, ioutput);
-        TiH5_readIntAttribute(group, isave);
-        TiH5_readDoubleAttribute(group, ndnextoutput);
-        TiH5_readDoubleAttribute(group, ndnextsave);
+        TiH5_readDoubleAttribute(group, dTimeVizOutSaving);
+        TiH5_readIntAttribute(group, dIterRestartSaving);
+        TiH5_readDoubleAttribute(group, dTimeRestartSaving);
+        TiH5_readIntAttribute(group, dIterVizOutSaving);
+        TiH5_readIntAttribute(group, iVizOutSaved);
+        TiH5_readIntAttribute(group, iRestartSaved);
+        TiH5_readDoubleAttribute(group, ndNextVizOutput);
+        TiH5_readDoubleAttribute(group, ndNextRestartSave);
         TiH5_readDoubleAttribute(group, TIME_SCALE);
         TiH5_readDoubleAttribute(group, cur_time);
         TiH5_readDoubleAttribute(group, dtime);
