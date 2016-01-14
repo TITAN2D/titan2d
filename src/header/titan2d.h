@@ -19,8 +19,8 @@
 #define TITAN2D
 
 #define TITAN2D_VERSION_MAJOR 3
-#define TITAN2D_VERSION_MINOR 1
-#define TITAN2D_VERSION_REVISION 2
+#define TITAN2D_VERSION_MINOR 99
+#define TITAN2D_VERSION_REVISION 1
 
 extern int threads_number;
 
