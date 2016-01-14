@@ -16,8 +16,10 @@
 #*
 
 import sys,os,math,string,re,socket
+import shutil
 import copy
 import inspect
+import glob
 
 from cxxtitan import *
 
@@ -327,8 +329,9 @@ class TitanSimulationBase(object):
                  'gis_vector':None,
                  'region_limits':None
                  }
-    def __init__(self):
+    def __init__(self,overwrite_output=False):
         #initiate all class members
+        self.overwrite_output=VarType(bool).chk("TitanSimulation", "overwrite_output", overwrite_output)
         #GIS
         self.ui_GIS=None
         self.chk_GIS=TiArgCheckerAndSetter(
@@ -791,6 +794,7 @@ class TitanSimulationBase(object):
         self.ui_loadRestart=self.chk_loadRestart.process(kwarg)
         
     def _validate(self):
+        #######################################################################
         #check cross section
         if self.ui_MatModel['model']=='TwoPhases_Coulomb':
             for pile in self.ui_Pile:
@@ -805,6 +809,7 @@ class TitanSimulationBase(object):
                 if 'vol_fract' in pile:
                     raise ValueError('TitanSimulation:addFluxSource: Siogle phases model is set, addPile should not have vol_fract argument!')
         
+        #######################################################################
         #check satisfaction of integrator
         integrator=None
         model=self.ui_MatModel['model']
@@ -825,9 +830,34 @@ class TitanSimulationBase(object):
             raise ValueError("Can not find suitable integrator, here is the hint\n"+msg+"\ncheck the manual.")
         self.integratorConstructor=integrator
         
+        #######################################################################
+        #check the presence of output files and delete them if nessesary also create directory for some outputs
+        def check_and_remove_filedir(filename):
+            if os.path.exists(filename):
+                if self.overwrite_output:
+                    if os.path.isfile(filename):
+                        os.remove(filename)
+                    if os.path.isdir(filename):
+                        shutil.rmtree(filename)
+                else:
+                    raise IOError("Output file or directory exists ("+filename+"). Remove it manually or set overwrite_output to True or change output prefix.")
+        def check_and_remove_filedir_by_wildcard(filename):
+            files=glob.glob(filename)
+            print filename,files
+            if not self.overwrite_output and len(files)>0:
+                raise IOError("Output files or directories exists ("+",".join(files)+"). Remove it manually or set overwrite_output to True or change output prefix.")
+            for f in files:
+                check_and_remove_filedir(f)
+        #restarts     
+        output_prefix=self.ui_RestartOutput['output_prefix']
+        check_and_remove_filedir(output_prefix)
+        check_and_remove_filedir_by_wildcard("%s_Quad[49]_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
+        
+        os.mkdir(output_prefix)
+        
 class TitanSimulation(TitanSimulationBase):
-    def __init__(self):
-        super(TitanSimulation, self).__init__()
+    def __init__(self,overwrite_output=False):
+        super(TitanSimulation, self).__init__(overwrite_output=overwrite_output)
         #initiate all class members
         self.sim=None
         
@@ -865,6 +895,7 @@ class TitanSimulation(TitanSimulationBase):
         model=self.ui_MatModel['model']
         
         self.sim=cxxTitanSimulation()
+        self.sim.overwrite_output=self.overwrite_output
         
         #######################################################################
         #Set GIS
@@ -969,6 +1000,7 @@ class TitanSimulation(TitanSimulationBase):
         self.sim.restart_prefix=ui_RestartOutput['output_prefix']
         self.sim.restart_keep_all=ui_RestartOutput['keep_all']
         self.sim.restart_keep_redundant_data=ui_RestartOutput['keep_redundant_data']
+        
         #######################################################################
         # TimeSeriesOutput
         self.sim.get_timeprops().setTimeSeriesOutput(ui_TimeSeriesOutput['diter'],ui_TimeSeriesOutput['dtime'])

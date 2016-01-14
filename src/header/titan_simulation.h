@@ -80,6 +80,8 @@ public:
     bool restart_keep_all;
     bool restart_keep_redundant_data;
 
+    bool overwrite_output;
+
     //!Integrator
     Integrator *integrator;
 
@@ -149,12 +151,12 @@ protected:
     void h5write(H5::CommonFG *parent);
     void h5read(const H5::CommonFG *parent);
 
-    void xmdfWrite();
-    void xmdfWriteHeader();
-    void xmdfWriteBody();
-    void xmdfWriteFooter();
+    //if Quad9==true write Quad9 otherwise Quad4
+    void xmdfWriteBody(const char *xmdf_filename,const char *hf5_filename,bool Quad9);
 
     ElementType elementType;
+    std::string prev_hf5_filename;
+    std::string prev_xmdf_snapshot;
 
 
 
