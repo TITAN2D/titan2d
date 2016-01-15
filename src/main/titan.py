@@ -404,7 +404,8 @@ class TitanSimulationBase(object):
                 'short_speed':{'desc':'',
                     'validator':VarType(bool).chk
                 },    
-            }
+            },
+            defaultParameters={'short_speed':False,'geoflow_tiny':0.0001}
         )
         #setMatModel
         self.ui_MatModel=None
@@ -412,7 +413,7 @@ class TitanSimulationBase(object):
             sectionName="setMatModel",
             levelZeroParameters={                                      
             },
-            defaultParameters={'use_gis_matmap':False,'geoflow_tiny':0.0001,'short_speed':False,},
+            defaultParameters={'use_gis_matmap':False},
             switchArguments={
                 'use_gis_matmap':
                 {
@@ -464,7 +465,7 @@ class TitanSimulationBase(object):
                         ),
                         'Maeno':TiArgCheckerAndSetter(
                             levelZeroParameters={
-                                'phi1':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'phis':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'phi2':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'partdiam':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'I_not':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
@@ -748,11 +749,9 @@ class TitanSimulationBase(object):
         if self.ui_TimeSeriesOutput['diter']==None:
             self.ui_TimeSeriesOutput['diter']=-1
     def setStatProps(self,enabled,**kwarg):
-        args=copy.deepcopy(kwarg)
-        args['enabled']=enabled
-        ui=self.chk_StatProps.process(args)
+        ui=self.chk_StatProps.process(kwarg)
         
-                #Test if flow reaches height [m] ...
+        #Test if flow reaches height [m] ...
         if ui['edge_height'] == None:
             ui['edge_height'] = -1.0
         else:
@@ -774,9 +773,7 @@ class TitanSimulationBase(object):
                 raise ValueError('TitanSimulation::test_location should be set if test_height>0\n') 
         self.ui_StatProps=ui
     def setOutlineProps(self,enabled,**kwarg):
-        args=copy.deepcopy(kwarg)
-        args['enabled']=enabled
-        self.ui_OutlineProps=self.chk_OutlineProps.process(args)
+        self.ui_OutlineProps=self.chk_OutlineProps.process(kwarg)
     def addPile(self,**kwarg):
         self.ui_Pile.append(self.chk_Pile.process(kwarg))
     def addFluxSource(self,**kwarg):
@@ -807,7 +804,7 @@ class TitanSimulationBase(object):
         else:
             for pile in self.ui_Pile:
                 if 'vol_fract' in pile:
-                    raise ValueError('TitanSimulation:addFluxSource: Siogle phases model is set, addPile should not have vol_fract argument!')
+                    raise ValueError('TitanSimulation:addFluxSource: Single phase model is set, addPile should not have vol_fract argument!')
         
         #######################################################################
         #check satisfaction of integrator
@@ -830,36 +827,7 @@ class TitanSimulationBase(object):
             raise ValueError("Can not find suitable integrator, here is the hint\n"+msg+"\ncheck the manual.")
         self.integratorConstructor=integrator
         
-        #######################################################################
-        #check the presence of output files and delete them if nessesary also create directory for some outputs
-        def check_and_remove_filedir(filename):
-            if os.path.exists(filename):
-                if self.overwrite_output:
-                    if os.path.isfile(filename):
-                        os.remove(filename)
-                    if os.path.isdir(filename):
-                        shutil.rmtree(filename)
-                else:
-                    raise IOError("Output file or directory exists ("+filename+"). Remove it manually or set overwrite_output to True or change output prefix.")
-        def check_and_remove_filedir_by_wildcard(filename):
-            files=glob.glob(filename)
-            print filename,files
-            if not self.overwrite_output and len(files)>0:
-                raise IOError("Output files or directories exists ("+",".join(files)+"). Remove it manually or set overwrite_output to True or change output prefix.")
-            for f in files:
-                check_and_remove_filedir(f)
-        #restarts     
-        output_prefix=self.ui_RestartOutput['output_prefix']
-        check_and_remove_filedir(output_prefix)
-        check_and_remove_filedir_by_wildcard("%s_Quad[49]_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
         
-        os.mkdir(output_prefix)
-        #visoutput
-        output_prefix=self.ui_TimeSeriesOutput['output_prefix']
-        check_and_remove_filedir(output_prefix)
-        check_and_remove_filedir_by_wildcard("%s_xdmf_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
-        
-        os.mkdir(output_prefix)
         
 class TitanSimulation(TitanSimulationBase):
     def __init__(self,overwrite_output=False):
@@ -869,7 +837,7 @@ class TitanSimulation(TitanSimulationBase):
         
     def _setCxxTitanSimulation(self):
         """initiate and set all parameters of cxxTitanSimulation"""
-        if 1:
+        if 0:
             print self.ui_GIS
             print self.ui_Scale
             print self.ui_NumProp
@@ -902,6 +870,36 @@ class TitanSimulation(TitanSimulationBase):
         
         self.sim=cxxTitanSimulation()
         self.sim.overwrite_output=self.overwrite_output
+        #######################################################################
+        #check the presence of output files and delete them if nessesary also create directory for some outputs
+        if self.sim.myid==0:
+            def check_and_remove_filedir(filename):
+                if os.path.exists(filename):
+                    if self.overwrite_output:
+                        if os.path.isfile(filename):
+                            os.remove(filename)
+                        if os.path.isdir(filename):
+                            shutil.rmtree(filename)
+                    else:
+                        raise IOError("Output file or directory exists ("+filename+"). Remove it manually or set overwrite_output to True or change output prefix.")
+            def check_and_remove_filedir_by_wildcard(filename):
+                files=glob.glob(filename)
+                if not self.overwrite_output and len(files)>0:
+                    raise IOError("Output files or directories exists ("+",".join(files)+"). Remove it manually or set overwrite_output to True or change output prefix.")
+                for f in files:
+                    check_and_remove_filedir(f)
+            #restarts     
+            output_prefix=self.ui_RestartOutput['output_prefix']
+            check_and_remove_filedir(output_prefix)
+            check_and_remove_filedir_by_wildcard("%s_Quad[49]_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
+            
+            os.mkdir(output_prefix)
+            #visoutput
+            output_prefix=self.ui_TimeSeriesOutput['output_prefix']
+            check_and_remove_filedir(output_prefix)
+            check_and_remove_filedir_by_wildcard("%s_xdmf_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
+            
+            os.mkdir(output_prefix)
         
         #######################################################################
         #Set GIS
@@ -1077,6 +1075,7 @@ class TitanSimulation(TitanSimulationBase):
         
     def run(self):
         """Perform simulation"""
+        
         self._validate()
         #by this time all values should be sanitized
         self._setCxxTitanSimulation()

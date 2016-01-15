@@ -1,10 +1,10 @@
 #include "../header/hpfem.h"
 
-void grass_sites_header_output(TimeProps* timeprops)
+void grass_sites_header_output(TimeProps* timeprops, const char * output_prefix)
 {
     char filename[24];
     
-    sprintf(filename, "grass_sites%08d.hdr", timeprops->iter);
+    sprintf(filename, "%s/grass_sites%08d.hdr", output_prefix, timeprops->iter);
     FILE *fp = fopen(filename, "w");
     
     fprintf(fp, "name|titangrassout.site\n");
@@ -18,7 +18,7 @@ void grass_sites_header_output(TimeProps* timeprops)
 }
 
 void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid, MatProps* matprops,
-                             TimeProps* timeprops)
+                             TimeProps* timeprops, const char * output_prefix)
 {
     int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
     vector<HashEntryLine> &bucket=HT_Elem_Ptr->bucket;
@@ -29,7 +29,7 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
             
     char filename[24];
     
-    sprintf(filename, "grass_sites%08d.%03d", timeprops->iter, myid);
+    sprintf(filename, "%s/grass_sites%08d.%03d", output_prefix, timeprops->iter, myid);
     FILE *fp = fopen(filename, "w");
     
     /***************************************************************/

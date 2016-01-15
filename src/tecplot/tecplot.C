@@ -71,7 +71,7 @@ void testkey2(ElementsHashTable * El_Table)
 }
 
 void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProps * matprops, TimeProps * timeprops,
-                MapNames * mapnames, double v_star)
+                MapNames * mapnames, double v_star, const char * output_prefix)
 {
     int i_buck, i_neigh;          //indices
     int xp, xm, yp, ym;           //x plus, x minus, y plus, y minus directions
@@ -173,8 +173,8 @@ void tecplotter(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
     int num_tec_elem = num_tec_quad + num_tec_tri;
     int num_tec_elem2 = 0;
     
-    char filename[20];
-    sprintf(filename, "tecpl%02d%08d.tec", myid, timeprops->iter);
+    char filename[256];
+    sprintf(filename, "%s/tecpl%02d%08d.tec",output_prefix, myid, timeprops->iter);
     FILE *fp = fopen(filename, "w");
     
     //print the tecplot header
@@ -751,7 +751,7 @@ void viz_output(ElementType elementType,ElementsHashTable * El_Table, NodeHashTa
  **************************************
  *************************************/
 void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatProps * matprops, TimeProps * timeprops,
-                 MapNames * mapnames, double v_star)
+                 MapNames * mapnames, double v_star, const char * output_prefix)
 {
     int myid, i;
     int numprocs;
@@ -776,7 +776,7 @@ void meshplotter(ElementsHashTable * El_Table, NodeHashTable * NodeTable, MatPro
     }
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
     
-    sprintf(filename, "mshpl%02d%08d.tec", myid, timeprops->iter);
+    sprintf(filename, "%s/mshpl%02d%08d.tec",output_prefix, myid, timeprops->iter);
     
     int order;
     

@@ -46,7 +46,6 @@ extern "C" void init_cxxtitan();
 
 int main(int argc, char *argv[])
 {
-    printf("Titan2d\n");
     int myid, master, numprocs;
     int namelen;
     

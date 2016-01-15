@@ -740,10 +740,10 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
         output_summary(&timeprops, statprops, savefileflag);
 
     if(vizoutput & 1)
-        tecplotter(elementType, ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar);
+        tecplotter(elementType, ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar,vizoutput_prefix.c_str());
 
     if(vizoutput & 2)
-        meshplotter(ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar);
+        meshplotter(ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar,vizoutput_prefix.c_str());
 
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
@@ -764,8 +764,8 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
     if(vizoutput & 8)
     {
         if(myid == 0)
-            grass_sites_header_output(&timeprops);
-        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops);
+            grass_sites_header_output(&timeprops,vizoutput_prefix.c_str());
+        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops,vizoutput_prefix.c_str());
     }
 }
 

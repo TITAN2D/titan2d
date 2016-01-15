@@ -141,11 +141,11 @@ extern void output_stoch_stats(MatProps* matprops, StatProps* statprops);
 
 //! this function writes text tecplot output files in the tecplxxxxxxxx.plt format.  Keith rewrote this function to eliminate a lot of bugs shortly after he started the project, since then files were 1/3 the size they were previously.
 extern void tecplotter(ElementType elementType, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
-                       MapNames* mapnames, double v_star);
+                       MapNames* mapnames, double v_star, const char * output_prefix);
 
 //! this function writes text tecplot output files in the mshplxxxxxxxx.plt format.  This is largely untouched since before I (Keith) joined the GMFG, just minor changes.  This is the preferred (by Professor Patra) format of output for debugging purposes even though tecplxxxxxxxx.plt create nicer images.
 extern void meshplotter(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops,
-                        MapNames* mapnames, double v_star);
+                        MapNames* mapnames, double v_star, const char * output_prefix);
 
 //! one of "pady's" output functions, since Keith never met "pady" this is probably long out of date
 extern void vizplotter(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops, TimeProps* timeprops);
@@ -181,11 +181,11 @@ void web_simplify(TimeProps* timeprops);
 void web_correct(TimeProps* timeprops);
 
 //! this function writes the header for grass sites style output, the grass sites output format is correct and works, but importing the data into GIS packages such as ARCGIS is non trivial until you know the trick to it.  Keith does not know the trick, I just wrote this in the format Alex Sorokine specified.
-void grass_sites_header_output(TimeProps* timeprops);
+void grass_sites_header_output(TimeProps* timeprops, const char * output_prefix);
 
 //! this function writes one processors grass sites style output, the grass sites output format is correct and works, but importing the data into GIS packages such as ARCGIS is non trivial until you know the trick to it.  Keith does not know the trick, I (Keith) just wrote this in the format Alex Sorokine specified.
 void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int myid, MatProps* matprops,
-                             TimeProps* timeprops);
+                             TimeProps* timeprops, const char * output_prefix);
 
 //! this function is legacy, it is not defined in the finite difference/volume version of titan
 extern void check_p_order(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr);

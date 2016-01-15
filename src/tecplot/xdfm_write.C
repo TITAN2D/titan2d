@@ -104,7 +104,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     /* 
      * Write HDF5 File 
      */
-    char hdf5file[64];
+    char hdf5file[256];
     sprintf(hdf5file, "%s/xdmf_p%04d_i%08d.h5", output_prefix, myid, timeprops_ptr->iter);
     hid_t h5fid = GH5_fopen(hdf5file, 'n');
     
@@ -154,7 +154,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     
     /* generate XML file if required */
     ofstream xmlf;
-    char filename[20];
+    char filename[256];
     sprintf(filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
     if(mode == XDMF_NEW)
         xdmf_fopen(filename);
@@ -225,7 +225,7 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     int myid;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     ofstream xmlf;
-    char filename[64];
+    char filename[256];
     sprintf(filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
     if(mode == XDMF_NEW)
         xdmf_fopen(filename);
@@ -335,7 +335,7 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     /* 
      * Write HDF5 File 
      */
-    char hdf5file[64];
+    char hdf5file[256];
     sprintf(hdf5file, "%s/xdmf_p%04d_i%08d.h5", output_prefix, myid, timeprops_ptr->iter);
     hid_t h5fid = GH5_fopen(hdf5file, 'n');
     
