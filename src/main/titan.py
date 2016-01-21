@@ -232,7 +232,7 @@ class TitanSimulationBase(object):
         'XDMF/Paraview':4, # third bit flag
         'grass_sites':8, # fourth bit flag
         'tecplot':1, # first bit flag
-        'meshlot':2, # second bit flag
+        'meshplot':2, # second bit flag
         'xdmf':4, # third bit flag
         'grasssites':8 # fourth bit flag
     }
