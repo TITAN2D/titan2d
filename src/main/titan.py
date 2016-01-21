@@ -548,9 +548,6 @@ class TitanSimulationBase(object):
         self.chk_StatProps=TiArgCheckerAndSetter(
             sectionName="setStatProps",
             levelZeroParameters={
-                'enabled':{'desc':'',
-                    'validator':VarType(bool).chk
-                },
                 'edge_height':{'desc':'',
                     'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}],CanBeNone=True).chk
                 },
@@ -561,9 +558,9 @@ class TitanSimulationBase(object):
                     'validator':VarTypeTuple(float,N=2,CanBeNone=True).chk
                 },
             },
-            defaultParameters={'enabled':True,'edge_height':None, 'test_height':None, 'test_location':None}
+            defaultParameters={'edge_height':None, 'test_height':None, 'test_location':None}
         )
-        self.setStatProps(enabled=True)
+        self.setStatProps()
         #setOutlineProps
         self.ui_OutlineProps=None
         self.chk_OutlineProps=TiArgCheckerAndSetter(
@@ -1018,7 +1015,6 @@ class TitanSimulation(TitanSimulationBase):
         #######################################################################
         # ui_StatProps
         # @todo implement enabled ui_StatProps
-        self.sim.get_statprops().enabled=ui_StatProps['enabled']
         self.sim.get_statprops().set(
             ui_StatProps['edge_height'], ui_StatProps['test_height'],
             ui_StatProps['test_location'][0], ui_StatProps['test_location'][1])

@@ -44,8 +44,6 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
     runid = -1;
-
-    enabled=true;
 }
 StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, const H5::CommonFG *parent, const  string group_name):
     EleNodeRef(_ElemTable, _NodeTable)
@@ -633,7 +631,6 @@ void StatProps::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleAttribute(group, timereached);
     TiH5_writeDoubleAttribute(group, xyminmax[4]);
     TiH5_writeDoubleAttribute(group, hxyminmax);
-    TiH5_writeBoolAttribute(group, enabled);
 
     lhs.h5write(&group);
 }
@@ -669,7 +666,6 @@ void StatProps::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group, timereached);
     TiH5_readDoubleAttribute(group, xyminmax[4]);
     TiH5_readDoubleAttribute(group, hxyminmax);
-    TiH5_readBoolAttribute(group, enabled);
 
     lhs.h5read(&group);
 
