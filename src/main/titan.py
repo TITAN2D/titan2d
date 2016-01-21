@@ -192,10 +192,12 @@ class TiArgCheckerAndSetter(object):
         pass
     
 class VarTypeMaskOr:
-    def __init__(self,dictConv):
+    def __init__(self,dictConv,CanBeNone=False):
         self.dictConv=dictConv
+        self.CanBeNone=CanBeNone
     def chk(self,sectionName,varName,value):
-        
+        if self.CanBeNone and value==None:
+            return 0
         if not isinstance(value, (tuple,list)):
             value_in=(value,)
         else:
@@ -526,7 +528,7 @@ class TitanSimulationBase(object):
             sectionName="setTimeSeriesOutput",
             levelZeroParameters={
                 'vizoutput':{'desc':'',
-                    'validator':VarTypeMaskOr(TitanSimulationBase.possible_vizoutputs).chk
+                    'validator':VarTypeMaskOr(TitanSimulationBase.possible_vizoutputs,CanBeNone=True).chk
                 },
                 'diter':{'desc':'',
                     'validator':VarType(int,conditions=[{'f':lambda v: v > 0,'msg':'should be positive or None!'}],CanBeNone=True).chk
@@ -540,6 +542,7 @@ class TitanSimulationBase(object):
             },
             defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'output_prefix':'vizout'}
         )
+        self.setTimeSeriesOutput(vizoutput=None)
         #setStatProps
         self.ui_StatProps=None
         self.chk_StatProps=TiArgCheckerAndSetter(
@@ -895,11 +898,12 @@ class TitanSimulation(TitanSimulationBase):
             
             os.mkdir(output_prefix)
             #visoutput
-            output_prefix=self.ui_TimeSeriesOutput['output_prefix']
-            check_and_remove_filedir(output_prefix)
-            check_and_remove_filedir_by_wildcard("%s_xdmf_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
-            
-            os.mkdir(output_prefix)
+            if self.ui_TimeSeriesOutput['vizoutput']!=0:
+                output_prefix=self.ui_TimeSeriesOutput['output_prefix']
+                check_and_remove_filedir(output_prefix)
+                check_and_remove_filedir_by_wildcard("%s_xdmf_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
+                
+                os.mkdir(output_prefix)
         
         #######################################################################
         #Set GIS
