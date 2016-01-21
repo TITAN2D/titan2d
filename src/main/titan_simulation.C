@@ -60,7 +60,7 @@ int threads_number;
 
 int NUM_STATE_VARS;
 bool SHORTSPEED;
-
+double GEOFLOW_TINY;
 
 
 cxxTitanSimulation::cxxTitanSimulation() :
@@ -79,6 +79,7 @@ cxxTitanSimulation::cxxTitanSimulation() :
 
 
     SHORTSPEED=false;
+    GEOFLOW_TINY=0.0001;
 
     set_element_type(ElementType::SinglePhase);
 
@@ -141,7 +142,10 @@ void cxxTitanSimulation::set_short_speed(bool short_speed)
 {
     SHORTSPEED=short_speed;
 }
-
+void cxxTitanSimulation::set_geoflow_tiny(double _geoflow_tiny)
+{
+    GEOFLOW_TINY=_geoflow_tiny;
+}
 void cxxTitanSimulation::process_input(bool start_from_restart)
 {
 
@@ -392,6 +396,7 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent)
     TiH5_writeIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_writeIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
     TiH5_writeIntAttribute(groupTitanSimulation, SHORTSPEED);
+    TiH5_writeDoubleAttribute(groupTitanSimulation, GEOFLOW_TINY);
     TiH5_writeIntAttribute(groupTitanSimulation, myid);
     TiH5_writeIntAttribute(groupTitanSimulation, numprocs);
     TiH5_writeBoolAttribute(groupTitanSimulation, use_gis_matmap);
@@ -432,6 +437,7 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     TiH5_readIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_readIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
     TiH5_readIntAttribute(groupTitanSimulation, SHORTSPEED);
+    TiH5_readDoubleAttribute(groupTitanSimulation, GEOFLOW_TINY);
     TiH5_readIntAttribute(groupTitanSimulation, myid);
     TiH5_readIntAttribute(groupTitanSimulation, numprocs);
     TiH5_readBoolAttribute(groupTitanSimulation, use_gis_matmap);

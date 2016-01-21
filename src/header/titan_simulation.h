@@ -42,7 +42,7 @@ public:
     ~cxxTitanSimulation();
 
     void set_short_speed(bool short_speed);
-
+    void set_geoflow_tiny(double _geoflow_tiny);
     //!>Process input and initiate dependencies, replacing Read_data
     void process_input(bool start_from_restart);
 

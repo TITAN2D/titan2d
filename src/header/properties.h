@@ -668,7 +668,8 @@ public:
 
     TiScale &scale;
 
-    //! Used in Bin Yu's legacy global stopping criteria, this never worked right except for initially cylindrical piles on a horizontal plane that were released and slumped... there Bin Yu's global stopping criteria worked great.
+    //! Used in Bin Yu's legacy global stopping criteria, this never worked right except for initially cylindrical piles on a horizontal plane
+    //! that were released and slumped... there Bin Yu's global stopping criteria worked great.
     double Vslump;
 
     //! to get the flow to start moving you have to decrease the friction angles, this variable is used to do that
@@ -1481,7 +1482,7 @@ inline void MatProps::set_scale(const PileProps *pileprops_ptr, const FluxProps 
 
     if(scale.height == 0.0 || scale.auto_calc_height_scale)
     {
-        scale.auto_calc_height_scale=true;
+
         double totalvolume = 0.0;
 
         if(pileprops_ptr != NULL)
@@ -1498,6 +1499,14 @@ inline void MatProps::set_scale(const PileProps *pileprops_ptr, const FluxProps 
         else
             scale.height = 1.0;
 
+        if(scale.auto_calc_height_scale==true && totalvolume == 0.0)
+        {
+            printf("ERROR: totalvolume of all moving materials is zero, do you have piles or flux sources? Can not autocalculate scale.height!");
+            assert(0);
+        }
+
+        scale.auto_calc_height_scale=true;
+
         scale.max_negligible_height = doubleswap / scale.height / 10000.0;
     }
 
@@ -1510,7 +1519,7 @@ inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProp
      * It is simply the maximum hypothetical velocity from
      * free fall of the pile.
      ************************************************************************/
-    int i;
+    /*int i;
     double gravity = 9.8; //[m/s^2]
     double zmin, res;
     // get DEM resolution from GIS
@@ -1545,8 +1554,16 @@ inline void MatProps::calc_Vslump(const PileProps *pileprops_ptr, const FluxProp
     }
 
     // calculate Vslump
-    double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
-    Vslump = sqrt(gravity * hscale);
+    if(pileprops_ptr->numpiles>0)
+    {
+        double hscale = (zcen - zmin) + pileprops_ptr->pileheight[j];
+        Vslump = sqrt(gravity * hscale);
+    }
+    else
+    {
+        Vslump = 1.0;
+    }*/
+    Vslump = 1.0;
 }
 inline void MatPropsTwoPhases::set_scale(const PileProps *pileprops1_ptr,
                                          const FluxProps *fluxprops_ptr)

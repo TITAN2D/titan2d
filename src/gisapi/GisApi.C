@@ -179,10 +179,15 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
             fprintf(stderr, "FATAL ERROR: Failed to initialize GIS data\n");
             return ierr;
         }
+        find_min_max();
         return ierr;
     }
     else
-        return (Initialize_GIS_data(GISDbase, location, mapset, mapdata));
+    {
+        ierr = Initialize_GIS_data(GISDbase, location, mapset, mapdata);
+        find_min_max();
+        return ierr;
+    }
 }
 
 int Initialize_GIS_data(const char* GISDbase, const char* location, const char* mapset, const char* raster_file)

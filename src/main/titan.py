@@ -936,6 +936,7 @@ class TitanSimulation(TitanSimulationBase):
         
         self.sim.adapt=int(ui_NumProp['AMR'])
         self.sim.set_short_speed(ui_NumProp['short_speed'])
+        self.sim.set_geoflow_tiny(ui_NumProp['geoflow_tiny'])
         #geoflow_tiny
         
         
@@ -1041,8 +1042,8 @@ class TitanSimulation(TitanSimulationBase):
         else:
             raise ValueError("Unknown element type")
         
-        if len(ui_Pile)==0 :
-            raise NotImplementedError("Simulations without piles are not implemented yet, If you need it contact the developers")
+        #if len(ui_Pile)==0 :
+        #    raise NotImplementedError("Simulations without piles are not implemented yet, If you need it contact the developers")
         
         for pile in ui_Pile:
             if self.sim.get_element_type()==ElementType_SinglePhase:

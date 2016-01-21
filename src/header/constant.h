@@ -91,7 +91,7 @@ extern bool SHORTSPEED;
 
 enum class ElementType {UnknownElementType=0, SinglePhase=1, TwoPhases=2 };
 
-#define GEOFLOW_TINY 0.0001
+extern double GEOFLOW_TINY;
 #define GEOFLOW_SHORT 0.01
 
 
