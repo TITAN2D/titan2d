@@ -939,7 +939,17 @@ int Get_curvature(const double resolution, const double x, const double y, doubl
     free_float_matrix(yycurv);
     return 0;
 }
+int Get_grid_ewresol(double *ewresol)
+{
+   *ewresol = gis_grid.ghead.wresolution;
+   return 0;
+}
 
+int Get_grid_nsresol(double *nsresol)
+{
+   *nsresol = gis_grid.ghead.resolution;
+   return 0;
+}
 /***************************************************************/
 /* GETTING VALUES FOR MULTIPLE POINTS */
 /***************************************************************/

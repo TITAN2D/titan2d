@@ -656,6 +656,10 @@ OutLine::OutLine()
 
     elementType=ElementType::SinglePhase;
 
+    enabled=true;
+    use_DEM_resolution=false;
+    max_linear_size=1024;
+
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
@@ -728,7 +732,7 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
 
 
-    while ((float)Nx * (float)Ny > 1024 * 1024)
+    while (Nx > max_linear_size && Ny > max_linear_size)
     {
         dx *= 2.0;
         dy *= 2.0;
@@ -739,11 +743,57 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     //Nx * Ny should be less then 65536x65536
     assert((float)Nx * (float)Ny <65536.0*65536.0*0.5);
     stride=Nx;
-    printf("Outline init: Nx=%d Ny=%d Nx*Ny=%d temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
+    if(myid==0 && enabled)
+    {
+        printf("Outline init: Nx=%d Ny=%d dx=%.5g dy=%.5g\n", Nx, Ny, dx*scale->length, dy*scale->length);
+        printf("Outline init: temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
+    }
+    size=Ny*stride;
+
+    if(enabled)
+        alloc_arrays();
+}
+//! this function initializes the OutLine map/2-dimensional array
+void OutLine::init_DEM_resolution(double resx, double resy, double *XRange, double *YRange)
+{
+    dx = resx; // OutLine.dx
+    dy = resy; // OutLine.dy
+    //printf("dx=%g dy=%g  XRange={%g,%g} YRange={%g,%g}\n",dx,dy,XRange[0],XRange[1],YRange[0],YRange[1]);
+
+    xminmax[0] = XRange[0];
+    xminmax[1] = XRange[1];
+    yminmax[0] = YRange[0];
+    yminmax[1] = YRange[1];
+
+    Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
+    Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
+
+    if(myid==0 && enabled)
+        printf("Outline init: will try to use resoulution of DEM: %.5g %.5g \n", dx*scale->length, dy*scale->length);
+
+    while (Nx > max_linear_size && Ny > max_linear_size)
+    {
+        if(myid==0 && enabled)
+            printf("Outline init: resolution is too high, scaling down...\n");
+        dx *= 2.0;
+        dy *= 2.0;
+
+        Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
+        Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
+    }
+    //Nx * Ny should be less then 65536x65536
+    assert((float)Nx * (float)Ny <65536.0*65536.0*0.5);
+    stride=Nx;
+    if(myid==0 && enabled)
+    {
+        printf("Outline init: Nx=%d Ny=%d dx=%.5g dy=%.5g\n", Nx, Ny, dx*scale->length, dy*scale->length);
+        printf("Outline init: temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
+    }
 
     size=Ny*stride;
 
-    alloc_arrays();
+    if(enabled)
+        alloc_arrays();
 }
 void OutLine::alloc_arrays()
 {
@@ -1222,7 +1272,9 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
             ierr = Get_elevation(res, xx, yy, elevation);
             fprintf(fp, "%g ", elevation);
         }
-        fprintf(fp, "%g\n", pileheight[iy*stride+ix] * matprops_ptr->scale.height);
+        xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
+        ierr = Get_elevation(res, xx, yy, elevation);
+        fprintf(fp,"%g\n",elevation);
     }
     fclose(fp);
     return;
@@ -1286,7 +1338,8 @@ void OutLine::h5write(H5::CommonFG *parent, string group_name)
 {
     H5::Group group(parent->createGroup(group_name));
 
-    combine_results_from_threads();
+    if(enabled)
+        combine_results_from_threads();
 
     TiH5_writeIntAttribute(group, conformation);
     TiH5_writeIntAttribute(group, Nx);
@@ -1298,11 +1351,17 @@ void OutLine::h5write(H5::CommonFG *parent, string group_name)
     TiH5_writeDoubleAttribute(group, xminmax[2]);
     TiH5_writeDoubleAttribute(group, yminmax[2]);
 
-    TiH5_writeArray2DDataSet(group, pileheight,Ny,stride);
-    TiH5_writeArray2DDataSet(group, max_kinergy,Ny,stride);
-    TiH5_writeArray2DDataSet(group, max_dynamic_pressure,Ny,stride);
-    TiH5_writeArray2DDataSet(group, cum_kinergy,Ny,stride);
+    TiH5_writeBoolAttribute(group, enabled);
+    TiH5_writeBoolAttribute(group, use_DEM_resolution);
+    TiH5_writeIntAttribute(group, max_linear_size);
 
+    if(enabled)
+    {
+        TiH5_writeArray2DDataSet(group, pileheight,Ny,stride);
+        TiH5_writeArray2DDataSet(group, max_kinergy,Ny,stride);
+        TiH5_writeArray2DDataSet(group, max_dynamic_pressure,Ny,stride);
+        TiH5_writeArray2DDataSet(group, cum_kinergy,Ny,stride);
+    }
     TiH5_writeScalarDataTypeAttribute(group, elementType, datatypeElementType);
 
 
@@ -1323,13 +1382,20 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group, xminmax[2]);
     TiH5_readDoubleAttribute(group, yminmax[2]);
 
-    alloc_arrays();
+    TiH5_readBoolAttribute(group, enabled);
+    TiH5_readBoolAttribute(group, use_DEM_resolution);
+    TiH5_readIntAttribute(group, max_linear_size);
 
-    TiH5_readArray2DDataSet(group, pileheight,Ny,stride);
-    TiH5_readArray2DDataSet(group, max_kinergy,Ny,stride);
-    TiH5_readArray2DDataSet(group, max_dynamic_pressure,Ny,stride);
-    TiH5_readArray2DDataSet(group, cum_kinergy,Ny,stride);
+    if(enabled)
+    {
+        alloc_arrays();
 
-    update_on_changed_geometry();
+        TiH5_readArray2DDataSet(group, pileheight,Ny,stride);
+        TiH5_readArray2DDataSet(group, max_kinergy,Ny,stride);
+        TiH5_readArray2DDataSet(group, max_dynamic_pressure,Ny,stride);
+        TiH5_readArray2DDataSet(group, cum_kinergy,Ny,stride);
+
+        update_on_changed_geometry();
+    }
 }
 

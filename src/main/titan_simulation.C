@@ -100,6 +100,8 @@ cxxTitanSimulation::cxxTitanSimulation() :
     restart_keep_all=false;
     restart_keep_redundant_data=false;
 
+    outline.scale=&scale_;
+
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 }
 cxxTitanSimulation::~cxxTitanSimulation()
@@ -1107,33 +1109,36 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
     //output maximum flow depth a.k.a. flow outline
     PROFILING3_START(pt_start1);
-    outline.combine_results_from_threads();
+    if(outline.enabled)outline.combine_results_from_threads();
     PROFILING3_STOPADD(step_outline,pt_start1);
 
+    if(outline.enabled)
+    {
 #ifdef USE_MPI
-    if(numprocs > 1)
-    {
-        OutLine outline2;
-        double dxy[2];
-        dxy[0] = outline.dx;
-        dxy[1] = outline.dy;
-        outline2.init2(dxy, outline.xminmax, outline.yminmax);
-        int NxNyout = outline.Ny * outline.stride;
+        if(numprocs > 1)
+        {
+            OutLine outline2;
+            double dxy[2];
+            dxy[0] = outline.dx;
+            dxy[1] = outline.dy;
+            outline2.init2(dxy, outline.xminmax, outline.yminmax);
+            int NxNyout = outline.Ny * outline.stride;
 
-//TWO PHASES is:MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(outline.pileheight, outline2.pileheight, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        MPI_Reduce(outline.max_kinergy, outline2.max_kinergy, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        MPI_Reduce(outline.cum_kinergy, outline2.cum_kinergy, NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        if(myid == 0)
-            outline2.output(matprops_ptr, statprops);
-    }
-    else
-    {
-        outline.output(matprops_ptr, statprops);
-    }
+    //TWO PHASES is:MPI_Reduce(*(outline.pileheight), *(outline2.pileheight), NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(outline.pileheight, outline2.pileheight, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce(outline.max_kinergy, outline2.max_kinergy, NxNyout, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce(outline.cum_kinergy, outline2.cum_kinergy, NxNyout, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            if(myid == 0)
+                outline2.output(matprops_ptr, statprops);
+        }
+        else
+        {
+            outline.output(matprops_ptr, statprops);
+        }
 #else //USE_MPI
-    outline.output(matprops_ptr, statprops);
+        outline.output(matprops_ptr, statprops);
 #endif //USE_MPI
+    }
 
 #ifdef PERFTEST
     long m = element_counter, ii;

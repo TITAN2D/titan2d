@@ -197,7 +197,7 @@ void Integrator::step()
 
     //statistics, etc.
     TIMING1_START(t_start2);
-    outline_ptr->update();
+    if(outline_ptr->enabled)outline_ptr->update();
     TIMING1_STOPADD(outlineStepTime,t_start2);
     PROFILING3_STOPADD_RESTART(step_outline,pt_start);
 

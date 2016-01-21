@@ -72,6 +72,10 @@ int Initialize_GDAL_data(const char *fullGispath)
             cout << "Consider using \"gdalwarp\" to transform" << endl;
             return (-4);
         }
+        //adfGeoTransform[0] - top left x
+        //adfGeoTransform[1] - w-e pixel resolution
+        //adfGeoTransform[3] - top left y
+        //adfGeoTransform[5] - n-s pixel resolution (negative value)
         gishead.xmin = adfGeoTransform[0];
         gishead.wresolution = fabs(adfGeoTransform[1]);
         gishead.xmax = gishead.xmin + nx * gishead.wresolution;
@@ -79,7 +83,7 @@ int Initialize_GDAL_data(const char *fullGispath)
         gishead.resolution = fabs(adfGeoTransform[5]);
         gishead.ymin = gishead.ymax - gishead.resolution * ny;
         gishead.Format = GDAL;
-        gishead.compressed = 1; // doesn't mean anything if GDAL is bing used
+        gishead.compressed = 1; // doesn't mean anything if GDAL is being used
         gis_grid.ghead = gishead;
         gis_grid.ghead.datafile = strdup(fullGispath);
         return 0;

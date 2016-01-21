@@ -563,7 +563,7 @@ class TitanSimulationBase(object):
             },
             defaultParameters={'enabled':True,'edge_height':None, 'test_height':None, 'test_location':None}
         )
-        self.setStatProps(True)
+        self.setStatProps(enabled=True)
         #setOutlineProps
         self.ui_OutlineProps=None
         self.chk_OutlineProps=TiArgCheckerAndSetter(
@@ -581,7 +581,7 @@ class TitanSimulationBase(object):
             },
             defaultParameters={'enabled':True,'max_linear_size':1024, 'use_DEM_resolution':False}
         )
-        self.setOutlineProps(True)
+        self.setOutlineProps(enabled=True)
         #addPile
         self.ui_Pile=[]
         self.chk_Pile=TiArgCheckerAndSetter(
@@ -751,7 +751,7 @@ class TitanSimulationBase(object):
             self.ui_TimeSeriesOutput['dtime']=-1.0
         if self.ui_TimeSeriesOutput['diter']==None:
             self.ui_TimeSeriesOutput['diter']=-1
-    def setStatProps(self,enabled,**kwarg):
+    def setStatProps(self,**kwarg):
         ui=self.chk_StatProps.process(kwarg)
         
         #Test if flow reaches height [m] ...
@@ -775,7 +775,7 @@ class TitanSimulationBase(object):
             if ui['test_location']==None:
                 raise ValueError('TitanSimulation::test_location should be set if test_height>0\n') 
         self.ui_StatProps=ui
-    def setOutlineProps(self,enabled,**kwarg):
+    def setOutlineProps(self,**kwarg):
         self.ui_OutlineProps=self.chk_OutlineProps.process(kwarg)
     def addPile(self,**kwarg):
         self.ui_Pile.append(self.chk_Pile.process(kwarg))
@@ -1018,14 +1018,17 @@ class TitanSimulation(TitanSimulationBase):
         #######################################################################
         # ui_StatProps
         # @todo implement enabled ui_StatProps
+        self.sim.get_statprops().enabled=ui_StatProps['enabled']
         self.sim.get_statprops().set(
             ui_StatProps['edge_height'], ui_StatProps['test_height'],
             ui_StatProps['test_location'][0], ui_StatProps['test_location'][1])
         
         #######################################################################
         # ui_OutlineProps
-        # @todo implement ui_OutlineProps
-        #c++ is not implemented yet
+        self.sim.get_outline().enabled=ui_OutlineProps['enabled']
+        self.sim.get_outline().use_DEM_resolution=ui_OutlineProps['use_DEM_resolution']
+        self.sim.get_outline().max_linear_size=ui_OutlineProps['max_linear_size']
+        
         #######################################################################
         # ui_Pile
         self.pileprops=None

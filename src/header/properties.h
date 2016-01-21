@@ -796,7 +796,7 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="MatProps");
 };
 
-#ifndef SWIG
+
 /** the OutLine Structure holds the maximum throughout time flow depth at every spatial point
  *
  * first it collects max in pileheight_by_elm which is per element based (update_single_phase/update_two_phases)
@@ -851,6 +851,14 @@ public:
 
     ElementType elementType;
 
+    //! do the calculations
+    bool enabled;
+
+    bool use_DEM_resolution;
+    int max_linear_size;
+
+    TiScale *scale;
+
     //! this is the OutLine constructor it initializes the number of cells to zero
     OutLine();
     
@@ -862,6 +870,9 @@ public:
     //! this function initializes the OutLine map/2-dimensional array 
     void init(const double *dxy, int power, double *XRange, double *YRange);
     
+    //! this function initializes the OutLine map/2-dimensional array
+    void init_DEM_resolution(double resx, double resy, double *XRange, double *YRange);
+
     //! this function reinitializes the OutLine map/2-dimensional array during restart
     void init2(const double *dxy, double *XRange, double *YRange);
 
@@ -899,6 +910,8 @@ protected:
     int myid;
     int numprocs;
 
+
+
     //! 2-d array holding the maximum throughout time pileheight at every point
     //! pileheight_loc[ithread][ix+iy*stride]
     double **pileheight_loc;
@@ -923,7 +936,6 @@ protected:
     vector<int> el_y_start;
     vector<int> el_y_stop;
 };
-#endif
 
 /**********************************************************************/
 //! this structure is for the calculation of volume that flows through user specified discharge planes.  The sign of the volume indicates which direction the flow went and follows the right hand rule convention.  velocity cross (point b-point a) is the sign of the flow through planes.  This means if you surround the only pile, specify the points defining the discharge planes in counter clockwise order, the flow "out of the box" will be positive.  if you specify the points in clockwise order flow "out of the box" will be negative.
