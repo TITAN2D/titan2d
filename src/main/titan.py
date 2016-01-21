@@ -1029,12 +1029,24 @@ class TitanSimulation(TitanSimulationBase):
         #######################################################################
         # ui_Pile
         self.pileprops=None
+        if self.sim.get_element_type()==ElementType_SinglePhase:
+            if self.pileprops==None:
+                self.pileprops=PileProps()
+                self.pileprops.thisown=0
+                self.sim.set_pileprops(self.pileprops)
+        elif self.sim.get_element_type()==ElementType_TwoPhases:
+            if self.pileprops==None:
+                self.pileprops=PilePropsTwoPhases()
+                self.pileprops.thisown=0
+                self.sim.set_pileprops(self.pileprops)
+        else:
+            raise ValueError("Unknown element type")
+        
+        if len(ui_Pile)==0 :
+            raise NotImplementedError("Simulations without piles are not implemented yet, If you need it contact the developers")
+        
         for pile in ui_Pile:
             if self.sim.get_element_type()==ElementType_SinglePhase:
-                if self.pileprops==None:
-                    self.pileprops=PileProps()
-                    self.pileprops.thisown=0
-                    self.sim.set_pileprops(self.pileprops)
                 if not isinstance(self.pileprops,PileProps):
                     raise ValueError("Can not mix element type for piles!")
                 if isinstance(self.pileprops,PilePropsTwoPhases):
@@ -1044,10 +1056,6 @@ class TitanSimulation(TitanSimulationBase):
                     self.pileprops.addPile(pile['height'], pile['center'][0], pile['center'][1], pile['radii'][0], 
                                            pile['radii'][1], pile['orientation'], pile['Vmagnitude'], pile['Vdirection'],pile['pile_type'])
             elif self.sim.get_element_type()==ElementType_TwoPhases:
-                if self.pileprops==None:
-                    self.pileprops=PilePropsTwoPhases()
-                    self.pileprops.thisown=0
-                    self.sim.set_pileprops(self.pileprops)
                 if not isinstance(self.pileprops,PileProps):
                     raise ValueError("Can not mix element type for piles!")
                 if not isinstance(self.pileprops,PilePropsTwoPhases):
