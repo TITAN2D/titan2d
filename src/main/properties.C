@@ -570,8 +570,8 @@ void MatProps::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleAttribute(group, smallest_axis);
     TiH5_writeIntAttribute(group, material_count);
     TiH5_writeVectorStringAttribute(group, matnames);
-    TiH5_writeDoubleVectorAttribute(group, bedfrict, material_count);
-    TiH5_writeDoubleVectorAttribute(group, tanbedfrict, material_count);
+    TiH5_writeDoubleVectorAttribute(group, bedfrict, matnames.size());
+    TiH5_writeDoubleVectorAttribute(group, tanbedfrict, matnames.size());
     TiH5_writeDoubleAttribute(group, porosity);
     TiH5_writeDoubleAttribute(group, mu);
     TiH5_writeDoubleAttribute(group, rho);
@@ -587,8 +587,8 @@ void MatProps::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group, smallest_axis);
     TiH5_readIntAttribute(group, material_count);
     TiH5_readVectorStringAttribute(group, matnames);
-    TiH5_readDoubleVectorAttribute(group, bedfrict, material_count);
-    TiH5_readDoubleVectorAttribute(group, tanbedfrict, material_count);
+    TiH5_readDoubleVectorAttribute(group, bedfrict, matnames.size());
+    TiH5_readDoubleVectorAttribute(group, tanbedfrict, matnames.size());
     TiH5_readDoubleAttribute(group, porosity);
     TiH5_readDoubleAttribute(group, mu);
     TiH5_readDoubleAttribute(group, rho);

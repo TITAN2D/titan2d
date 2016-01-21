@@ -44,9 +44,9 @@ public:
     void set_short_speed(bool short_speed);
 
     //!>Process input and initiate dependencies, replacing Read_data
-    void process_input();
+    void process_input(bool start_from_restart);
 
-    void run();
+    void run(bool start_from_restart);
     void input_summary();
 
     void save_restart_file();

@@ -679,6 +679,12 @@ void HashTable<T>::h5read(const H5::CommonFG *parent, const  string group_name)
 
     //resize and fill buckets
     bucket.resize(NBUCKETS);
+#ifdef _OPENMP
+    bucket_lock.resize(NBUCKETS);
+    for(ti_ndx_t i=0;i<NBUCKETS;++i)
+        omp_init_lock(&(bucket_lock[i]));
+    omp_init_lock(&content_table_lock);
+#endif
 
     for(ti_ndx_t ndx=0;ndx<key_.size();++ndx)
     {
@@ -2433,15 +2439,19 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVector(group,node_bubble_ndx_);
     TiH5_readTiVectorArray(group,neighbor_ndx_,8);
     TiH5_readTiVector(group,father_ndx_);
+    //
     TiH5_readTiVectorArray(group,son_ndx_,4);
     TiH5_readTiVectorArray(group,brothers_ndx_,4);
 //
     TiH5_readTiVector(group,myprocess_);
     TiH5_readTiVector(group,generation_);
+    //
     TiH5_readTiVector(group,opposite_brother_flag_);
+    //
     TiH5_readTiVector(group,material_);
     TiH5_readTiVector(group,lb_weight_);
     TiH5_readTiVector(group,lb_key_);
+    //
     TiH5_readTiVectorArray(group,node_key_,8);
     TiH5_readTiVectorArray(group,neighbors_,8);
     TiH5_readTiVector(group,father_);
@@ -2485,6 +2495,7 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVector(group,Awet_);
     TiH5_readTiVectorArray(group,drypoint_,2);
     TiH5_readTiVector(group,Swet_);
+
 
     updateLocalElements();
     updateNeighboursIndexes();

@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
             {
                 sim.timeprops.maxtime+=addTime/sim.timeprops.TIME_SCALE;
             }
-            //sim.run();
+            sim.run(true);
 
         }
         else if(argc4py > 1)

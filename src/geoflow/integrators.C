@@ -291,6 +291,7 @@ Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSim
         cout << "ERROR: Unknown type of integrator:" << integratorType << "\n";
         assert(integrator != nullptr);
     }
+    integrator->h5read(parent,group_name);
     return integrator;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

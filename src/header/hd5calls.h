@@ -350,10 +350,6 @@ inline void TiH5_readVectorStringAttribute__(const H5::Group *group, std::vector
     {
         value[i]=v+i*max_string_size;
     }
-    for(std::size_t i=0;i<value.size();++i)
-    {
-        printf("%d |%s|%s|\n",i,value[i].c_str(),v+i*max_string_size);
-    }
 
     delete [] v;
 }

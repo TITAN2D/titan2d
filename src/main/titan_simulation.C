@@ -140,7 +140,7 @@ void cxxTitanSimulation::set_short_speed(bool short_speed)
     SHORTSPEED=short_speed;
 }
 
-void cxxTitanSimulation::process_input()
+void cxxTitanSimulation::process_input(bool start_from_restart)
 {
 
     int i;
@@ -240,21 +240,31 @@ void cxxTitanSimulation::process_input()
     statprops_ptr->runid = statprops_ptr->lhs.runid;
 
     /*************************************************************************/
-    matprops_ptr->set_scale(pileprops_ptr,fluxprops_ptr);
-    matprops_ptr->process_input();
+    double TIME_SCALE;
+    double VELOCITY_SCALE;
+    if(start_from_restart==false)
+    {
+        matprops_ptr->set_scale(pileprops_ptr,fluxprops_ptr);
+        matprops_ptr->process_input();
 
-    double TIME_SCALE = matprops_ptr->get_TIME_SCALE();
-    //non-dimensionalize the inputs
-    double VELOCITY_SCALE = matprops_ptr->get_VELOCITY_SCALE();
+        TIME_SCALE = matprops_ptr->get_TIME_SCALE();
+        //non-dimensionalize the inputs
+        VELOCITY_SCALE = matprops_ptr->get_VELOCITY_SCALE();
 
-    integrator->scale();
+        integrator->scale();
 
-    pileprops_ptr->scale(scale_.length,scale_.height,scale_.gravity);
-    fluxprops.scale(scale_.length,scale_.height,scale_.gravity);
+        pileprops_ptr->scale(scale_.length,scale_.height,scale_.gravity);
+        fluxprops.scale(scale_.length,scale_.height,scale_.gravity);
 
-    double smallestpileradius=min(pileprops_ptr->get_smallest_pile_radius(),fluxprops.get_smallest_source_radius());
+        double smallestpileradius=min(pileprops_ptr->get_smallest_pile_radius(),fluxprops.get_smallest_source_radius());
 
-    matprops_ptr->smallest_axis = 2.0 * smallestpileradius;
+        matprops_ptr->smallest_axis = 2.0 * smallestpileradius;
+    }
+    else
+    {
+        TIME_SCALE = matprops_ptr->get_TIME_SCALE();
+        VELOCITY_SCALE = matprops_ptr->get_VELOCITY_SCALE();
+    }
 
     //read in material map
     if(matprops_ptr->material_count > 1)
@@ -281,13 +291,15 @@ void cxxTitanSimulation::process_input()
     }
     /*************************************************************************/
     //time related info
-    timeprops_ptr->scale(TIME_SCALE);
-
+    if(start_from_restart==false)
+    {
+        timeprops_ptr->scale(TIME_SCALE);
+    }
     /*************************************************************************/
-
-    int extramaps=0;
-    if(use_gis_matmap)mapnames_ptr->extramaps=1;
-
+    if(start_from_restart==false)
+    {
+        if(use_gis_matmap)mapnames_ptr->extramaps=1;
+    }
     /*************************************************************************/
     // read in GIS information
     i = Initialize_GIS_data(mapnames_ptr->gis_main.c_str(), mapnames_ptr->gis_sub.c_str(), mapnames_ptr->gis_mapset.c_str(), mapnames_ptr->gis_map.c_str(), mapnames_ptr->gis_format);
@@ -297,17 +309,19 @@ void cxxTitanSimulation::process_input()
         assert(0);
     }
 
-    matprops_ptr->calc_Vslump(pileprops_ptr,&fluxprops);
-    /*************************************************************************/
-    //test point information
-    statprops_ptr->scale(matprops_ptr);
+    if(start_from_restart==false)
+    {
+        matprops_ptr->calc_Vslump(pileprops_ptr,&fluxprops);
+        /*************************************************************************/
+        //test point information
+        statprops_ptr->scale(matprops_ptr);
 
-    /*************************************************************************/
-    discharge_planes.scale(scale_.length);
+        /*************************************************************************/
+        discharge_planes.scale(scale_.length);
 
-    //the discharge plane section ends here
-    /*************************************************************************/
-
+        //the discharge plane section ends here
+        /*************************************************************************/
+    }
 
 
     /* physically we don't know how to specify a changing internal friction
@@ -373,6 +387,7 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent)
     //write cxxTitanSimulation
     H5::Group groupTitanSimulation(parent->createGroup("TitanSimulation"));
 
+    TiH5_writeIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_writeIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
     TiH5_writeIntAttribute(groupTitanSimulation, SHORTSPEED);
     TiH5_writeIntAttribute(groupTitanSimulation, myid);
@@ -412,6 +427,7 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     //read cxxTitanSimulation
     H5::Group groupTitanSimulation(parent->openGroup("TitanSimulation"));
 
+    TiH5_readIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_readIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
     TiH5_readIntAttribute(groupTitanSimulation, SHORTSPEED);
     TiH5_readIntAttribute(groupTitanSimulation, myid);
@@ -432,7 +448,7 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
 
     timeprops.h5read(parent);
     scale_.h5read(parent);
-    integrator=Integrator::createIntegrator(parent,this);
+
     pileprops=PileProps::createPileProps(parent);
     fluxprops.h5read(parent);
     discharge_planes.h5read(parent);
@@ -441,6 +457,9 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     mapnames.h5read(parent);
     outline.setElemNodeTable(ElemTable,NodeTable);
     outline.h5read(parent);
+
+    integrator=Integrator::createIntegrator(parent,this);
+
 }
 void xmdfWriteHeader(const char *xmdf_filename)
 {
@@ -769,7 +788,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
     }
 }
 
-void cxxTitanSimulation::run()
+void cxxTitanSimulation::run(bool start_from_restart)
 {
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 
@@ -823,22 +842,12 @@ void cxxTitanSimulation::run()
     TimeProps* timeprops_ptr=get_timeprops();
     MapNames* mapnames_ptr=get_mapnames();
     OutLine* outline_ptr=get_outline();
-    
-    
 
-    process_input();
-    input_summary();
+    process_input(start_from_restart);
 
+    if(start_from_restart==false)
+        input_summary();
 
-
-    bool start_from_restart=false;
-
-    //check if restart is available
-    //result=loadrun(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &timeprops, &mapnames, &adapt, &order,
-    //              &statprops, &discharge_planes, &outline);
-
-    if(ElemTable==nullptr)
-        start_from_restart=true;
 
     if(start_from_restart==false)
         Read_grid(myid, numprocs, &NodeTable,&ElemTable, matprops_ptr, &outline);
@@ -914,7 +923,8 @@ void cxxTitanSimulation::run()
     double max_momentum = 100;  //nondimensional
 
     save_restart_file_writeheader();
-    save_restart_file();
+    if(start_from_restart==false)
+        save_restart_file();
 
     /* ifend(0.5*statprops.vmean) is a hack, the original intent (when we were
      intending to use vstar as a stopping criteria) whas to have the
