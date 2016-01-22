@@ -57,7 +57,7 @@ char *allocstrcpy(const char *str);
 
 //input/output to binary binary files
 //fopen_bin also buffers the binary file
-FILE *fopen_bin(char *filename, char *mode);
+FILE *fopen_bin(const char *filename, char *mode);
 
 void freadU(FILE *fp, unsigned *U);
 void freadI(FILE *fp, int *I);

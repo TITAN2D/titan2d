@@ -423,7 +423,7 @@ char *allocstrcpy(const char *str)
 /************************************************************/
 /************************************************************/
 
-FILE *fopen_bin(char *filename, char *mode)
+FILE *fopen_bin(const char *filename, char *mode)
 {
     FILE *fp;
     char fullmode[10]; //only expect 3 char + NULL, 10 is safety

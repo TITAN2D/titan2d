@@ -540,7 +540,7 @@ class TitanSimulationBase(object):
                     'validator':VarTypeString
                 },             
             },
-            defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'output_prefix':'vizout'}
+            defaultParameters={'dtime':None, 'diter':1000, 'output_prefix':'vizout'}
         )
         self.setTimeSeriesOutput(vizoutput=None)
         #setStatProps

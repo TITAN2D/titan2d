@@ -82,7 +82,7 @@ AC_ARG_WITH([hdf5],
                             Provide absolute HDF5 location --with-hdf5=/path/to/hdf5])],)
 
 if test -n "$with_hdf5"; then
-    CPPFLAGS="$CPPFLAGS  -I$with_hdf5/include -DH5_USE_16_API"
+    CPPFLAGS="$CPPFLAGS  -I$with_hdf5/include"
     LDFLAGS="$LDFLAGS -L$with_hdf5/lib"
 fi
 

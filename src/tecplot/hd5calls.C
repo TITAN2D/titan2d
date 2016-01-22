@@ -54,7 +54,7 @@ hid_t GH5_fopen(const char *filename, char mode)
         exit(1);
     }
     //Create base groups for data sets
-    gid = H5Gcreate(fid, "/Mesh", 0);
+    gid = H5Gcreate(fid, "/Mesh", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     // this should not happen, if life is running ususal
     if(gid < 0)
     {
@@ -62,7 +62,7 @@ hid_t GH5_fopen(const char *filename, char mode)
         exit(1);
     }
     status = H5Gclose(gid);
-    gid = H5Gcreate(fid, "/Properties", 0);
+    gid = H5Gcreate(fid, "/Properties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     if(gid < 0)
     {
         fprintf(stderr, "GH5 ERROR: Failed to create base group \"/Properties\"\n");
@@ -76,7 +76,7 @@ hid_t GH5_fopen(const char *filename, char mode)
 hid_t GH5_open_group(hid_t fp, const char *name)
 {
     hid_t grpid;
-    grpid = H5Gopen(fp, name);
+    grpid = H5Gopen(fp, name, H5P_DEFAULT);
     // this should not happen, if life is running ususal
     if(grpid < 0)
     {
@@ -111,7 +111,7 @@ hid_t GH5_createdataset(hid_t gid, hid_t dataspace, const char *dsetname, unsign
             fprintf(stderr, "GH5 ERROR, Unkown datatype passed to dataset %s\n", dsetname);
             exit(1);
     }
-    dataset = H5Dcreate(gid, dsetname, datatype, dataspace, H5P_DEFAULT);
+    dataset = H5Dcreate(gid, dsetname, datatype, dataspace, H5P_DEFAULT,H5P_DEFAULT, H5P_DEFAULT);
     //Not expecting this error
     if(dataset < 0)
     {
