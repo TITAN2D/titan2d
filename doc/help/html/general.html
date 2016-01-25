@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>General Parameters</h1>
+
+<h2>Overwrite Output</h2>
+Results overwrite safety flag.  If set to False, aborts simulation if output files with same names exist in the current working directory.  If set to True, overwrite previous output.
+
+<h2>Computational Cells Across Smallest Pile/Flux-Source Diameter </h2>
+The integer value can be entered in this text field.  It is used by Titan to
+determine the maximum level of grid-cell refinement allowed throughout the
+simulation.  The default value is 20, meaning that the dimensions of the smallest
+cell size on the map will correspond to a length that is at most 1/20th that of
+the smallest pile or flux-source diameter - that is, 1/20th of the smallest value
+entered in the ``Major and Minor Extent, majorR, minorR (m,m)'' field on the
+Pile or Flux-Source Information Forms.  When an adaptive grid is selected, only
+a small portion of the total map area will be maximally refined; without
+adaptation however, the entire map will consist of maximally refined cells -
+which, if small, can be computationally expensive.  The field cannot be left
+blank.
+
+<h2>Adapt the Grid</h2>
+Activate the "True" button to adapt the grid during the simulation.  Adapting
+the grid should result in reduced computational cost while maintaining a high
+simulation accuracy, but can also introduce instabilities into the computation.
+
+<h2>AMR</h2>
+Activate the "True" button to enable adaptive mesh refinement during the simulation.
+
+<h2>Order Method</h2>
+Activate the "Second" button to assume a linear variation (instead of constant
+values) of the conserved quantities (pile height, momentum) across each cell.
+The second order method should give more accurate results but increases
+computation time and is less stable.
+
+<h2>Geoflow Tiny</h2>
+
+<h2>Short Speed</h2>
+
+<h2>Scale Parameters</h2>
+
+<h3>Scale Simulation</h3>
+Activate the "True" button to scale the governing equations by the pile height,
+a length scale and a gravity scale.  The pile height scale is taken as the
+cubed root of the total volume of material to appear on the map.  Thus, the
+scaled simulation calculates the pile height as a fraction of this value.  The
+gravity scale is 9.80 ms^-2.
+
+<h3>Scale Length</h3>
+The decimal value can be entered in this text field.  It is used by Titan to
+correspond to the expected runout length of the flow.  The field  is only
+requiredfieldif the simulation is scaled.  If the simulation is scaled, the field
+cannot be left blank.
+
+<h2>Stat Props</h2>
+
+<h3>Height used to define flow outline</h3>
+The decimal value, in meters (> 0), can be entered in this text field.
+Used to set the "boundary" of the mass flow.    The user is required to enter
+a greater than zero height, which will be used to, among other things, compute
+the spread of the pile in the x and y directions.
+The field can be left blank defaulting to $\frac{1}{50}{\rm th}$ of the
+maximum initial pile height.
+
+<h3>Flow Height Test</h3>
+Set the criteria to determine if the flow reaches a particular Depth (for the
+location as specified by the flow height x and y location).
+
+<h3>Flow Height Depth</h3>
+The decimal value can be entered in this text field.
+Flow depth to test for (at the given location).
+The field can be left blank indicating ...
+
+<h3>Flow Height Test Point X Location</h3>
+The decimal value can be entered in this text field.
+X location to test for specified flow depth.
+The field can be left blank indicating ...
+
+<h3>Flow Height Test Point Y Location</h3>
+The decimal value can be entered in this text field.
+Y location to test for specified flow depth.
+The field can be left blank indicating ...
+
+<h2>Outline Props</h2>
+
+<h3>Outline Props Enabled</h3>
+
+<h3>Max Linear Size</h3>
+
+<h3>Use DEM Resolution</h3>
+
+</BODY>
+</HTML>
+

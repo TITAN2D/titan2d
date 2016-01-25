@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>Job Submission</h1>
+Allows for the execution of a Titan model run.<br>
+
+<h2>Run Style</h2>
+When "Local" is selected, the Titan model run will execute on the machine that
+the interface is running on.  Only one processor will be used.<br>
+When "PBS" is set, the Titan model run will be submitted to the PBS job
+scheduler running on the machine that the interface is running on, which will
+decide on what machine(s) the Titan job runs.<br>
+When "Condor" is set, the Titan model run will be submitted to the Condor job
+scheduler running on the machine that the interface is running on, which will
+decide on what machine(s) the Titan job runs.<br>
+<b>NOTE :</b>  When "PBS" or "Condor" is set, the job will need to be scheduled
+        on a machine(s) which can "see" the Titan binary application files, GIS
+        data files and the output (save) directory.  It is not currently possible
+        to direct the job submission software to find a machine that has access
+        to the required directories, so all run nodes attached to the
+        job scheduler should be able to "see" these directories.
+
+<h2>Local Options</h2>
+There are currently no options relevant to running a job locally.
+
+<h2>PBS Options</h2>
+The PBS options are only relevant when the run style is set to PBS.
+
+<h3>Maximum Run Time</h3>
+The value, format hh:mm:ss, can be enetered in this text field.
+The field specifies the maximum walltime for the Titan model run.  It
+corresponds directly to the "-l walltime" option of the qsub command.
+The value can be left blank and the qsub default value will be used.
+
+<h3>Queue</h3>
+The value can be entered in this text field.
+The field specifies the PBS job queue that the Titan model run should be
+submitted to.  It corresponds directly to the "-q" option of the qsub command.
+The value can be left blank and the qsub default queue will be used.
+
+<h3>Number of Processors</h3>
+The integer value(> 0) can be enetered in this text field.
+The field specifies the number of processors requested for the Titan model
+run.  It corresponds directly to the "-l ncpus" option of the qsub command.
+The value cannot be left blank.
+
+<h2>Condor Options</h2>
+The Condor options are only relevant when the run style is set to Condor.
+
+<h3>Requirements</h3>
+The value can be entered in the text field.
+The field mirrors the Requirements option in a Condor description file.
+The value can be left blank and the condor default requirements will be used.
+
+<h2>Pre-execution Commands</h2>
+The commands can be entered in this text field.
+User specified commands can be run prior to execution of the titan application
+to perform any necessary setup on the node where the job will run.  The
+commands are run in a bash shell.
+List each command on a separate line.
+
+<h2>Job Execution Summary</h2>
+The text area displays abbreviated information regarding jobs recently
+submitted.
+ 
+<h2>Running the Job</h2>
+When the "Run Job" button is pushed, the following will occur :<br>
+
+<ol>
+  <li>The Titan model run parameter files will be saved.  If the information
+      on the Load/Save tab related to saving parameter files is incomplete,
+      an error message will be displayed and the job will not run.</li>
+  <li>A timestamped directory will be created in the directory where the
+      parameter files were saved to.  The timestamped directory will contain
+      various files required for running the Titan model run and results
+      output.</li>
+  <li>The input file required by the Titan application will
+      be written to the timestamped directory.  The name of the input file is:<br>
+      <ul>
+        <li>simulation.py</li>
+      <ul></li>
+  <li>The Titan application is launched by a script
+      built dynamically.  The launch script, which is dependent on the run
+       method, is created in the timestamped directory.  It is a bash shell
+       script.</li>
+  <li>The job is executed.</li>
+  <li>Details of the job just submitted are displayed in the text area below
+      the "Run Job" button.</li>
+  <li>An entry in the job monitor database is added to keep track of job
+      details, which are displayed to the user on the job monitor tab.</li>
+</ol>
+
+</BODY>
+</HTML>
+

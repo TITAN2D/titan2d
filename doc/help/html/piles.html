@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>Piles</h1>
+
+<h2>Type</h2>
+Select 1 for Paraboloid.  Select 2 for Cylinder.
+
+When Paraboloid is selected, the geometry for each pile is a paraboloid given by:<br>
+P*(1-((x-xc)/xr)^2 -((y-yc)/yr)^2) (assuming an orientation angle of zero)
+(a negative pile height calculated from this equation will be set to zero).<br>
+These equations are for the non-scaled pile.  If two or more piles overlap, the
+highest height of the pile is used as the pile height at that point.<br>
+NOTE : The X-axis is defines as UTM E and the Y-axis is defines as UTM N.
+
+<h2>Maximum Initial Thickness</h2>
+The decimal value, in meters, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Center of Initial Volume X</h2>
+The decimal value, in UTM coordinates, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Center of Initial Volume X</h2>
+The decimal value, in UTM coordinates, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Volume Fraction</h2>
+This value is only used when the Material Model Physics Model is TwoPhases_Coulomb.
+
+<h2>Major Extent</h2>
+The decimal value, in meters, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Minor Extent</h2>
+The decimal value, in meters, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Orientation Angle</h2>
+The decimal value, in degrees from X axis to major axis, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Initial Speed</h2>
+The decimal value, in meters/second, can be entered in this text field.
+The field cannot be left blank.
+
+<h2>Initial Direction</h2>
+The decimal value can be entered in this text field.
+The field cannot be left blank.
+
+</BODY>
+</HTML>
+

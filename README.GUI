@@ -1,0 +1,51 @@
+-- RUNNING THE TITAN GUI --
+
+== Platform ==
+
+The Titan GUI is written in java, which is platform independent.  However, some of the underlying implementation issues Unix/Linux commands.  So, the Titan GUI should only be run on a Unix/Linux operating system.
+
+== Java ==
+
+The Titan GUI requires that java version 1.6 or greater is installed and that the java executable(java) can be launched from the command line.
+
+To determine if java can be launched from the command line, issue the command:
+
+which java
+
+If java can be launched from the command line, determine which version of java is installed with the following command:
+
+java -version
+
+If java is not installed or the installed version of java is not 1.6 or greater, contact the system administator for assistance.
+
+OR
+
+Download java (version 1.6 or greater) and set the PATH environment variable to use the java executable included in the download.  There are several different java vendors.  
+
+ORACLE's version of java can be found at:
+https://www.oracle.com/java/index.html(as of 01/18/2016)
+
+== Titan Application Installation ==
+
+The Titan application is separate from the Titan GUI.
+The Titan application must be installed prior to launching jobs with the Titan GUI.  The location of the Titan application binaries must be included in the PATH environment variable.  The Titan GUI can be run without the Titan application installed, but will fail to launch a job.
+
+It is beyond the scope of this document to detail how the Titan application is installed.
+
+Please see the install notes in the INSTALL.
+
+== Running the Titan GUI ==
+
+The Titan GUI is launched from a shell script that is located in the bin directory and is run by the command:
+
+run_titan
+
+== Help using the Titan GUI ==
+
+An explanation of the Titan GUI components is available from the Help menu on the main toolbar of the Titan GUI application.  For further assistance,
+
+contact :
+
+Matthew Jones, PhD      Titan Application Support   jonesm@ccr.buffalo.edu
+Steve Gallo             Project Supervisor          smgallo@ccr.buffalo.edu
+Renette Jones-Ivey      Software Development        renettej@buffalo.edu

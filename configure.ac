@@ -74,7 +74,7 @@ AC_ARG_ENABLE(mpi,
 	],)
     
 
-# checks for HDF5 intalltion
+# checks for HDF5 installation
 #------------------------------------------------------------------------------------
 AC_CHECK_LIB([z], [gzread],,AC_MSG_FAILURE([Can not find libz]),)
 AC_ARG_WITH([hdf5],
@@ -211,7 +211,10 @@ AC_HEADER_MAJOR
 AC_CHECK_FUNCS([floor pow sqrt strchr strdup])
 #======================================================================================
 AC_CONFIG_FILES([Makefile
+                 gui/Makefile
                  doc/Makefile
+                 doc/help/Makefile
+                 doc/help/html/Makefile
                  scripts/Makefile
                  src/Makefile
                  src/adapt/Makefile

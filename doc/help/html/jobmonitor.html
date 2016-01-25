@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>Job Monitor</h1>
+Displays information about Titan model runs submitted by the user.  It does
+not display any model run information for jobs submitted by other users.
+When the tab is initially displayed, it may take a moment to display the
+job information.  The job status displayed is updated every 5 minutes.
+The job information(not including the status) is retrieved
+from a database.  The job status is determined dynamically.
+Each user will have a ".titan" directory in their home
+directory.  The database (which is a directory structure of files) is stored
+there.  Should the ".titan" directory be removed, all job details will be
+lost.  The job itself would not be affected.
+
+<h2>Job Summary Table</h2>
+
+<h3>Job Name</h3>
+Not relevant for a local job.  For a PBS job, it is the job name.
+
+<h3>Job ID</h3>
+The job's unique ID.  For a local job, it is the jobs process ID.  For a PBS
+job, it is the job id.
+
+<h3>Date Submitted</h3>
+The date/time that the job was submitted.
+
+<h3>Job Run Method</h3>
+The method with which the job was submitted (Local or PBS).
+
+<h3>Host Submitted From</h3>
+The host with which the user was on when the job was submitted.
+
+<h3>Status</h3>
+The current job status.
+
+<h2>Removing an Entry from the list</h2>
+Display the table item menu popup by right-clicking on any field for the job
+to be removed from the list.  Select "Remove From List" on the menu.  The
+job details will be removed from the list and the job monitor database.  The
+job itself will not be affected.
+
+<h2>Job Details</h2>
+Display the table item menu popup by right-clicking on any field for which
+the job details are to be displayed.  Select "Job Details" on the menu.
+Additional information regarding a job will be displayed in a popup window :
+<ul>
+  <li>The contents of the standard output file</li>
+  <li>The contents of the standard error file</li>
+  <li>The contents of the data files used by the titan application</li>
+  <li>The contents of the shell script used to run the job</li>
+  <li>the contens of the condor description file if the job was submitted via condor</li>
+</ul>
+
+<h2>Delete Job</h2>
+Display the table item menu popup by right-clicking on any field for the job
+to halt execution.  Select "Delete Job" on the menu.  If the job is in a
+state where it can be removed, the job will be removed.  If the job is in a
+queue, it will be removed from the queue.  If the job is running, it will be
+aborted.
+
+<h2>Refresh Job List</h2>
+Push the "Refresh" button to get the most up to date information displayed in
+the list.  The list is automatically updated every 5 minutes.
+
+</BODY>
+</HTML>
+

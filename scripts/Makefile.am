@@ -5,11 +5,9 @@
 #
 
 bin_SCRIPTS = titan_pilehelper titan_regionhelper r.gmfg.titan s.in.titan \
-	titan_gui.py
+	titan_gui.py getZone.pl
 
 EXTRA_DIST = titan_pilehelper titan_regionhelper r.gmfg.titan s.in.titan \
-	titan_gui.py
+	titan_gui.py getZone.pl
 
 #python_PYTHON = titan_gui.py
-
-
