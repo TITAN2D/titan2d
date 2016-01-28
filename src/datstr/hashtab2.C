@@ -2496,6 +2496,11 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVectorArray(group,drypoint_,2);
     TiH5_readTiVector(group,Swet_);
 
+    //allocate and initialize not stored properties
+    for (int j = 0; j < 8; j++) {
+        neighborPtr_[j].resize(size(),false);
+        node_keyPtr_[j].resize(size(),false);
+    }
 
     updateLocalElements();
     updateNeighboursIndexes();
