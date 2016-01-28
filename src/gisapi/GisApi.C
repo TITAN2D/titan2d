@@ -35,6 +35,7 @@
 #include "GisLines.h"
 
 #include "gmfg_GdalApi.h"
+#include "../header/titan2d_utils.h"
 
 Gis_Grid gis_grid, gis_grid2;
 Gis_Raster gis_rast;
@@ -179,15 +180,20 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
             fprintf(stderr, "FATAL ERROR: Failed to initialize GIS data\n");
             return ierr;
         }
+        calculate_slope();
+        calculate_curvature();
         find_min_max();
         return ierr;
     }
     else
     {
         ierr = Initialize_GIS_data(GISDbase, location, mapset, mapdata);
+        calculate_slope();
+        calculate_curvature();
         find_min_max();
         return ierr;
     }
+
 }
 
 int Initialize_GIS_data(const char* GISDbase, const char* location, const char* mapset, const char* raster_file)
@@ -835,12 +841,7 @@ int Get_slope(const double resolution, double x, double y, double &xslope, doubl
 {
     int status;
     
-    if(gis_grid.xslope == 0)
-    {
-        status = calculate_slope();
-        if(status != 0)
-            return status;
-    }
+    ASSERT3(gis_grid.xslope == 0 && gis_grid.yslope);
     
     if(x >= gis_grid.ghead.xmin && x <= gis_grid.ghead.xmax && y >= gis_grid.ghead.ymin && y <= gis_grid.ghead.ymax)
     {
@@ -1049,12 +1050,7 @@ int Get_slope_array(double* resolution, double* x, double* y, double* xslope, do
     int row, col;
     int i, status;
     
-    if(gis_grid.xslope == 0)
-    {
-        status = calculate_slope();
-        if(status != 0)
-            return status;
-    }
+    ASSERT3(gis_grid.xslope == 0 && gis_grid.yslope);
     
     for(i = 0; i < number_of_locations; i++)
     {
