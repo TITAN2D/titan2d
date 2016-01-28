@@ -19,6 +19,12 @@
 #include "../header/titan2d_utils.h"
 #include "../header/properties.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
 H5::EnumType datatypeElementType;
 H5::EnumType datatypePileType;
 
@@ -73,5 +79,18 @@ void init_TiH5()
     TwoPhasesVarNames.push_back("hVy_liq");
 }
 
+bool ti_dir_exists(const char *filename)
+{
+    struct stat info;
 
-
+    if(stat( filename, &info ) != 0)
+        return false;
+    else if(info.st_mode & S_IFDIR)
+        return true;
+    else
+        return false;
+}
+void ti_mkdir(const char *filename)
+{
+    mkdir(filename, S_IRWXU | S_IRGRP|S_IXGRP | S_IROTH | S_IXOTH);
+}

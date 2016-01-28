@@ -755,6 +755,16 @@ void cxxTitanSimulation::load_restart(const char * restartFilename)
     h5read(&file);
 
     file.close();
+
+    //check output directory and create if necessary
+    if(restart_prefix!="" && ti_dir_exists(restart_prefix.c_str())==false)
+    {
+        ti_mkdir(restart_prefix.c_str());
+    }
+    if(vizoutput_prefix!="" && ti_dir_exists(vizoutput_prefix.c_str())==false)
+    {
+        ti_mkdir(vizoutput_prefix.c_str());
+    }
 }
 void cxxTitanSimulation::save_vizoutput_file(const int mode)
 {
