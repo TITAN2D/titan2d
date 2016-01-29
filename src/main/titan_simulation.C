@@ -892,10 +892,10 @@ void cxxTitanSimulation::run(bool start_from_restart)
         ElemTable->updateNeighboursIndexes();
     }
     
-    ElementsProperties ElemProp(ElemTable, NodeTable);
+    ElementsProperties *ElemProp=ElemTable->ElemProp;
 
-    HAdapt hadapt(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr,5);
-    HAdaptUnrefine Unrefine(ElemTable, NodeTable, &ElemProp,&timeprops,matprops_ptr);
+    HAdapt hadapt(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,5);
+    HAdaptUnrefine Unrefine(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr);
 
     outline.setElemNodeTable(ElemTable,NodeTable);
 

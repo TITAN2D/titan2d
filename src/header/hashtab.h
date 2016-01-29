@@ -46,7 +46,9 @@ class Element;
 class Node;
 class BC;
 class MatProps;
-
+class FluxProps;
+class TimeProps;
+class ElementsProperties;
 
 class HashEntryLine
 {
@@ -631,6 +633,7 @@ public:
     //!used for hdf5 writing, temporary array
     vector<ti_ndx_t> node_ndx_buffer;
 
+    ElementsProperties *ElemProp;
 };
 
 
@@ -682,16 +685,21 @@ public:
     tivector<double> *drypoint_;
     tivector<double> &Swet_;
 
+    tivector<ti_ndx_t> &node_bubble_ndx_;
+
+    tivector<SFC_Key> *node_key_;
     tivector<ti_ndx_t> *node_key_ndx_;
     tivector<double> *el_error_;
     tivector<double> *dx_;
 
+    tivector<double> *node_coord_;
     tivector<double> *node_refinementflux_;
     tivector<double> *node_flux_;
     tivector<int> &node_info_;
 
     tivector<double> *eigenvxymax_;
     tivector<double> *coord_;
+
 
     int myid;
     int numprocs;
@@ -744,6 +752,8 @@ public:
     void calc_d_gravity(ti_ndx_t ndx);
 
 
+
+    void calc_flux(ti_ndx_t ndx,FluxProps *fluxprops, TimeProps *timeprops);
 
 protected:
     vector<double> dtmp;

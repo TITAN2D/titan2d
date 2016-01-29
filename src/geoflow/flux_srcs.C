@@ -49,7 +49,7 @@ void mark_flux_region(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, Ma
             {
                 if (adapted[ndx] > 0)
                     //if this element doesn't belong on this processor don't involve
-                    elements[ndx].calc_flux(NodeTable, fluxprops, timeprops);
+                    ElemTable->ElemProp->calc_flux(ndx, fluxprops, timeprops);
             }
         }
         else

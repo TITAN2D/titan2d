@@ -1144,6 +1144,8 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     
     elementType_=ElementType::UnknownElementType;
     conformation=0;
+
+    ElemProp=new ElementsProperties(this,nodeTable);
 }
 ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonFG *parent, const  string group_name)
         :HashTable<Element>(elem_reserved_size)
@@ -1156,12 +1158,19 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonF
     conformation=0;
 
     h5read(parent,group_name);
+
+    ElemProp=new ElementsProperties(this,nodeTable);
 }
 
 
 ElementsHashTable::~ElementsHashTable()              //evacuate the table
 {
     elementsHashTable=nullptr;
+    if(ElemProp!=nullptr)
+    {
+        delete ElemProp;
+        ElemProp=nullptr;
+    }
 }
 void ElementsHashTable::init(double *doublekeyrangein, int size, double XR[], double YR[])
 {
@@ -2533,6 +2542,7 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 node_key_ndx_(ElemTable->node_key_ndx_),
                 el_error_(ElemTable->el_error_),
                 dx_(ElemTable->dx_),
+                node_coord_(_NodeTable->coord_),
                 node_refinementflux_(_NodeTable->refinementflux_),
                 node_flux_(_NodeTable->flux_),
                 node_info_(_NodeTable->info_),
@@ -2543,7 +2553,9 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 drypoint_(ElemTable->drypoint_),
                 Swet_(ElemTable->Swet_),
                 eigenvxymax_(ElemTable->eigenvxymax_),
-                coord_(ElemTable->coord_)
+                coord_(ElemTable->coord_),
+                node_key_(ElemTable->node_key_),
+                node_bubble_ndx_(ElemTable->node_bubble_ndx_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
