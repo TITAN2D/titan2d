@@ -517,6 +517,21 @@ void merge_vectors_from_threads(vector<T> &where, const vector< vector<T> > &wha
         where.insert(where.end(),what[ithread].begin(), what[ithread].end());
     }
 }
+
+template<typename T>
+void merge_vectors_from_threads_to0(vector< vector<T> > &v)
+{
+    /*size_t  N=0;
+    for(int ithread;ithread<threads_number;++ithread)
+    {
+        N+=what[ithread].size();
+    }*/
+    for(int ithread=1;ithread<v.size();++ithread)
+    {
+        v[0].insert(v[0].end(),v[ithread].begin(), v[ithread].end());
+        v[ithread].resize(0);
+    }
+}
 /**
  * move the content of vector< vector<T> > vec to vec[0]
  * usefull for omp

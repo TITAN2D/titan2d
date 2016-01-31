@@ -491,7 +491,29 @@ public:
     //!same as bubble node index, can be out-dated
     tivector<ti_ndx_t> node_bubble_ndx_;
 
-    //! this array holds the keys of this element's 8 neighbors (2 neigbors to a side if the neighbor is more refined than this element, otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number that fills 2 unsigned variables
+    //! this array holds the keys of this element's 8 neighbors (2nd neigbors to a side if the neighbor is more refined than this element,
+    //! otherwise the two neighbor keys for that side are identical in value), having 8 neighbors is an outcome of the 1 irregularity
+    //! refinement rule, keys are used to access elements or nodes through the appropriate hashtables, each key is a single number
+    //! that fills 2 unsigned variables
+    //!
+    //! Neighbor elements indexes (E0 to E7):
+    //!              Side 2
+    //!           E6        E2
+    //!       3---------6---------2
+    //!       |                   |
+    //!       |                   |
+    //! S E3  |                   |   E5 S
+    //! i     |                   |      i
+    //! d     |                   |      d
+    //! e     7        8/E        5      e
+    //!       |                   |
+    //! 3     |                   |      1
+    //!   E7  |                   |   E1
+    //!       |                   |
+    //!       |                   |
+    //!       0---------4---------1
+    //!            E0       E4
+    //!
     tivector<SFC_Key> neighbors_[8];
 
     //!same as neighbor but pointers, can be out-dated
@@ -667,6 +689,7 @@ public:
     tivector<double> *d_state_vars_;
     tivector<ti_ndx_t> *neighbor_ndx_;
     tivector<SFC_Key> *neighbors_;
+    tivector<int> *neigh_gen_;
     tivector<double> *Influx_;
     tivector<int> &positive_x_side_;
     tivector<int> &stoppedflags_;
@@ -679,6 +702,11 @@ public:
     tivector<double> *kactxy_;
     tivector<int> &material_;
     tivector<int> &myprocess_;
+
+    tivector<int> &which_son_;
+    tivector<int> &opposite_brother_flag_;
+    tivector<SFC_Key> *brothers_;
+    tivector<ti_ndx_t> *brothers_ndx_;
 
     tivector<int> &iwetnode_;
     tivector<double> &Awet_;
@@ -752,7 +780,7 @@ public:
     void calc_d_gravity(ti_ndx_t ndx);
 
 
-
+    //! this function calculates the extrusion (out of the ground) fluxes for this elements
     void calc_flux(ti_ndx_t ndx,FluxProps *fluxprops, TimeProps *timeprops);
 
 protected:

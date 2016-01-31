@@ -21,6 +21,8 @@
 
 #include "../header/hpfem.h"
 #include "../header/hadapt.h"
+#include "../header/hadapt_inline.hpp"
+
 
 //#define MIN_GENERATION -1
 #define TARGET_PROC -1
@@ -55,10 +57,9 @@ int IfMissingElem(HashTable* El_Table, int myid, int iter, int isearch)
     
     return (1);
 }*/
-HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops):
-   ElemTable(_ElemTable),
-   ElemProp(_ElemProp),
-   NodeTable(_NodeTable),
+HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops):
+   EleNodeRef(_ElemTable,_NodeTable),
+   ElemProp(_ElemTable->ElemProp),
    matprops_ptr(_matprops),
    timeprops_ptr(_timeprops)
 {
@@ -72,6 +73,8 @@ HAdaptUnrefine::HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _No
         nodesToDelete[ithread].resize(0);
         elementsToDelete[ithread].resize(0);
     }
+
+    brothers_to_unrefine_ndx.resize(threads_number);
 }
 
 void HAdaptUnrefine::unrefine(const double target)
@@ -89,6 +92,11 @@ void HAdaptUnrefine::unrefine(const double target)
     tivector<int> &which_son=ElemTable->which_son_;
 
     Element* Curr_El;
+    for(int ithread=0;ithread<threads_number;++ithread)
+    {
+        brothers_to_unrefine_ndx[ithread].resize(0);
+    }
+
     NewFatherList.resize(0);
     OtherProcUpdate.resize(0);
     
@@ -108,20 +116,7 @@ void HAdaptUnrefine::unrefine(const double target)
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_init,pt_start);
     
     // start unrefinement
-    //@ElementsSingleLoop
-    for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
-    {
-        if(status[ndx]>=0 && adapted[ndx]==NOTRECADAPTED)
-        {
-            //if this is a refined element don't involve!!!
-
-            // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
-            if((generation[ndx] > MIN_GENERATION) && (which_son[ndx] == 0))
-            {
-                ElemTable->elenode_[ndx].find_brothers(ElemTable, NodeTable, target, myid, matprops_ptr, NewFatherList,OtherProcUpdate);
-            }
-        }
-    }
+    find_brothers_to_unrefine__create_new_fathers(target);
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_find,pt_start);
     //updateBrothersIndexes for new fathers, as brothers which are also new fathers was not handled during initiation
     ElemTable->updateBrothersIndexes(true);
@@ -155,92 +150,6 @@ void HAdaptUnrefine::unrefine(const double target)
     ElemProp->calc_wet_dry_orient2();
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_calc_wet_dry_orient,pt_start);
     return;
-}
-
-int Element::find_brothers(ElementsHashTable* ElemTable, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
-                           vector<ti_ndx_t> &NewFatherList, vector<ti_ndx_t> &OtherProcUpdate)
-{
-    
-    int j;
-    int unrefine_flag = 1;
-    Element* bros[5];
-    ti_ndx_t new_father;
-    ti_ndx_t bros_ndx[4];
-    if(opposite_brother_flag() == 0)
-    {
-        find_opposite_brother(ElemTable);
-        if(opposite_brother_flag() == 0)
-            return 0;
-    }
-    int i = 0;
-    while (i < 4 && unrefine_flag == 1)
-    {
-        Element* EmTemp = (Element*) ElemTable->lookup(brother(i));
-        if(EmTemp == NULL) //|| EmTemp->refined != 0)
-            return 0;
-        else if(EmTemp->adapted_flag() != NOTRECADAPTED) //this should be sufficient
-            return 0;
-        bros[i + 1] = EmTemp;
-        bros_ndx[i] = EmTemp->ndx();
-        if(bros[i + 1]->myprocess() != myid)
-            return 0; //should not be necessary because of "adapted" check
-            
-        unrefine_flag = EmTemp->check_unrefinement(ElemTable, target);
-        i++;
-    }
-    
-    if(unrefine_flag == 1)
-    {
-        // we want to unrefine this element...
-        //first we create the father element
-        new_father = ElemTable->generateAddElement_ndx(bros_ndx, matprops_ptr);
-        ASSERT2(ti_ndx_not_negative(new_father));// a copy of the parent should always be on the same process as the sons
-        NewFatherList.push_back(new_father);
-        
-        for(int ineigh = 0; ineigh < 8; ineigh++)
-        {
-            if((ElemTable->neigh_proc_[ineigh][new_father] >= 0) && (ElemTable->neigh_proc_[ineigh][new_father] != myid))
-            {
-                OtherProcUpdate.push_back(new_father);
-                break;
-            }
-        }
-    }
-    
-    return unrefine_flag;
-}
-
-int Element::check_unrefinement(ElementsHashTable* El_Table, double target)
-{
-    int unrefine_flag = 1, i = 0;
-    
-    //  put in good element check here!!!
-    //if((if_pile_boundary(El_Table,target))||
-    //   (if_source_boundary(El_Table)))
-    //if((state_vars[0] >= target)||(Influx[0]>0.0))
-    if(adapted_flag() != NOTRECADAPTED)
-        //This rules out NEWFATHERs, NEWSONs, BUFFERs, GHOSTs, TOBEDELETEDs, and OLDFATERs
-        //This is a redundant check but is is better to be safe than sorry
-        return (0);
-    
-    /*
-     for(int ineigh=0;ineigh<8;ineigh++)
-     if((neigh_gen[i]>generation)||
-     (((neigh_proc[ineigh]>=0)&&
-     (neigh_proc[ineigh]<myprocess))||
-     ((neigh_proc[ineigh]==-2)&&
-     (neigh_proc[ineigh%4]<myprocess))))
-     return(0);
-     */
-
-    for(int ineigh = 0; ineigh < 8; ineigh++)
-    {
-        if(((neigh_proc(i) != myprocess()) && (neigh_proc(i) >= 0) && (generation() <= 0)) || (neigh_gen(i) > generation()))
-            return (0);
-        i++;
-    }
-    
-    return (1);
 }
 
 void HAdaptUnrefine::delete_oldsons()
@@ -448,6 +357,165 @@ void HAdaptUnrefine::unrefine_neigh_update()
             }
     }
     
+    return;
+}
+void HAdaptUnrefine::find_brothers_to_unrefine__create_new_fathers(double target)
+{
+    #pragma omp parallel
+    {
+        int ithread=omp_get_thread_num();
+        nodesToDelete[ithread].resize(0);
+        elementsToDelete[ithread].resize(0);
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
+        {
+            if(status_[ndx]>=0 && adapted_[ndx]==NOTRECADAPTED)
+            {
+                //if this is a refined element don't involve!!!
+
+                // if this if the original element, don't unrefine.  only son 0 checks for unrefinement!
+                if((which_son_[ndx] == 0) && (generation_[ndx] > MIN_GENERATION))
+                {
+                    find_brothers_to_unrefine(ndx, target, ithread);
+                }
+            }
+        }
+        //convinience reference to 0th element
+        vector< array<ti_ndx_t,4> > &m_brothers_to_unrefine_ndx=brothers_to_unrefine_ndx[0];
+        //!allocate new farthers
+        if(ithread==0)
+        {
+            merge_vectors_from_threads_to0(brothers_to_unrefine_ndx);
+
+            ti_ndx_t N=m_brothers_to_unrefine_ndx.size();
+            for(ti_ndx_t i=0;i<N;++i)
+            {
+                // we want to unrefine this element...
+                //first we create the father element
+                ti_ndx_t new_father = ElemTable->generateAddElement_ndx(node_key_[0][m_brothers_to_unrefine_ndx[i][2]]);
+                ASSERT2(ti_ndx_not_negative(new_father));// a copy of the parent should always be on the same process as the sons
+                NewFatherList.push_back(new_father);
+            }
+        }
+        #pragma omp barrier
+
+        //!init new farthers
+        ti_ndx_t N=m_brothers_to_unrefine_ndx.size();
+        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+        for(ti_ndx_t i=0;i<N;++i)
+        {
+            // we want to unrefine this element...
+            //first we create the father element
+            ti_ndx_t new_father=NewFatherList[i];
+            ElemTable->elenode_[new_father].init(m_brothers_to_unrefine_ndx[i].data(), NodeTable, ElemTable, matprops_ptr);
+        }
+        #pragma omp barrier
+        if(ithread==0)
+        {
+            for(ti_ndx_t i=0;i<N;++i)
+            {
+                ti_ndx_t new_father=NewFatherList[i];
+                for(int ineigh = 0; ineigh < 8; ineigh++)
+                {
+                    if((ElemTable->neigh_proc_[ineigh][new_father] >= 0) && (ElemTable->neigh_proc_[ineigh][new_father] != myid))
+                    {
+                        OtherProcUpdate.push_back(new_father);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void HAdaptUnrefine::find_brothers_to_unrefine(ti_ndx_t ndx,double target, int ithread)
+{
+    ASSERT2(which_son_[ndx]==0);
+
+    int j;
+    int unrefine_flag = 1;
+    ti_ndx_t new_father;
+    std::array<ti_ndx_t,4> bros_ndx;
+    /*if(opposite_brother_flag_[ndx] == 0)
+    {
+        elements_[ndx].find_opposite_brother(ElemTable);
+        if(opposite_brother_flag_[ndx] == 0)
+            return 0;
+    }*/
+    int i = 0;
+    while (i < 4 && unrefine_flag == 1)
+    {
+        ti_ndx_t bro_ndx;
+#ifdef DEB3
+        //extra checking
+        bro_ndx=ElemTable->lookup_ndx(brothers_[i][ndx]);
+        if(i==0)
+        {
+            assert(bro_ndx==ndx);
+        }
+        else if(i==1)
+        {
+            if(neighbor_ndx_[1][ndx]==neighbor_ndx_[5][ndx])
+                assert(bro_ndx==neighbor_ndx_[1][ndx]);
+        }
+        else if(i==2)
+        {
+            if(neighbor_ndx_[2][neighbor_ndx_[1][ndx]]==neighbor_ndx_[6][neighbor_ndx_[1][ndx]])
+                assert(bro_ndx==neighbor_ndx_[2][neighbor_ndx_[1][ndx]]);
+        }
+        else if(i==3)
+        {
+            if(neighbor_ndx_[2][ndx]==neighbor_ndx_[6][ndx])
+                assert(bro_ndx==neighbor_ndx_[2][ndx]);
+        }
+#endif
+        if(i==0)
+        {
+            //0th brother is itself
+            bro_ndx=ndx;
+        }
+        else if(i==1)
+        {
+            //i.e. neighboring element is same generation
+            if(neighbor_ndx_[1][ndx]==neighbor_ndx_[5][ndx])
+                bro_ndx=neighbor_ndx_[1][ndx];
+            else
+                return;
+        }
+        else if(i==2)
+        {
+            //i.e. neighboring element is same generation
+            if(neighbor_ndx_[2][neighbor_ndx_[1][ndx]]==neighbor_ndx_[6][neighbor_ndx_[1][ndx]])
+                bro_ndx=neighbor_ndx_[2][neighbor_ndx_[1][ndx]];
+            else
+                return;
+        }
+        else if(i==3)
+        {
+            //i.e. neighboring element is same generation
+            if(neighbor_ndx_[2][ndx]==neighbor_ndx_[6][ndx])
+                bro_ndx=neighbor_ndx_[2][ndx];
+            else
+                return;
+        }
+
+        if(ti_ndx_negative(bro_ndx)) //|| EmTemp->refined != 0)
+            return;
+
+        if(adapted_[bro_ndx] != NOTRECADAPTED) //this should be sufficient
+            return;
+        bros_ndx[i] = bro_ndx;
+        if(myprocess_[bro_ndx] != myid)
+            return; //should not be necessary because of "adapted" check
+
+        unrefine_flag = check_unrefinement(bro_ndx, target);
+        i++;
+    }
+
+    if(unrefine_flag == 1)
+    {
+        brothers_to_unrefine_ndx[ithread].push_back(bros_ndx);
+    }
     return;
 }
 

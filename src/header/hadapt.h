@@ -357,16 +357,14 @@ private:
 };
 
 //! class for unrefinement
-class HAdaptUnrefine
+class HAdaptUnrefine:public EleNodeRef
 {
 public:
-    ElementsHashTable* ElemTable;
     ElementsProperties* ElemProp;
-    NodeHashTable* NodeTable;
     MatProps* matprops_ptr;
     TimeProps* timeprops_ptr;
 public:
-    HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops);
+    HAdaptUnrefine(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable,TimeProps* _timeprops, MatProps* _matprops);
 
 
     //! this function loops through all the elements on this processor and (by calling other functions) checks which elements satisfy criteria for being okay to unrefine, if they can be it unrefines them.
@@ -376,8 +374,18 @@ private:
     void unrefine_interp_neigh_update();
     void delete_oldsons();
 
+    //! it finds this element's brothers, the element should be 0th brother
+    void find_brothers_to_unrefine(ti_ndx_t ndx,double target, int ithread);
+    void find_brothers_to_unrefine__create_new_fathers(double target);
+
+
+    //! it prevents refinement when one or more of the brothers does not belong to this processor
+    int check_unrefinement(ti_ndx_t ndx, double target);
+
 private:
     //temporary arrays used during refinement
+    vector< vector< array<ti_ndx_t,4> > > brothers_to_unrefine_ndx;
+
     vector<ti_ndx_t> NewFatherList;
     vector<ti_ndx_t> OtherProcUpdate;
 

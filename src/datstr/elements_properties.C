@@ -667,7 +667,6 @@ void ElementsProperties::calc_d_gravity(ti_ndx_t ndx)
 }
 void ElementsProperties::calc_flux(ti_ndx_t ndx,FluxProps *fluxprops, TimeProps *timeprops)
 {
-
     int no_of_sources = fluxprops->no_of_sources;
     double temp_coef;
     double major, minor, dswap, xcoord, ycoord;
@@ -784,3 +783,4 @@ void ElementsProperties::calc_flux(ti_ndx_t ndx,FluxProps *fluxprops, TimeProps 
 
     return;
 }
+

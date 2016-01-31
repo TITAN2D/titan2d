@@ -165,6 +165,8 @@ void HAdapt::create_new_node3(const int which, const ti_ndx_t Node1, const ti_nd
 //only 4 one step because of the info FLAG!!!
 //if the new node is on INTERFACE flag will be -1
 
+// (0) to (3) also which_sons value
+
 void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 {
     PROFILING3_DEFINE(pt_start);

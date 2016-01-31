@@ -653,6 +653,7 @@ void cxxTitanSimulation::xmdfWriteBody(const char *xmdf_filename,const char *hf5
     xmdfNScalarAttributes(xmdf,"el_solution_", hf5_filename, "/ElemTable/el_solution_",EQUATIONS, NumberOfElements, "Float",8, "Cell");
 
     xmdfNScalarAttributes(xmdf,"Influx_", hf5_filename, "/ElemTable/Influx_",NUM_STATE_VARS, NumberOfElements, "Float",8, "Cell",ElementTypesVarNames);
+    xmdfNScalarAttributes(xmdf,"which_son_", hf5_filename, "/ElemTable/which_son_",NUM_STATE_VARS, NumberOfElements, "Int",8, "Cell",ElementTypesVarNames);
 
     if(Quad9)
     {
@@ -895,7 +896,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     ElementsProperties *ElemProp=ElemTable->ElemProp;
 
     HAdapt hadapt(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,5);
-    HAdaptUnrefine Unrefine(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr);
+    HAdaptUnrefine Unrefine(ElemTable, NodeTable, &timeprops,matprops_ptr);
 
     outline.setElemNodeTable(ElemTable,NodeTable);
 

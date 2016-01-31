@@ -577,20 +577,6 @@ public:
     //! this function calculates the gravity vector in local coordinates
     void calc_gravity_vector(MatProps *matprops_ptr);
 
-    //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
-    int find_brothers(ElementsHashTable* El_Table, NodeHashTable* NodeTable, double target, int myid, MatProps* matprops_ptr,
-                      vector<ti_ndx_t> &NewFatherList, vector<ti_ndx_t> &OtherProcUpdate);
-    /*
-     //! this function is defined in unrefine.C, it is also called in that file, it finds this element's brothers
-     int find_brothers(HashTable* El_Table, HashTable* NodeTable, 
-     double target, int myid, MatProps* matprops_ptr,
-     Element **NewFatherList, int* NumNewFathers,
-     Element **OtherProcUpdate, int *NumOtherProcUpdate); 
-     */
-
-    //! this function is defined in unrefine.C, it is also called in that file and no where else, it prevents refinement when one or more of the brothers does not belong to this processor
-    int check_unrefinement(ElementsHashTable *El_Table, double target);
-
     //! this function updates this elements neighbor info when one of its neighbors has been unrefined
     //void change_neigh_info(unsigned *fth_key, unsigned *ng_key, int neworder, int ng_gen, int fth_proc);
 
