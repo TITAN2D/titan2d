@@ -991,9 +991,9 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
 
     //convinience ref
     tivector<double> *g=gravity_;
-    tivector<double> *dgdx=d_gravity_;
+//    tivector<double> *dgdx=d_gravity_;
     tivector<double> &kactxy=effect_kactxy_[0];
-    tivector<double> &bedfrictang=effect_bedfrict_;
+//    tivector<double> &bedfrictang=effect_bedfrict_;
 
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
@@ -1084,17 +1084,11 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
         double speed;
         double forceintx, forceinty;
         double forcebedx, forcebedy;
-        double forcebedmax, forcebedequil;
-        double forcegravx,forcegravy;
-        double forcecolumbfrictx,forcecolumbfricty;
-        double forceturbulencex,forceturbulencey;
+        double forcegrav_x,forcegrav_y;
+        double force_CoulombFrict_x,force_CoulombFrict_y;
+        double force_Turbulence_x,force_Turbulence_y;
         double unitvx, unitvy;
-        double tanbed;
         double Ustore[3];
-
-        double h_inv;
-        double sgn_dudy, sgn_dvdx, tmp;
-        double es, totalShear;
 
         double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
 
@@ -1141,112 +1135,40 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
                 unitvx = 0.0;
                 unitvy = 0.0;
             }
-            tanbed = tan(bedfrictang[ndx]);
-            h_inv = 1.0 / h[ndx];
+//            tanbed = tan(bedfrictang[ndx]);
+//            h_inv = 1.0 / h[ndx];
 
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // x direction source terms
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // the gravity force in the x direction
-            forcegravx = g[0][ndx] * h[ndx];
+             // x direction source terms
+             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-            //the coulomb friction type force
+             // the gravity force in the x direction
+             forcegrav_x = g[0][ndx] * h[ndx];
 
-            forcecolumbfrictx = unitvx * mu * g[2][ndx] * h[ndx];
+             //the Coulomb type friction force in x direction
+             force_CoulombFrict_x = unitvx * mu * g[2][ndx] * h[ndx];
 
-            //the turbulent type force for fast moving flow
-
-            forceturbulencex = unitvx * speed * speed * inv_xi;
-
-
-#ifdef STOPPED_FLOWS
-            if (IF_STOPPED == 2 && 1 == 0) {
-                // the bed friction force for stopped or nearly stopped flow
-
-                // the static friction force is LESS THAN or equal to the friction
-                // coefficient times the normal force but it can NEVER exceed the
-                // NET force it is opposing
-
-                // maximum friction force the bed friction can support
-                forcebedmax = g[2][ndx] * h[ndx] * tanbed;
-
-                // the NET force the bed friction force is opposing
-                forcebedequil = forcegrav - forceintx;
-                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
-
-                // the "correct" stopped or nearly stopped flow bed friction force
-                // (this force is not entirely "correct" it will leave a "negligible"
-                // (determined by stopping criteria) amount of momentum in the cell
-                forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
-                // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
-
-                // not really 1 but this makes friction statistics accurate
-                unitvx = 1.0;
-                // else
-
-            }
-#endif
-            Ustore[1] = Ustore[1] + dt * (forcegravx - forcecolumbfrictx - forceturbulencex);
+             //the Turbulent type force for fast moving flow in x direction
+             force_Turbulence_x = unitvx * speed * speed * inv_xi;
 
 
+             Ustore[1] = Ustore[1] + dt * (forcegrav_x - force_CoulombFrict_x - force_Turbulence_x);
 
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // y direction source terms
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // the gravity force in the y direction
-            forcegravy = g[1][ndx] * h[ndx];
+             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+             // y direction source terms
+             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-            // the coulomb friction type force
-            forcecolumbfricty = unitvy * mu * g[2][ndx] * h[ndx];
+             // the gravity force in the y direction
+             forcegrav_y = g[1][ndx] * h[ndx];
 
-            // the turbulent type force for fast moving flow
-            forceturbulencey = unitvy * (speed * speed) * inv_xi;
+             // the Coulomb type friction force
+             force_CoulombFrict_y = unitvy * mu * g[2][ndx] * h[ndx];
 
-#ifdef STOPPED_FLOWS
-            if (IF_STOPPED == 2 && 1 == 0) {
-                // the bed friction force for stopped or nearly stopped flow
+             // the Turbulent type force for fast moving flow
+             force_Turbulence_y = unitvy * (speed * speed) * inv_xi;
 
-                // the NET force the bed friction force is opposing
-                forcebedequil = forcegrav - forceinty;
-                // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dy
 
-                // the "correct" stopped or nearly stopped flow bed friction force
-                // (this force is not entirely "correct" it will leave a "negligible"
-                // (determined by stopping criteria) amount of momentum in the cell
-                forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedy) + fabs(forcebedequil)));
-
-                // not really 1 but this makes friction statistics accurate
-                unitvy = 1.0;
-                //    else
-            }
-#endif
-            Ustore[2] = Ustore[2] + dt * (forcegravy - forcecolumbfricty - forceturbulencey);
-
-#ifdef STOPPED_FLOWS
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // (erosion terms) this is Camil's logic, Keith changed some variable
-            //names for clarity
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            if ((false) && (do_erosion != 0) && (IF_STOPPED == 0)) {
-                totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
-                if ((totalShear > threshold) && (h[ndx] > 0.004)) {
-
-                    es = erosion_rate * sqrt(fabs(totalShear - threshold));
-                    elem_eroded = dt*es;
-                    Ustore[0] = Ustore[0] + elem_eroded;
-                    Ustore[1] = Ustore[1] + elem_eroded * VxVy[0];
-                    Ustore[2] = Ustore[2] + elem_eroded * VxVy[1];
-                    //write (*,*) 'Doing Keith Erosion Model'
-                }
-            }
-#endif
-            if ((do_erosion != 0) && (h[ndx] > threshold)) {
-                es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
-                Ustore[0] = Ustore[0] + dt * es;
-                Ustore[1] = Ustore[1] + dt * es * Ustore[1];
-                Ustore[2] = Ustore[2] + dt * es * Ustore[2];
-                //write (*,*) 'Doing Camil Erosion Model'
-            }
+             Ustore[2] = Ustore[2] + dt * (forcegrav_y - force_CoulombFrict_y - force_Turbulence_y);
 
         }
 
