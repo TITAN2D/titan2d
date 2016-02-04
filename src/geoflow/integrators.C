@@ -705,7 +705,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
         double h_inv;
         double sgn_dudy, sgn_dvdx, tmp;
         double es, totalShear;
-
+        double inertial_x,inertial_y,drag_x, drag_y;
 
         double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
 
@@ -733,6 +733,10 @@ void Integrator_SinglePhase_Coulomb::corrector()
         unitvx = 0.0;
         unitvy = 0.0;
         elem_eroded = 0.0;
+        inertial_x = 0.0;
+        inertial_y = 0.0;
+        drag_x = 0.0;
+        drag_y = 0.0;
 
         if(h[ndx] > tiny)
         {
@@ -794,7 +798,15 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
             }
 #endif
-            Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx - forceintx);
+
+            //STOPPING CRITERIA
+            inertial_x = fabs(Ustore[1] + dt * forcegrav);
+            drag_x = fabs(dt * (forcebedx - forceintx) );
+
+            if (inertial_x > drag_x)
+                Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx - forceintx);
+            else
+            	Ustore[1] = 0.0;
 
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // y direction source terms
@@ -827,7 +839,16 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 //    else
             }
 #endif
-            Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy - forceinty);
+
+            //STOPPING CRITERIA
+            inertial_y = fabs(Ustore[2] + dt * forcegrav);
+            drag_x = fabs(dt * (forcebedy - forceinty) );
+
+            if (inertial_y > drag_y)
+            	Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy - forceinty);
+            else
+            	Ustore[2] = 0.0;
+
 
 #ifdef STOPPED_FLOWS
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
