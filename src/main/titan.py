@@ -267,33 +267,32 @@ class TitanSimulationBase(object):
             ]
         },
         'Voellmy':{
-            'allParameters':('order','mu','xi','int_frict'), 
+            'allParameters':('order','mu','xi'), 
             'defaultParameters':{
                 'order':'First',
                 'mu' : 0.5,
                 'xi' : 120.0,
-                'int_frict':37.0
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
                     'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Vollmey_FirstOrder
+                    'constructor':Integrator_SinglePhase_Vollmey_Slam
             }]
         },
         'Pouliquen':{
-            'allParameters':('order','phi1','phi2','partdiam','I_O'), 
+            'allParameters':('order','phi1','phi2','phi3','Beta','L'), 
             'defaultParameters':{
                 'order':'First',
-                'phi1':24.0,
-                'phi2':30.0,
-                'partdiam':1.0E-4,
-                'I_O':0.3,
-                'int_frict':37.0
+                'phi1':32.9,
+                'phi2':42.0,
+                'phi3':33.9,
+                'Beta':1.0E-3,
+                'L':0.65
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
                     'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Pouliquen_FirstOrder
+                    'constructor':Integrator_SinglePhase_Pouliquen_Forterre
             }]
         },
         'TwoPhases_Coulomb':{
@@ -433,20 +432,19 @@ class TitanSimulationBase(object):
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                             }
                         ),
-                        'Voellmy':TiArgCheckerAndSetter(
+                        'Voellmy_Slam':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'mu':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'xi':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
-                                'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                             }
                         ),
-                        'Pouliquen':TiArgCheckerAndSetter(
+                        'Pouliquen_Forterre':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'phi1':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'phi2':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
-                                'partdiam':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
-                                'I_O':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
-                                'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''}
+                                'phi3':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'Beta':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'L':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''}
                             }
                         ),
                         'TwoPhases_Coulomb':TiArgCheckerAndSetter(

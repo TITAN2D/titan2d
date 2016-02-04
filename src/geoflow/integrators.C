@@ -662,7 +662,6 @@ void Integrator_SinglePhase_Coulomb::corrector()
          region, as such the only change that having variable bedfriction
          requires is to pass the bedfriction angle for the current element
          rather than the only bedfriction
-
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
 
@@ -1052,7 +1051,6 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
          region, as such the only change that having variable bedfriction
          requires is to pass the bedfriction angle for the current element
          rather than the only bedfriction
-
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
 
@@ -1293,13 +1291,10 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
 
-    const double sin_intfrictang=sin(int_frict);
-
     //convinience ref
     tivector<double> *g=gravity_;
-    tivector<double> *dgdx=d_gravity_;
     tivector<double> &kactxy=effect_kactxy_[0];
-    tivector<double> &bedfrictang=effect_bedfrict_;
+
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
@@ -1355,7 +1350,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
          region, as such the only change that having variable bedfriction
          requires is to pass the bedfriction angle for the current element
          rather than the only bedfriction
-
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
 
@@ -1388,17 +1382,14 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
 
         double speed;
-        double forceintx, forceinty;
+        double forceintx, forceinty, forcebedx, forcebedy;
         double forcebedx1, forcebedx2;
         double forcebedy1, forcebedy2;
         double forcebedmax, forcebedequil, forcegravx, forcegravy;
         double unitvx, unitvy;
-        double tanbed;
         double Ustore[3];
-
         double h_inv;
-        double sgn_dudy, sgn_dvdx, tmp;
-        double es, totalShear;
+
 
         double mu;
         double gama, gama_11, gama_12, gama_22, I_1;
@@ -1425,9 +1416,11 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
         // initialize to zero
         forceintx = 0.0;
+        forcebedx = 0.0;
         forcebedx1 = 0.0;
         forcebedx2 = 0.0;
         forceinty = 0.0;
+        forcebedy = 0.0;
         forcebedy1 = 0.0;
         forcebedy2 = 0.0;
         unitvx = 0.0;
@@ -1457,7 +1450,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                 unitvx = 0.0;
                 unitvy = 0.0;
             }
-            tanbed = tan(bedfrictang[ndx]);
+
             h_inv = 1.0 / h[ndx];
 
             // Calculation of velocity derivatives with respect to x and y
@@ -1471,28 +1464,16 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
             gama_11 = du_dx[0];
             gama_12 = 0.5 * (du_dx[1] + du_dy[0]);
             gama_22 = du_dy[1];
-            
+
             gama = sqrt(0.5 * (gama_11 * gama_11 + 0.5 * gama_12 * gama_12 + gama_22 * gama_22));
-            
+
             // Defining Inertial Number
             I_1 = 2.0 * gama * partdiam / sqrt(0.5 * h[ndx] * g[2][ndx]);
-            
+
             // Defining drag coefficient function
             mu = tan(phi1) + (tan(phi2) - tan(phi1)) / (1.0 + (I_O / I_1));
-            
-            // STOPPING CRITERIA
-            double dtmp1 = Ustore[1] + dt * g[0][ndx] * Ustore[0];
-            double dtmp2 = Ustore[2] + dt * g[1][ndx] * Ustore[0];
-            
-            double shearstress=sqrt(dtmp1 * dtmp1 + dtmp2 * dtmp2);
-            
-            if (shearstress < (tan(phi1) * Ustore[1] * g[2][ndx] * dt))
-            {
-                  Ustore[1] = 0.0;
-                  Ustore[2] = 0.0;
-            }
-            else
-            {
+
+
                 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
                 // x direction source terms
                 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1504,33 +1485,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
 
                 forcebedx2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
-#ifdef STOPPED_FLOWS
-                if (IF_STOPPED == 2 && 1 == 0) {
-                    // the bed friction force for stopped or nearly stopped flow
 
-                    // the static friction force is LESS THAN or equal to the friction
-                    // coefficient times the normal force but it can NEVER exceed the
-                    // NET force it is opposing
-
-                    // maximum friction force the bed friction can support
-                    forcebedmax = g[2][ndx] * h[ndx] * tanbed;
-
-                    // the NET force the bed friction force is opposing
-                    forcebedequil = forcegrav - forceintx;
-                    // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dx
-
-                    // the "correct" stopped or nearly stopped flow bed friction force
-                    // (this force is not entirely "correct" it will leave a "negligible"
-                    // (determined by stopping criteria) amount of momentum in the cell
-                    forcebedx = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedx) + fabs(forcebedequil)));
-                    // forcebedx=sgn_tiny(forcebed2,dmin1(forcebed1,fabs(forcebed2)))
-
-                    // not really 1 but this makes friction statistics accurate
-                    unitvx = 1.0;
-                    // else
-
-                }
-#endif
                 Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx1 - forcebedx2);
 
                 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1541,61 +1496,17 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
                 // the bed friction force for fast moving flow
                 forcebedy1 = h[ndx] * unitvy * (g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx]);
-                
+
 
 				forcebedy2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
-#ifdef STOPPED_FLOWS
-                if (IF_STOPPED == 2 && 1 == 0) {
-                    // the bed friction force for stopped or nearly stopped flow
 
-                    // the NET force the bed friction force is opposing
-                    forcebedequil = forcegrav - forceinty;
-                    // $           -kactxy*g[2]*EmTemp->state_vars(0)*dh_dy
-
-                    // the "correct" stopped or nearly stopped flow bed friction force
-                    // (this force is not entirely "correct" it will leave a "negligible"
-                    // (determined by stopping criteria) amount of momentum in the cell
-                    forcebedy = sgn_tiny(forcebedequil, c_dmin1(forcebedmax, fabs(forcebedy) + fabs(forcebedequil)));
-
-                    // not really 1 but this makes friction statistics accurate
-                    unitvy = 1.0;
-                    //    else
-                }
-#endif
                 Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy1 - forcebedy2);
-
-#ifdef STOPPED_FLOWS
-                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-                // (erosion terms) this is Camil's logic, Keith changed some variable
-                //names for clarity
-                //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-                if ((false) && (do_erosion != 0) && (IF_STOPPED == 0)) {
-                    totalShear = sqrt(forcebedx * forcebedx + forcebedy * forcebedy);
-                    if ((totalShear > threshold) && (h[ndx] > 0.004)) {
-
-                        es = erosion_rate * sqrt(fabs(totalShear - threshold));
-                        elem_eroded = dt*es;
-                        Ustore[0] = Ustore[0] + elem_eroded;
-                        Ustore[1] = Ustore[1] + elem_eroded * VxVy[0];
-                        Ustore[2] = Ustore[2] + elem_eroded * VxVy[1];
-                        //write (*,*) 'Doing Keith Erosion Model'
-                    }
-                }
-#endif
-                if ((do_erosion != 0) && (h[ndx] > threshold)) {
-                    es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
-                    Ustore[0] = Ustore[0] + dt * es;
-                    Ustore[1] = Ustore[1] + dt * es * Ustore[1];
-                    Ustore[2] = Ustore[2] + dt * es * Ustore[2];
-                    //write (*,*) 'Doing Camil Erosion Model'
-                }
-            }
         }
 
 
         // computation of magnitude of friction forces for statistics
-//        elem_forceint = unitvx * forceintx + unitvy*forceinty;
-//        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
+        elem_forceint = unitvx * forceintx + unitvy*forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
 
         // update the state variables
         h[ndx]=Ustore[0];
@@ -1824,7 +1735,6 @@ void Integrator_TwoPhases_Coulomb::corrector()
          region, as such the only change that having variable bedfriction
          requires is to pass the bedfriction angle for the current element
          rather than the only bedfriction
-
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
 
@@ -2446,7 +2356,6 @@ extern "C" void predict_1ph_coul_(double *Uvec, double *dUdx, double *dUdy,
         double *bedfrictang, double *int_frict,
         double *dgdx, double *frict_tiny, int *order_flag,
         double *VxVy, int *if_stopped, double *fluxcoef);
-
 //! the actual corrector timestep update (finite difference predictor finite volume corrector) is done by a fortran call, this should be ripped out and rewritten as a C++ Element member function
 extern "C" void correct_1ph_coul_(double *Uvec, double *Uprev, double *fluxxp,
         double *fluxyp, double *fluxxm, double *fluxym,
@@ -2457,8 +2366,6 @@ extern "C" void correct_1ph_coul_(double *Uvec, double *Uprev, double *fluxxp,
         double *dgdx, double *frict_tiny, double *forceint,
         double *forcebed, int *do_erosion, double *eroded,
         double *VxVy, int *if_stopped, double *fluxcoef);
-
-
 void correct_legacy_c_call(HashTable* NodeTable, HashTable* El_Table, double dt, MatProps* matprops_ptr,
     FluxProps *fluxprops, TimeProps *timeprops, Element *EmTemp, double *forceint, double *forcebed,
     double *eroded, double *deposited)
@@ -2466,52 +2373,39 @@ void correct_legacy_c_call(HashTable* NodeTable, HashTable* El_Table, double dt,
     double dx[2] = {EmTemp->dx(0),EmTemp->dx(1)};
     double dtdx = dt / dx[0];
     double dtdy = dt / dx[1];
-
     double tiny = GEOFLOW_TINY;
     int xp = EmTemp->positive_x_side();
     int yp = (xp + 1) % 4, xm = (xp + 2) % 4, ym = (xp + 3) % 4;
-
     int ivar, j, k;
-
     double fluxxp[3], fluxyp[3], fluxxm[3], fluxym[3];
-
     Node** nodes=EmTemp->getNodesPtrs();
-
     Node* nxp = nodes[xp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xp + 4) * 2);
     for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
         fluxxp[ivar] = nxp->flux[ivar];
-
     Node* nyp = nodes[yp+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (yp + 4) * 2);
     for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
         fluxyp[ivar] = nyp->flux[ivar];
-
     Node* nxm = nodes[xm+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (xm + 4) * 2);
     for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
         fluxxm[ivar] = nxm->flux[ivar];
-
     Node* nym = nodes[ym+4];//(Node*) NodeTable->lookup(EmTemp->getNode() + (ym + 4) * 2);
     for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
         fluxym[ivar] = nym->flux[ivar];
-
     /* the values being passed to correct are for a SINGLE element, NOT a
      region, as such the only change that having variable bedfriction
      requires is to pass the bedfriction angle for the current element
      rather than the only bedfriction
-
      I wonder if this is legacy code, it seems odd that it is only called
      for the SUN Operating System zee ../geoflow/correct.f */
-
 #ifdef DO_EROSION
     int do_erosion=1;
 #else
     int do_erosion = 0;
 #endif
-
 #ifdef STOPCRIT_CHANGE_SOURCE
     int IF_STOPPED=EmTemp->get_stoppedflags();
 #else
     int IF_STOPPED = !(!EmTemp->get_stoppedflags());
-
     double *state_vars = EmTemp->get_state_vars();
     double *prev_state_vars = EmTemp->get_prev_state_vars();
     double *d_state_vars = EmTemp->get_d_state_vars();
@@ -2522,7 +2416,6 @@ void correct_legacy_c_call(HashTable* NodeTable, HashTable* El_Table, double dt,
     double effect_bedfrict = EmTemp->get_effect_bedfrict();
     double *effect_kactxy = EmTemp->get_effect_kactxy();
     double *Influx = EmTemp->get_influx();
-
     double VxVy[2];
     if (state_vars[0] > GEOFLOW_TINY) {
         VxVy[0] = state_vars[1] / state_vars[0];
@@ -2530,31 +2423,23 @@ void correct_legacy_c_call(HashTable* NodeTable, HashTable* El_Table, double dt,
     } else {
         VxVy[0] = VxVy[1] = 0.0;
     }
-
     EmTemp->convect_dryline(VxVy, dt); //this is necessary
-
     correct_(state_vars, prev_state_vars, fluxxp, fluxyp, fluxxm, fluxym, &tiny, &dtdx, &dtdy, &dt,
         d_state_vars, (d_state_vars + NUM_STATE_VARS), &(zeta[0]), &(zeta[1]), curvature,
         &(matprops_ptr->intfrict), &effect_bedfrict, gravity, effect_kactxy, d_gravity,
         &(matprops_ptr->frict_tiny), forceint, forcebed, &do_erosion, eroded, VxVy, &IF_STOPPED,
         Influx);
-
     *forceint *= dx[0] * dx[1];
     *forcebed *= dx[0] * dx[1];
     *eroded *= dx[0] * dx[1];
-
 #endif
-
     if (EmTemp->get_stoppedflags() == 2)
         *deposited = state_vars[0] * dx[0] * dx[1];
     else
         *deposited = 0.0;
-
     if (EmTemp->get_stoppedflags())
         *eroded = 0.0;
-
     EmTemp->calc_shortspeed(1.0 / dt);
-
     return;
 }
 void Integrator_Legacy::predictor()
@@ -2564,7 +2449,6 @@ void Integrator_Legacy::predictor()
     double curr_time, influx[3];
     double VxVy[2];
     double dt2 = .5 * dt; // dt2 is set as dt/2 !
-
     Element* Curr_El;
     //#pragma omp parallel for                                                \
     //private(currentPtr,Curr_El,IF_STOPPED,influx,j,k,curr_time,flux_src_coef,VxVy)
@@ -2572,22 +2456,17 @@ void Integrator_Legacy::predictor()
     {
         Curr_El = &(elements_[ndx]);
         elements_[ndx].update_prev_state_vars();
-
         influx[0] = Curr_El->Influx(0);
         influx[1] = Curr_El->Influx(1);
         influx[2] = Curr_El->Influx(2);
-
         //note, now there is no check for fluxes from non-local elements
         if(!(influx[0] >= 0.0))
         {
             printf("negative influx=%g\n", influx[0]);
             assert(0);
         }
-
         // -- calc contribution of flux source
         curr_time = (timeprops_ptr->cur_time) * (timeprops_ptr->TIME_SCALE);
-
-
         //VxVy[2];
         if(Curr_El->state_vars(0) > GEOFLOW_TINY)
         {
@@ -2596,7 +2475,6 @@ void Integrator_Legacy::predictor()
         }
         else
             VxVy[0] = VxVy[1] = 0.0;
-
 #ifdef STOPCRIT_CHANGE_SOURCE
         IF_STOPPED=Curr_El->stoppedflags();
 #else
@@ -2604,14 +2482,12 @@ void Integrator_Legacy::predictor()
 #endif
         double gravity[3]{Curr_El->gravity(0),Curr_El->gravity(1),Curr_El->gravity(2)};
         double d_gravity[3]{Curr_El->d_gravity(0),Curr_El->d_gravity(1),Curr_El->d_gravity(2)};
-
         if(elementType == ElementType::TwoPhases)
         {
             //nothing there
         }
         if(elementType == ElementType::SinglePhase)
         {
-
             predict(Curr_El,
                     Curr_El->dh_dx(), Curr_El->dhVx_dx(), Curr_El->dhVy_dx(),
                     Curr_El->dh_dy(), Curr_El->dhVx_dy(), Curr_El->dhVy_dy(),
@@ -2619,7 +2495,6 @@ void Integrator_Legacy::predictor()
                     matprops_ptr->bedfrict[Curr_El->material()], matprops_ptr->intfrict,
                     d_gravity, matprops_ptr->frict_tiny, order, VxVy, IF_STOPPED, influx);
         }
-
         // apply bc's
         for(int j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
@@ -2630,20 +2505,16 @@ void Integrator_Legacy::predictor()
 void Integrator_Legacy::corrector()
 {
     Element* Curr_El;
-
     //for comparison of magnitudes of forces in slumping piles
     forceint = 0.0;
     forcebed = 0.0;
     eroded = 0.0;
     deposited = 0.0;
     realvolume = 0.0;
-
     double elemforceint;
     double elemforcebed;
     double elemeroded;
     double elemdeposited;
-
-
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
@@ -2652,28 +2523,22 @@ void Integrator_Legacy::corrector()
         Curr_El = &(elements_[ndx]);
         double dx = Curr_El->dx(0);
         double dy = Curr_El->dx(1);
-
         //if first order states was not updated as there is no predictor
         if(order==1)
             elements_[ndx].update_prev_state_vars();
-
         void *Curr_El_out = (void *) Curr_El;
         correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, Curr_El_out, &elemforceint,
                 &elemforcebed, &elemeroded, &elemdeposited);
-
         forceint += fabs(elemforceint);
         forcebed += fabs(elemforcebed);
         realvolume += dx * dy * Curr_El->state_vars(0);
         eroded += elemeroded;
         deposited += elemdeposited;
-
         // apply bc's
         for(int j = 0; j < 4; j++)
             if(Curr_El->neigh_proc(j) == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     Curr_El->state_vars(k, 0.0);
     }
-
 }
 #endif
-

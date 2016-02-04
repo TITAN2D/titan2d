@@ -191,10 +191,7 @@ double Integrator_SinglePhase_Voellmy_Slam::get_coef_and_eigen(int ghost_flag)
                 if(hmax < h[ndx])
                     hmax = h[ndx];
 
-                gmfggetcoef_VS(h[ndx], hVx[ndx], hVy[ndx],
-                        dh_dx[ndx], dhVx_dx[ndx],
-                        dh_dy[ndx], dhVy_dy[ndx],
-                        kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
+                gmfggetcoef_VS(kactxy_[0][ndx], kactxy_[1][ndx], scale_.epsilon);
 
 //                elements_[ndx].calc_stop_crit(matprops_ptr, this);
 //
@@ -303,15 +300,12 @@ double Integrator_SinglePhase_Pouliquen_Forterre::get_coef_and_eigen(int ghost_f
                 if(hmax < h[ndx])
                     hmax = h[ndx];
 
-                gmfggetcoef_PF(h[ndx], hVx[ndx], hVy[ndx],
-                        dh_dx[ndx], dhVx_dx[ndx],
-                        dh_dy[ndx], dhVy_dy[ndx],
-                        kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
+                gmfggetcoef_PF(kactxy_[0][ndx], kactxy_[1][ndx], scale_.epsilon);
 
-//                elements_[ndx].calc_stop_crit(matprops_ptr, this);
-//
-//                if((stoppedflags_[ndx] < 0) || (stoppedflags_[ndx] > 2))
-//                    printf("get_coef_and_eigen stopped flag=%d\n", stoppedflags_[ndx]);
+                elements_[ndx].calc_stop_crit(matprops_ptr, this);
+
+                if((stoppedflags_[ndx] < 0) || (stoppedflags_[ndx] > 2))
+                    printf("get_coef_and_eigen stopped flag=%d\n", stoppedflags_[ndx]);
 
                 //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
                 //rule speed if it is smaller) because underestimating speed (which

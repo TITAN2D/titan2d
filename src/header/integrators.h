@@ -301,15 +301,11 @@ public:
 
 protected:
     //! calculation of k active passive
-    virtual void gmfggetcoef_VS(const double h,const double hVx,const double hVy,
-            const double dh_dx,const double dhVx_dx,
-            const double dh_dy,const double dhVy_dy,
-            double &Kactx, double &Kacty, const double tiny,
-        const double epsilon)
+    virtual void gmfggetcoef_VS(double &Kactx, double &Kacty,const double epsilon)
     {
         Kactx = 1.0;
         Kacty = 1.0;
-//        }
+
         Kactx = epsilon * Kactx;
         Kacty = epsilon * Kacty;
     }
@@ -379,11 +375,7 @@ public:
 
 protected:
     //! calculation of k active passive
-    virtual void gmfggetcoef_PF(const double h,const double hVx,const double hVy,
-            const double dh_dx,const double dhVx_dx,
-            const double dh_dy,const double dhVy_dy,
-            double &Kactx, double &Kacty, const double tiny,
-        const double epsilon)
+    virtual void gmfggetcoef_PF(double &Kactx, double &Kacty,const double epsilon)
     {
         Kactx = 1.0;
         Kacty = 1.0;
