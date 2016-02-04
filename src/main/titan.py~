@@ -296,6 +296,22 @@ class TitanSimulationBase(object):
                     'constructor':Integrator_SinglePhase_Pouliquen_FirstOrder
             }]
         },
+        'Maeno':{
+            'allParameters':('order','phis', 'phi2','partdiam', 'I_not'),
+            'defaultParameters':{
+                'order':'First',
+                'phis':24.0,
+                'phi2':30.0,
+                'partdiam':1.0E-4,
+                'I_not':0.3,
+                'int_frict':37.0
+            },
+            'elementType':ElementType_SinglePhase,
+            'integrators':[{
+                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                    'constructor':Integrator_SinglePhase_Maeno_FirstOrder
+            }],
+        },
         'TwoPhases_Coulomb':{
             'allParameters':('order','int_frict',), 
             'defaultParameters':{'order':'First','int_frict':37.0},
@@ -446,6 +462,15 @@ class TitanSimulationBase(object):
                                 'phi2':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'partdiam':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'I_O':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''}
+                            }
+                        ),
+                        'Maeno':TiArgCheckerAndSetter(
+                            levelZeroParameters={
+                                'phis':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'phi2':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'partdiam':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'I_not':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''}
                             }
                         ),
