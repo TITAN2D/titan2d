@@ -286,8 +286,8 @@ class TitanSimulationBase(object):
                 'phi1':32.9,
                 'phi2':42.0,
                 'phi3':33.9,
-                'Beta':1.0E-3,
-                'L_material':0.65
+                'Beta':0.65,
+                'L_material':1.0E-3
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
