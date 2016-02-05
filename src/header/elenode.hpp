@@ -21,6 +21,6 @@
 #include "hashtab.h"
 #include "node_inline.h"
 #include "element_inline.h"
-
+#include "elements_properties_inline.hpp"
 #endif	/* ELENODE_HPP */
 
