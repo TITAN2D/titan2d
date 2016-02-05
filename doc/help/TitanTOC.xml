@@ -15,10 +15,13 @@
    <tocitem text="GIS Tab" target="gis" expand="false">
    </tocitem>
 
-   <tocitem text="General Tab" target="general" expand="true">
+   <tocitem text="Run Parameters Tab" target="general" expand="true">
    </tocitem>
 
-   <tocitem text="Material Map Tab" target="material map" expand="true">
+   <tocitem text="Output Options Tab" target="joboptions" expand="true">
+   </tocitem>
+
+   <tocitem text="Material Model and Map Tab" target="material map" expand="true">
    </tocitem>
 
    <tocitem text="Piles Tab" target="piles" expand="true">
@@ -28,9 +31,6 @@
    </tocitem>
 
    <tocitem text="Discharge Planes Tab" target="discharge" expand="true">
-   </tocitem>
-
-   <tocitem text="Job Options Tab" target="joboptions" expand="true">
    </tocitem>
 
    <tocitem text="Job Submission Tab" target="jobsubmission" expand="true">

@@ -7,38 +7,18 @@ Help Overview
 </HEAD>
 <BODY BGCOLOR="#ffffff">
 
-<h1>Job Options</h1>
+<h1>Output Options</h1>
 
-<h2>Maximum Number of Time Steps</h2>
-The integer value can be entered in this text field.
-A maximum number of time steps that the simulation will run.
-For most simulations, this should be in the 1,000s range.
-The field cannot be left blank.
-
-<h2>Maximum Time</h2>
-The decimal value can be entered in this text field.
-The maximum amount of time that the simulation will approximate.
-The field cannot be left blank.
+<h2>Overwrite Output</h2>
+Results overwrite safety flag.  If set to False, aborts simulation if output files with same names exist in the current working directory.  If set to True, overwrite previous output.
 
 <h2>Restart Output</h2>
 
 <h3>Time Between Results Output</h3>
 The decimal value, in seconds, can be entered in this text field.
-This corresponds to how often results will be saved to file for later analysis.
-These files can become very large and the user may not need to see results for
-every time step since some time steps may have little change in the results from
-the previous time step.  For example, a user may wish to only save a timestep
-every 5 seconds of simulated time.  If desired, the user may choose to use a
-fraction of a second.  The field cannot be left blank.
 
 <h3>Time Between Saves</h3>
 The decimal value, in seconds, can be entered in this text field.
-Specify the frequency at which the configuration of the simulation is saved to
-a restart0000.x file.  To continue a given simulation, rename the most recent
-restart0000.x file to restart0000.this and run titan again as usual. (Note
-that additional restart0001.x, restart0002.x, etc. files will exist - and will
-also have to be renamed - for multi-processor runs).
-The field cannot be left blank.
 
 <h3>Keep All</h3>
 Keep all restart files.  If set to False, keep only the last restart file.
