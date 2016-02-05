@@ -1239,8 +1239,8 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     phi1=32.9;//in degrees, will convert to rad on scale (0.41887902 rad);
     phi2=42.0;//in degrees, will convert to rad on scale (0.523598776 rad);
     phi3=33.9;
-    Beta=1.0E-3;
-    L_material=0.65;
+    Beta=0.65;
+    L_material=1.0E-4;
 }
 
 bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
@@ -1273,8 +1273,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::print0(int spaces)
     printf("%*cphi1:%.3f\n", spaces+4,' ',scaled?phi1*180.0/PI:phi1);
     printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
     printf("%*cphi3:%.3f\n", spaces+4,' ',scaled?phi3*180.0/PI:phi3);
-    printf("%*cBeta:%.3e\n", spaces+4,' ',Beta);
-    printf("%*cL_material:%.3f\n", spaces+4,' ',scaled?L_material*scale_.length:L_material);
+    printf("%*cBeta:%.3f\n", spaces+4,' ',Beta);
+    printf("%*cL_material:%.3e\n", spaces+4,' ',scaled?L_material*scale_.length:L_material);
     Integrator_SinglePhase::print0(spaces+4);
 }
 
