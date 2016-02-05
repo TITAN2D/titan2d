@@ -990,9 +990,7 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
 
     //convinience ref
     tivector<double> *g=gravity_;
-//    tivector<double> *dgdx=d_gravity_;
     tivector<double> &kactxy=effect_kactxy_[0];
-//    tivector<double> &bedfrictang=effect_bedfrict_;
 
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
@@ -1238,10 +1236,11 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     assert(elementType==ElementType::SinglePhase);
     assert(order==1);
 
-    phi1=24.0;//in degrees, will convert to rad on scale (0.41887902 rad);
-    phi2=30.0;//in degrees, will convert to rad on scale (0.523598776 rad);
-    partdiam=1.0E-4;
-    I_O=0.3;
+    phi1=32.9;//in degrees, will convert to rad on scale (0.41887902 rad);
+    phi2=42.0;//in degrees, will convert to rad on scale (0.523598776 rad);
+    phi3=33.9;
+    Beta=1.0E-3;
+    L_material=0.65;
 }
 
 bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
@@ -1250,6 +1249,8 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
     {
         phi1*=PI/180.0;
         phi2*=PI/180.0;
+        phi3*=PI/180.0;
+        L_material = L_material/scale_.length;
         return true;
     }
     return false;
@@ -1260,6 +1261,8 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::unscale()
     {
         phi1*=180.0/PI;
         phi2*=180.0/PI;
+        phi3*=180.0/PI;
+        L_material = L_material*scale_.length;
         return true;
     }
     return false;
@@ -1269,8 +1272,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::print0(int spaces)
     printf("%*cIntegrator: single phase, Pouliquen_Forterre model, first order\n", spaces,' ');
     printf("%*cphi1:%.3f\n", spaces+4,' ',scaled?phi1*180.0/PI:phi1);
     printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
-    printf("%*cpartdiam:%.3e\n", spaces+4,' ',partdiam);
-    printf("%*cI_O:%.3f\n", spaces+4,' ',I_O);
+    printf("%*cphi3:%.3f\n", spaces+4,' ',scaled?phi3*180.0/PI:phi3);
+    printf("%*cBeta:%.3e\n", spaces+4,' ',Beta);
+    printf("%*cL_material:%.3f\n", spaces+4,' ',scaled?L_material*scale_.length:L_material);
     Integrator_SinglePhase::print0(spaces+4);
 }
 
@@ -1382,18 +1386,15 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
 
         double speed;
-        double forceintx, forceinty, forcebedx, forcebedy;
-        double forcebedx1, forcebedx2;
-        double forcebedy1, forcebedy2;
-        double forcebedmax, forcebedequil, forcegravx, forcegravy;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedx1, forcebedy1;
+        double forcebedx2, forcebedy2;
+        double forcegravx, forcegravy;
         double unitvx, unitvy;
         double Ustore[3];
-        double h_inv;
-
-
-        double mu;
-        double gama, gama_11, gama_12, gama_22, I_1;
-        double du_dx[2], du_dy[2];
+        double mu_bed, mu_1, mu_2, mu_3, Local_Fr;
+        double inertial_x,inertial_y,drag_x, drag_y;
 
 
         double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
@@ -1415,23 +1416,24 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                 + dt * Influx_[2][ndx];
 
         // initialize to zero
+        forcegravx = 0.0;
+        forcegravy = 0.0;
         forceintx = 0.0;
         forcebedx = 0.0;
-        forcebedx1 = 0.0;
-        forcebedx2 = 0.0;
         forceinty = 0.0;
         forcebedy = 0.0;
+        forcebedx1 = 0.0;
         forcebedy1 = 0.0;
+        forcebedx2 = 0.0;
         forcebedy2 = 0.0;
         unitvx = 0.0;
         unitvy = 0.0;
+        inertial_x = 0.0;
+        inertial_y = 0.0;
+        drag_x = 0.0;
+        drag_y = 0.0;
         elem_eroded = 0.0;
-        I_1 = 0.0;
-        mu = 0.0;
-        gama = 0.0;
-        gama_11 = 0.0;
-        gama_12 = 0.0;
-        gama_22 = 0.0;
+        mu_bed = 0.0;
         
         if(h[ndx] > tiny)
         {
@@ -1450,57 +1452,70 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                 unitvx = 0.0;
                 unitvy = 0.0;
             }
+            Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] );
 
-            h_inv = 1.0 / h[ndx];
+            mu_1 = tan(phi1);
+            mu_2 = tan(phi2);
+            mu_3 = tan(phi3);
 
-            // Calculation of velocity derivatives with respect to x and y
+            //ccccccccccccccc Calculation of mu_bed(Local_Fr,h) ccccccccccccccccc
 
-            du_dx[0] = (dhVx_dx[ndx] - hVx[ndx] * dh_dx[ndx]) * h_inv;
-            du_dx[1] = (dhVy_dx[ndx] - hVy[ndx] * dh_dx[ndx]) * h_inv;
-            du_dy[0] = (dhVx_dy[ndx] - hVx[ndx] * dh_dy[ndx]) * h_inv;
-            du_dy[1] = (dhVy_dy[ndx] - hVy[ndx] * dh_dy[ndx]) * h_inv;
+            //Dynamic flow regime
+			if ( Local_Fr >= Beta )
+				mu_bed = mu_1 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] * Beta / ( L_material * Local_Fr ) );
 
-            // Calculation of strain rate
-            gama_11 = du_dx[0];
-            gama_12 = 0.5 * (du_dx[1] + du_dy[0]);
-            gama_22 = du_dy[1];
+            //Intermediate flow regime
+			else if ( ( Local_Fr < Beta ) && ( Local_Fr > 0.0 ) )
+				mu_bed = mu_3 + pow( ( Local_Fr / Beta ), 0.001 ) * ( mu_1 - mu_3 ) + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material );
 
-            gama = sqrt(0.5 * (gama_11 * gama_11 + 0.5 * gama_12 * gama_12 + gama_22 * gama_22));
+            //Static regime
+			else if ( Local_Fr == 0.0 )
+				mu_bed = mu_3 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material);
 
-            // Defining Inertial Number
-            I_1 = 2.0 * gama * partdiam / sqrt(0.5 * h[ndx] * g[2][ndx]);
+			//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+			// x direction source terms
+			//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-            // Defining drag coefficient function
-            mu = tan(phi1) + (tan(phi2) - tan(phi1)) / (1.0 + (I_O / I_1));
+			// the gravity force in the x direction
+			forcegravx = g[0][ndx] * h[ndx];
 
+			// the bed friction forces for fast moving flow in x direction
+			forcebedx1 = h[ndx] * unitvx * mu_bed * ( g[2][ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx] );
 
-                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-                // x direction source terms
-                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-                // the gravity force in the x direction
-                forcegravx = g[0][ndx] * h[ndx];
+			forcebedx2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
 
-                // the bed friction force for fast moving flow
-                forcebedx1 = h [ndx] * unitvx * mu *(g[2][ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx]);
+			//STOPPING CRITERIA
+			inertial_x = fabs( Ustore[1] + dt * forcegravx );
 
+			drag_x = fabs( dt * ( forcebedx1 + forcebedx2 ) );
 
-                forcebedx2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
+			if ( inertial_x > drag_x )
+				Ustore[1] = Ustore[1] + dt * ( forcegravx - forcebedx1 - forcebedx2 );
+			else
+				Ustore[1] = 0.0;
 
-                Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx1 - forcebedx2);
+			//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+			// y direction source terms
+			//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-                //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-                // y direction source terms
-                //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-                // the gravity force in the y direction
-                forcegravy = g[1][ndx] * h[ndx];
+			// the gravity force in the y direction
 
-                // the bed friction force for fast moving flow
-                forcebedy1 = h[ndx] * unitvy * (g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx]);
+			forcegravy = g[1][ndx] * h[ndx];
 
+			// the bed friction forces for fast moving flow in y direction
+			forcebedy1 = h[ndx] * unitvy * ( g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx] );
 
-				forcebedy2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
+			forcebedy2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
 
-                Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy1 - forcebedy2);
+			//STOPPING CRITERIA
+			inertial_y = fabs( Ustore[2] + dt * forcegravy );
+
+			drag_y = fabs( dt * ( forcebedy1 + forcebedy2 ) );
+
+			if ( inertial_y > drag_y )
+				Ustore[2] = Ustore[2] + dt * ( forcegravy - forcebedy1 - forcebedy2 );
+			else
+				Ustore[2] = 0.0;
         }
 
 
@@ -1556,8 +1571,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, st
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Pouliquen_Forterre","Type");
     TiH5_writeDoubleAttribute(group, phi1);
     TiH5_writeDoubleAttribute(group, phi2);
-    TiH5_writeDoubleAttribute(group, partdiam);
-    TiH5_writeDoubleAttribute(group, I_O);
+    TiH5_writeDoubleAttribute(group, phi3);
+    TiH5_writeDoubleAttribute(group, Beta);
+    TiH5_writeDoubleAttribute(group, L_material);
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1565,8 +1581,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *paren
     H5::Group group(parent->openGroup(group_name));
     TiH5_readDoubleAttribute(group, phi1);
     TiH5_readDoubleAttribute(group, phi2);
-    TiH5_readDoubleAttribute(group, partdiam);
-    TiH5_readDoubleAttribute(group, I_O);
+    TiH5_readDoubleAttribute(group, phi3);
+    TiH5_readDoubleAttribute(group, Beta);
+    TiH5_readDoubleAttribute(group, L_material);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1643,8 +1660,6 @@ bool Integrator_TwoPhases_Coulomb::unscale()
 void Integrator_TwoPhases_Coulomb::print0(int spaces)
 {
     printf("%*cIntegrator: two phases, Coulomb model, first order\n", spaces,' ');
-    //printf("%*cmu:%.3f\n", spaces+4,' ',mu);
-    //printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
     Integrator_TwoPhases::print0(spaces+4);
 }
 void Integrator_TwoPhases_Coulomb::predictor()

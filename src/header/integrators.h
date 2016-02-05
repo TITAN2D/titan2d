@@ -370,8 +370,9 @@ protected:
 public:
     double phi1;
     double phi2;
-    double partdiam;
-    double I_O;
+    double phi3;
+    double Beta;
+    double L_material;
 
 protected:
     //! calculation of k active passive
