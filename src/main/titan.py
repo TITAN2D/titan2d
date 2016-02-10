@@ -266,7 +266,7 @@ class TitanSimulationBase(object):
                 }
             ]
         },
-        'Voellmy':{
+        'Voellmy-Slam':{
             'allParameters':('order','mu','xi'), 
             'defaultParameters':{
                 'order':'First',
@@ -279,7 +279,7 @@ class TitanSimulationBase(object):
                     'constructor':Integrator_SinglePhase_Voellmy_Slam
             }]
         },
-        'Pouliquen':{
+        'Pouliquen-Forterre':{
             'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
             'defaultParameters':{
                 'order':'First',
@@ -398,30 +398,7 @@ class TitanSimulationBase(object):
             sectionName="setMatModel",
             levelZeroParameters={                                      
             },
-            defaultParameters={'use_gis_matmap':False},
             switchArguments={
-                'use_gis_matmap':
-                {
-                    'desc':'',
-                    'validator':VarType(bool).chk,
-                    'switches':{
-                        False:TiArgCheckerAndSetter(
-                            levelZeroParameters={
-                                'bed_frict':{'desc':'',
-                                    'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk
-                                }
-                            }
-                        ),
-                        True:TiArgCheckerAndSetter(
-                            levelZeroParameters={
-                                'bed_frict':{'desc':'should be tuple of tuple with name and bed_frict',
-                                    #@todo better validator for bed_frict in case of use_gis_matmap=True
-                                    'validator':VarTypeTupleSimple
-                                }
-                            }
-                        ),
-                    }
-                },
                 'model':
                 {
                     'desc':'',
@@ -430,15 +407,40 @@ class TitanSimulationBase(object):
                         'Coulomb':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                            },
+                            defaultParameters={'use_gis_matmap':False},
+                            switchArguments={
+                                'use_gis_matmap':
+                                {
+                                    'desc':'',
+                                    'validator':VarType(bool).chk,
+                                    'switches':{
+                                        False:TiArgCheckerAndSetter(
+                                            levelZeroParameters={
+                                                'bed_frict':{'desc':'',
+                                                    'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk
+                                                }
+                                            }
+                                        ),
+                                        True:TiArgCheckerAndSetter(
+                                            levelZeroParameters={
+                                                'bed_frict':{'desc':'should be tuple of tuple with name and bed_frict',
+                                                    #@todo better validator for bed_frict in case of use_gis_matmap=True
+                                                    'validator':VarTypeTupleSimple
+                                                }
+                                            }
+                                        ),
+                                    }
+                                }
                             }
                         ),
-                        'Voellmy':TiArgCheckerAndSetter(
+                        'Voellmy-Slam':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'mu':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'xi':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                             }
                         ),
-                        'Pouliquen':TiArgCheckerAndSetter(
+                        'Pouliquen-Forterre':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'phi1':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'phi2':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
@@ -450,6 +452,31 @@ class TitanSimulationBase(object):
                         'TwoPhases_Coulomb':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                            },
+                            defaultParameters={'use_gis_matmap':False},
+                            switchArguments={
+                                'use_gis_matmap':
+                                {
+                                    'desc':'',
+                                    'validator':VarType(bool).chk,
+                                    'switches':{
+                                        False:TiArgCheckerAndSetter(
+                                            levelZeroParameters={
+                                                'bed_frict':{'desc':'',
+                                                    'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk
+                                                }
+                                            }
+                                        ),
+                                        True:TiArgCheckerAndSetter(
+                                            levelZeroParameters={
+                                                'bed_frict':{'desc':'should be tuple of tuple with name and bed_frict',
+                                                    #@todo better validator for bed_frict in case of use_gis_matmap=True
+                                                    'validator':VarTypeTupleSimple
+                                                }
+                                            }
+                                        ),
+                                    }
+                                }
                             }
                         ),
                     }
@@ -942,7 +969,7 @@ class TitanSimulation(TitanSimulationBase):
         ##################
         # MatMap
         #Use GIS Material Map?        
-        self.sim.use_gis_matmap = ui_MatModel['use_gis_matmap']
+        self.sim.use_gis_matmap = ui_MatModel.get('use_gis_matmap',False)
         
         #here we need to set mat prop
         if self.sim.get_element_type()==ElementType_SinglePhase:
@@ -953,9 +980,10 @@ class TitanSimulation(TitanSimulationBase):
         matprops.number_of_cells_across_axis = int(ui_NumProp['number_of_cells_across_axis'])
         
         if self.sim.use_gis_matmap == False:
-            matprops.material_count=1
-            matprops.matnames.push_back("all materials")
-            matprops.bedfrict.push_back(float(ui_MatModel['bed_frict']))
+            if ui_MatModel['model']=='Coulomb' or ui_MatModel['model']=='TwoPhases_Coulomb':
+                matprops.material_count=1
+                matprops.matnames.push_back("all materials")
+                matprops.bedfrict.push_back(float(ui_MatModel['bed_frict']))
         else:  #if they did want to use a GIS material map...
             #matprops.material_count=len(mat_names)
             #if len(bed_frict)!=len(mat_names):
