@@ -96,13 +96,18 @@ class VarTypeTuple:
         return tuple(value_out)
 
 class VarTypeDictConvert:
-    def __init__(self,dictConv):
+    def __init__(self,dictConv,NoneToStringNone=False):
         self.dictConv=dictConv
+        self.NoneToStringNone=NoneToStringNone
     def chk(self,sectionName,varName,value):
-        if value not in self.dictConv.keys():
-            raise ValueError(sectionName+": argument "+varName+" (="+str(value)+") has incorrect value!"+\
+        value2=value
+        if self.NoneToStringNone and value==None:
+            value2="None"
+            
+        if value2 not in self.dictConv.keys():
+            raise ValueError(sectionName+": argument "+varName+" (="+str(value2)+") has incorrect value!"+\
                     "Possible values: "+",".join(self.dictConv.keys()))
-        return self.dictConv[value]
+        return self.dictConv[value2]
     
 class TiArgCheckerAndSetter(object):
     def __init__(self,sectionName="",levelZeroParameters={},defaultParameters={},switchArguments={},optionalParameters=[]):
@@ -256,8 +261,8 @@ class TitanSimulationBase(object):
     #defaultParameters can be removed
     possible_internal_mat_models={
         'Coulomb':{
-            'allParameters':('order','int_frict'),
-            'defaultParameters':{'order':'First','int_frict':37.0},
+            'allParameters':('order','int_frict','stopping_criteria'),
+            'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
             'elementType':ElementType_SinglePhase,
             'integrators':[
                 {
@@ -305,6 +310,10 @@ class TitanSimulationBase(object):
             }]
         }
     }
+    possible_stopping_criteria={
+        'None':0,
+        'DragBased':1
+     }
     default_GIS={
                  'gis_format':possible_gis_formats['GIS_GRASS'],
                  'gis_main':None,
@@ -407,8 +416,9 @@ class TitanSimulationBase(object):
                         'Coulomb':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'stopping_criteria':{'validator':VarTypeDictConvert(TitanSimulationBase.possible_stopping_criteria,NoneToStringNone=True).chk,'desc':''},
                             },
-                            defaultParameters={'use_gis_matmap':False},
+                            defaultParameters={'use_gis_matmap':False,'stopping_criteria':None},
                             switchArguments={
                                 'use_gis_matmap':
                                 {

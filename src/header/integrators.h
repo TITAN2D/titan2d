@@ -172,6 +172,7 @@ public:
     //! Load object content from hdf5 file
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
+    int stopping_criteria;
 protected:
 
     /**
