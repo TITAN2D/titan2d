@@ -513,6 +513,9 @@ class TitanSimulationBase(object):
         self.chk_RestartOutput=TiArgCheckerAndSetter(
             sectionName="setRestartOutput",
             levelZeroParameters={
+                'enabled':{'desc':'',
+                    'validator':VarType(bool).chk
+                },
                 'diter':{'desc':'',
                     'validator':VarType(int,conditions=[{'f':lambda v: v > 0,'msg':'should be positive or None!'}],CanBeNone=True).chk
                 },
@@ -529,7 +532,7 @@ class TitanSimulationBase(object):
                     'validator':VarTypeString
                 },             
             },
-            defaultParameters={'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'output_prefix':'restart'}
+            defaultParameters={'enabled':True,'dtime':None, 'diter':1000, 'keep_all':False, 'keep_redundant_data':False,'output_prefix':'restart'}
         )
         self.setRestartOutput()
         #setTimeSeriesOutput
@@ -898,12 +901,13 @@ class TitanSimulation(TitanSimulationBase):
                     raise IOError("Output files or directories exists ("+",".join(files)+"). Remove it manually or set overwrite_output to True or change output prefix.")
                 for f in files:
                     check_and_remove_filedir(f)
-            #restarts     
-            output_prefix=self.ui_RestartOutput['output_prefix']
-            check_and_remove_filedir(output_prefix)
-            check_and_remove_filedir_by_wildcard("%s_Quad[49]_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
+            #restarts
+            if ui_RestartOutput['enabled']:
+                output_prefix=self.ui_RestartOutput['output_prefix']
+                check_and_remove_filedir(output_prefix)
+                check_and_remove_filedir_by_wildcard("%s_Quad[49]_p[0-9][0-9][0-9][0-9].xmf"%(output_prefix,));
             
-            os.mkdir(output_prefix)
+                os.mkdir(output_prefix)
             #visoutput
             if self.ui_TimeSeriesOutput['vizoutput']!=0:
                 output_prefix=self.ui_TimeSeriesOutput['output_prefix']
@@ -1014,6 +1018,7 @@ class TitanSimulation(TitanSimulationBase):
         #######################################################################
         # RestartOutput
         self.sim.get_timeprops().setRestartOutput(ui_RestartOutput['diter'],ui_RestartOutput['dtime'])
+        self.sim.restart_enabled=ui_RestartOutput['enabled']
         self.sim.restart_prefix=ui_RestartOutput['output_prefix']
         self.sim.restart_keep_all=ui_RestartOutput['keep_all']
         self.sim.restart_keep_redundant_data=ui_RestartOutput['keep_redundant_data']

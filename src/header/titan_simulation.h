@@ -81,6 +81,7 @@ public:
     std::string restart_prefix;
     bool restart_keep_all;
     bool restart_keep_redundant_data;
+    bool restart_enabled;
 
     bool overwrite_output;
 

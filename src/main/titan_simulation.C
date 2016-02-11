@@ -100,6 +100,7 @@ cxxTitanSimulation::cxxTitanSimulation() :
 
     restart_keep_all=false;
     restart_keep_redundant_data=false;
+    restart_enabled=true;
 
     outline.scale=&scale_;
 
@@ -941,9 +942,12 @@ void cxxTitanSimulation::run(bool start_from_restart)
     int ifstop = 0;
     double max_momentum = 100;  //nondimensional
 
-    save_restart_file_writeheader();
-    if(start_from_restart==false)
-        save_restart_file();
+    if(restart_enabled)
+    {
+        save_restart_file_writeheader();
+        if(start_from_restart==false)
+            save_restart_file();
+    }
 
     /* ifend(0.5*statprops.vmean) is a hack, the original intent (when we were
      intending to use vstar as a stopping criteria) whas to have the
@@ -1039,7 +1043,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
         /*
          * save a restart file
          */
-        if(timeprops.ifTimeForRestartOutput())
+        if(restart_enabled && timeprops.ifTimeForRestartOutput())
         {
             save_restart_file();
             //saverun(&NodeTable, myid, numprocs, &ElemTable, matprops_ptr, &timeprops, &mapnames, adapt, integrator->order,
@@ -1098,8 +1102,11 @@ void cxxTitanSimulation::run(bool start_from_restart)
     /*
      * save a restart file
      */
-    save_restart_file();
-    save_restart_file_writefooter();
+    if(restart_enabled)
+    {
+        save_restart_file();
+        save_restart_file_writefooter();
+    }
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
