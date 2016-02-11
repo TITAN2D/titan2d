@@ -50,8 +50,6 @@ public:
     void input_summary();
 
     void save_restart_file();
-    void save_restart_file_writeheader();
-    void save_restart_file_writefooter();
 
     void load_restart(const char * restartFilename);
 
@@ -155,7 +153,7 @@ protected:
     void h5read(const H5::CommonFG *parent);
 
     //if Quad9==true write Quad9 otherwise Quad4
-    void xmdfWriteBody(const char *xmdf_filename,const char *hf5_filename,bool Quad9);
+    void xmdfWrite(const char *xmdf_filename,const char *hf5_filename,bool Quad9);
 
     ElementType elementType;
     std::string prev_hf5_filename;

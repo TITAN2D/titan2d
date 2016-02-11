@@ -470,31 +470,8 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     integrator=Integrator::createIntegrator(parent,this);
 
 }
-void xmdfWriteHeader(const char *xmdf_filename)
-{
-    ofstream xmdf;
-    xmdf.open(xmdf_filename);
 
-    xmdf<<"<?xml version=\"1.0\" ?>\n";
-    xmdf<<"<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\"[]> \n";
-    xmdf<<"<Xdmf Version=\"3.0\">\n";
-    xmdf<<"<Domain>\n";
-    xmdf<<"<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n";
-
-    xmdf.close();
-}
-void xmdfWriteFooter(const char *xmdf_filename)
-{
-    ofstream xmdf;
-    xmdf.open(xmdf_filename,ios_base::app);
-
-    xmdf<<"</Grid>\n";
-    xmdf<<"</Domain>\n";
-    xmdf<<"</Xdmf>\n";
-
-    xmdf.close();
-}
-void xmdfScalarAttribute(ofstream &xmdf,const char *name, const char *hf5_filename, const char *h5ref, const int dim,
+void xmdfScalarAttribute(fstream &xmdf,const char *name, const char *hf5_filename, const char *h5ref, const int dim,
         const char *DataType,const int Precision, const char *Center)
 {
     xmdf<< "\t\t<Attribute Type=\"Scalar\" Center=\""<<Center<<"\" Name=\""<<name<<"\">\n";
@@ -503,7 +480,7 @@ void xmdfScalarAttribute(ofstream &xmdf,const char *name, const char *hf5_filena
     xmdf<< "\t\t\t</DataItem>\n";
     xmdf<< "\t\t</Attribute>\n";
 }
-void xmdfVectorAttributeXY(ofstream &xmdf,const char *name, const char *hf5_filename, const char *h5refX, const char *h5refY, const int dim,
+void xmdfVectorAttributeXY(fstream &xmdf,const char *name, const char *hf5_filename, const char *h5refX, const char *h5refY, const int dim,
         const char *DataType,const int Precision, const char *Center)
 {
     xmdf<< "\t\t<Attribute Type=\"Vector\" Center=\""<<Center<<"\" Name=\""<<name<<"\">\n";
@@ -517,7 +494,7 @@ void xmdfVectorAttributeXY(ofstream &xmdf,const char *name, const char *hf5_file
     xmdf<< "\t\t\t</DataItem>\n";
     xmdf<< "\t\t</Attribute>\n";
 }
-void xmdfVectorAttributeXYZ(ofstream &xmdf,const char *name, const char *hf5_filename, const char *h5refX, const char *h5refY, const char *h5refZ, const int dim,
+void xmdfVectorAttributeXYZ(fstream &xmdf,const char *name, const char *hf5_filename, const char *h5refX, const char *h5refY, const char *h5refZ, const int dim,
         const char *DataType,const int Precision, const char *Center)
 {
     xmdf<< "\t\t<Attribute Type=\"Vector\" Center=\""<<Center<<"\" Name=\""<<name<<"\">\n";
@@ -534,7 +511,7 @@ void xmdfVectorAttributeXYZ(ofstream &xmdf,const char *name, const char *hf5_fil
     xmdf<< "\t\t\t</DataItem>\n";
     xmdf<< "\t\t</Attribute>\n";
 }
-void xmdfNScalarAttributes(ofstream &xmdf,const char *name_prefix, const char *hf5_filename, const char *h5ref_prefix, const int dim0, const int dim,
+void xmdfNScalarAttributes(fstream &xmdf,const char *name_prefix, const char *hf5_filename, const char *h5ref_prefix, const int dim0, const int dim,
         const char *DataType,const int Precision, const char *Center, vector<string> *comp_names=NULL)
 {
     for( int i=0;i<dim0;i++)
@@ -554,7 +531,7 @@ void xmdfNScalarAttributes(ofstream &xmdf,const char *name_prefix, const char *h
         xmdfScalarAttribute(xmdf,name.c_str(), hf5_filename, h5ref.c_str(), dim,DataType,Precision, Center);
     }
 }
-void cxxTitanSimulation::xmdfWriteBody(const char *xmdf_filename,const char *hf5_filename,bool Quad9)
+void cxxTitanSimulation::xmdfWrite(const char *xmdf_filename,const char *hf5_filename,bool Quad9)
 {
     //write xmdf part
     vector<string> *ElementTypesVarNames=nullptr;
@@ -564,7 +541,36 @@ void cxxTitanSimulation::xmdfWriteBody(const char *xmdf_filename,const char *hf5
         ElementTypesVarNames=&TwoPhasesVarNames;
 
     //stringstream xmdf;
-    ofstream xmdf(xmdf_filename,ios_base::app);
+    fstream xmdf(xmdf_filename, std::fstream::in | std::fstream::out | std::fstream::ate);
+    if(xmdf.good()==0||xmdf.tellg()<60)
+    {
+        //file do not exists write header
+        xmdf.open(xmdf_filename, std::fstream::out);
+        xmdf<<"<?xml version=\"1.0\" ?>\n";
+        xmdf<<"<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\"[]> \n";
+        xmdf<<"<Xdmf Version=\"3.0\">\n";
+        xmdf<<"<Domain>\n";
+        xmdf<<"<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n";
+    }
+    else
+    {
+        //file exists rewind to beginning of footer
+        xmdf.seekg (-60, xmdf.end);
+        string line;
+        std::streampos pos=xmdf.tellg();
+        while(std::getline(xmdf,line))
+        {
+            line.erase(line.find_last_not_of(" \n\r\t")+1);
+            line.erase(0, line.find_first_not_of(" \t"));
+            if(line=="<!-- Footer Starts Here -->")
+            {
+                xmdf.seekg (pos);
+                xmdf.seekp (pos);
+                break;
+            }
+            pos=xmdf.tellg();
+        }
+    }
 
     int NumberOfElements=ElemTable->size();
     int NumberOfNodes=NodeTable->size();
@@ -679,36 +685,18 @@ void cxxTitanSimulation::xmdfWriteBody(const char *xmdf_filename,const char *hf5
 
 
     xmdf<<"\t</Grid>\n";
+
+    //footer
+    xmdf<<"<!-- Footer Starts Here -->\n";
+    xmdf<<"</Grid>\n";
+    xmdf<<"</Domain>\n";
+    xmdf<<"</Xdmf>\n";
+
     xmdf.close();
 
 }
 
-void cxxTitanSimulation::save_restart_file_writeheader()
-{
-    if(restart_keep_all==false)
-        return;
-    char xmdf_Quad9_filename[256];
-    char xmdf_Quad4_filename[256];
 
-    sprintf(xmdf_Quad9_filename, "%s_Quad9_p%04d.xmf", restart_prefix.c_str(), myid);
-    sprintf(xmdf_Quad4_filename, "%s_Quad4_p%04d.xmf", restart_prefix.c_str(), myid);
-
-    xmdfWriteHeader(xmdf_Quad9_filename);
-    xmdfWriteHeader(xmdf_Quad4_filename);
-}
-void cxxTitanSimulation::save_restart_file_writefooter()
-{
-    if(restart_keep_all==false)
-        return;
-    char xmdf_Quad9_filename[256];
-    char xmdf_Quad4_filename[256];
-
-    sprintf(xmdf_Quad9_filename, "%s_Quad9_p%04d.xmf", restart_prefix.c_str(), myid);
-    sprintf(xmdf_Quad4_filename, "%s_Quad4_p%04d.xmf", restart_prefix.c_str(), myid);
-
-    xmdfWriteFooter(xmdf_Quad9_filename);
-    xmdfWriteFooter(xmdf_Quad4_filename);
-}
 
 void cxxTitanSimulation::save_restart_file()
 {
@@ -732,13 +720,11 @@ void cxxTitanSimulation::save_restart_file()
     if(restart_keep_all)
     {
         //@todo writes xdmf file in a such way that it is complete after each snaphsot
-        xmdfWriteBody(xmdf_Quad9_filename,hf5_filename,true);
-        xmdfWriteBody(xmdf_Quad4_filename,hf5_filename,false);
+        xmdfWrite(xmdf_Quad9_filename,hf5_filename,true);
+        xmdfWrite(xmdf_Quad4_filename,hf5_filename,false);
     }
 
-    xmdfWriteHeader(xmdf_snapshot);
-    xmdfWriteBody(xmdf_snapshot,hf5_snapshot,true);
-    xmdfWriteFooter(xmdf_snapshot);
+    xmdfWrite(xmdf_snapshot,hf5_snapshot,true);
 
     if(restart_keep_all==false)
     {
@@ -944,7 +930,6 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
     if(restart_enabled)
     {
-        save_restart_file_writeheader();
         if(start_from_restart==false)
             save_restart_file();
     }
@@ -1105,7 +1090,6 @@ void cxxTitanSimulation::run(bool start_from_restart)
     if(restart_enabled)
     {
         save_restart_file();
-        save_restart_file_writefooter();
     }
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
