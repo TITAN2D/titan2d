@@ -607,7 +607,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
     //             results
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -637,8 +637,8 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
         int ivar, j, k;
 
-        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
-        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+        double fluxxp[MAX_NUM_STATE_VARS], fluxyp[MAX_NUM_STATE_VARS];
+        double fluxxm[MAX_NUM_STATE_VARS], fluxym[MAX_NUM_STATE_VARS];
 
 
         ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
