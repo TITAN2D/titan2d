@@ -454,10 +454,20 @@ public:
 
 inline void TiH5_writeTiVector__(H5::Group &group, const tivector<int> &value, const char *name, const hsize_t dims)
 {
+    hsize_t chunk_dims=10240;
+    if(chunk_dims>dims)chunk_dims=dims;
+
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
+
+    // Modify dataset creation property to enable chunking
+    H5::DSetCreatPropList plist;
+    plist.setChunk(1, &chunk_dims);
+    // Set ZLIB (DEFLATE) Compression using level 6.
+    plist.setDeflate(6);
+
     // Create the dataset.
-    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_I32LE, dataspace);
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_I32LE, dataspace,plist);
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_INT);
 }
@@ -473,10 +483,21 @@ inline void TiH5_readTiVector__(const H5::Group &group, tivector<int> &value, co
 }
 inline void TiH5_writeTiVector__(H5::Group &group, const tivector<double> &value, const char *name, const hsize_t dims)
 {
+    hsize_t chunk_dims=10240;
+    if(chunk_dims>dims)chunk_dims=dims;
+
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
+
+    // Modify dataset creation property to enable chunking
+    H5::DSetCreatPropList plist;
+    plist.setChunk(1, &chunk_dims);
+    // Set ZLIB (DEFLATE) Compression using level 6.
+    plist.setDeflate(6);
+
     // Create the dataset.
-    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace);
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace,plist);
+
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_DOUBLE);
 }
@@ -492,10 +513,20 @@ inline void TiH5_readTiVector__(const H5::Group &group, tivector<double> &value,
 }
 inline void TiH5_writeTiVector__(H5::Group &group, const tivector<unsigned long long int> &value, const char *name, const hsize_t dims)
 {
+    hsize_t chunk_dims=10240;
+    if(chunk_dims>dims)chunk_dims=dims;
+
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
+
+    // Modify dataset creation property to enable chunking
+    H5::DSetCreatPropList plist;
+    plist.setChunk(1, &chunk_dims);
+    // Set ZLIB (DEFLATE) Compression using level 6.
+    plist.setDeflate(6);
+
     // Create the dataset.
-    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace);
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace,plist);
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
 }
@@ -503,10 +534,20 @@ inline void TiH5_writeTiVector__(H5::Group &group, const tivector<unsigned long 
 #include <inttypes.h>
 inline void TiH5_writeTiVector__(H5::Group &group, const tivector<uint64_t> &value, const char *name, const hsize_t dims)
 {
+    hsize_t chunk_dims=10240;
+    if(chunk_dims>dims)chunk_dims=dims;
+
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
+
+    // Modify dataset creation property to enable chunking
+    H5::DSetCreatPropList plist;
+    plist.setChunk(1, &chunk_dims);
+    // Set ZLIB (DEFLATE) Compression using level 6.
+    plist.setDeflate(6);
+
     // Create the dataset.
-    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace);
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace,plist);
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
 }

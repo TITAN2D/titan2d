@@ -375,21 +375,43 @@ inline void TiH5_readStringAttribute__(const H5::Group &group, std::string &valu
 #define TiH5_writeArrayDataSet(group,value,size) TiH5_writeArray2DDataSet__(group, value, #value,size)
 inline void TiH5_writeArrayDataSet__(H5::Group &group, const double *value, const char *name, const hsize_t dims)
 {
+    hsize_t chunk_dims=10240;
+    if(chunk_dims>dims)chunk_dims=dims;
+
     // Create the data space for the dataset
     H5::DataSpace dataspace(1, &dims);
+
+    // Modify dataset creation property to enable chunking
+    H5::DSetCreatPropList plist;
+    plist.setChunk(1, &chunk_dims);
+    // Set ZLIB (DEFLATE) Compression using level 6.
+    plist.setDeflate(6);
+
     // Create the dataset.
-    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace);
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace,plist);
     // Write the attribute data.
     dataset.write(value, H5::PredType::NATIVE_DOUBLE);
 }
 #define TiH5_writeArray2DDataSet(group,value,size1,size2) TiH5_writeArray2DDataSet__(group, value, #value,size1,size2)
 inline void TiH5_writeArray2DDataSet__(H5::Group &group, const double *value, const char *name, const hsize_t dims1, const hsize_t dims2)
 {
+    hsize_t chunk_dims[2]={64,64};
     const hsize_t dims[2]={dims1,dims2};
+
+    if(chunk_dims[0]>dims[0])chunk_dims[0]=dims[0];
+    if(chunk_dims[1]>dims[1])chunk_dims[1]=dims[1];
+
     // Create the data space for the dataset
     H5::DataSpace dataspace(2, dims);
+
+    // Modify dataset creation property to enable chunking
+    H5::DSetCreatPropList plist;
+    plist.setChunk(2, chunk_dims);
+    // Set ZLIB (DEFLATE) Compression using level 6.
+    plist.setDeflate(6);
+
     // Create the dataset.
-    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace);
+    H5::DataSet dataset = group.createDataSet(name, H5::PredType::IEEE_F64LE, dataspace, plist);
     // Write the attribute data.
     dataset.write(value, H5::PredType::NATIVE_DOUBLE);
 }
