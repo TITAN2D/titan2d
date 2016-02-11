@@ -3695,7 +3695,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
     curvature(0, curvature(0) * (matprops_ptr->scale.length));
     curvature(1, curvature(1) * (matprops_ptr->scale.length));
     
-    if(matprops_ptr->material_count == 1)  //only one material so don't need map  
+    if(matprops_ptr->material_count <= 1)  //only one material so don't need map
         set_material(1);  //GIS material id tag/index starts from 1
     else //more than one material so need to get material from map
     {
