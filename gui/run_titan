@@ -11,12 +11,13 @@
 # export PATH=$PATH:/projects/academic/gmfg/renettej/titan2d-v4.0.0-alpha3/bin
 
 # Note: on vhub only 1 node and 1 cpu are allowed per job.
-# Default, assume running titan2d on vhub
+# Default, assume running titan2d on vhub so
+# need to set E_VHUB="false" when not running on vhub
+# to allow more than 1 cpu per job
 export E_VHUB="false"
 
 fullpath="$(readlink -f $0)"
 
-#libpath="$(echo "$fullpath" | sed "s?/bin/run_titan?/lib?")"
 libpath="$(echo "$fullpath" | sed "s?/bin/run_titan?/bin?")"
 helppath="$(echo "$fullpath" | sed "s?/bin/run_titan?/share/doc/titan?")"
 

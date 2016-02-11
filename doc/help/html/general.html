@@ -7,10 +7,18 @@ Help Overview
 </HEAD>
 <BODY BGCOLOR="#ffffff">
 
-<h1>General Parameters</h1>
+<h1>Run Parameters</h1>
 
-<h2>Overwrite Output</h2>
-Results overwrite safety flag.  If set to False, aborts simulation if output files with same names exist in the current working directory.  If set to True, overwrite previous output.
+<h2>Maximum Number of Time Steps</h2>
+The integer value can be entered in this text field.
+A maximum number of time steps that the simulation will run.
+For most simulations, this should be in the 1,000s range.
+The field cannot be left blank.
+
+<h2>Maximum Time</h2>
+The decimal value can be entered in this text field.
+The maximum amount of time that the simulation will approximate.
+The field cannot be left blank.
 
 <h2>Computational Cells Across Smallest Pile/Flux-Source Diameter </h2>
 The integer value can be entered in this text field.  It is used by Titan to
@@ -25,11 +33,6 @@ adaptation however, the entire map will consist of maximally refined cells -
 which, if small, can be computationally expensive.  The field cannot be left
 blank.
 
-<h2>Adapt the Grid</h2>
-Activate the "True" button to adapt the grid during the simulation.  Adapting
-the grid should result in reduced computational cost while maintaining a high
-simulation accuracy, but can also introduce instabilities into the computation.
-
 <h2>AMR</h2>
 Activate the "True" button to enable adaptive mesh refinement during the simulation.
 
@@ -38,10 +41,6 @@ Activate the "Second" button to assume a linear variation (instead of constant
 values) of the conserved quantities (pile height, momentum) across each cell.
 The second order method should give more accurate results but increases
 computation time and is less stable.
-
-<h2>Geoflow Tiny</h2>
-
-<h2>Short Speed</h2>
 
 <h2>Scale Parameters</h2>
 

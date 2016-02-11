@@ -11,6 +11,7 @@ Help Overview
 
 <h2>Type</h2>
 Select 1 for Paraboloid.  Select 2 for Cylinder.
+This field cannot be left blank.
 
 When Paraboloid is selected, the geometry for each pile is a paraboloid given by:<br>
 P*(1-((x-xc)/xr)^2 -((y-yc)/yr)^2) (assuming an orientation angle of zero)
@@ -31,9 +32,6 @@ The field cannot be left blank.
 The decimal value, in UTM coordinates, can be entered in this text field.
 The field cannot be left blank.
 
-<h2>Volume Fraction</h2>
-This value is only used when the Material Model Physics Model is TwoPhases_Coulomb.
-
 <h2>Major Extent</h2>
 The decimal value, in meters, can be entered in this text field.
 The field cannot be left blank.
@@ -53,6 +51,10 @@ The field cannot be left blank.
 <h2>Initial Direction</h2>
 The decimal value can be entered in this text field.
 The field cannot be left blank.
+
+<h2>Volume Fraction</h2>
+The decimal value can be entered in the text field when the Material Model is TwoPhases_Coulomb.
+The field cannot be left blank when the Material Model is TwoPhases_Coulomb.
 
 </BODY>
 </HTML>
