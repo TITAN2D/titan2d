@@ -271,7 +271,7 @@ class TitanSimulationBase(object):
                 }
             ]
         },
-        'Voellmy-Slam':{
+        'Voellmy-Salm':{
             'allParameters':('order','mu','xi'), 
             'defaultParameters':{
                 'order':'First',
@@ -281,7 +281,7 @@ class TitanSimulationBase(object):
             'elementType':ElementType_SinglePhase,
             'integrators':[{
                     'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Voellmy_Slam
+                    'constructor':Integrator_SinglePhase_Voellmy_Salm
             }]
         },
         'Pouliquen-Forterre':{
@@ -444,7 +444,7 @@ class TitanSimulationBase(object):
                                 }
                             }
                         ),
-                        'Voellmy-Slam':TiArgCheckerAndSetter(
+                        'Voellmy-Salm':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'mu':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'xi':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},

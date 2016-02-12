@@ -270,9 +270,9 @@ Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSim
     {
         integrator = new Integrator_SinglePhase_Coulomb(_titanSimulation);
     }
-    else if (integratorType == "Integrator_SinglePhase_Voellmy_Slam")
+    else if (integratorType == "Integrator_SinglePhase_Voellmy_Salm")
     {
-        integrator = new Integrator_SinglePhase_Voellmy_Slam(_titanSimulation);
+        integrator = new Integrator_SinglePhase_Voellmy_Salm(_titanSimulation);
     }
     else if (integratorType == "Integrator_SinglePhase_Pouliquen_Forterre")
     {
@@ -800,7 +800,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
             if(stopping_criteria==1)
             {
                 inertial_x = fabs(Ustore[1] + dt * forcegrav);
-                drag_x = fabs(dt * (forcebedx - forceintx) );
+                drag_x = fabs(dt * (forcebedx + forceintx) );
 
                 if (inertial_x <= drag_x)
                     Ustore[1] = 0.0;
@@ -842,7 +842,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
             if(stopping_criteria==1)
             {
                 inertial_y = fabs(Ustore[2] + dt * forcegrav);
-                drag_x = fabs(dt * (forcebedy - forceinty) );
+                drag_y = fabs(dt * (forcebedy + forceinty) );
 
                 if (inertial_y <= drag_y)
                     Ustore[2] = 0.0;
@@ -939,7 +939,7 @@ void Integrator_SinglePhase_Coulomb::h5read(const H5::CommonFG *parent, const  s
     H5::Group group(parent->openGroup(group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Voellmy_Slam::Integrator_SinglePhase_Voellmy_Slam(cxxTitanSimulation *_titanSimulation):
+Integrator_SinglePhase_Voellmy_Salm::Integrator_SinglePhase_Voellmy_Salm(cxxTitanSimulation *_titanSimulation):
         Integrator_SinglePhase(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
@@ -948,7 +948,7 @@ Integrator_SinglePhase_Voellmy_Slam::Integrator_SinglePhase_Voellmy_Slam(cxxTita
     mu = 0.5;
     xi = 120.0;
 }
-bool Integrator_SinglePhase_Voellmy_Slam::scale()
+bool Integrator_SinglePhase_Voellmy_Salm::scale()
 {
     if(Integrator_SinglePhase::scale())
     {
@@ -957,7 +957,7 @@ bool Integrator_SinglePhase_Voellmy_Slam::scale()
     }
     return false;
 }
-bool Integrator_SinglePhase_Voellmy_Slam::unscale()
+bool Integrator_SinglePhase_Voellmy_Salm::unscale()
 {
     if(Integrator_SinglePhase::unscale())
     {
@@ -966,18 +966,18 @@ bool Integrator_SinglePhase_Voellmy_Slam::unscale()
     }
     return false;
 }
-void Integrator_SinglePhase_Voellmy_Slam::print0(int spaces)
+void Integrator_SinglePhase_Voellmy_Salm::print0(int spaces)
 {
-    printf("%*cIntegrator: single phase, Voellmy_Slam model, first order\n", spaces,' ');
+    printf("%*cIntegrator: single phase, Voellmy_Salm model, first order\n", spaces,' ');
     printf("%*cmu:%.3f\n", spaces+4,' ',mu);
     printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
     Integrator_SinglePhase::print0(spaces+4);
 }
-void Integrator_SinglePhase_Voellmy_Slam::predictor()
+void Integrator_SinglePhase_Voellmy_Salm::predictor()
 {
 }
 
-void Integrator_SinglePhase_Voellmy_Slam::corrector()
+void Integrator_SinglePhase_Voellmy_Salm::corrector()
 {
     //for comparison of magnitudes of forces in slumping piles
     double m_forceint = 0.0;
@@ -1077,7 +1077,7 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //corrector itself
-        double speed;
+        double speed, speed_squared;
         double forceintx, forceinty;
         double forcebedx, forcebedy;
         double forcegrav_x,forcegrav_y;
@@ -1117,12 +1117,13 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
         if(h[ndx] > tiny)
         {
             // S terms
-            // here speed is speed squared
-            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
-            if (speed > 0.0)
+        	speed_squared = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+
+            if (speed_squared > 0.0)
             {
-                // here speed is speed
-                speed = sqrt(speed);
+
+                speed = sqrt(speed_squared);
+
                 unitvx = VxVy[0] / speed;
                 unitvy = VxVy[1] / speed;
             }
@@ -1131,8 +1132,6 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
                 unitvx = 0.0;
                 unitvy = 0.0;
             }
-//            tanbed = tan(bedfrictang[ndx]);
-//            h_inv = 1.0 / h[ndx];
 
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
              // x direction source terms
@@ -1145,7 +1144,7 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
              force_CoulombFrict_x = unitvx * mu * g[2][ndx] * h[ndx];
 
              //the Turbulent type force for fast moving flow in x direction
-             force_Turbulence_x = unitvx * speed * speed * inv_xi;
+             force_Turbulence_x = unitvx * speed_squared * inv_xi;
 
 
              Ustore[1] = Ustore[1] + dt * (forcegrav_x - force_CoulombFrict_x - force_Turbulence_x);
@@ -1157,11 +1156,11 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
              // the gravity force in the y direction
              forcegrav_y = g[1][ndx] * h[ndx];
 
-             // the Coulomb type friction force
+             // the Coulomb type friction force  in y direction
              force_CoulombFrict_y = unitvy * mu * g[2][ndx] * h[ndx];
 
-             // the Turbulent type force for fast moving flow
-             force_Turbulence_y = unitvy * (speed * speed) * inv_xi;
+             // the Turbulent type force for fast moving flow in y direction
+             force_Turbulence_y = unitvy * speed_squared * inv_xi;
 
 
              Ustore[2] = Ustore[2] + dt * (forcegrav_y - force_CoulombFrict_y - force_Turbulence_y);
@@ -1214,15 +1213,15 @@ void Integrator_SinglePhase_Voellmy_Slam::corrector()
     deposited = m_deposited;
     realvolume = m_realvolume;
 }
-void Integrator_SinglePhase_Voellmy_Slam::h5write(H5::CommonFG *parent, string group_name) const
+void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
-    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Voellmy_Slam","Type");
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Voellmy_Salm","Type");
     TiH5_writeDoubleAttribute(group, mu);
     TiH5_writeDoubleAttribute(group, xi);
 }
-void Integrator_SinglePhase_Voellmy_Slam::h5read(const H5::CommonFG *parent, const  string group_name)
+void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
@@ -1240,7 +1239,7 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     phi2=42.0;//in degrees, will convert to rad on scale (0.523598776 rad);
     phi3=33.9;
     Beta=0.65;
-    L_material=1.0E-4;
+    L_material=1.0E-3;
 }
 
 bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
@@ -1503,7 +1502,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			forcegravy = g[1][ndx] * h[ndx];
 
 			// the bed friction forces for fast moving flow in y direction
-			forcebedy1 = h[ndx] * unitvy * ( g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx] );
+			forcebedy1 = h[ndx] * unitvy * mu_bed * ( g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx] );
 
 			forcebedy2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
 

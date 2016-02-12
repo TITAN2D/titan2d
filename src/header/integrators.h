@@ -266,12 +266,12 @@ protected:
 };
 
 /**
- * First order integrator for single phase and Voellmy_Slam material model
+ * First order integrator for single phase and Voellmy_Salm material model
  */
-class Integrator_SinglePhase_Voellmy_Slam:public Integrator_SinglePhase
+class Integrator_SinglePhase_Voellmy_Salm:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Voellmy_Slam(cxxTitanSimulation *_titanSimulation);
+    Integrator_SinglePhase_Voellmy_Salm(cxxTitanSimulation *_titanSimulation);
 
     virtual bool scale();
     virtual bool unscale();

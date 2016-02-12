@@ -138,7 +138,7 @@ double Integrator_SinglePhase_Coulomb::get_coef_and_eigen(int ghost_flag)
 
     return dt[0];
 }
-double Integrator_SinglePhase_Voellmy_Slam::get_coef_and_eigen(int ghost_flag)
+double Integrator_SinglePhase_Voellmy_Salm::get_coef_and_eigen(int ghost_flag)
 {
     int myid;
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
