@@ -314,6 +314,10 @@ class TitanSimulationBase(object):
         'None':0,
         'DragBased':1
      }
+    possible_outline_init_size={
+        'AMR':OutLine.AMR,
+        'DEM':OutLine.DEM,                
+    }
     default_GIS={
                  'gis_format':possible_gis_formats['GIS_GRASS'],
                  'gis_main':None,
@@ -570,8 +574,11 @@ class TitanSimulationBase(object):
                 'test_location':{'desc':'',
                     'validator':VarTypeTuple(float,N=2,CanBeNone=True).chk
                 },
+                'runid':{'desc':'',
+                    'validator':VarType(int).chk
+                },          
             },
-            defaultParameters={'edge_height':None, 'test_height':None, 'test_location':None}
+            defaultParameters={'edge_height':None, 'test_height':None, 'test_location':None, 'runid':-1}
         )
         self.setStatProps()
         #setOutlineProps
@@ -585,14 +592,14 @@ class TitanSimulationBase(object):
                 'max_linear_size':{'desc':'',
                     'validator':VarType(int,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk
                 },
-                'use_DEM_resolution':{'desc':'',
-                    'validator':VarType(bool).chk
+                'init_size':{'desc':'',
+                    'validator':VarTypeDictConvert(TitanSimulationBase.possible_outline_init_size).chk
                 },
                 'output_prefix':{'desc':'',
                     'validator':VarTypeString
                 },
             },
-            defaultParameters={'enabled':True,'max_linear_size':1024, 'use_DEM_resolution':False, 'output_prefix':''}
+            defaultParameters={'enabled':True,'max_linear_size':1024, 'init_size':'AMR', 'output_prefix':''}
         )
         self.setOutlineProps(enabled=True)
         #addPile
@@ -1038,12 +1045,13 @@ class TitanSimulation(TitanSimulationBase):
         self.sim.get_statprops().set(
             ui_StatProps['edge_height'], ui_StatProps['test_height'],
             ui_StatProps['test_location'][0], ui_StatProps['test_location'][1])
+        self.sim.get_statprops().runid=ui_StatProps['runid']
         
         #######################################################################
         # ui_OutlineProps
         self.sim.get_outline().enabled=ui_OutlineProps['enabled']
-        self.sim.get_outline().use_DEM_resolution=ui_OutlineProps['use_DEM_resolution']
         self.sim.get_outline().max_linear_size=ui_OutlineProps['max_linear_size']
+        self.sim.get_outline().init_size=ui_OutlineProps['init_size']
         self.sim.get_outline().output_prefix=ui_OutlineProps['output_prefix']
         
         #######################################################################

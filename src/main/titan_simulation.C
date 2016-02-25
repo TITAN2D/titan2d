@@ -244,7 +244,8 @@ void cxxTitanSimulation::process_input(bool start_from_restart)
         }
     }
 #endif
-    statprops_ptr->runid = statprops_ptr->lhs.runid;
+    if(statprops_ptr->lhs.runid>=0)
+        statprops_ptr->runid = statprops_ptr->lhs.runid;
 
     /*************************************************************************/
     double TIME_SCALE;

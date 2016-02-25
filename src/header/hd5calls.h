@@ -109,7 +109,7 @@ hid_t GH5_createdataset(hid_t gid, hid_t spcid, const char *dsetname, unsigned t
 #include <assert.h>
 extern H5::EnumType datatypeElementType;
 extern H5::EnumType datatypePileType;
-
+extern H5::EnumType datatypeOutLineInitSize;
 
 /**
  * initialize all hdf5 enum datatypes

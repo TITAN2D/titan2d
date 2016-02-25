@@ -660,7 +660,7 @@ OutLine::OutLine()
     elementType=ElementType::SinglePhase;
 
     enabled=true;
-    use_DEM_resolution=false;
+    init_size=AMR;
     max_linear_size=1024;
 
     output_prefix="";
@@ -751,7 +751,7 @@ void OutLine::init(const double *dxy, int power, double *XRange, double *YRange)
     if(myid==0 && enabled)
     {
         printf("Outline init: Nx=%d Ny=%d dx=%.5g dy=%.5g\n", Nx, Ny, dx*scale->length, dy*scale->length);
-        printf("Outline init: temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
+        printf("Outline init: temporary arrays for %d threads\n", threads_number);
     }
     size=Ny*stride;
 
@@ -792,7 +792,7 @@ void OutLine::init_DEM_resolution(double resx, double resy, double *XRange, doub
     if(myid==0 && enabled)
     {
         printf("Outline init: Nx=%d Ny=%d dx=%.5g dy=%.5g\n", Nx, Ny, dx*scale->length, dy*scale->length);
-        printf("Outline init: temporary arrays for %d threads\n", Nx, Ny, Nx * Ny,threads_number);
+        printf("Outline init: temporary arrays for %d threads\n", threads_number);
     }
 
     size=Ny*stride;
@@ -1384,9 +1384,9 @@ void OutLine::h5write(H5::CommonFG *parent, string group_name)
     TiH5_writeDoubleAttribute(group, yminmax[2]);
 
     TiH5_writeBoolAttribute(group, enabled);
-    TiH5_writeBoolAttribute(group, use_DEM_resolution);
+    TiH5_writeScalarDataTypeAttribute(group,init_size,datatypeOutLineInitSize);
     TiH5_writeIntAttribute(group, max_linear_size);
-
+    TiH5_writeStringAttribute(group, output_prefix);
     if(enabled)
     {
         TiH5_writeArray2DDataSet(group, pileheight,Ny,stride);
@@ -1415,9 +1415,9 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group, yminmax[2]);
 
     TiH5_readBoolAttribute(group, enabled);
-    TiH5_readBoolAttribute(group, use_DEM_resolution);
+    TiH5_readScalarDataTypeAttribute(group,init_size,datatypeOutLineInitSize);
     TiH5_readIntAttribute(group, max_linear_size);
-
+    TiH5_readStringAttribute(group, output_prefix);
     if(enabled)
     {
         alloc_arrays();

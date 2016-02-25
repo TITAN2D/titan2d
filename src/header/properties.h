@@ -808,6 +808,8 @@ public:
 class OutLine
 {
 public:
+    enum OutLineInitSize {AMR=1, DEM=2};
+
     //geometric id of temporary arrays
     int conformation;
     // the least squares interpolated height didn't work for some reason
@@ -855,7 +857,7 @@ public:
     //! do the calculations
     bool enabled;
 
-    bool use_DEM_resolution;
+    OutLineInitSize init_size;
     int max_linear_size;
 
     TiScale *scale;

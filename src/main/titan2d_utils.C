@@ -27,6 +27,7 @@
 
 H5::EnumType datatypeElementType;
 H5::EnumType datatypePileType;
+H5::EnumType datatypeOutLineInitSize;
 
 vector<string> coord_names;
 vector<string> SinglePhaseVarNames;
@@ -61,6 +62,13 @@ void init_TiH5()
     datatypePileType.insert("ID1",&pile_type);
     pile_type=PileProps::ID2;
     datatypePileType.insert("ID2",&pile_type);
+
+    datatypeOutLineInitSize=H5::EnumType(sizeof(OutLine::OutLineInitSize));
+    OutLine::OutLineInitSize init_size;
+    init_size=OutLine::AMR;
+    datatypeOutLineInitSize.insert("AMR",&init_size);
+    init_size=OutLine::DEM;
+    datatypeOutLineInitSize.insert("DEM",&init_size);
 
     //init indexes to char* conversions
     coord_names.push_back("X");

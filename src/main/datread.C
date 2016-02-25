@@ -20,7 +20,7 @@
 #endif
 
 #include "../header/hpfem.h"
-
+#include "../header/properties.h"
 #ifdef SUNOS
 extern "C" void initial_(int*, double*, double*);
 #endif
@@ -313,7 +313,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
     }
     
 #ifdef MAX_DEPTH_MAP
-    if(outline_ptr->use_DEM_resolution)
+    if(outline_ptr->init_size==OutLine::DEM)
     {
         double ewresol;
         double nsresol;
@@ -329,7 +329,7 @@ void Read_grid(int myid, int numprocs, NodeHashTable** NodeTable, ElementsHashTa
 
         outline_ptr->init_DEM_resolution(resx, resy, xminmax, yminmax);
     }
-    else
+    else if(outline_ptr->init_size==OutLine::AMR)
     {
         outline_ptr->init(dx, REFINE_LEVEL - Quad9P->generation(), xminmax, yminmax);
     }
