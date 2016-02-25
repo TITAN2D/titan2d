@@ -113,6 +113,8 @@ public:
     //! the latin hypercube sampling specific stats
     LHS_Props lhs;
 
+    std::string output_prefix;
+
     //! the constructor initializes a few statistics
     StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable);
     //! the constructor from hd5

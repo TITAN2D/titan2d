@@ -22,14 +22,16 @@
 #include "../header/hpfem.h"
 #include "../header/stats.hpp"
 
+#include <sstream>
 #define ADAM_HEIGHT_FRAC 0.02
 
 void output_summary(TimeProps* timeprops, StatProps* statprops, int savefileflag)
 {
     //FILE *fp=fopen("output_summary.readme","a");
-    char filename[256];
-    sprintf(filename, "output_summary.%06d", statprops->runid);
-    FILE *fp = fopen(filename, "a");
+    ostringstream filename;
+
+    filename<<statprops->output_prefix<<"output_summary."<<setw(6)<< setfill('0') <<internal<<statprops->runid<<std::ends;
+    FILE *fp = fopen(filename.str().c_str(), "at");
     
     if(timeprops->ifstart())
         fprintf(fp, "Summary of Output from Titan2D\n\n");
@@ -50,9 +52,10 @@ void output_summary(TimeProps* timeprops, StatProps* statprops, int savefileflag
 
 void output_stoch_stats(MatProps* matprops, StatProps* statprops)
 {
-    char filename[128];
-    sprintf(filename, "statout_lhs.%02d", statprops->lhs.refnum);
-    FILE *fp = fopen(filename, "w");
+    ostringstream filename;
+
+    filename<<statprops->output_prefix<<"statout_lhs."<<setw(6)<< setfill('0') <<internal<<statprops->runid<<std::ends;
+    FILE *fp = fopen(filename.str().c_str(), "w");
     fprintf(fp, "%2d %6d %16.10g %16.10g %16.10g %16.10g %16.10g %16.10g %16.10g\n", statprops->lhs.refnum,
             statprops->lhs.runid, statprops->timereached, statprops->vstar * matprops->Vslump, statprops->hmax,
             statprops->xcen, statprops->ycen, statprops->xyminmax[1] - statprops->xyminmax[0],

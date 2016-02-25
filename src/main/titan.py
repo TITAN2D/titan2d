@@ -576,9 +576,12 @@ class TitanSimulationBase(object):
                 },
                 'runid':{'desc':'',
                     'validator':VarType(int).chk
-                },          
+                },
+                'output_prefix':{'desc':'',
+                    'validator':VarTypeString
+                },      
             },
-            defaultParameters={'edge_height':None, 'test_height':None, 'test_location':None, 'runid':-1}
+            defaultParameters={'edge_height':None, 'test_height':None, 'test_location':None, 'runid':-1, 'output_prefix':''}
         )
         self.setStatProps()
         #setOutlineProps
@@ -1046,6 +1049,7 @@ class TitanSimulation(TitanSimulationBase):
             ui_StatProps['edge_height'], ui_StatProps['test_height'],
             ui_StatProps['test_location'][0], ui_StatProps['test_location'][1])
         self.sim.get_statprops().runid=ui_StatProps['runid']
+        self.sim.get_statprops().output_prefix=ui_StatProps['output_prefix']
         
         #######################################################################
         # ui_OutlineProps

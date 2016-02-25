@@ -25,6 +25,7 @@
 
 
 #include <cmath>
+#include <sstream>
 
 //#include <advisor-annotate.h>
 
@@ -44,6 +45,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
     runid = -1;
+    output_prefix="";
 }
 StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, const H5::CommonFG *parent, const  string group_name):
     EleNodeRef(_ElemTable, _NodeTable)
@@ -56,6 +58,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, c
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
     runid = -1;
+    output_prefix="";
     h5read(parent, group_name);
 }
 StatProps::~StatProps()
@@ -511,10 +514,11 @@ void out_final_stats(TimeProps* timeprops, StatProps* statprops)
     int cpuminutes = (cputime % 3600) / 60;
     int cpuseconds = cputime % 60;
 
-    char filename[256];
-    sprintf(filename, "finalstats.%06d", statprops->runid);
+    ostringstream filename;
+
+    filename<<statprops->output_prefix<<"finalstats."<<setw(6)<< setfill('0') <<internal<<statprops->runid<<std::ends;
+    FILE *fp = fopen(filename.str().c_str(), "wt");
 //printf("runid=%d\n",statprops->runid);
-    FILE* fp = fopen(filename, "w");
 //print    runid  xC yC   rC  area maxh    wall time       cpu time
     fprintf(fp, "%6d   %E %E   %E   %E   %E   %E   %d:%02d:%02d   %d:%02d:%02d\n", statprops->runid, statprops->xcen,
             statprops->ycen, statprops->rmean, statprops->area, statprops->hmax, statprops->timereached, wallhours,
@@ -631,6 +635,7 @@ void StatProps::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleAttribute(group, timereached);
     TiH5_writeDoubleAttribute(group, xyminmax[4]);
     TiH5_writeDoubleAttribute(group, hxyminmax);
+    TiH5_writeStringAttribute(group, output_prefix);
 
     lhs.h5write(&group);
 }
@@ -666,6 +671,7 @@ void StatProps::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group, timereached);
     TiH5_readDoubleAttribute(group, xyminmax[4]);
     TiH5_readDoubleAttribute(group, hxyminmax);
+    TiH5_readStringAttribute(group, output_prefix);
 
     lhs.h5read(&group);
 
