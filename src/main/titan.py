@@ -588,8 +588,11 @@ class TitanSimulationBase(object):
                 'use_DEM_resolution':{'desc':'',
                     'validator':VarType(bool).chk
                 },
+                'output_prefix':{'desc':'',
+                    'validator':VarTypeString
+                },
             },
-            defaultParameters={'enabled':True,'max_linear_size':1024, 'use_DEM_resolution':False}
+            defaultParameters={'enabled':True,'max_linear_size':1024, 'use_DEM_resolution':False, 'output_prefix':''}
         )
         self.setOutlineProps(enabled=True)
         #addPile
@@ -1041,6 +1044,7 @@ class TitanSimulation(TitanSimulationBase):
         self.sim.get_outline().enabled=ui_OutlineProps['enabled']
         self.sim.get_outline().use_DEM_resolution=ui_OutlineProps['use_DEM_resolution']
         self.sim.get_outline().max_linear_size=ui_OutlineProps['max_linear_size']
+        self.sim.get_outline().output_prefix=ui_OutlineProps['output_prefix']
         
         #######################################################################
         # ui_Pile

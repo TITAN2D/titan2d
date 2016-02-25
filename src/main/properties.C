@@ -19,6 +19,9 @@
 #include "../header/properties.h"
 #include "../header/hpfem.h"
 
+
+#include <sstream>
+
 MapNames::MapNames()
 {
     gis_main = "";
@@ -660,6 +663,8 @@ OutLine::OutLine()
     use_DEM_resolution=false;
     max_linear_size=1024;
 
+    output_prefix="";
+
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
@@ -1180,103 +1185,130 @@ void OutLine::update_two_phases()
  */
 void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
 {
-    int ix, iy;
-    char filename[256];
-
-    // output max over time pile-height
-    sprintf(filename, "pileheightrecord.%06d", statprops_ptr->runid);
-    FILE *fp = fopen(filename, "w");
-
-    fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-            "Ny=%d: Y={%20.14g,%20.14g}\n"
-            "Pileheight=\n",
-            Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-            yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-    for(iy = 0; iy < Ny; iy++)
-    {
-        for(ix = 0; ix < Nx - 1; ix++)
-            fprintf(fp, "%g ", pileheight[iy*stride+ix] * matprops_ptr->scale.height);
-        fprintf(fp, "%g\n", pileheight[iy*stride+ix] * matprops_ptr->scale.height);
-    }
-    fclose(fp);
-
-    //output max over time kinetic energy
     double ENERGY_SCALE = matprops_ptr->scale.length * matprops_ptr->scale.gravity * matprops_ptr->scale.height;
 
-    sprintf(filename, "maxkerecord.%06d", statprops_ptr->runid);
-    fp = fopen(filename, "w");
-
-    fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-            "Ny=%d: Y={%20.14g,%20.14g}\n"
-            "KineticEnergy=\n",
-            Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-            yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-    for(iy = 0; iy < Ny; iy++)
+    // output max over time pile-height
     {
-        for(ix = 0; ix < Nx - 1; ix++)
-            fprintf(fp, "%g ", max_kinergy[iy*stride+ix] * ENERGY_SCALE);
-        fprintf(fp, "%g\n", max_kinergy[iy*stride+ix] * ENERGY_SCALE);
+        int ix, iy;
+        ostringstream filename;
+
+        filename<<output_prefix<<"pileheightrecord."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<std::ends;
+        FILE *fp = fopen(filename.str().c_str(), "wt");
+
+        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "Pileheight=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+        for(iy = 0; iy < Ny; iy++)
+        {
+            for(ix = 0; ix < Nx - 1; ix++)
+                fprintf(fp, "%g ", pileheight[iy*stride+ix] * matprops_ptr->scale.height);
+            fprintf(fp, "%g\n", pileheight[iy*stride+ix] * matprops_ptr->scale.height);
+        }
+        fclose(fp);
     }
-    fclose(fp);
 
-    sprintf(filename, "max_dynamic_pressure_record.%06d", statprops_ptr->runid);
-    fp = fopen(filename, "w");
-
-    //!todo dynamic_pressure scale?
-    fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-            "Ny=%d: Y={%20.14g,%20.14g}\n"
-            "dynamic_pressure=\n",
-            Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-            yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-    for(iy = 0; iy < Ny; iy++)
+    //output max over time kinetic energy
+    if(elementType==ElementType::SinglePhase)
     {
-        for(ix = 0; ix < Nx - 1; ix++)
-            fprintf(fp, "%g ", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
-        fprintf(fp, "%g\n", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
+        int ix, iy;
+        ostringstream filename;
+
+        filename<<output_prefix<<"maxkerecord."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<std::ends;
+        FILE *fp = fopen(filename.str().c_str(), "wt");
+
+        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "KineticEnergy=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+        for(iy = 0; iy < Ny; iy++)
+        {
+            for(ix = 0; ix < Nx - 1; ix++)
+                fprintf(fp, "%g ", max_kinergy[iy*stride+ix] * ENERGY_SCALE);
+            fprintf(fp, "%g\n", max_kinergy[iy*stride+ix] * ENERGY_SCALE);
+        }
+        fclose(fp);
     }
-    fclose(fp);
+
+    //dynamic_pressure
+    if(elementType==ElementType::SinglePhase)
+    {
+        int ix, iy;
+        ostringstream filename;
+
+        filename<<output_prefix<<"max_dynamic_pressure_record."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<std::ends;
+        FILE *fp = fopen(filename.str().c_str(), "wt");
+
+        //!todo dynamic_pressure scale?
+        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "dynamic_pressure=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+        for(iy = 0; iy < Ny; iy++)
+        {
+            for(ix = 0; ix < Nx - 1; ix++)
+                fprintf(fp, "%g ", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
+            fprintf(fp, "%g\n", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
+        }
+        fclose(fp);
+    }
 
     // output cummulative kinetic-energy
-    sprintf(filename, "cumkerecord.%06d", statprops_ptr->runid);
-    fp = fopen(filename, "w");
-
-    fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-            "Ny=%d: Y={%20.14g,%20.14g}\n"
-            "KineticEnergy=\n",
-            Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-            yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
-    for(iy = 0; iy < Ny; iy++)
+    if(elementType==ElementType::SinglePhase)
     {
-        for(ix = 0; ix < Nx - 1; ix++)
-            fprintf(fp, "%g ", cum_kinergy[iy*stride+ix] * ENERGY_SCALE);
-        fprintf(fp, "%g\n", cum_kinergy[iy*stride+ix] * ENERGY_SCALE);
-    }
-    fclose(fp);
+        int ix, iy;
+        ostringstream filename;
 
-    // output elevation data
-    fp = fopen("elevation.grid", "w");
-    fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
-            "Ny=%d: Y={%20.14g,%20.14g}\n"
-            "Pileheight=\n",
-            Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
-            yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+        filename<<output_prefix<<"cumkerecord."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<std::ends;
+        FILE *fp = fopen(filename.str().c_str(), "wt");
 
-    double yy, xx, res = dx + dy, elevation;
-    int ierr;
-    for(iy = 0; iy < Ny; iy++)
-    {
-        yy = ((iy + 0.5) * dy + yminmax[0]) * matprops_ptr->scale.length;
-        for(ix = 0; ix < Nx - 1; ix++)
+        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "KineticEnergy=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+        for(iy = 0; iy < Ny; iy++)
         {
+            for(ix = 0; ix < Nx - 1; ix++)
+                fprintf(fp, "%g ", cum_kinergy[iy*stride+ix] * ENERGY_SCALE);
+            fprintf(fp, "%g\n", cum_kinergy[iy*stride+ix] * ENERGY_SCALE);
+        }
+        fclose(fp);
+    }
+    // output elevation data
+    {
+        int ix, iy;
+        ostringstream filename;
+
+        filename<<output_prefix<<"elevation.grid"<<std::ends;
+        FILE *fp = fopen(filename.str().c_str(), "wt");
+
+        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "Pileheight=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+
+        double yy, xx, res = dx + dy, elevation;
+        int ierr;
+        for(iy = 0; iy < Ny; iy++)
+        {
+            yy = ((iy + 0.5) * dy + yminmax[0]) * matprops_ptr->scale.length;
+            for(ix = 0; ix < Nx - 1; ix++)
+            {
+                xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
+                ierr = Get_elevation(res, xx, yy, elevation);
+                fprintf(fp, "%g ", elevation);
+            }
             xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
             ierr = Get_elevation(res, xx, yy, elevation);
-            fprintf(fp, "%g ", elevation);
+            fprintf(fp,"%g\n",elevation);
         }
-        xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
-        ierr = Get_elevation(res, xx, yy, elevation);
-        fprintf(fp,"%g\n",elevation);
+        fclose(fp);
     }
-    fclose(fp);
     return;
 }
 

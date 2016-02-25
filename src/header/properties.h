@@ -860,6 +860,8 @@ public:
 
     TiScale *scale;
 
+    std::string output_prefix;
+
     //! this is the OutLine constructor it initializes the number of cells to zero
     OutLine();
     
