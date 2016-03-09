@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>Run Parameters</h1>
+
+<h2>Restart</h2>
+A boolean value can be selected in this field. Activate the "True" button to enable running Titan by passing Titan a Restart File as an argument.  When a Restart File is passed as an argument to Titan, the simulation will restart at the time specified in the selected Restart File, using, parameters specified in the selected Restart File.  When Restart is enabled, updated parameter values, accept for the  <font color="gray">Additional Maximum Number of Time Steps</font> and  <font color="gray">Additional Maximum Time</font> parameters, will not have an affect.  Please see the Output Options tab for more information on creating Restart Files.
+
+<h2>Restart File</h2>
+When Restart is enabled, a Restart File filename must be selected via this Directory Selector field.  Saved Restart Files have the following naming convention: snapshot_p[MPI Process ID]_i[step].h5.  For example: snapshot_p0000_i00003401.h5.
+
+<h2>Maximum Number of Time Steps</h2>
+An integer value can be entered in this text field to set the maximum number of time steps that the simulation will run. For most simulations, this should be in the 1,000s range.
+
+<h2>Maximum Time</h2>
+A decimal value, in seconds, can be entered in this text field to set the maximum amount of time that the simulation will run.
+
+<h2>Additional Maximum Number of Time Steps</h2>
+When Restart is enabled, an integer value can be entered in this text field to set the additional maximum number of time steps that the restart simulation will run.
+
+<h2>Additional Maximum Time</h2>
+When Restart is enabled, a decimal value, in seconds, can be entered in this text field to set the additional maximum amount of time that the restart simulation will run.
+
+<h2>Computational Cells Across Smallest Pile/Flux-Source Diameter </h2>
+An integer value can be entered in this text field.  It is used by Titan to determine the maximum level of grid-cell refinement allowed throughout the simulation.  The default value is 20, meaning that the dimension of the smallest cell size on the map will correspond to a length that is at most 1/20th that of the smallest pile or flux-source diameter - that is, 1/20th of the smallest value entered in the Major and Minor Extents (m,m) fields on the Piles or Flux Sources tabs.  When AMR is selected, only a small portion of the total map area will be maximally refined; without adaptive mesh refinement however, the entire map will consist of maximally refined cells - which, if small, can be computationally expensive.  The field cannot be left blank.
+
+<h2>AMR</h2>
+A boolean value can be selected in this field.  Activate the "True" button to enable adaptive mesh refinement during the simulation.
+
+<h2>Order Method</h2>
+The value "First" or "Second" can be selected in this field to select the numerical PDR solver order.  Activate the "Second" button to assume a linear variation (instead of constant values) of the conserved quantities (pile height, momentum) across each cell. The second order method should give more accurate results, but, increases computation time and is less stable.
+
+<h2>Scale Parameters</h2>
+
+<h3>Scale Simulation</h3>
+A boolean value can be selected in this field. Activate the "True" button to scale the governing equations by a length scale, gravity scale and height scale.
+
+<h3>Length Scale</h3>
+A decimal value, in meters, can be entered in this text field.  It is used by Titan to correspond to the expected runout length of the flow. If the simulation is scaled, this field cannot be left blank.
+
+<h3>Gravity Scale</h3>
+A decimal value, in meters per second squared, can be entered in this text field.   The default gravity scale is 9.80 ms^-2.  If the simulation is scaled, this field cannot be left blank.
+
+<h3>Height Scale</h3>
+A decimal value, in meters,  can be entered in this text field.  When this field is left blank, Height Scale will be calculated based on the total volume of moving material. 
+
+<h2>Stat Props</h2>
+
+<h3>Run ID</h3>
+An integer value can be entered in this text field to set the integer suffix for statistical and outline output files.  When this field is left blank, the default value -1 is used.
+
+<h3>Height used to define flow outline</h3>
+A decimal value, in meters (> 0), can be entered in this text field to set the "boundary" of the mass flow. The user is required to enter a height greater than zero, which will be used to, among other things, compute the spread of the pile in the X and Y directions. This field can be left blank defaulting to 1/50th of the maximum initial pile height.
+
+<h3>Flow Height Test</h3>
+A decimal value, in meters, can be entered in this text field to set the criteria to determine if the flow reaches a particular depth (for the location as specified by the flow height X and Y locations).
+
+<h3>Flow Height Depth</h3>
+A decimal value, in meters, can be entered in this text field to set the flow depth to test for (at the given location).
+
+<h3>Flow Height Test Point X Location</h3>
+A decimal value, in UTM E coordinates, can be entered in this text field to set the X location to test for specified flow depth.
+
+<h3>Flow Height Test Point Y Location</h3>
+A decimal value, in UTM N coordinates, can be entered in this text field to set the Y location to test for specified flow depth.
+
+<h3>Stat Props Prefix</h3>
+A string value can be entered in this text field to set the prefix for statistical output files.
+
+<h2>Outline Props</h2>
+
+<h3>Outline Props Enabled</h3>
+A boolean value can be selected in this field.  Activate "True" to enable outline calculations.
+
+<h3>Max Linear Size</h3>
+An integer value can be entered in this field to set the maximum size of the outline grid in the X and Y directions.  
+
+<h3>Init Size</h3>
+The value "AMR" or "DEM" can be selected in this field to select the method for calculating the initial outline grid size.  When "AMR" is selected, Titan uses the highest possible resolution.  When "DEM" is selected, Titan uses the DEM resolution.  In both cases, the outline grid size is decreased until the sizes in the X and Y directions are less than Max Linear Size.
+
+<h3>Output Props Prefix</h3>
+A string value can be entered in this text field to select the prefix for outline output files.
+
+</BODY>
+</HTML>
+

@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>Output Options</h1>
+
+<h2>Overwrite Output</h2>
+A boolean value can be selected in this field to enable/disable the results overwrite safety flag.  If set to True, overwrite previous output.  If set to False, abort simulation if output files with same names exist in the current working directory.
+
+<h2>Restart Output</h2>
+
+Define when to save Restart Files required for running Titan when Restart is enabled via the Run Parameters tab.
+
+<h3>Restart Output Enabled</h3>
+A boolean value can be selected in this field.  If set to True, Restart File output is enabled.
+
+<h3>Iterations Between Restart File Output</h3>
+An integer value can be entered in this text field. This corresponds to how often Restart Files will be saved based on the number of iterations between saves.  Dump a Restart File every <font color="gray">Iterations Between Restart File Output</font> iterations.  These files can become very large and the user may not need to see results for every iteration since some iterations may have little change in the results from the previous iteration.  For example, a user may wish to only save a Restart File every 100 iterations.
+
+<h3>Time Between Restart File Output</h3>
+A decimal value, in seconds, can be entered in this text field. This corresponds to how often Restart Files will be saved based on the time between saves. Dump a Restart File every <font color="gray">Time Between Restart File Output</font> seconds.  These files can become very large and the user may not need to see results for every time step since some time steps may have little change in the results from the previous time step.  For example, a user may wish to only save a Restart File every 300 seconds of simulated time.  If desired, the user may choose to use a fraction of a second. 
+
+<h3>Keep All</h3>
+A boolean value can be selected in this field.  If set to True, keep all Restart Files.  If set to False, keep only the last Restart File.
+
+<h3>Keep Redundant Data</h3>
+A boolean value can be selected in this field.  If set to True, keep redundant data.
+
+<h3>Restart Files Storage Directory</h3>
+Subdirectory name for storing the Restart Files.  The saved Restart Files have the following naming convention: snapshot_p[MPI Process ID]_i[step].h5.  For example: snapshot_p0000_i00003401.h5.
+
+<h2>Time Series Output</h2>
+
+Define when to save Visualization Output Snapshot Files.
+
+<h3>Visualization Output Types</h3>
+Choose formats (tecplotxxxx.plt, mshplotxxxx.plt, XDMF/Paraview, grass_sites, Web Viz and/or GMFG Viz) - Activate the buttons corresponding to the visualization outputs that are desired.  tecplotxxxx.plt and mshplotxxxx.plt are tecplot files. XDMF/Paraview is the paraview visualization application. Web Viz is for the web visualization output.  GMFG Viz is for the TITAN2D visualizer.  Note that the user can have no or multiple visualization output formats with each simulation run.
+
+<h3>Iterations Between Snapshot Files Output</h3>
+An integer value can be entered in this text field. This corresponds to how often results will be saved based on the number of iterations between saves.  Write snapshot files every <font color="gray">Iterations Between Snapshot Files Output</font> iterations.   These files can become very large and the user may not need to see results for every iteration since some iterations may have little change in the results from the previous iteration.  For example, a user may wish to only save the snapshot files every 100 iterations.
+
+<h3>Time Between Snapshot Files Output</h3>
+A decimal value, in seconds, can be entered in this text field. This corresponds to how often results will be saved based on the time between saves. Write snapshot files every <font color="gray">Time Between Snapshot Files Output</font> seconds.  These files can become very large and the user may not need to see results for every time step since some time steps may have little change in the results from the previous time step.  For example, a user may wish to only save the snapshot files every 300 seconds of simulated time.  If desired, the user may choose to use a fraction of a second.
+
+<h3>Snapshot Files Storage Directory</h3>
+Subdirectory name for storing the Visualization Output Snapshot Files.
+
+</BODY>
+</HTML>
+
