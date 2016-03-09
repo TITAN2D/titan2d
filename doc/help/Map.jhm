@@ -4,16 +4,16 @@
          "http://java.sun.com/javase/technologies/desktop/javahelp/map_1_0.dtd">
 
 <map version="1.0">
-	<mapID target="welcome" url="html/welcome.html" />
-	<mapID target="options" url="html/options.html" />
-	<mapID target="load/save" url="html/load_save.html" />
-	<mapID target="gis" url="html/gis.html" />
-	<mapID target="run parameters" url="html/run_parameters.html" />
-	<mapID target="output options" url="html/output_options.html" />
-	<mapID target="material model and map" url="html/material_model_and_map.html" />
-	<mapID target="piles" url="html/piles.html" />
-	<mapID target="flux sources" url="html/flux.html" />
-	<mapID target="discharge planes" url="html/discharge.html" />
-	<mapID target="jobsubmission" url="html/jobsubmission.html" />
-	<mapID target="jobmonitor" url="html/jobmonitor.html" />
+	<mapID target="welcome" url="welcome.html" />
+	<mapID target="options" url="options.html" />
+	<mapID target="load/save" url="load_save.html" />
+	<mapID target="gis" url="gis.html" />
+	<mapID target="run parameters" url="run_parameters.html" />
+	<mapID target="output options" url="output_options.html" />
+	<mapID target="material model and map" url="material_model_and_map.html" />
+	<mapID target="piles" url="piles.html" />
+	<mapID target="flux sources" url="flux.html" />
+	<mapID target="discharge planes" url="discharge.html" />
+	<mapID target="jobsubmission" url="jobsubmission.html" />
+	<mapID target="jobmonitor" url="jobmonitor.html" />
 </map>
