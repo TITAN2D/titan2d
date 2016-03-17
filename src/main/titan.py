@@ -51,6 +51,15 @@ def VarTypeTupleSimple(sectionName,varName,value):
         return tuple(value)
     return value
 
+def VarTypeCoulombMatMapBedFrict(sectionName,varName,value):
+    print sectionName,varName,value
+    value_out={}
+    if not isinstance(value, (dict)):
+        raise ValueError(sectionName+": incorrect data type for argument "+varName+"="+str(value)+", should be dict!")
+    for k,v in value.iteritems():
+        value_out[k]=VarTypeFloat(sectionName, "values of dict "+varName,v)
+    return value_out
+
 class VarType:
     def __init__(self,dataconv,conditions=[],CanBeNone=False):
         self.dataconv=dataconv
@@ -440,7 +449,7 @@ class TitanSimulationBase(object):
                                             levelZeroParameters={
                                                 'bed_frict':{'desc':'should be tuple of tuple with name and bed_frict',
                                                     #@todo better validator for bed_frict in case of use_gis_matmap=True
-                                                    'validator':VarTypeTupleSimple
+                                                    'validator':VarTypeCoulombMatMapBedFrict
                                                 }
                                             }
                                         ),
@@ -466,31 +475,9 @@ class TitanSimulationBase(object):
                         'TwoPhases_Coulomb':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
-                            },
-                            defaultParameters={'use_gis_matmap':False},
-                            switchArguments={
-                                'use_gis_matmap':
-                                {
-                                    'desc':'',
-                                    'validator':VarType(bool).chk,
-                                    'switches':{
-                                        False:TiArgCheckerAndSetter(
-                                            levelZeroParameters={
-                                                'bed_frict':{'desc':'',
+                                'bed_frict':{'desc':'',
                                                     'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk
                                                 }
-                                            }
-                                        ),
-                                        True:TiArgCheckerAndSetter(
-                                            levelZeroParameters={
-                                                'bed_frict':{'desc':'should be tuple of tuple with name and bed_frict',
-                                                    #@todo better validator for bed_frict in case of use_gis_matmap=True
-                                                    'validator':VarTypeTupleSimple
-                                                }
-                                            }
-                                        ),
-                                    }
-                                }
                             }
                         ),
                     }
@@ -1011,14 +998,21 @@ class TitanSimulation(TitanSimulationBase):
                 matprops.material_count=1
                 matprops.matnames.push_back("all materials")
                 matprops.bedfrict.push_back(float(ui_MatModel['bed_frict']))
-        else:  #if they did want to use a GIS material map...
+        else:
+            print ui_MatModel['bed_frict']
+            matprops.material_count=len(ui_MatModel['bed_frict'])
+            for k,v in ui_MatModel['bed_frict'].iteritems():
+                print k,v
+                matprops.matnames.push_back(k)
+                matprops.bedfrict.push_back(float(v))
+            #if they did want to use a GIS material map...
             #matprops.material_count=len(mat_names)
             #if len(bed_frict)!=len(mat_names):
             #    raise Exception("number of mat_names does not match number of bed_frict")
             #for i in range(len(bed_frict)):
             #    matprops.matnames.push_back(mat_names[i])
             #    matprops.bedfrict.push_back(float(bed_frict[i]))
-            raise NotImplementedError("GIS material map Not implemented yet")
+            #raise NotImplementedError("GIS material map Not implemented yet")
         
         self.sim.set_matprops(matprops)
         #uncouple the c++ from python proxy 

@@ -695,6 +695,7 @@ public:
         //something somewhere counting from 1, so add dummy values
         matnames.push_back("nothing");
         bedfrict.push_back(12.0);
+        tanbedfrict.push_back(12.0);
     }
     //! this destructor deallocates the arrays of bed friction angles and their tangents
     virtual ~MatProps()

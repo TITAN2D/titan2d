@@ -57,16 +57,21 @@ int main(int argc, char** argv)
     if(!Initialize_Raster_data(argv[1], argv[2], argv[3], gis_matmap))
     {
         //write the material names data file to be read by titan_gui.py
-        FILE *fp = fopen("materialnames.dat", "w");
+        //FILE *fp = fopen("materialnames.dat", "w");
         
         //determine the number of materials
         int nummat; //the number of materials
         Get_raster_categories(&nummat);
-        fprintf(fp, "%d\n", nummat);
+        printf("Number of materials: %d\n", nummat);
+        printf("Bellow is template for setting material model in your simulation file:\n\n", nummat);
         
         //retrieve the list of material names from the map
-        char materialname[200];
-        
+        char materialname[256];
+        printf("sim.setMatModel(\n");
+        printf("    model='Coulomb',\n");
+        printf("    int_frict=<value>,\n");
+        printf("    use_gis_matmap=True,\n");
+        printf("    bed_frict={\n");
         /* note material id (imat) =0 is the "null material", it is not 
          used on the map "ColimaSmallSRTM_Mat" (which is the first test
          map) but could be used on other maps where the material is not 
@@ -74,10 +79,11 @@ int main(int argc, char** argv)
         for(int imat = 1; imat <= nummat; imat++)
         {
             Get_raster_category_name(imat, materialname);
-            fprintf(fp, "%s\n", materialname);
+            printf("        '%s':<value>,\n", materialname);
         }
-        
-        fclose(fp);
+        printf("   }\n");
+        printf(")\n");
+        //fclose(fp);
         
         Delete_Raster_data();
         

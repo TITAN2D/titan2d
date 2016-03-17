@@ -292,10 +292,40 @@ void cxxTitanSimulation::process_input(bool start_from_restart)
         Get_raster_categories(&nummat);
         if(nummat != matprops_ptr->material_count)
         {
-            printf("frict.data has %d materials but material map has %d, aborting\n", matprops_ptr->material_count,
+            printf("ERROR: Input script has %d materials but material map has %d, aborting, use titan_materialnames utility to check materials\n", matprops_ptr->material_count,
                    nummat);
             assert(0);
         }
+        //shuffle materials to raster order, since it can be entered out of order
+        std::vector<std::string> matnames;
+        std::vector<double> bedfrict;
+        std::vector<double> tanbedfrict;
+        //something somewhere counting from 1, so add dummy values
+        matnames.push_back("nothing");
+        bedfrict.push_back(12.0);
+        tanbedfrict.push_back(12.0);
+
+        char materialname[256];
+        for(int imat = 1; imat <= nummat; ++imat)
+        {
+            Get_raster_category_name(imat, materialname);
+            int imat0;
+            for(imat0=1;imat0<=nummat;++imat0)
+            {
+                if(matprops_ptr->matnames[imat0]==materialname)
+                    break;
+            }
+            if(imat0>nummat){
+                printf("ERROR: Material %s specified  in material map is not present in input script, use titan_materialnames utility to check materials\n", materialname);
+                assert(0);
+            }
+            matnames.push_back(matprops_ptr->matnames[imat0]);
+            bedfrict.push_back(matprops_ptr->bedfrict[imat0]);
+            tanbedfrict.push_back(matprops_ptr->tanbedfrict[imat0]);
+        }
+        matprops_ptr->matnames=matnames;
+        matprops_ptr->bedfrict=bedfrict;
+        matprops_ptr->tanbedfrict=tanbedfrict;
     }
     /*************************************************************************/
     //time related info
