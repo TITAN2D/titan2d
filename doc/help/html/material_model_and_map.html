@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Help Overview
+</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff">
+
+<h1>Material Model and Map</h1>
+
+<h2>Material Model</h2>
+
+<p>Select the material model governing the flow of material for the simulation. Current models available are Coulomb, TwoPhases_Coulomb, Voellmy-Salm and Pouliquen-Forterre.  When a material model is selected, text fields appear which allow model specific input parameters to be entered.</p> 
+
+<p>The following briefly describes the material models and their respective input parameters:</p>
+
+<h3>Coulomb:</h3>
+
+<p>For the Coulomb model, the granular material is assumed to be an incompressible continuum satisfying a Mohr Coulomb law.</p>
+
+<p>Input Parameters:</p>
+
+<h4>int_frict</h4>
+A decimal value, in degrees, can be entered in this text field to set the internal friction angle.
+This field cannot be left blank.
+
+<h4>bed_frict</h4>
+A decimal value, in degrees, can be entered in this text field to set the bed friction angle.
+This field cannot be left blank.
+
+<h4>stopping criteria</h4>
+A boolean value can be selected in this field to enable/disable the drag based stopping criteria.
+
+<p>A complete description for this material model, including the model's governing equations, are provided in the following reference papers:</p>
+
+<p>- A. K. Patra, C. C. Nichita, A. C. Bauer, E. B. Pitman, M.
+I. Bursik, M. F. Sheridan. "Parallel adaptive numerical simulation of dry
+avalanches over natural terrain." <i>Journal of Volcanology and Geothermal
+Research,</i> 139:1-21 (2005).</p>
+
+<p>- E. B. Pitman, C.C. Nichita, A.K. Patra, A.C. Baur, M.
+Bursik, A. Weber. "Computing granular avalanches and landslides." <i>Physics of
+Fluids</i> 15:36-38, (2003).</p>
+
+<h3>TwoPhases_Coulomb:</h3>
+
+<p>For the TwoPhases_Coulomb model, the granular flow is assumed to consist of a solid phase and a fluid phase. 
+
+<p>Input Parameters:</p>
+
+<h4>int_frict</h4>
+A decimal value, in degrees, can be entered in this text field to set the internal friction angle. 
+This field cannot be left blank.
+
+<h4>bed_frict</h4>
+A decimal value, in degrees, can be entered in this text field to set the bed friction angle.
+This field cannot be left blank.
+
+<h4>Volume Fraction</h4>
+<p>The solid phase requires a volume fraction parameter for each pile defined via the Piles tab;  set each pile's Volume Fraction field via the Piles tab.</p>
+
+<p>A complete description for this material model, including the model's governing equations, are provided in the following reference paper:</p>
+
+<p>- E. B. Pitman, Long Le. "A two-fluid model for avalanche and
+debris flow." <i>Philosophical Transactions of the Royal Society A</i>,
+363:1573-1601, (2005).</p>
+
+<h3>Voellmy-Salm:</h3>
+
+<p>For the Voellmy-Salm model, the total basal friction is split into a velocity 
+independent dry-Coulomb term, mu, which is proportional to the normal stress at the flow bottom, and, a velocity dependent "viscous" or "turbulent" friction term, xi.
+
+<p>Users are encouraged to apply this material model for snow avalanche simulations.</p>
+
+<p>Input Parameters:</p>
+
+<h4>mu</h4>
+A decimal value, in degrees, can be entered in this text field to set the velocity independent term.
+This field cannot be left blank.
+
+<h4>xi</h4>
+A decimal value, in degrees, can be entered in this text field to set the velocity dependent term.
+This field cannot be left blank.
+
+<p>A complete description for this material model, including the model's governing equations, are provided in the following reference paper:</p>
+
+<p>- M. Christen, J. Kowalski, P. Bartelt. "RAMMS: Numerical
+simulation of dense snow avalanches in three-dimensional terrain." <i>Cold
+Regions Science and Technology </i>63:1-14, (2010).</p>
+
+<h3>Pouliquen-Forterre:</h3>
+
+<p>For the Pouliquen-Forterre model, the basal friction coefficient is computed
+based on a friction law described in the referenced Pouliquen-Forterre paper. 
+
+<p>Input Parameters:</p>
+
+<h4>phi1</h4>
+A decimal value, in degrees, can be entered in this text field.
+This field cannot be left blank.
+
+<h4>phi2</h4>
+A decimal value, in degrees, can be entered in this text field.
+This field cannot be left blank.
+
+<h4>phi3</h4>
+A decimal value, in degrees, can be entered in this text field.
+This field cannot be left blank.
+
+<h4>Beta</h4>
+A decimal value can be entered in this text field to set this constant material property.
+This field cannot be left blank.
+
+<h4>L_material</h4>
+A decimal value can be entered in this text field to set this constant material property.
+This field cannot be left blank.
+
+<p>A complete description for this material model, including the model's governing equations, are provided in the following reference papers:</p>
+
+<p>- Pouliquen O., Forterre Y. "Friction law for dense granular
+flows: application to the motion of a mass down a rough inclined plane." <i>Journal
+of Fluid Mechanics</i> 453:133-151, (2002).</p>
+
+<p>- Forterre Y., Pouliquen O. "Flows of Dense Granular Media." <i>The
+Annual Review of Fluid Mechanics</i> 40:1-24</p>
+
+<h2>Use Material Map</h2>
+
+<b>NOTE:</b> This feature will be available only to users who have a specific material map (file ends in _Mat)*.  The Use GIS Material Map check box will enable the input of a GIS-based surfacial material map that matches the area covered by the DEM.  This map will be used to define the zones in the region where changes in the surface morphology results in a change in the basal friction angle.
+
+<b>The use of material maps is currently disabled.</b>
+
+</BODY>
+</HTML>
+

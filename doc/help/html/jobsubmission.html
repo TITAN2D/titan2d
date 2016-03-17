@@ -13,12 +13,13 @@ Allows for the execution of a Titan model run.<br>
 <h2>Run Style</h2>
 When "Local" is selected, the Titan model run will execute on the machine that
 the interface is running on.  Only one processor will be used.<br>
-When "PBS" is set, the Titan model run will be submitted to the PBS job
+When "PBS" is selected, the Titan model run will be submitted to the PBS job
 scheduler running on the machine that the interface is running on, which will
 decide on what machine(s) the Titan job runs.<br>
-When "Condor" is set, the Titan model run will be submitted to the Condor job
+When "Condor" is selected, the Titan model run will be submitted to the Condor job
 scheduler running on the machine that the interface is running on, which will
 decide on what machine(s) the Titan job runs.<br>
+When "HUB-Submit" is selected, the Titan model run will be submitted to UB's slurm job scheduler running on the machine that the interface is running on, which will decide on what machine(s) the Titan job runs.<br>
 <b>NOTE :</b>  When "PBS" or "Condor" is set, the job will need to be scheduled
         on a machine(s) which can "see" the Titan binary application files, GIS
         data files and the output (save) directory.  It is not currently possible
@@ -44,7 +45,7 @@ The field specifies the PBS job queue that the Titan model run should be
 submitted to.  It corresponds directly to the "-q" option of the qsub command.
 The value can be left blank and the qsub default queue will be used.
 
-<h3>Number of Processors</h3>
+<h3>CPUs per node</h3>
 The integer value(> 0) can be enetered in this text field.
 The field specifies the number of processors requested for the Titan model
 run.  It corresponds directly to the "-l ncpus" option of the qsub command.
@@ -57,6 +58,20 @@ The Condor options are only relevant when the run style is set to Condor.
 The value can be entered in the text field.
 The field mirrors the Requirements option in a Condor description file.
 The value can be left blank and the condor default requirements will be used.
+
+<h2>HUB-Submit Options</h2>
+The HUB-Submit options are only relevant when the run style is set to HUB-Submit.
+<h3>Maximum Run Time</h3>
+The value, format hh:mm:ss, can be enetered in this text field.
+The field specifies the maximum walltime for the Titan model run.  It
+corresponds directly to the "-l walltime" option of the qsub command.
+The value can be left blank and the qsub default value will be used.
+
+<h3>CPUs per node</h3>
+The integer value(> 0) can be enetered in this text field.
+The field specifies the number of processors requested for the Titan model
+run.  It corresponds directly to the "-l ncpus" option of the qsub command.
+The value cannot be left blank.
 
 <h2>Pre-execution Commands</h2>
 The commands can be entered in this text field.
@@ -73,18 +88,14 @@ submitted.
 When the "Run Job" button is pushed, the following will occur :<br>
 
 <ol>
-  <li>The Titan model run parameter files will be saved.  If the information
+  <li>When Restart is not enabled via the Run Parameters tab, the Titan model run parameter files will be saved.  If the information
       on the Load/Save tab related to saving parameter files is incomplete,
       an error message will be displayed and the job will not run.</li>
   <li>A timestamped directory will be created in the directory where the
       parameter files were saved to.  The timestamped directory will contain
       various files required for running the Titan model run and results
       output.</li>
-  <li>The input file required by the Titan application will
-      be written to the timestamped directory.  The name of the input file is:<br>
-      <ul>
-        <li>simulation.py</li>
-      <ul></li>
+  <li>When Restart is not enabled, the input file required by the Titan application will  be written to the timestamped directory.  The name of the input file is: simulation.py.</li>
   <li>The Titan application is launched by a script
       built dynamically.  The launch script, which is dependent on the run
        method, is created in the timestamped directory.  It is a bash shell

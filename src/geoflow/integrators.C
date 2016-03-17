@@ -1085,6 +1085,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         double force_Turbulence_x,force_Turbulence_y;
         double unitvx, unitvy;
         double Ustore[3];
+        double force_curv_x, force_curv_y;
 
         double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
 
@@ -1137,33 +1138,38 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
              // x direction source terms
              //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-             // the gravity force in the x direction
-             forcegrav_x = g[0][ndx] * h[ndx];
+            // the gravity force in the x direction
+            forcegrav_x = g[0][ndx] * h[ndx];
 
-             //the Coulomb type friction force in x direction
-             force_CoulombFrict_x = unitvx * mu * g[2][ndx] * h[ndx];
+            //the Coulomb type friction force in x direction
+            force_CoulombFrict_x = unitvx * mu * g[2][ndx] * h[ndx];
 
-             //the Turbulent type force for fast moving flow in x direction
-             force_Turbulence_x = unitvx * speed_squared * inv_xi;
+            //the Turbulent type force for fast moving flow in x direction
+            force_Turbulence_x = unitvx * speed_squared * inv_xi;
+
+            //the Curvature dependent force for fast moving flow in x direction
+            force_curv_x = unitvx * mu * speed_squared * h[ndx] * curvature_[0][ndx];
 
 
-             Ustore[1] = Ustore[1] + dt * (forcegrav_x - force_CoulombFrict_x - force_Turbulence_x);
+            Ustore[1] = Ustore[1] + dt * (forcegrav_x - force_CoulombFrict_x - force_Turbulence_x - force_curv_x);
 
              //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
              // y direction source terms
              //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-             // the gravity force in the y direction
-             forcegrav_y = g[1][ndx] * h[ndx];
+            // the gravity force in the y direction
+            forcegrav_y = g[1][ndx] * h[ndx];
 
-             // the Coulomb type friction force  in y direction
-             force_CoulombFrict_y = unitvy * mu * g[2][ndx] * h[ndx];
+            // the Coulomb type friction force  in y direction
+            force_CoulombFrict_y = unitvy * mu * g[2][ndx] * h[ndx];
 
-             // the Turbulent type force for fast moving flow in y direction
-             force_Turbulence_y = unitvy * speed_squared * inv_xi;
+            // the Turbulent type force for fast moving flow in y direction
+            force_Turbulence_y = unitvy * speed_squared * inv_xi;
 
+            //the Curvature dependent force for fast moving flow in y direction
+            force_curv_y = unitvy * mu * speed_squared * h[ndx] * curvature_[1][ndx];
 
-             Ustore[2] = Ustore[2] + dt * (forcegrav_y - force_CoulombFrict_y - force_Turbulence_y);
+            Ustore[2] = Ustore[2] + dt * (forcegrav_y - force_CoulombFrict_y - force_Turbulence_y - force_curv_y);
 
         }
 
@@ -1479,19 +1485,19 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			forcegravx = g[0][ndx] * h[ndx];
 
 			// the bed friction forces for fast moving flow in x direction
-			forcebedx1 = h[ndx] * unitvx * mu_bed * ( g[2][ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx] );
+			forcebedx1 = h[ndx] * unitvx * mu_bed * g[2][ndx];
 
 			forcebedx2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
 
 			//STOPPING CRITERIA
-			inertial_x = fabs( Ustore[1] + dt * forcegravx );
+//			inertial_x = fabs( Ustore[1] + dt * forcegravx );
 
-			drag_x = fabs( dt * ( forcebedx1 + forcebedx2 ) );
+//			drag_x = fabs( dt * ( forcebedx1 + forcebedx2 ) );
 
-			if ( inertial_x > drag_x )
+//			if ( inertial_x > drag_x )
 				Ustore[1] = Ustore[1] + dt * ( forcegravx - forcebedx1 - forcebedx2 );
-			else
-				Ustore[1] = 0.0;
+//			else
+//				Ustore[1] = 0.0;
 
 			//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 			// y direction source terms
@@ -1502,19 +1508,19 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			forcegravy = g[1][ndx] * h[ndx];
 
 			// the bed friction forces for fast moving flow in y direction
-			forcebedy1 = h[ndx] * unitvy * mu_bed * ( g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx] );
+			forcebedy1 = h[ndx] * unitvy * mu_bed * g[2][ndx];
 
 			forcebedy2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
 
 			//STOPPING CRITERIA
-			inertial_y = fabs( Ustore[2] + dt * forcegravy );
+//			inertial_y = fabs( Ustore[2] + dt * forcegravy );
 
-			drag_y = fabs( dt * ( forcebedy1 + forcebedy2 ) );
+//			drag_y = fabs( dt * ( forcebedy1 + forcebedy2 ) );
 
-			if ( inertial_y > drag_y )
+//			if ( inertial_y > drag_y )
 				Ustore[2] = Ustore[2] + dt * ( forcegravy - forcebedy1 - forcebedy2 );
-			else
-				Ustore[2] = 0.0;
+//			else
+//				Ustore[2] = 0.0;
         }
 
 

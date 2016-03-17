@@ -9,31 +9,48 @@ Help Overview
 
 <h1>Piles</h1>
 
+<p>Define the initial material piles for the simulation.</p>
+
 <h2>Type</h2>
 Select 1 for Paraboloid.  Select 2 for Cylinder.
 This field cannot be left blank.
 
-When Paraboloid is selected, the geometry for each pile is a paraboloid given by:<br>
-P*(1-((x-xc)/xr)^2 -((y-yc)/yr)^2) (assuming an orientation angle of zero)
-(a negative pile height calculated from this equation will be set to zero).<br>
-These equations are for the non-scaled pile.  If two or more piles overlap, the
-highest height of the pile is used as the pile height at that point.<br>
-NOTE : The X-axis is defines as UTM E and the Y-axis is defines as UTM N.
+<h3>Paraboloid</h3>
+
+When Paraboloid is selected, the geometry for the pile is a paraboloid given by:
+
+<b>P*(1-((x-xc)/xr)^2 -((y-yc)/yr)^2)</b> (assuming an orientation angle of zero)
+(a negative pile height calculated from this equation will be set to zero).
+
+<p>Where: P is the maximum initial pile height, xc and xy are the center of the pile coordinates in the X and Y direction (Center of Initial Volume X and Center of Initial Volume Y), and, xr and yr are respectively the initial pile's radii in the X and Y direction (Major Extent and Minor Extent).</p>
+
+<h3>Cylinder</h3>
+
+When Cylinder is selected, the pile's configuration is independent of z and 
+the geometry for the pile is given by:
+
+<b>((x-xc)/xr)^2 -((y-yc)/yr)^2)</b> = 1 (assuming an orientation angle of zero).
+
+<p>Where: xc and xy are the center of the pile coordinates in the X and Y direction (Center of Initial Volume X and Center of Initial Volume Y), and, xr and yr are respectively the initial pile's radii in the X and Y direction (Major Extent and Minor Extent).</p>
+
+<p>NOTE: These equations are for the non-scaled pile.  If two or more piles overlap, the highest height of the pile is used as the pile height at that point.</p>
+
+<p>NOTE: The X-axis is defined as UTM E and the Y-axis is defined as UTM N.</p>
 
 <h2>Maximum Initial Thickness</h2>
-The decimal value, in meters, can be entered in this text field.
+A decimal value, in meters, can be entered in this text field.
 The field cannot be left blank.
 
 <h2>Center of Initial Volume X</h2>
-The decimal value, in UTM coordinates, can be entered in this text field.
+A decimal value, in UTM E coordinates, can be entered in this text field.
 The field cannot be left blank.
 
-<h2>Center of Initial Volume X</h2>
-The decimal value, in UTM coordinates, can be entered in this text field.
+<h2>Center of Initial Volume Y</h2>
+A decimal value, in UTM N coordinates, can be entered in this text field.
 The field cannot be left blank.
 
 <h2>Major Extent</h2>
-The decimal value, in meters, can be entered in this text field.
+A decimal value, in meters, can be entered in this text field.
 The field cannot be left blank.
 
 <h2>Minor Extent</h2>
@@ -45,15 +62,15 @@ The decimal value, in degrees from X axis to major axis, can be entered in this 
 The field cannot be left blank.
 
 <h2>Initial Speed</h2>
-The decimal value, in meters/second, can be entered in this text field.
+A decimal value, in meters/second, can be entered in this text field.
 The field cannot be left blank.
 
 <h2>Initial Direction</h2>
-The decimal value can be entered in this text field.
+A decimal value can be entered in this text field.
 The field cannot be left blank.
 
 <h2>Volume Fraction</h2>
-The decimal value can be entered in the text field when the Material Model is TwoPhases_Coulomb.
+A decimal value can be entered in the text field when the Material Model is TwoPhases_Coulomb.
 The field cannot be left blank when the Material Model is TwoPhases_Coulomb.
 
 </BODY>

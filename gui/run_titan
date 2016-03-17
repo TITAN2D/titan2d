@@ -1,20 +1,23 @@
-#!/bin/bash
+#! /bin/sh
 
 #The location of the Titan application binary must be included in the PATH environment variable.  
 # vhub:
-# use titan2d-v4.0.0-alpha3
+# use titan2d-v4.0.0-alpha5
 # rush:
 # module load titan
 # otherwise:
 # Add the path to the Titan application binary to PATH,
 # example:
-# export PATH=$PATH:/projects/academic/gmfg/renettej/titan2d-v4.0.0-alpha3/bin
+# export PATH=$PATH:/projects/academic/gmfg/renettej/titan2d-v4.0.0-alpha5/bin
 
 # Note: on vhub only 1 node and 1 cpu are allowed per job.
-# Default, assume running titan2d on vhub so
-# need to set E_VHUB="false" when not running on vhub
-# to allow more than 1 cpu per job
+# Default, assumes running titan2d on vhub
 export E_VHUB="false"
+
+# Specify the start directory for the directory selectors.
+# Default, $Home
+# example:
+# export E_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui/test"
 
 fullpath="$(readlink -f $0)"
 
