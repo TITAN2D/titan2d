@@ -199,25 +199,35 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
 int Initialize_GIS_data(const char* GISDbase, const char* location, const char* mapset, const char* raster_file)
 {
     int nrows, ncols;
-    
-    std::string gisPath;
+    /* @todo fix problem with array, there is some non-trivial problem here, changes from char to string
+     * result in different results, under certain combination of compilers and MPI library
+     * gis_grid.ghead.datafile is null
+     */
+   /* std::string gisPath;
     std::string  gisFullPath;
 #if defined WIN32
     char gisSlash = '\\';
 #else
     char gisSlash = '/';
+#endif*/
+    char gisPath[1024];
+    char gisFullPath[1024];
+#if defined WIN32
+    char* gisSlash = "\\";
+#else
+    char* gisSlash = "/";
 #endif
     
     // GRASS is fallback format
     if(GISDbase && location && mapset && raster_file)
     {
-        /*strcpy(gisPath, GISDbase);
+        strcpy(gisPath, GISDbase);
         sprintf(gisPath, "%s%s%s%s", gisPath, gisSlash, location, gisSlash);
         sprintf(gisPath, "%s%s%s", gisPath, mapset, gisSlash);
         strcpy(gisFullPath, gisPath);
-        sprintf(gisFullPath, "%scellhd%s%s", gisFullPath, gisSlash, raster_file);*/
+        sprintf(gisFullPath, "%scellhd%s%s", gisFullPath, gisSlash, raster_file);
         
-        gisPath=GISDbase;
+        /*gisPath=GISDbase;
         gisPath+=gisSlash;
         gisPath+=location;
         gisPath+=gisSlash;
@@ -227,17 +237,17 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
         gisFullPath=gisPath;
         gisFullPath+="cellhd";
         gisFullPath+=gisSlash;
-        gisFullPath+=raster_file;
+        gisFullPath+=raster_file;*/
 
         //test for path existence
-        FILE *file = fopen(gisFullPath.c_str(), "r");
+        FILE *file = fopen(gisFullPath, "r");
         if(file==nullptr)
         {
-            printf("ERROR: Can not locate GIS files, particularly: %s\n",gisFullPath.c_str());
+            printf("ERROR: Can not locate GIS files, particularly: %s\n",gisFullPath);
             exit(1);
         }
         fclose(file);
-        GisRasterHdr gisHeader(gisFullPath.c_str());
+        GisRasterHdr gisHeader(gisFullPath);
         Gis_Head gHeadStruct;
         if((!gisHeader.good()) || (set_from_header(gisHeader, gHeadStruct) != 0))
             return -4;
@@ -249,14 +259,18 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
         if(nrows < 1 || ncols < 1)
             return -4;
         
-        //strcpy(gisFullPath, gisPath);
-        //sprintf(gisFullPath, "%sfcell%s%s", gisFullPath, gisSlash, raster_file);
-        gisFullPath=gisPath;
+        strcpy(gisFullPath, gisPath);
+        sprintf(gisFullPath, "%sfcell%s%s", gisFullPath, gisSlash, raster_file);
+        gis_grid.ghead.datafile = strdup(gisFullPath);
+        /*gisFullPath=gisPath;
         gisFullPath+="cellhd";
         gisFullPath+=gisSlash;
         gisFullPath+=raster_file;
-        gis_grid.ghead.datafile = strdup(gisFullPath.c_str());
-        
+        gis_grid.ghead.datafile = new char[gisFullPath.size()+1];
+        memcpy(gis_grid.ghead.datafile,gisFullPath.c_str(),gisFullPath.size());
+        gis_grid.ghead.datafile[gisFullPath.size()]='\0';
+        printf("A: %p\n",gis_grid.ghead.datafile);
+        printf("B: %p\n",gis_grid.ghead.datafile);*/
         return 0;
     }
     return -4;
