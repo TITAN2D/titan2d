@@ -117,6 +117,7 @@ int main(int argc, char *argv[])
     //variables for restart command line
     bool restart=false;
     string restartFilename="";
+    string new_gis_main="";
     int addIterations=-1;
     double addTime=-1.0;
 
@@ -179,6 +180,12 @@ int main(int argc, char *argv[])
                         arg=argv[i];
                         addTime=stoi(arg);
                     }
+                    else if(arg=="-gis-main")
+                    {
+                        ++i;
+                        arg=argv[i];
+                        new_gis_main=arg;
+                    }
                     else
                     {
                         restartFilename=argv[i];
@@ -214,7 +221,8 @@ int main(int argc, char *argv[])
             //restart
             printf("restart %s %d %f\n",restartFilename.c_str(),addIterations,addTime);
             cxxTitanSimulation sim;
-            sim.load_restart(restartFilename.c_str());
+            sim.load_restart(restartFilename,new_gis_main);
+
             if(addIterations>0)
             {
                 sim.timeprops.maxiter+=addIterations;
@@ -248,7 +256,7 @@ int main(int argc, char *argv[])
 		if(myid == 0)
 		{
 			printf("Usage:\n");
-			printf("\t%s [-nt <number of threads>] [-restart [-add-iter <iter>] [-add-time <time>] | <run_script>]\n", argv[0]);
+			printf("\t%s [-nt <number of threads>] [-restart [-add-iter <iter>] [-add-time <time>] [-gis-main <new position of gis>] <restart file> | <run_script>]\n", argv[0]);
 		}
     }
     

@@ -51,7 +51,7 @@ public:
 
     void save_restart_file();
 
-    void load_restart(const char * restartFilename);
+    void load_restart(const std::string restartFilename, const std::string new_gis_main);
 
     void save_vizoutput_file(const int mode);
 

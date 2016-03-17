@@ -200,24 +200,44 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
 {
     int nrows, ncols;
     
-    char gisPath[200];
-    char gisFullPath[250];
+    std::string gisPath;
+    std::string  gisFullPath;
 #if defined WIN32
-    char* gisSlash = "\\";
+    char gisSlash = '\\';
 #else
-    char* gisSlash = "/";
+    char gisSlash = '/';
 #endif
     
     // GRASS is fallback format
     if(GISDbase && location && mapset && raster_file)
     {
-        strcpy(gisPath, GISDbase);
+        /*strcpy(gisPath, GISDbase);
         sprintf(gisPath, "%s%s%s%s", gisPath, gisSlash, location, gisSlash);
         sprintf(gisPath, "%s%s%s", gisPath, mapset, gisSlash);
         strcpy(gisFullPath, gisPath);
-        sprintf(gisFullPath, "%scellhd%s%s", gisFullPath, gisSlash, raster_file);
+        sprintf(gisFullPath, "%scellhd%s%s", gisFullPath, gisSlash, raster_file);*/
         
-        GisRasterHdr gisHeader(gisFullPath);
+        gisPath=GISDbase;
+        gisPath+=gisSlash;
+        gisPath+=location;
+        gisPath+=gisSlash;
+        gisPath+=mapset;
+        gisPath+=gisSlash;
+
+        gisFullPath=gisPath;
+        gisFullPath+="cellhd";
+        gisFullPath+=gisSlash;
+        gisFullPath+=raster_file;
+
+        //test for path existence
+        FILE *file = fopen(gisFullPath.c_str(), "r");
+        if(file==nullptr)
+        {
+            printf("ERROR: Can not locate GIS files, particularly: %s\n",gisFullPath.c_str());
+            exit(1);
+        }
+        fclose(file);
+        GisRasterHdr gisHeader(gisFullPath.c_str());
         Gis_Head gHeadStruct;
         if((!gisHeader.good()) || (set_from_header(gisHeader, gHeadStruct) != 0))
             return -4;
@@ -229,9 +249,13 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
         if(nrows < 1 || ncols < 1)
             return -4;
         
-        strcpy(gisFullPath, gisPath);
-        sprintf(gisFullPath, "%sfcell%s%s", gisFullPath, gisSlash, raster_file);
-        gis_grid.ghead.datafile = strdup(gisFullPath);
+        //strcpy(gisFullPath, gisPath);
+        //sprintf(gisFullPath, "%sfcell%s%s", gisFullPath, gisSlash, raster_file);
+        gisFullPath=gisPath;
+        gisFullPath+="cellhd";
+        gisFullPath+=gisSlash;
+        gisFullPath+=raster_file;
+        gis_grid.ghead.datafile = strdup(gisFullPath.c_str());
         
         return 0;
     }

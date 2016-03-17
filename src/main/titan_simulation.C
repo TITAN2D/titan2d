@@ -736,14 +736,27 @@ void cxxTitanSimulation::save_restart_file()
     prev_hf5_filename=hf5_filename;
     prev_xmdf_snapshot=xmdf_snapshot;
 }
-void cxxTitanSimulation::load_restart(const char * restartFilename)
+void cxxTitanSimulation::load_restart(const std::string restartFilename, const std::string new_gis_main)
 {
     // Create a new file using the default property lists.
-    H5::H5File file(restartFilename, H5F_ACC_RDONLY);
+    H5::H5File file(restartFilename.c_str(), H5F_ACC_RDONLY);
 
     h5read(&file);
 
     file.close();
+
+    //change location of DEM
+    if(new_gis_main!="")
+    {
+        if(mapnames.gis_format==MapNames::GIS_GRASS)
+        {
+            mapnames.gis_main=new_gis_main;
+        }
+        else
+        {
+            mapnames.gis_map=new_gis_main;
+        }
+    }
 
     //check output directory and create if necessary
     if(restart_prefix!="" && ti_dir_exists(restart_prefix.c_str())==false)
