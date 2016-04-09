@@ -6,7 +6,7 @@ The Titan GUI is written in java, which is platform independent.  However, some 
 
 == Java ==
 
-The Titan GUI requires that java version 1.6 or greater is installed and that the java executable(java) can be launched from the command line.
+The Titan GUI requires that java version 1.7 or greater is installed and that the java executable(java) can be launched from the command line.
 
 To determine if java can be launched from the command line, issue the command:
 
@@ -16,11 +16,11 @@ If java can be launched from the command line, determine which version of java i
 
 java -version
 
-If java is not installed or the installed version of java is not 1.6 or greater, contact the system administator for assistance.
+If java is not installed or the installed version of java is not 1.7 or greater, contact the system administator for assistance.
 
 OR
 
-Download java (version 1.6 or greater) and set the PATH environment variable to use the java executable included in the download.  There are several different java vendors.  
+Download java (version 1.7 or greater) and set the PATH environment variable to use the java executable included in the download.  There are several different java vendors.  
 
 ORACLE's version of java can be found at:
 https://www.oracle.com/java/index.html(as of 01/18/2016)
@@ -36,9 +36,11 @@ Please see the install notes in the INSTALL.
 
 == Running the Titan GUI ==
 
-The Titan GUI is launched from a shell script that is located in the bin directory and is run by the command:
+The Titan GUI is launched from the run_titan shell script that is located in the bin directory and invoked by the command:
 
-run_titan
+./run_titan
+
+# Note: Please verify run_titan environment variable settings before invoking run_titan.
 
 == Help using the Titan GUI ==
 
