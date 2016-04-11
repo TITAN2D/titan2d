@@ -1,7 +1,7 @@
 #! /bin/sh
 
 #The location of the Titan application binary must be included in the PATH environment variable.  
-# vhub:
+# vhub (Note: On VHub, the location of the Titan application binary is set via HUBzero invoke processing when the Titan2D tool GUI is launched).  Example:
 # use titan2d-v4.0.0-alpha5
 # rush:
 # module load titan
@@ -10,9 +10,9 @@
 # Example, in your .bashrc file:
 # export PATH=$PATH:"/projects/academic/gmfg/renettej/titan2d_github/titan2d/bin"
 
-# Note: on VHub, the TOOLDIR environment variable is set via HUBzero invoke processing.  Need the TOOLDIR environment variable defined to create KML files.  Set the TOOLDIR environment variable to the top level directory where titan2d is installed.
-# Example:
-#export TOOLDIR="/projects/academic/gmfg/renettej/titan2d_github/titan2d"
+# Note: on VHub, the TOOLDIR environment variable is set via HUBzero invoke processing when the Titan2D tool GUI is launched.  Need TOOLDIR defined to create KML files.  Setting TOOLDIR to the parent directory.
+export TOOLDIR="$(dirname "$(pwd)")"
+echo $TOOLDIR
 
 # Note: on VHub, only 1 node and 1 cpu are allowed per job.
 # Default, assumes running titan2d on vhub
@@ -20,7 +20,7 @@ export E_VHUB="false"
 
 # Specify the start directory for the directory selectors.
 # Default, $Home
-# example:
+# Example:
 # export E_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui"
 
 fullpath="$(readlink -f $0)"
