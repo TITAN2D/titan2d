@@ -9,29 +9,41 @@ Help Overview
 
 <h1>GIS Data Information</h1>
 
-<h2>GIS Information Main Directory</h2>
+<h2>GIS Format</h2>
+The value "GIS_GRASS" or "GDAL" can be selected in this field to select the GIS Format.  When "GIS_GRASS" is selected, the GIS Information Main Directory, GIS Sub-Directory, GIS Map Set, and GIS Map fields are required; please see details below.  When "GDAL" is selected, only the GIS Map field is required; please see details below.
+
+<h2>GIS Format GIS_GRASS:</h2>
+
+<h3>GIS Information Main Directory</h3>
 The main directory where the GIS information is stored.  All GIS input data
 must be in GRASS format to be used.  The value can be set by using the
 directory chooser, which is displayed by pushing the "GIS Information Main
 Directory" button, or entering the directory in the text field.
 
-<h2>GIS Sub-Directory</h2>
+<h3>GIS Sub-Directory</h3>
 The sub-directory where the GIS information is stored.  The value can be set by
 using the directory chooser, which is displayed by pushing the "GIS
 Sub-Directory" button, or entering the directory in the text field.
 
-<h2>GIS Map Set</h2>
+<h3>GIS Map Set</h3>
 The name of the GIS map set.  The value can be set by
 using the directory chooser, which is displayed by pushing the "GIS Map Set"
 button, or entering the directory in the text field.
 
-<h2>GIS Map</h2>
-The name of the GIS map.  The value can be set by
+<h3>GIS Map</h3>
+The name of the GIS raster map.  The value can be set by
 using the directory chooser, which is displayed by pushing the "GIS Map"
 button, or entering the directory in the text field.
 
-<h2>GIS Vector</h2>
-The name of the GIS vector.
+<h3>GIS Vector</h3>
+The name of the GIS vector.  This field may be left blank.
+
+<h2>GIS Format GDAL:</h2>
+
+<h3>GIS Map</h3>
+The full path name of the GIS raster map.  The value can be set by
+using the directory chooser, which is displayed by pushing the "GIS Map"
+button, or entering the directory in the text field.
 
 <h2>Zone Override</h2>
 An integer value can be entered in this field to override the zone specified in the GIS Map file.  The zone is required for creating KML files.  Please see the Job Monitor tab for more information on creating KML files.  Leave this field blank to use the zone specified in the GIS Map file for creating KML files.
