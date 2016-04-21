@@ -918,10 +918,16 @@ class TitanSimulation(TitanSimulationBase):
         
         #######################################################################
         #Set GIS
-        self.sim.get_mapnames().set(
-            ui_GIS['gis_format'],ui_GIS['gis_main'], ui_GIS['gis_sub'], 
-            ui_GIS['gis_mapset'],ui_GIS['gis_map'],  ui_GIS['gis_vector'], 0
-        )
+        if ui_GIS['gis_format']==MapNames.GIS_GRASS:
+            self.sim.get_mapnames().set(
+                ui_GIS['gis_format'],ui_GIS['gis_main'], ui_GIS['gis_sub'], 
+                ui_GIS['gis_mapset'],ui_GIS['gis_map'],  ui_GIS['gis_vector'], 0
+            )
+        elif ui_GIS['gis_format']==MapNames.GDAL:
+            self.sim.get_mapnames().set(
+                ui_GIS['gis_format'],'', '', 
+                '',ui_GIS['gis_map'], '', 0
+            )
         
         if ui_GIS['region_limits']!=None:
             #Minimum x and y location (UTM E, UTM N)

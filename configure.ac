@@ -127,7 +127,7 @@ case "$with_gdal" in
         GDAL_CFLAGS=`$GDAL_CONFIG --cflags`
         GDAL_LIBS=`$GDAL_CONFIG --libs`
         CPPFLAGS="$CPPFLAGS $GDAL_CFLAGS" 
-        LDFLAGS="$LDFLAGS $GDAL_LIBS"
+        LIBS="$GDAL_LIBS $LIBS"
         AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"])
         AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"])
         ;;
@@ -137,7 +137,7 @@ case "$with_gdal" in
         ;;
     *)
         CPPFLAGS="$CPPFLAGS -I$with_gdal/include"
-        LDFLAGS="$LDFLAGS -L$with_gdal/lib"
+        LIBS="$GDAL_LIBS $LIBS"
         AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"],
                      [AC_MSG_FAILURE([couldn't find GDAL libraries])])
         AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"],
