@@ -33,8 +33,8 @@ int Initialize_GDAL_data(const char *fullGispath)
     char *pszProjection = (char *) dataset->GetProjectionRef();
     if(oSRS->importFromWkt(&pszProjection) == CE_None)
     {
-        int *pbxmax;
-        int zone = oSRS->GetUTMZone(pbxmax);
+        int pbxmax;
+        int zone = oSRS->GetUTMZone(&pbxmax);
         if(zone == 0)
         {
             cout << "FATAL ERROR:" << endl;
