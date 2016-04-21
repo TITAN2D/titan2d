@@ -11,7 +11,7 @@ Help Overview
 Displays information about Titan model runs submitted by the user.  It does
 not display any model run information for jobs submitted by other users.
 When the tab is initially displayed, it may take a moment to display the
-job information.  The job status displayed is updated every 2 minutes.
+job information.  The job status displayed is updated every 5 minutes.
 The job information(not including the status) is retrieved
 from a database.  The job status is determined dynamically.
 Each user will have a ".titan" directory in their home
@@ -55,8 +55,10 @@ Additional information regarding a job will be displayed in a popup window :
   <li>The contents of the standard error file</li>
   <li>The contents of the data files used by the titan application</li>
   <li>The contents of the shell script used to run the job</li>
-  <li>the contents of the condor description file if the job was submitted via condor</li>
-</ul>
+  <li>The contents of the HUB-Submit information file if the job was submitted via HUB-Submit</li>
+  <li>The contents of the condor description file if the job was submitted via condor</li></ul>
+<ul>
+  <li>A Make KML button that enables the creation of KML files which show image(s) of the flow of the volcano.  To create KML files, first select to create XDMF/Paraview Visualization Output files via the Output Options tab.  After the job completes successfully, click the Make KML button.  The created KML files will get stored to the vizout subdirectory of the timestamped directory created when the job was submitted.  The KML files are zipped as KMZ files to save on disk space.  KMZ files can be input into Google Earth for display.</li></ul>
 
 <h2>Delete Job</h2>
 Display the table item menu popup by right-clicking on any field for the job
