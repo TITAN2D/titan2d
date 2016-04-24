@@ -452,6 +452,11 @@ public:
     double dhVy_dx_sol() const;
     double dhVy_dy_sol() const;
     
+    void calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable);
+
+    double calc_levelset_flux(double dx);
+
+    double* phi_slope(int idim) const;
     
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
     double prev_state_vars(int idim) const;
@@ -692,7 +697,15 @@ public:
     //index in storage
     ti_ndx_t ndx() const;
     void ndx(ti_ndx_t new_ndx);
+//************************************
+	//! get drag-force
+	const double * get_drag() const;
 
+	//! update drag force
+	void put_drag(double df[]);
+
+	int* nbflag();
+//*************************************
 protected:
     //index in storage
     ti_ndx_t ndx_;

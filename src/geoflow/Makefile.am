@@ -8,7 +8,7 @@ noinst_LIBRARIES = libgeoflow.a
 #predict.f eigen.f getcoef.f correct.f drag_model.f sgn.f 
 libgeoflow_a_SOURCES = element_weight.C \
    edge_states.C get_coef_and_eigen.C rnr.h slopes.C  \
-   move_data.C setup_geoflow.C integrators.C stats.C flux_srcs.C
+   move_data.C setup_geoflow.C integrators.C stats.C flux_srcs.C level_set.C
    
 #integrators.$(OBJEXT):CXXFLAGS +=-I/opt/intel/advisor_xe/include -qopt-report=5 -qopt-report-phase=vec 
 

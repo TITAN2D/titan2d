@@ -585,6 +585,8 @@ public:
     //! these are the spatial (x and y) derivatives of the state variables: (dh/dx, dhVx/dx, dhVy/dx, dh/dy, dhVx/dy, dhVy/dy)
     tivector<double> d_state_vars_[MAX_NUM_STATE_VARS * DIMENSION];
 
+    tivector<double> phi_slope_[2 * DIMENSION];
+
     //! the short speed is the speed computed as: shortspeed=|v|=|dhv/dh|=|v*dh/dh+h*dv/dh|=|v+h*dv/dh| which goes to |v| in the limit of h->0, this is a more accurate way to compute speed when the pile in this cell is short, hence the name "shortspeed" but it is not accurate when the pile is tall, that is when h*dv/dh is large, this is the value from the previous iteration (so there is lagging when using the shortspeed, but this should still be much more accurate than hV/h when h->0. Keith implemented this in late summer 2006, 
     tivector<double> shortspeed_;
 
@@ -656,6 +658,11 @@ public:
     vector<ti_ndx_t> node_ndx_buffer;
 
     ElementsProperties *ElemProp;
+
+	//! Drag-force
+    tivector<double> drag_[DIMENSION];
+
+    tivector<int> narrow_bound_flag_;
 };
 
 
@@ -727,6 +734,9 @@ public:
 
     tivector<double> *eigenvxymax_;
     tivector<double> *coord_;
+
+    tivector<double> *drag_;
+    tivector<int> &narrow_bound_flag_;
 
 
     int myid;

@@ -198,9 +198,6 @@ inline void Element::set_el_error(int i, double m_el_error) {
     elementsHashTable->el_error_[i][ndx_] = m_el_error;
 }
 
-
-
-
 //! returns the key for this element's 8 neighbors
 
 inline const SFC_Key& Element::neighbor(const int i) const {
@@ -325,6 +322,20 @@ inline void Element::set_opposite_brother_flag(int new_opposite_brother_flag) {
     elementsHashTable->opposite_brother_flag_[ndx_] = new_opposite_brother_flag;
 }
 
+//! get drag-force
+inline const double* Element::get_drag() const {
+	return elementsHashTable->drag_[ndx_];
+}
+
+//! update drag force
+inline void Element::put_drag(double df[]) {
+	for (int i = 0; i < DIMENSION; i++)
+		elementsHashTable->drag_[ndx_] = df[i];
+}
+
+inline int* Element::nbflag() {
+	return elementsHashTable->narrow_bound_flag_[ndx_];
+}
 
 /* geoflow functions */
 
@@ -365,6 +376,9 @@ inline double Element::dhVx_dx_sol() const {return d_state_vars(2);}
 inline double Element::dhVx_dy_sol() const {return d_state_vars(NUM_STATE_VARS+2);}
 inline double Element::dhVy_dx_sol() const {return d_state_vars(3);}
 inline double Element::dhVy_dy_sol() const {return d_state_vars(NUM_STATE_VARS+3);}
+
+
+inline double* Element::phi_slope(int idim) const {return elementsHashTable->phi_slope_[idim][ndx_];};
 
 
 //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep

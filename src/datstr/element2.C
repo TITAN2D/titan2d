@@ -2120,6 +2120,128 @@ double Element::convect_dryline(const double Vx, const double Vy, const double d
     return Awet();
 }
 
+void Element::calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
+	//this function returns the array of positive and minus phi approximation that are required for reinitialization
+	if (elementType == ElementType::SinglePhase) {
+
+		//x plus, x minus, y plus, y minus
+			int yp, xm, ym, xp, xpflag, xmflag, ypflag, ymflag;
+			xp = positive_x_side();
+			yp = (xp + 1) % 4;
+			xm = (xp + 2) % 4;
+			ym = (xp + 3) % 4;
+
+			xpflag = xmflag = ypflag = ymflag = 0;
+
+			for (int j = 0; j < 4; j++)
+				if (neigh_proc(j) == INIT)
+					if (j == xp) {
+						phi_slope(1) = 0.0;
+						xpflag = 1;
+					} else if (j == xm) {
+						phi_slope(0) = 0.0;
+						xmflag = 1;
+					} else if (j == ym) {
+						phi_slope(2) = 0.0;
+						ymflag = 1;
+					} else {
+						phi_slope(3) = 0.0;
+						ypflag = 1;
+					}
+
+			/* x direction */
+			double dp, dm, dc, dxp, dxm;
+			Node* ndtemp;
+			Element *em, *ep;
+			Element *em2 = NULL, *ep2 = NULL;
+
+			if (!xpflag) {
+				ep = (Element*) (El_Table->lookup(neighbor(xp)));
+				ep2 = NULL;
+				//check if element has 2 neighbors on either side
+				ndtemp = (Node*) NodeTable->lookup(node_key(xp + 4));
+				if (ndtemp->info() == S_C_CON) {
+					ep2 = (Element*) (El_Table->lookup(neighbor(xp + 4)));
+					assert(neigh_proc(xp + 4) >= 0 && ep2);
+				}
+				dxp = ep->coord(0) - coord(0);
+				dp = (ep->state_vars(3) - state_vars(3)) / dxp;
+				if (ep2 != NULL)
+					dp = .5 * (dp + (ep2->state_vars(3) - state_vars(3)) / dxp);
+				phi_slope(1) = dp;
+			}
+
+			if (!xmflag) {
+				em = (Element*) (El_Table->lookup(neighbor(xm)));
+				em2 = NULL;
+				//check if element has 2 neighbors on either side
+				ndtemp = (Node*) NodeTable->lookup(node_key(xm + 4));
+				if (ndtemp->info() == S_C_CON) {
+					em2 = (Element*) (El_Table->lookup(neighbor(xm + 4)));
+					assert(neigh_proc(xm + 4) >= 0 && em2);
+				}
+				dxm = coord(0) - em->coord(0);
+				dm = (state_vars(3) - em->state_vars(3)) / dxm;
+				if (em2 != NULL)
+					dm = .5 * (dm + (state_vars(3) - em2->state_vars(3)) / dxm);
+				phi_slope(0) = dm;
+			}
+
+			/* y direction */
+			if (!ypflag) {
+				ep = (Element*) (El_Table->lookup(neighbor(yp)));
+				ep2 = NULL;
+				//check if element has 2 neighbors on either side
+				ndtemp = (Node*) NodeTable->lookup(node_key(yp + 4));
+				if (ndtemp->info() == S_C_CON) {
+					ep2 = (Element*) (El_Table->lookup(neighbor(yp + 4)));
+					assert(neigh_proc[yp + 4] >= 0 && ep2);
+				}
+				dxp = ep->coord(1) - coord(1);
+				dp = (ep->state_vars(3) - state_vars(3)) / dxp;
+				if (ep2 != NULL)
+					dp = .5 * (dp + (ep2->state_vars(3) - state_vars(3)) / dxp);
+				phi_slope(3) = dp;
+			}
+
+			if (!ymflag) {
+				em = (Element*) (El_Table->lookup(neighbor(ym)));
+				em2 = NULL;
+				ndtemp = (Node*) NodeTable->lookup(node_key(ym + 4));
+				if (ndtemp->info() == S_C_CON) {
+					em2 = (Element*) (El_Table->lookup(neighbor(ym + 4)));
+					assert(neigh_proc(ym + 4) >= 0 && em2);
+				}
+				dxm = coord[1] - em->coord[1];
+				dm = (state_vars(3) - em->state_vars(3)) / dxm;
+				if (em2 != NULL)
+					dm = .5 * (dm + (state_vars(3) - em2->state_vars(3)) / dxm);
+				phi_slope(2) = dm;
+			}
+
+	}
+
+	return;
+}
+
+double Element::calc_levelset_flux(double dx) {
+
+	double sqr_phi_x = .5 * (phi_slope(0) + phi_slope(1)) * .5 * (phi_slope(0) + phi_slope(1));
+	double sqr_phi_y = .5 * (phi_slope(2) + phi_slope(3)) * .5 * (phi_slope(2) + phi_slope(3));
+
+	if (state_vars(3) == 0.0)
+		state_vars(4) = 0.0;
+	else
+		state_vars(4) = state_vars(3)
+		    / (sqrt(state_vars(3) * state_vars(3) + (sqr_phi_x + sqr_phi_y) * dx * dx));
+
+	if (isnan(state_vars(4)))
+		cout << "state_vars[4]=  " << state_vars(4) << "  state_vars[3]= " << state_vars(3)
+		    << "  sqr_phi_x= " << sqr_phi_x << "  sqr_phi_y=  " << sqr_phi_y << endl;
+
+	return state_vars(4);
+}
+
 //x direction flux in current cell
 void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
                        double hrfv[3][MAX_NUM_STATE_VARS])
@@ -2894,7 +3016,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
              |         | this  np|                  |       
              |         |   h     |                  |       
              |         |         |                  |
-             ---------|---------|nm1   elm1        |
+             |---------|---------|nm1   elm1        |
              |         |         |      hp          |
              |         |         |                  |
              |         | elm2 np2|                  |
@@ -3077,7 +3199,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                  |         |  elm1   |                   |       
                  |         |   h     |                   |       
                  |         |         |                   |
-                 ---------|---------|nm    this         |
+                 |---------|---------|nm    this         |
                  |         |         |       hp          |
                  |         |         |                   |
                  |         | elm2    |                   |
