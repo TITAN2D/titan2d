@@ -543,7 +543,13 @@ inline void Element::elementType(const ElementType& new_element_type) {
     elementsHashTable->elementType_ = new_element_type;
 }
 
+inline const Interface_Capturing_Type& Element::interface_capturing_Type() const {
+    return elementsHashTable->interface_capturing_;
+}
 
+inline void Element::interface_capturing_Type(const Interface_Capturing_Type& new_interface_type) {
+    elementsHashTable->interface_capturing_ = new_interface_type;
+}
 
 /*************************************************************************/
 inline void Element::put_height_mom(double pile_height, double volf, double xmom, double ymom) {
@@ -566,29 +572,62 @@ inline void Element::put_height_mom(double pile_height, double volf, double xmom
 };
 
 inline void Element::put_height_mom(double pile_height, double xmom, double ymom) {
-    prev_state_vars(0, pile_height);
-    state_vars(0, pile_height);
-    prev_state_vars(1, xmom);
-    state_vars(1, xmom);
-    prev_state_vars(2, ymom);
-    state_vars(2, ymom);
-    if (pile_height > GEOFLOW_TINY) {
-        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
-        set_Awet(1.0);
-    } else {
-        set_shortspeed(0.0);
-        set_Awet(0.0);
-    }
+	if (interface_capturing_Type() == Interface_Capturing_Type::Heuristic) {
+	    prev_state_vars(0, pile_height);
+	    state_vars(0, pile_height);
+	    prev_state_vars(1, xmom);
+	    state_vars(1, xmom);
+	    prev_state_vars(2, ymom);
+	    state_vars(2, ymom);
+	    if (pile_height > GEOFLOW_TINY) {
+	        set_shortspeed(sqrt(xmom * xmom + ymom * ymom) / pile_height);
+	        set_Awet(1.0);
+	    } else {
+	        set_shortspeed(0.0);
+	        set_Awet(0.0);
+	    }
+	}
+
+	if (interface_capturing_Type() == Interface_Capturing_Type::LevelSet) {
+
+		double min_dx = std::min(dx(0), dx(1));
+		if (pile_height > 0.0) {
+		    prev_state_vars(3, -5.0 * min_dx);
+		    state_vars(3, -5.0 * min_dx);
+		    prev_state_vars(4, -5.0 * min_dx);
+		    state_vars(4, -5.0 * min_dx);
+		}
+
+		else {
+		    prev_state_vars(3, 5.0 * min_dx);
+		    state_vars(3, 5.0 * min_dx);
+		}
+
+	    prev_state_vars(0, pile_height);
+	    state_vars(0, pile_height);
+	    prev_state_vars(1, xmom);
+	    state_vars(1, xmom);
+	    prev_state_vars(2, ymom);
+	    state_vars(2, ymom);
+	    prev_state_vars(5, 1.0);
+	    state_vars(5, 1.0);
+	}
+
+	if (interface_capturing_Type() == Interface_Capturing_Type::PhasePhield){
+
+	}
 
     return;
+
 };
+
 
 inline void Element::put_height(double pile_height) {
     if (elementType() == ElementType::TwoPhases) {
         put_height_mom(pile_height, 1., 0., 0.);
     }
     if (elementType() == ElementType::SinglePhase) {
-        put_height_mom(pile_height, 0.0, 0.0);
+    	put_height_mom(pile_height, 0.0, 0.0);
     }
     return;
 };

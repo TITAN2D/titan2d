@@ -91,6 +91,8 @@ extern bool SHORTSPEED;
 
 enum class ElementType {UnknownElementType=0, SinglePhase=1, TwoPhases=2 };
 
+enum class Interface_Capturing_Type {Heuristic=0, LevelSet=1, PhaseField=2 };
+
 extern double GEOFLOW_TINY;
 #define GEOFLOW_SHORT 0.01
 

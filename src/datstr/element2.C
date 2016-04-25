@@ -2236,7 +2236,7 @@ double Element::calc_levelset_flux(double dx) {
 		    / (sqrt(state_vars(3) * state_vars(3) + (sqr_phi_x + sqr_phi_y) * dx * dx));
 
 	if (isnan(state_vars(4)))
-		cout << "state_vars[4]=  " << state_vars(4) << "  state_vars[3]= " << state_vars(3)
+		cout << "state_vars[4]=  " << state_vars(4) << "  state_vars[4]= " << state_vars(3)
 		    << "  sqr_phi_x= " << sqr_phi_x << "  sqr_phi_y=  " << sqr_phi_y << endl;
 
 	return state_vars(4);

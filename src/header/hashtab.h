@@ -458,6 +458,9 @@ public:
     //! Element type
     ElementType elementType_;
     
+    //! Interface Capturing Type
+    Interface_Capturing_Type interface_capturing_;
+
     //! myprocess is id of the process(or) that owns this element
     tivector<int> myprocess_;
 

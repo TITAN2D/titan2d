@@ -814,11 +814,15 @@ void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, 
 			normalized_norm = 0.0;
 			calc_phi_slope(elementType, El_Table, NodeTable);
 			update_phi(El_Table, min_dx, &norm, &elem);
-
+#ifdef USE_MPI
 			// after updating this data have to be transmitted into others
 			move_data(nump, rank, El_Table, NodeTable, timeprops);
 			MPI_Allreduce(&norm, &total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 			MPI_Allreduce(&elem, &tot_elem, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#else
+			total_norm=norm;
+			tot_elem=elem;
+#endif
 			normalized_norm = sqrt(total_norm) / tot_elem;
 
 			// CFL number is 0.5 and we use 12 iteration to make sure at least 6 neighbor element has been updated

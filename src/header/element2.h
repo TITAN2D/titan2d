@@ -694,6 +694,11 @@ public:
     const ElementType& elementType() const;
 
     void elementType(const ElementType& new_element_type);
+
+    const Interface_Capturing_Type& interface_capturing_Type() const;
+
+    void interface_capturing_Type(const Interface_Capturing_Type& new_interface_type);
+
     //index in storage
     ti_ndx_t ndx() const;
     void ndx(ti_ndx_t new_ndx);
