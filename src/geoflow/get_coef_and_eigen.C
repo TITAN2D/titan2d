@@ -486,19 +486,17 @@ double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
     return dt[0];
 }
 
-//void find_min_dx(HashTable* El_Table, double* mindx) {
+
 void find_min_dx(ElementsHashTable* El_Table, double* mindx) {
 
-	HashEntryPtr* elem_bucket_zero = El_Table->getbucketptr();
-	HashEntryPtr entryp;
-	int num_elem_buckets = El_Table->get_no_of_buckets();
-	Element *EmTemp;
+	int no_of_buckets = El_Table->get_no_of_buckets();
+	vector<HashEntryLine> &bucket = El_Table->bucket;
+	tivector<Element> &elenode_ = El_Table->elenode_;
 
-	for (int ibuck = 0; ibuck < num_elem_buckets; ibuck++) {
-		entryp = *(elem_bucket_zero + ibuck);
-		while (entryp) {
-			EmTemp = (Element*) (entryp->value);
-			entryp = entryp->next;
+	//@ElementsBucketDoubleLoop
+	for (int ibuck = 0; ibuck < no_of_buckets; ibuck++) {
+		for (int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++) {
+			Element* EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
 			if ((EmTemp->adapted_flag() > 0) || (EmTemp->adapted_flag() < 0)) {
 				*mindx = (
@@ -512,4 +510,3 @@ void find_min_dx(ElementsHashTable* El_Table, double* mindx) {
 			break;
 	}
 }
-

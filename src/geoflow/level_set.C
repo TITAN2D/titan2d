@@ -439,7 +439,7 @@ void make_surface(Triangle triangle, double* surface_coef) {
 	a[1] = *(triangle.elem[1]->coord(1)) - *(triangle.elem[0]->coord(1));
 	b[1] = *(triangle.elem[2]->coord(1)) - *(triangle.elem[0]->coord(1));
 
-	a[2] = *(triangle.elem[1]->state_vars(3)0)) - *(triangle.elem[0]->state_vars(3));
+	a[2] = *(triangle.elem[1]->state_vars(3)) - *(triangle.elem[0]->state_vars(3));
 	b[2] = *(triangle.elem[2]->state_vars(3)) - *(triangle.elem[0]->state_vars(3));
 
 	// finding the normal vector of the two vectors
@@ -459,7 +459,7 @@ void make_surface(Triangle triangle, double* surface_coef) {
 
 	} else
 		for (int i = 0; i < 3; ++i)
-			surface_coef[i] = 0.;
+			surface_coef[i] = 0.0;
 
 }
 
@@ -492,8 +492,8 @@ void initialize_distance(Element* elem, Pt2Path& p_value_func, Pt2Grad& p_grad_f
 	// near the interface. For the first time step we have the initial shape of pile and we can compute the
 	// distance to the interface exactly, and we do not need to bilinear interpolation
 
-	double d1[2] = { 0., 0. }, d2[2] = { 0., 0. }, grad[2], pvalue, grad_dot, x_new, y_new, x_old,
-	    y_old, x_half, y_half, epslon = .01;
+	double d1[2] = { 0.0, 0.0 }, d2[2] = { 0.0, 0.0 }, grad[2], pvalue, grad_dot, x_new, y_new, x_old,
+	    y_old, x_half, y_half, epslon = 0.01;
 
 // initializing the solution
 	x_new = x_old = *(elem->coord(0));
@@ -502,8 +502,8 @@ void initialize_distance(Element* elem, Pt2Path& p_value_func, Pt2Grad& p_grad_f
 	double& phi_old = *(elem->state_vars(3));
 
 	int iter = 0, max_iter = 20;// Chopp's paper says it normally has to converge after 4 or 5 iterations
-	double sgn = 1.;
-	const double treshold = 1e-3 * min_dx * min_dx;
+	double sgn = 1.0;
+	const double treshold = 1.0e-3 * min_dx * min_dx;
 
 	do {
 		iter++;
@@ -527,8 +527,8 @@ void initialize_distance(Element* elem, Pt2Path& p_value_func, Pt2Grad& p_grad_f
 	} while (sqrt(d1[0] * d1[0] + d1[1] * d1[1] + d2[0] * d2[0] + d2[1] * d2[1]) > treshold
 	    && iter < max_iter);
 
-	if (phi_old < 0.)
-		sgn = -1.;
+	if (phi_old < 0.0)
+		sgn = -1.0;
 
 	double phi_new = sqrt((x_new - x_old) * (x_new - x_old) + (y_new - y_old) * (y_new - y_old));
 
@@ -537,9 +537,7 @@ void initialize_distance(Element* elem, Pt2Path& p_value_func, Pt2Grad& p_grad_f
 		phi_old = sgn * phi_new;
 //	std::cout << point.get_phi() << std::endl;
 }
-//void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, MatProps* matprops_ptr, TimeProps* timeprops_ptr, double d_time,
-//                 double* v_star, double* nz_star);
-//void adjacent_to_interface(HashTable* El_Table, EdgeList& accepted) {
+
 void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 
 	int no_of_buckets = El_Table->get_no_of_buckets();
@@ -587,58 +585,8 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 			}
 		}
 	}
-
-//	HashEntryPtr* buck = El_Table->getbucketptr();
-//
-//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++)
-//
-//		if (*(buck + i)) {
-//
-//			HashEntryPtr currentPtr = *(buck + i);
-//
-//			while (currentPtr) {
-//
-//				Element* Curr_El = (Element*) (currentPtr->value);
-//
-//				if (Curr_El->adapted_flag() > 0) {
-//
-//					double *phi = (Curr_El->get_state_vars());
-//
-//					for (int ineigh = 0; ineigh < 8; ineigh++)
-//
-//						if (*(Curr_El->get_neigh_proc() + ineigh) >= 0) {
-//							// this condition is to avoid elements on the boundary, or duplicated neighbors
-//
-//							unsigned* neigh_key = Curr_El->get_neighbors();
-//
-//							Element* ElemNeigh = (Element*) El_Table->lookup(neigh_key + ineigh * KEYLENGTH);
-//
-//							double neighb_phi = *(ElemNeigh->get_state_vars());
-//
-//							if (neighb_phi * phi[0] < 0.) {
-//
-//								int yp, xm, ym, xp = Curr_El->get_positive_x_side();
-//								yp = (xp + 1) % 4;
-//								xm = (xp + 2) % 4;
-//								ym = (xp + 3) % 4;
-//
-//								int orientation = abs(ineigh - xp);
-//
-//								if (orientation % 4 == 0 || orientation % 4 == 1)
-//									accepted.insert(Edge(Curr_El, ElemNeigh, ineigh));
-//								else
-//									accepted.insert(
-//									    Edge(ElemNeigh, Curr_El, ElemNeigh->which_neighbor(Curr_El->pass_key())));
-//							}
-//
-//						}
-//				}
-//				currentPtr = currentPtr->next;
-//			}
-
 }
 
-//void calc_phi_slope(HashTable* El_Table, HashTable* NodeTable) {
 void calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
 
 	int no_of_buckets = El_Table->get_no_of_buckets();
@@ -654,22 +602,8 @@ void calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHa
 				Em_Temp->calc_phi_slope(elementType, El_Table, NodeTable);
 		}
 	}
-
-
-	//	HashEntryPtr *buck = El_Table->getbucketptr();
-	//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++) {
-	//		HashEntryPtr currentPtr = *(buck + i);
-	//		while (currentPtr) {
-	//			Element* Em_Temp = (Element*) (currentPtr->value);
-	//			if (Em_Temp->get_adapted_flag() > 0)
-	//				Em_Temp->calc_phi_slope(El_Table, NodeTable);
-	//
-	//			currentPtr = currentPtr->next;
-	//		}
-	//	}
 }
 
-//void test_nbflag(HashTable* El_Table) {
 void test_nbflag(ElementType elementType, ElementsHashTable* El_Table) {
 	if (elementType == ElementType::SinglePhase) {
 
@@ -687,20 +621,8 @@ void test_nbflag(ElementType elementType, ElementsHashTable* El_Table) {
 			}
 		}
 	}
-
-//	HashEntryPtr *buck = El_Table->getbucketptr();
-//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++) {
-//		HashEntryPtr currentPtr = *(buck + i);
-//		while (currentPtr) {
-//			Element* Em_Temp = (Element*) (currentPtr->value);
-//			if (Em_Temp->get_adapted_flag() > 0 && *(Em_Temp->get_nbflag()))
-//				cout << "Error this should not happen" << endl;
-//			currentPtr = currentPtr->next;
-//		}
-//	}
 }
 
-//void reset_nbflag(HashTable* El_Table) {
 void reset_nbflag(ElementsHashTable* El_Table) {
 
 	int no_of_buckets = El_Table->get_no_of_buckets();
@@ -716,20 +638,8 @@ void reset_nbflag(ElementsHashTable* El_Table) {
 				*(Em_Temp->nbflag()) = 0;
 		}
 	}
-
-//	HashEntryPtr *buck = El_Table->getbucketptr();
-//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++) {
-//		HashEntryPtr currentPtr = *(buck + i);
-//		while (currentPtr) {
-//			Element* Em_Temp = (Element*) (currentPtr->value);
-//			if (Em_Temp->get_adapted_flag() > 0)
-//				*(Em_Temp->get_nbflag()) = 0;
-//			currentPtr = currentPtr->next;
-//		}
-//	}
 }
 
-//void update_phi(HashTable* El_Table, double min_dx, double* norm, int* elem) {
 void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* elem) {
 
 	int no_of_buckets = El_Table->get_no_of_buckets();
@@ -794,66 +704,8 @@ void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* e
 			}
 		}
 	}
-
-//	HashEntryPtr *buck = El_Table->getbucketptr();
-//
-//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++)
-//		if (*(buck + i)) {
-//			HashEntryPtr currentPtr = *(buck + i);
-//			while (currentPtr) {
-//				Element* Curr_El = (Element*) (currentPtr->value);
-//				if (Curr_El->get_adapted_flag() > 0 && *(Curr_El->get_nbflag()) != 1
-//				// I did note get good result from the following condition
-//				    && fabs(*(Curr_El->get_state_vars())) <= 10 * min_dx) {
-//					// with the last condition we narrow the range of update
-//					// to maximum of 10 cell-width far the the interface
-//
-//					(*elem)++;
-//
-//					double *phi_slope = Curr_El->get_phi_slope();
-//					double *state_vars = Curr_El->get_state_vars();
-//					double *prev_state_vars = Curr_El->get_prev_state_vars();
-//					double delta_p, delta_m;
-//					double flux_phi, a_p, a_m, b_p, b_m, c_p, c_m, d_p, d_m;
-//					const double CFL = .5;
-//					const double dt = CFL * min_dx;
-//
-//					// based on Sussman Smerka 1994
-//
-//					prev_state_vars[0] = state_vars[0];
-//
-//					a_p = max(phi_slope[0], 0.);
-//					a_m = min(phi_slope[0], 0.);
-//					b_p = max(phi_slope[1], 0.);
-//					b_m = min(phi_slope[1], 0.);
-//					c_p = max(phi_slope[2], 0.);
-//					c_m = min(phi_slope[2], 0.);
-//					d_p = max(phi_slope[3], 0.);
-//					d_m = min(phi_slope[3], 0.);
-//
-//					if (state_vars[4] > 0.)
-//						flux_phi = sqrt(max(a_p * a_p, b_m * b_m) + max(c_p * c_p, d_m * d_m)) - 1;
-//					else if (state_vars[4] < 0.)
-//						flux_phi = sqrt(max(a_m * a_m, b_p * b_p) + max(c_m * c_m, d_p * d_p)) - 1;
-//					else
-//						flux_phi = 0.;
-//
-//					state_vars[0] = state_vars[0] - dt * sign(state_vars[4]) * flux_phi;
-//
-//					*norm += (state_vars[0] - prev_state_vars[0]) * (state_vars[0] - prev_state_vars[0]);
-//
-//					// this is just to see which elements are updating
-//					state_vars[5] = 1.;
-//
-//				}
-//
-//				currentPtr = currentPtr->next;
-//			}
-//		}
-
 }
 
-//void record_of_phi(HashTable* El_Table) {
 void record_of_phi(ElementsHashTable* El_Table) {
 
 	int no_of_buckets = El_Table->get_no_of_buckets();
@@ -869,25 +721,8 @@ void record_of_phi(ElementsHashTable* El_Table) {
 				*(Curr_El->state_vars(4)) = *(Curr_El->state_vars(3));
 		}
 	}
-
-
-//	HashEntryPtr *buck = El_Table->getbucketptr();
-//
-//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++)
-//		if (*(buck + i)) {
-//			HashEntryPtr currentPtr = *(buck + i);
-//			while (currentPtr) {
-//				Element* Curr_El = (Element*) (currentPtr->value);
-//				if (Curr_El->get_adapted_flag() > 0)
-//					*(Curr_El->get_state_vars() + 4) = *(Curr_El->get_state_vars());
-//
-//				currentPtr = currentPtr->next;
-//			}
-//		}
 }
 
-//void make_quad_trangle(HashTable* El_Table, EdgeList& accepted, QuadList& quadlist,
-//    TriangList& trianglist) {
 void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList& quadlist,
 		TriangList& trianglist) {
 
@@ -956,71 +791,6 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 	//		}
 
 	}
-
-
-
-//	Element* elem[4];
-//	int neigh_num;
-//	int debug = 0;
-//
-//	for (EdgeList::iterator it = accepted.begin(); it != accepted.end(); ++it) {
-//		debug++;
-////		cout<<debug<<endl;
-//
-//		if (it->elem[0]->get_adapted_flag() > 0) {
-//			elem[0] = it->elem[0];
-//			elem[1] = it->elem[1];
-//			neigh_num = it->neigh_num;
-//		} else {
-//			elem[0] = it->elem[1];
-//			elem[1] = it->elem[0];
-//			neigh_num = elem[0]->which_neighbor(elem[1]->pass_key());			//= (it->neigh_num + 2) % 8;
-//		}
-//
-//		// given the neighbor number, we can build 2 Quads, but we do not care.
-//		// what we need to do is to find 4 points for making approximated surface
-//		// from the bilinear map, and then computing the distance to the interface
-//
-//		unsigned* elem_key = elem[0]->get_neighbors();
-//		elem[2] = (Element*) El_Table->lookup(elem_key + ((neigh_num + 1) % 8) * KEYLENGTH);
-//		unsigned* neigh_key;
-//
-//		if (elem[2] && elem[2]->get_adapted_flag() > 0) {
-//			// first condition is to avoid the case that elem[2] is not available
-//
-//			neigh_key = elem[2]->get_neighbors();
-//			elem[3] = (Element*) El_Table->lookup(neigh_key + neigh_num * KEYLENGTH);
-//		} else {
-//			// this means that this proc has not access to this direction, so we have to change the direction
-//			elem[2] = (Element*) El_Table->lookup(elem_key + ((neigh_num - 1 + 8) % 8) * KEYLENGTH);
-//
-//			if (elem[2]) {
-//				// the condition is to avoid the case that elem[2] is not available
-//				neigh_key = elem[2]->get_neighbors();
-//				elem[3] = (Element*) El_Table->lookup(neigh_key + neigh_num * KEYLENGTH);
-//			}
-//		}
-//
-//		if (elem[3]) {
-//			quadlist.insert(Quad(elem[0], elem[1], elem[2], elem[3]));
-//		} else {
-//			// this is for the case that the element is in the corner, and three of its sides are in
-//			// in the other processors, in this case we just make a triangle
-//			trianglist.insert(Triangle(elem[0], elem[1], elem[2]));
-//		}
-//
-////		if (!(elem[0] && elem[1] && elem[2] && elem[3])) {
-////			cout << "adaption flags are: " << elem[0]->get_adapted_flag() << " , "
-////					<< elem[1]->get_adapted_flag() << " , " << elem[2]->get_adapted_flag() << endl;
-////			cout << "x of quad: " << *(elem[0]->get_coord()) << " " << *(elem[1]->get_coord()) << " "
-////					<< *(elem[2]->get_coord()) << endl;
-////			cout << "y of quad: " << *(elem[0]->get_coord() + 1) << " " << *(elem[1]->get_coord() + 1)
-////					<< " " << *(elem[2]->get_coord() + 1) << endl;
-////			cout << endl;
-////		}
-//
-//	}
-
 }
 
 void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops,
@@ -1059,39 +829,8 @@ void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, 
 
 	}
 
-//	const double threshold = .5 * min_dx * min_dx * min_dx;
-//	double norm, total_norm, normalized_norm;
-//	int elem, tot_elem;
-//
-//	record_of_phi(El_Table);
-//
-//	int iter = 0;
-//
-//	do {
-//		iter++;
-//		elem = 0;
-//		tot_elem = 0;
-//		norm = 0.;
-//		normalized_norm = 0.;
-//		calc_phi_slope(El_Table, NodeTable);
-//		update_phi(El_Table, min_dx, &norm, &elem);
-//
-//		// after updating this data have to be transmitted into others
-//		move_data(nump, rank, El_Table, NodeTable, timeprops);
-//		MPI_Allreduce(&norm, &total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//		MPI_Allreduce(&elem, &tot_elem, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-//		normalized_norm = sqrt(total_norm) / tot_elem;
-//
-//		// CFL number is 0.5 and we use 12 iteration to make sure at least 6 neighbor element has been updated
-//	} while (normalized_norm > threshold && iter < 13);
-//
-//	if (rank == 0)
-//		cout << "norm: " << normalized_norm << " threshold is: " << threshold << endl;
-
 }
 
-//void reinitialization(HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr,
-//    TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank) {
 void reinitialization(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank) {
 
@@ -1143,8 +882,6 @@ void reinitialization(ElementType elementType, ElementsHashTable* El_Table, Node
 	pde_reinitialization(elementType,El_Table, NodeTable, timeprops, min_dx, nump, rank);
 }
 
-//void initialization(HashTable* NodeTable, HashTable* El_Table, MatProps* matprops_ptr,
-//    TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank) {
 void initialization(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank) {
 
@@ -1193,23 +930,4 @@ int num_nonzero_elem(ElementsHashTable* El_Table) {
 
 	return (num);
 
-//	int num = 0, myid;
-//	HashEntryPtr currentPtr;
-//	Element *Curr_El;
-//	HashEntryPtr *buck = El_Table->getbucketptr();
-//	//printf("the numebr of buckets are: %d", El_Table->get_no_of_buckets());
-//
-//	for (int i = 0; i < El_Table->get_no_of_buckets(); i++)
-//		if (*(buck + i)) {
-//			currentPtr = *(buck + i);
-//			while (currentPtr) {
-//				Curr_El = (Element*) (currentPtr->value);
-//				if (Curr_El->get_adapted_flag() > 0) {
-//					num++;
-//				}
-//				currentPtr = currentPtr->next;
-//			}
-//		}
-//
-//	return (num);
 }

@@ -137,12 +137,15 @@ inline double dabs(double dd)
     return dd;
 }
 
+//! This function updates phi variable
+//void update_phi(HashTable *El_Table, double *update);
+
 void find_min_dx(ElementsHashTable* El_Table, double* mindx);
 
-void reinitialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
+void reinitialization(ElementType elementType, NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank);
 
-void initialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
+void initialization(ElementType elementType, NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank);
 
 /* fortran calls */
