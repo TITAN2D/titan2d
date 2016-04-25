@@ -137,6 +137,14 @@ inline double dabs(double dd)
     return dd;
 }
 
+void find_min_dx(ElementsHashTable* El_Table, double* mindx);
+
+void reinitialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
+    TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank);
+
+void initialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
+    TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank);
+
 /* fortran calls */
 #ifdef SUNOS 
 //! the actual calculation of k active passive is done by a fortran call this should be ripped out and rewritten as a C++ Element member function

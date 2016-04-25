@@ -439,8 +439,8 @@ void make_surface(Triangle triangle, double* surface_coef) {
 	a[1] = *(triangle.elem[1]->coord(1)) - *(triangle.elem[0]->coord(1));
 	b[1] = *(triangle.elem[2]->coord(1)) - *(triangle.elem[0]->coord(1));
 
-	a[2] = *(triangle.elem[1]->state_vars(0)) - *(triangle.elem[0]->state_vars(0));
-	b[2] = *(triangle.elem[2]->state_vars(0)) - *(triangle.elem[0]->state_vars(0));
+	a[2] = *(triangle.elem[1]->state_vars(3)0)) - *(triangle.elem[0]->state_vars(3));
+	b[2] = *(triangle.elem[2]->state_vars(3)) - *(triangle.elem[0]->state_vars(3));
 
 	// finding the normal vector of the two vectors
 	normal[0] = a[1] * b[2] - b[1] * a[2];
@@ -453,7 +453,7 @@ void make_surface(Triangle triangle, double* surface_coef) {
 		surface_coef[0] = -c
 		    * (normal[0] * *(triangle.elem[0]->coord(0))
 		        + normal[1] * *(triangle.elem[0]->coord(1)))
-		    + *(triangle.elem[0]->state_vars(0));
+		    + *(triangle.elem[0]->state_vars(3));
 		surface_coef[1] = normal[0] * c;
 		surface_coef[2] = normal[1] * c;
 
@@ -499,7 +499,7 @@ void initialize_distance(Element* elem, Pt2Path& p_value_func, Pt2Grad& p_grad_f
 	x_new = x_old = *(elem->coord(0));
 	y_new = y_old = *(elem->coord(1));
 
-	double& phi_old = *(elem->state_vars(0));
+	double& phi_old = *(elem->state_vars(3));
 
 	int iter = 0, max_iter = 20;// Chopp's paper says it normally has to converge after 4 or 5 iterations
 	double sgn = 1.;
@@ -743,7 +743,7 @@ void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* e
 
 			if (Curr_El->adapted_flag() > 0 && *(Curr_El->nbflag()) != 1
 					// I did note get good result from the following condition
-					&& fabs(*(Curr_El->state_vars(3))) <= 10.0 * min_dx) {
+					&& fabs((Curr_El->state_vars(3))) <= 10.0 * min_dx) {
 				// with the last condition we narrow the range of update
 				// to maximum of 10 cell-width far the the interface
 
@@ -866,7 +866,7 @@ void record_of_phi(ElementsHashTable* El_Table) {
 			Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
 			if (Curr_El->adapted_flag() > 0)
-				*(Curr_El->state_vars(4)) = *(Curr_El->state_vars(0));
+				*(Curr_El->state_vars(4)) = *(Curr_El->state_vars(3));
 		}
 	}
 
@@ -1028,7 +1028,7 @@ void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, 
 
 	if (elementType == ElementType::SinglePhase) {
 
-		const double threshold = .5 * min_dx * min_dx * min_dx;
+		const double threshold = 0.5 * min_dx * min_dx * min_dx;
 		double norm, total_norm, normalized_norm;
 		int elem, tot_elem;
 
@@ -1040,8 +1040,8 @@ void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, 
 			iter++;
 			elem = 0;
 			tot_elem = 0;
-			norm = 0.;
-			normalized_norm = 0.;
+			norm = 0.0;
+			normalized_norm = 0.0;
 			calc_phi_slope(elementType, El_Table, NodeTable);
 			update_phi(El_Table, min_dx, &norm, &elem);
 
