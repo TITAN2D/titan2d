@@ -2395,120 +2395,173 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
     }
     if(elementType() == ElementType::SinglePhase)
     {
-        double speed, speed2, a, VxVy[2];
+    	if(interface_capturing_Type() == Interface_Capturing_Type::Heuristic)
+    	{
+            double speed, speed2, a, VxVy[2];
 
-        //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
-        if(state_vars(0) < GEOFLOW_TINY)
-        {
-            //printf("xdirflux case 1 ");
-            hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
-            hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
-            hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
-        }
-    #ifdef STOPCRIT_CHANGE_FLUX
-        else if(stoppedflags()==2)
-        {
-            //printf("xdirflux case 2 ");
-            //state variables
-            hfv[0][0]=state_vars(0)+d_state_vars(0)*dz;
-            hfv[0][1]=hfv[0][2]=0.0;
-            if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
-
-            speed=0.0;
-            a=sqrt(effect_kactxy(0)*gravity(2)*hfv[0][0]);
-
-            //fluxes
-            hfv[1][0]=speed*hfv[0][0];
-            hfv[1][1]=speed*hfv[0][1]+0.5*hfv[0][0]*a*a;
-            hfv[1][2]=speed*hfv[0][2];
-
-            //wave speeds
-            hfv[2][0]=speed-a;
-            hfv[2][1]=speed;
-            hfv[2][2]=speed+a;
-        }
-    #endif
-        else
-        {
-            //printf("xdirflux case 3 ");
-            //state variables
-            hfv[0][0] = state_vars(0) + d_state_vars(0) * dz;
-            hfv[0][1] = state_vars(1) + d_state_vars(1) * dz;
-            hfv[0][2] = state_vars(2) + d_state_vars(2) * dz;
-
-            if((0.0 < Awet()) && (Awet() < 1.0))
+            //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
+            if(state_vars(0) < GEOFLOW_TINY)
             {
-                hfv[0][0] *= wetnessfactor;
-                hfv[0][1] *= wetnessfactor;
-                hfv[0][2] *= wetnessfactor;
+                //printf("xdirflux case 1 ");
+                hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
+                hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
+                hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
             }
-
-            //eval_velocity(dz,0.0,VxVy);
-            //speed=VxVy[0];
-            speed = speed2 = hfv[0][1] / hfv[0][0];
-
-            a = sqrt(effect_kactxy(0) * gravity(2) * hfv[0][0]);
-
-            //fluxes
-            hfv[1][0] = speed * hfv[0][0];
-            hfv[1][1] = speed * hfv[0][1] + 0.5 * hfv[0][0] * a * a;
-            hfv[1][2] = speed * hfv[0][2];
-
-            //wave speeds
-            hfv[2][0] = speed2 - a;
-            hfv[2][1] = speed2;
-            hfv[2][2] = speed2 + a;
-        }
-        //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
-    #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
-        if(state_vars(0) < GEOFLOW_TINY)
-        {
-            hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
-            hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
-            hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
-        }
-        else
-        {
-            hrfv[0][0]=state_vars(0)+d_state_vars(NUM_STATE_VARS+0)*dz;
-            hrfv[0][1]=state_vars(1)+d_state_vars(NUM_STATE_VARS+1)*dz;
-            hrfv[0][2]=state_vars(2)+d_state_vars(NUM_STATE_VARS+2)*dz;
-
-            if((0.0<Awet())&&(Awet()<1.0))
+        #ifdef STOPCRIT_CHANGE_FLUX
+            else if(stoppedflags()==2)
             {
-                hrfv[0][0]*=wetnessfactor;
-                hrfv[0][1]*=wetnessfactor;
-                hrfv[0][2]*=wetnessfactor;
+                //printf("xdirflux case 2 ");
+                //state variables
+                hfv[0][0]=state_vars(0)+d_state_vars(0)*dz;
+                hfv[0][1]=hfv[0][2]=0.0;
+                if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
+
+                speed=0.0;
+                a=sqrt(effect_kactxy(0)*gravity(2)*hfv[0][0]);
+
+                //fluxes
+                hfv[1][0]=speed*hfv[0][0];
+                hfv[1][1]=speed*hfv[0][1]+0.5*hfv[0][0]*a*a;
+                hfv[1][2]=speed*hfv[0][2];
+
+                //wave speeds
+                hfv[2][0]=speed-a;
+                hfv[2][1]=speed;
+                hfv[2][2]=speed+a;
             }
+        #endif
+            else
+            {
+                //printf("xdirflux case 3 ");
+                //state variables
+                hfv[0][0] = state_vars(0) + d_state_vars(0) * dz;
+                hfv[0][1] = state_vars(1) + d_state_vars(1) * dz;
+                hfv[0][2] = state_vars(2) + d_state_vars(2) * dz;
 
-            //eval_velocity(dz,0.0,VxVy);
-            //speed=VxVy[0];
-            speed=speed2=hfv[0][1]/hfv[0][0];
+                if((0.0 < Awet()) && (Awet() < 1.0))
+                {
+                    hfv[0][0] *= wetnessfactor;
+                    hfv[0][1] *= wetnessfactor;
+                    hfv[0][2] *= wetnessfactor;
+                }
 
-            a=sqrt(kactxy(1)*gravity(2)*hrfv[0][0]);
+                //eval_velocity(dz,0.0,VxVy);
+                //speed=VxVy[0];
+                speed = speed2 = hfv[0][1] / hfv[0][0];
 
-            //fluxes
-            hrfv[1][0]=speed*hrfv[0][0];
-            hrfv[1][1]=speed*hrfv[0][1]+0.5*hrfv[0][0]*a*a;
-            hrfv[1][2]=speed*hrfv[0][2];
+                a = sqrt(effect_kactxy(0) * gravity(2) * hfv[0][0]);
 
-            //wave speeds
-            hrfv[2][0]=speed2-a;
-            hrfv[2][1]=speed2;
-            hrfv[2][2]=speed2+a;
-        }
-    #else
-        hrfv[0][0] = hfv[0][0];
-        hrfv[0][1] = hfv[0][1];
-        hrfv[0][2] = hfv[0][2];
+                //fluxes
+                hfv[1][0] = speed * hfv[0][0];
+                hfv[1][1] = speed * hfv[0][1] + 0.5 * hfv[0][0] * a * a;
+                hfv[1][2] = speed * hfv[0][2];
 
-        hrfv[1][0] = hfv[1][0];
-        hrfv[1][1] = hfv[1][1];
-        hrfv[1][2] = hfv[1][2];
+                //wave speeds
+                hfv[2][0] = speed2 - a;
+                hfv[2][1] = speed2;
+                hfv[2][2] = speed2 + a;
+            }
+            //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
+        #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+            if(state_vars(0) < GEOFLOW_TINY)
+            {
+                hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
+                hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
+                hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
+            }
+            else
+            {
+                hrfv[0][0]=state_vars(0)+d_state_vars(NUM_STATE_VARS+0)*dz;
+                hrfv[0][1]=state_vars(1)+d_state_vars(NUM_STATE_VARS+1)*dz;
+                hrfv[0][2]=state_vars(2)+d_state_vars(NUM_STATE_VARS+2)*dz;
 
-        hrfv[2][0] = hfv[2][0];
-        hrfv[2][1] = hfv[2][1];
-        hrfv[2][2] = hfv[2][2];
-    #endif
+                if((0.0<Awet())&&(Awet()<1.0))
+                {
+                    hrfv[0][0]*=wetnessfactor;
+                    hrfv[0][1]*=wetnessfactor;
+                    hrfv[0][2]*=wetnessfactor;
+                }
+
+                //eval_velocity(dz,0.0,VxVy);
+                //speed=VxVy[0];
+                speed=speed2=hfv[0][1]/hfv[0][0];
+
+                a=sqrt(kactxy(1)*gravity(2)*hrfv[0][0]);
+
+                //fluxes
+                hrfv[1][0]=speed*hrfv[0][0];
+                hrfv[1][1]=speed*hrfv[0][1]+0.5*hrfv[0][0]*a*a;
+                hrfv[1][2]=speed*hrfv[0][2];
+
+                //wave speeds
+                hrfv[2][0]=speed2-a;
+                hrfv[2][1]=speed2;
+                hrfv[2][2]=speed2+a;
+            }
+        #else
+            hrfv[0][0] = hfv[0][0];
+            hrfv[0][1] = hfv[0][1];
+            hrfv[0][2] = hfv[0][2];
+
+            hrfv[1][0] = hfv[1][0];
+            hrfv[1][1] = hfv[1][1];
+            hrfv[1][2] = hfv[1][2];
+
+            hrfv[2][0] = hfv[2][0];
+            hrfv[2][1] = hfv[2][1];
+            hrfv[2][2] = hfv[2][2];
+        #endif
+    	}
+
+    	if(interface_capturing_Type() == Interface_Capturing_Type::LevelSet)
+    	{
+    		int i, j;
+    		double a, Vel; // Vel[0:1]: solid-vel, Vel[2:3]: fluid-vel
+
+    		if ((state_vars(0) < GEOFLOW_TINY))  //&&(state_vars[1]==0))
+    		{
+    			for (i = 0; i < 3; i++)
+    				for (j = 0; j < NUM_STATE_VARS; j++)
+    					hfv[i][j] = 0.0;
+    		} else {
+    			//state variables
+    			for (i = 0; i < NUM_STATE_VARS; i++)
+    				hfv[0][i] = state_vars(i) + d_state_vars(i) * dz;
+
+    			Vel = hfv[0][2] / hfv[0][1];
+
+    			a = sqrt(kactxy(0) * hfv[0][1] * gravity(2));
+    			//fluxes
+    			hfv[1][3] = hfv[0][0]; // we put here to be able compute \frac{\partial \phi}{\partial x} in flux
+    			hfv[1][0] = hfv[0][1] * Vel;
+    			hfv[1][1] = hfv[0][2] * Vel + 0.5 * a * a * hfv[0][1];
+    			hfv[1][2] = hfv[0][3] * Vel;
+    			hfv[1][4] = 0;
+    			hfv[1][5] = 0;
+
+    			//wave speeds
+    			hfv[2][0] = Vel - a;
+    			hfv[2][1] = Vel;
+    			hfv[2][2] = Vel + a;
+    			hfv[2][3] = 0.;
+    			hfv[2][4] = 0.;
+    			hfv[2][5] = 0.;
+    		}
+    		for (i = 0; i < 3; i++)
+    			for (j = 0; j < NUM_STATE_VARS; j++) {
+    				hrfv[i][j] = hfv[i][j];
+    				if (isnan(hrfv[i][j])) {
+    					printf("Nan in xdir flux\n");
+    					exit(1);
+    				}
+    			}
+    	}
+
+    	if(interface_capturing_Type() == Interface_Capturing_Type::PhaseField)
+    	{
+
+    	}
+
     }
     return;
 }
@@ -2662,123 +2715,177 @@ void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
     }
     if(elementType() == ElementType::SinglePhase)
     {
-        double speed, speed2, a, VxVy[2];
-        
-        //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
-        if(state_vars(0) < GEOFLOW_TINY)
-        {
-            //    printf("choice 1 ");
-            hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
-            hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
-            hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
+    	if(interface_capturing_Type() == Interface_Capturing_Type::Heuristic)
+    	{
+            double speed, speed2, a, VxVy[2];
 
-        }
-    #ifdef STOPCRIT_CHANGE_FLUX
-        else if(stoppedflags()==2)
-        {
-            //    printf("choice 2 ");
-
-            //state variables
-            hfv[0][0]=state_vars(0)+d_state_vars(NUM_STATE_VARS+0)*dz;
-            hfv[0][1]=hfv[0][2]=0.0;
-            if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
-
-            speed=0.0;
-            a=sqrt(effect_kactxy(1)*gravity(2)*hfv[0][0]);
-
-            //fluxes
-            hfv[1][0]=speed*hfv[0][0];
-            hfv[1][1]=speed*hfv[0][1];
-            hfv[1][2]=speed*hfv[0][2]+0.5*hfv[0][0]*a*a;
-
-            //wave speeds
-            hfv[2][0]=speed-a;
-            hfv[2][1]=speed;
-            hfv[2][2]=speed+a;
-        }
-    #endif
-        else
-        {
-            //    printf("choice 3 ");
-            //state variables
-            hfv[0][0] = state_vars(0) + d_state_vars(NUM_STATE_VARS + 0) * dz;
-            hfv[0][1] = state_vars(1) + d_state_vars(NUM_STATE_VARS + 1) * dz;
-            hfv[0][2] = state_vars(2) + d_state_vars(NUM_STATE_VARS + 2) * dz;
-
-            if((0.0 < Awet()) && (Awet() < 1.0))
+            //the "update flux" values (hfv) are the fluxes used to update the solution, they may or may not be "reset" from their standard values based on whether or not the stopping criteria is triggering a change intended to cause the flow to stop.
+            if(state_vars(0) < GEOFLOW_TINY)
             {
-                hfv[0][0] *= wetnessfactor;
-                hfv[0][1] *= wetnessfactor;
-                hfv[0][2] *= wetnessfactor;
+                //    printf("choice 1 ");
+                hfv[0][0] = hfv[0][1] = hfv[0][2] = 0.0; //state variables
+                hfv[1][0] = hfv[1][1] = hfv[1][2] = 0.0; //fluxes
+                hfv[2][0] = hfv[2][1] = hfv[2][2] = 0.0; //wave speeds
+
+            }
+        #ifdef STOPCRIT_CHANGE_FLUX
+            else if(stoppedflags()==2)
+            {
+                //    printf("choice 2 ");
+
+                //state variables
+                hfv[0][0]=state_vars(0)+d_state_vars(NUM_STATE_VARS+0)*dz;
+                hfv[0][1]=hfv[0][2]=0.0;
+                if((0.0<Awet())&&(Awet()<1.0)) hfv[0][0]*=wetnessfactor;
+
+                speed=0.0;
+                a=sqrt(effect_kactxy(1)*gravity(2)*hfv[0][0]);
+
+                //fluxes
+                hfv[1][0]=speed*hfv[0][0];
+                hfv[1][1]=speed*hfv[0][1];
+                hfv[1][2]=speed*hfv[0][2]+0.5*hfv[0][0]*a*a;
+
+                //wave speeds
+                hfv[2][0]=speed-a;
+                hfv[2][1]=speed;
+                hfv[2][2]=speed+a;
+            }
+        #endif
+            else
+            {
+                //    printf("choice 3 ");
+                //state variables
+                hfv[0][0] = state_vars(0) + d_state_vars(NUM_STATE_VARS + 0) * dz;
+                hfv[0][1] = state_vars(1) + d_state_vars(NUM_STATE_VARS + 1) * dz;
+                hfv[0][2] = state_vars(2) + d_state_vars(NUM_STATE_VARS + 2) * dz;
+
+                if((0.0 < Awet()) && (Awet() < 1.0))
+                {
+                    hfv[0][0] *= wetnessfactor;
+                    hfv[0][1] *= wetnessfactor;
+                    hfv[0][2] *= wetnessfactor;
+                }
+
+                //eval_velocity(0.0,dz,VxVy);
+                //speed=VxVy[1];
+                speed = speed2 = hfv[0][2] / hfv[0][0];
+
+                a = sqrt(effect_kactxy(1) * gravity(2) * hfv[0][0]);
+
+                //fluxes
+                hfv[1][0] = speed * hfv[0][0];
+                hfv[1][1] = speed * hfv[0][1];
+                hfv[1][2] = speed * hfv[0][2] + 0.5 * hfv[0][0] * a * a;
+
+                //wave speeds
+                hfv[2][0] = speed2 - a;
+                hfv[2][1] = speed2;
+                hfv[2][2] = speed2 + a;
             }
 
-            //eval_velocity(0.0,dz,VxVy);
-            //speed=VxVy[1];
-            speed = speed2 = hfv[0][2] / hfv[0][0];
-
-            a = sqrt(effect_kactxy(1) * gravity(2) * hfv[0][0]);
-
-            //fluxes
-            hfv[1][0] = speed * hfv[0][0];
-            hfv[1][1] = speed * hfv[0][1];
-            hfv[1][2] = speed * hfv[0][2] + 0.5 * hfv[0][0] * a * a;
-
-            //wave speeds
-            hfv[2][0] = speed2 - a;
-            hfv[2][1] = speed2;
-            hfv[2][2] = speed2 + a;
-        }
-        
-        //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
-    #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
-        if(state_vars(0) < GEOFLOW_TINY)
-        {
-            hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
-            hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
-            hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
-        }
-        else
-        {   
-            hrfv[0][0]=state_vars(0)+d_state_vars(NUM_STATE_VARS+0)*dz;
-            hrfv[0][1]=state_vars(1)+d_state_vars(NUM_STATE_VARS+1)*dz;
-            hrfv[0][2]=state_vars(2)+d_state_vars(NUM_STATE_VARS+2)*dz;
-
-            if((0.0<Awet())&&(Awet()<1.0))
+            //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
+        #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+            if(state_vars(0) < GEOFLOW_TINY)
             {
-                hrfv[0][0]*=wetnessfactor;
-                hrfv[0][1]*=wetnessfactor;
-                hrfv[0][2]*=wetnessfactor;
+                hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
+                hrfv[1][0]=hrfv[1][1]=hrfv[1][2]=0.0;//fluxes
+                hrfv[2][0]=hrfv[2][1]=hrfv[2][2]=0.0;//wave speeds
             }
+            else
+            {
+                hrfv[0][0]=state_vars(0)+d_state_vars(NUM_STATE_VARS+0)*dz;
+                hrfv[0][1]=state_vars(1)+d_state_vars(NUM_STATE_VARS+1)*dz;
+                hrfv[0][2]=state_vars(2)+d_state_vars(NUM_STATE_VARS+2)*dz;
 
-            //eval_velocity(0.0,dz,VxVy);
-            //speed=VxVy[1];
-            speed=speed2=hfv[0][2]/hfv[0][0];
+                if((0.0<Awet())&&(Awet()<1.0))
+                {
+                    hrfv[0][0]*=wetnessfactor;
+                    hrfv[0][1]*=wetnessfactor;
+                    hrfv[0][2]*=wetnessfactor;
+                }
 
-            a=sqrt(kactxy(1)*gravity(2)*hrfv[0][0]);
+                //eval_velocity(0.0,dz,VxVy);
+                //speed=VxVy[1];
+                speed=speed2=hfv[0][2]/hfv[0][0];
 
-            //fluxes
-            hrfv[1][0]=speed*hrfv[0][0];
-            hrfv[1][1]=speed*hrfv[0][1];
-            hrfv[1][2]=speed*hrfv[0][2]+0.5*hrfv[0][0]*a*a;
+                a=sqrt(kactxy(1)*gravity(2)*hrfv[0][0]);
 
-            //wave speeds
-            hrfv[2][0]=speed2-a;
-            hrfv[2][1]=speed2;
-            hrfv[2][2]=speed2+a;
-        }
-    #else
-        hrfv[0][0] = hfv[0][0];
-        hrfv[0][1] = hfv[0][1];
-        hrfv[0][2] = hfv[0][2];
+                //fluxes
+                hrfv[1][0]=speed*hrfv[0][0];
+                hrfv[1][1]=speed*hrfv[0][1];
+                hrfv[1][2]=speed*hrfv[0][2]+0.5*hrfv[0][0]*a*a;
 
-        hrfv[1][0] = hfv[1][0];
-        hrfv[1][1] = hfv[1][1];
-        hrfv[1][2] = hfv[1][2];
+                //wave speeds
+                hrfv[2][0]=speed2-a;
+                hrfv[2][1]=speed2;
+                hrfv[2][2]=speed2+a;
+            }
+        #else
+            hrfv[0][0] = hfv[0][0];
+            hrfv[0][1] = hfv[0][1];
+            hrfv[0][2] = hfv[0][2];
 
-        hrfv[2][0] = hfv[2][0];
-        hrfv[2][1] = hfv[2][1];
-        hrfv[2][2] = hfv[2][2];
-    #endif
+            hrfv[1][0] = hfv[1][0];
+            hrfv[1][1] = hfv[1][1];
+            hrfv[1][2] = hfv[1][2];
+
+            hrfv[2][0] = hfv[2][0];
+            hrfv[2][1] = hfv[2][1];
+            hrfv[2][2] = hfv[2][2];
+        #endif
+    	}
+
+    	if(interface_capturing_Type() == Interface_Capturing_Type::LevelSet)
+    	{
+    		int i, j;
+    		double Vel, a;
+
+    		if ((state_vars(0) < GEOFLOW_TINY))  //&&(state_vars[1]==0))
+    		{
+    			for (i = 0; i < 3; i++)
+    				for (j = 0; j < NUM_STATE_VARS; j++)
+    					hfv[i][j] = 0.0; //state variables
+    		} else {
+    			//state variables
+    			for (i = 0; i < NUM_STATE_VARS; i++)
+    				hfv[0][i] = state_vars(i) + d_state_vars(NUM_STATE_VARS + i) * dz;
+
+    			a = sqrt(kactxy(1) * hfv[0][1] * gravity(2));
+
+    			Vel = hfv[0][3] / hfv[0][1];
+
+    			//fluxes
+    			hfv[1][3] = hfv[0][0]; //we put here to be able compute \frac{\partial \phi}{\partial u} in flux
+    			hfv[1][0] = hfv[0][1] * Vel;
+    			hfv[1][1] = hfv[0][2] * Vel;    // + 0.5*temp2;
+    			hfv[1][2] = hfv[0][3] * Vel + 0.5 * hfv[0][1] * a * a;
+    			hfv[1][4] = 0.0;
+    			hfv[1][5] = 0.0;
+
+    			//wave speeds
+    			hfv[2][0] = Vel - a;
+    			hfv[2][1] = Vel;
+    			hfv[2][2] = Vel + a;
+    			hfv[2][3] = 0.;
+    			hfv[2][4] = 0.;
+    			hfv[2][5] = 0.;
+    		}
+    		for (i = 0; i < 3; i++)
+    			for (j = 0; j < NUM_STATE_VARS; j++) {
+    				hrfv[i][j] = hfv[i][j];
+    				if (isnan(hrfv[i][j])) {
+    					printf("Nan in ydir flux\n");
+    					exit(1);
+    				}
+    			}
+    	}
+
+    	if(interface_capturing_Type() == Interface_Capturing_Type::PhaseField)
+    	{
+
+    	}
+
     }
     
     return;
@@ -2822,7 +2929,7 @@ void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Ma
 }
 
 //need move this to step.C
-void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS], double hfvr[3][MAX_NUM_STATE_VARS], double flux[MAX_NUM_STATE_VARS])
+void riemannflux(const ElementType elementType,const Interface_Capturing_Type interface_capturing_Type, double hfvl[3][MAX_NUM_STATE_VARS], double hfvr[3][MAX_NUM_STATE_VARS], double flux[MAX_NUM_STATE_VARS])
 {
     //hfv: h=state variable, f=flux, v=wave speeds
     //l="left" (the minus side), r="right" (the plus side)
@@ -2852,39 +2959,145 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
                 sl = min(0, min(min(hfvl[2][0], hfvl[2][3]), min(hfvr[2][0], hfvr[2][3])));
                 sr = max(0, max(max(hfvl[2][2], hfvl[2][5]), max(hfvr[2][2], hfvr[2][5])));
             }
+
+            if(sl >= 0.0)
+                for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                    flux[ivar] = hfvl[1][ivar];
+            else if(sr <= 0.0)
+                for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                    flux[ivar] = hfvr[1][ivar];
+            else
+                for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                    flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar] + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar]))
+                            / (sr - sl);
         }
         if(elementType == ElementType::SinglePhase)
         {
-            if(hfvl[0][0] == 0.0)
-            {
-                sl = min(0, 2.0 * hfvr[2][0] - hfvr[2][1]);
-                sr = max(0, 2.0 * hfvr[2][2] - hfvr[2][1]);
-                //printf("hfvr=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvr[0][0],hfvr[1][0],hfvr[2][0],hfvr[0][1],hfvr[1][1],hfvr[2][1],hfvr[0][2],hfvr[1][2],hfvr[2][2],sl,sr);
-            }
-            else if(hfvr[0][0] == 0.0)
-            {
-                sl = min(0, 2.0 * hfvl[2][0] - hfvl[2][1]);
-                sr = max(0, 2.0 * hfvl[2][2] - hfvl[2][1]);
-                //printf("hfvl=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvl[0][0],hfvl[1][0],hfvl[2][0],hfvl[0][1],hfvl[1][1],hfvl[2][1],hfvl[0][2],hfvl[1][2],hfvl[2][2],sl,sr);
+        	if(interface_capturing_Type() == Interface_Capturing_Type::Heuristic)
+        	{
+                if(hfvl[0][0] == 0.0)
+                {
+                    sl = min(0, 2.0 * hfvr[2][0] - hfvr[2][1]);
+                    sr = max(0, 2.0 * hfvr[2][2] - hfvr[2][1]);
+                    //printf("hfvr=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvr[0][0],hfvr[1][0],hfvr[2][0],hfvr[0][1],hfvr[1][1],hfvr[2][1],hfvr[0][2],hfvr[1][2],hfvr[2][2],sl,sr);
+                }
+                else if(hfvr[0][0] == 0.0)
+                {
+                    sl = min(0, 2.0 * hfvl[2][0] - hfvl[2][1]);
+                    sr = max(0, 2.0 * hfvl[2][2] - hfvl[2][1]);
+                    //printf("hfvl=\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\n%12.6g   %12.6g   %12.6g\nsl=%12.6g   sr=%12.6g\n",hfvl[0][0],hfvl[1][0],hfvl[2][0],hfvl[0][1],hfvl[1][1],hfvl[2][1],hfvl[0][2],hfvl[1][2],hfvl[2][2],sl,sr);
 
-            }
-            else
-            {
-                sl = min(0, min(hfvl[2][0], hfvr[2][0]));
-                sr = max(0, max(hfvl[2][2], hfvr[2][2]));
-            }
+                }
+                else
+                {
+                    sl = min(0, min(hfvl[2][0], hfvr[2][0]));
+                    sr = max(0, max(hfvl[2][2], hfvr[2][2]));
+                }
+
+                if(sl >= 0.0)
+                    for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                        flux[ivar] = hfvl[1][ivar];
+                else if(sr <= 0.0)
+                    for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                        flux[ivar] = hfvr[1][ivar];
+                else
+                    for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                        flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar] + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar]))
+                                / (sr - sl);
+        	}
+
+        	if(interface_capturing_Type() == Interface_Capturing_Type::LevelSet)
+        	{
+        		//hfv: h=state variable, f=flux, v=wave speeds
+        		//l="left" (the minus side), r="right" (the plus side)
+
+        		double inter_cell_vel[2], vel_r, vel_l;
+
+        		int ivar;
+        		//this is the hll riemann flux
+        		if ((hfvl[0][1] == 0.0) && (hfvr[0][1] == 0.0))
+        			for (ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+        				flux[ivar] = 0.0;
+        		else {
+        			double sl, sr;
+        			if (hfvl[0][1] == 0.0) {
+        				sl = min(0, 2.0 * hfvr[2][0] - hfvr[2][1]);
+        				sr = max(0, 2.0 * hfvr[2][2] - hfvr[2][1]);
+        			} else if (hfvr[0][1] == 0.0) {
+        				sl = min(0, 2.0 * hfvl[2][0] - hfvl[2][1]);
+        				sr = max(0, 2.0 * hfvl[2][2] - hfvl[2][1]);
+        			} else {
+        				sl = min(0, min(hfvl[2][0], hfvr[2][0]));
+        				sr = max(0, max(hfvl[2][2], hfvr[2][2]));
+        			}
+
+        			// we computed the flux for the level set equation based on the following papers:
+        			// 1. C. Pares, Numerical methods for nonconservative hyperbolic systems: a theoretical framework. page 14.
+        			// 2. M. Castro et. al., A HLLC scheme for nonconservative hyperbolic problems .
+        			//    Application to turbidity currents with sediment transport page 9,10.
+
+        			double v_r, v_l, v_star, phi_star;
+
+        			if (hfvl[0][1] > 0.)
+        				if (dir == 0)
+        					v_l = hfvl[0][2] / hfvl[0][1];
+        				else
+        					v_l = hfvl[0][3] / hfvl[0][1];
+        			else
+        				v_l = 0;
+
+        			if (hfvr[0][1] > 0.)
+        				if (dir == 0)
+        					v_r = hfvr[0][2] / hfvr[0][1];
+        				else
+        					v_r = hfvr[0][3] / hfvr[0][1];
+        			else
+        				v_r = 0;
+
+        			if (sl >= 0.0) {
+
+        				flux[0] = 0.;
+        				flux[4] = .5 * (v_l + v_r) * (hfvr[0][0] - hfvl[0][0]);
+
+        				for (ivar = 1; ivar < NUM_STATE_VARS - 2; ivar++)
+        					flux[ivar] = hfvl[1][ivar];
+
+        			} else if (sr <= 0.0) {
+
+        				flux[0] = .5 * (v_l + v_r) * (hfvr[0][0] - hfvl[0][0]);
+        				flux[4] = 0.;
+
+        				for (ivar = 1; ivar < NUM_STATE_VARS - 2; ivar++)
+        					flux[ivar] = hfvr[1][ivar];
+
+        			} else {
+
+        				for (ivar = 1; ivar < NUM_STATE_VARS - 2; ivar++)
+        					flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar]
+        					    + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar])) / (sr - sl);
+
+        				phi_star = (sr * hfvr[0][0] - sl * hfvl[0][0] - .5 * (v_r + v_l) * (hfvr[0][0] - hfvl[0][0]))
+        				    / (sr - sl);
+
+        				// we do not have v_star so approximate by first order
+        				flux[0] = v_l * (phi_star - hfvl[0][0]);
+        				flux[4] = v_r * (hfvr[0][0] - phi_star);
+
+        				for (ivar = 0; ivar < NUM_STATE_VARS - 1; ivar++)
+        					if (isnan(flux[ivar]))
+        						exit(1);
+
+        			}
+        		}
+        	}
+
+        	if(interface_capturing_Type() == Interface_Capturing_Type::PhaseField)
+        	{
+
+        	}
+
         }
         
-        if(sl >= 0.0)
-            for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-                flux[ivar] = hfvl[1][ivar];
-        else if(sr <= 0.0)
-            for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-                flux[ivar] = hfvr[1][ivar];
-        else
-            for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-                flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar] + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar]))
-                        / (sr - sl);
     }
     
     return;
@@ -2937,9 +3150,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(elm1->elementType(),hfv, hfv1, flux);
+            riemannflux(elm1->elementType(),elm1->interface_capturing_Type(),hfv, hfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
-            riemannflux(elm1->elementType(),hrfv, hrfv1, flux);
+            riemannflux(elm1->elementType(),elm1->interface_capturing_Type(),hrfv, hrfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->refinementflux(i,flux[i]);
             
             elm2 = getNeighborPtr(zp + 4); //(Element*) El_Table->lookup(&neighbor[zp + 4][0]);
@@ -2953,9 +3166,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 zm2 = elm2->which_neighbor(key()) % 4;
                 nm2 = elm2->getNodePtr(zm2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zm2 + 4][0]);
                 
-                riemannflux(elm2->elementType(),hfv, hfv2, flux);
+                riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv, hfv2, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm2->flux(i,flux[i]);
-                riemannflux(elm2->elementType(),hrfv, hrfv2, flux);
+                riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv, hrfv2, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm2->refinementflux(i,flux[i]);
                 
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -2966,11 +3179,11 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             }
             else
             {
-                riemannflux(elm2->elementType(),hfv, hfv2, ghostflux);
+                riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv, hfv2, ghostflux);
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     np->flux(ivar,0.5 * (np->flux(ivar) + ghostflux[ivar]));
                 
-                riemannflux(elm2->elementType(),hrfv, hrfv2, ghostflux);
+                riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv, hrfv2, ghostflux);
                 for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     np->refinementflux(ivar,0.5 * (np->refinementflux(ivar) + ghostflux[ivar]));
             }
@@ -2986,9 +3199,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv, hrfv, elm1, dt);
             elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv1, hrfv1, this, dt);
             
-            riemannflux(elm1->elementType(),hfv, hfv1, flux);
+            riemannflux(elm1->elementType(),elm1->interface_capturing_Type(),hfv, hfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->flux(i,flux[i]);
-            riemannflux(elm1->elementType(),hrfv, hrfv1, flux);
+            riemannflux(elm1->elementType(),elm1->interface_capturing_Type(),hrfv, hrfv1, flux);
             for(int i=0;i<NUM_STATE_VARS;++i)np->refinementflux(i,flux[i]);
             
             /* CASE I
@@ -3045,9 +3258,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 {
                     zp2 = elm2->which_neighbor(elm1->key()) % 4;
                     np2 = elm2->getNodePtr(zp2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
-                    riemannflux(elm2->elementType(),hfv2, hfv1, flux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv2, hfv1, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)np2->flux(i,flux[i]);
-                    riemannflux(elm2->elementType(),hrfv2, hrfv1,flux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv2, hrfv1,flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)np2->refinementflux(i,flux[i]);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -3059,11 +3272,11 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 else
                 {
                     
-                    riemannflux(elm2->elementType(),hfv2, hfv1, ghostflux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv2, hfv1, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm1->flux(ivar,0.5 * (np->flux(ivar) + ghostflux[ivar]));
                     
-                    riemannflux(elm2->elementType(),hrfv2, hrfv1, ghostflux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv2, hrfv1, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm1->refinementflux(ivar,0.5 * (np->refinementflux(ivar) + ghostflux[ivar]));
                 }
@@ -3107,9 +3320,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 {
                     zelmpos_2 = elm2->which_neighbor(key()) % 4;
                     nm2 = elm2->getNodePtr(zelmpos_2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zelmpos_2 + 4][0]);
-                    riemannflux(elm2->elementType(),hfv, hfv2, flux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv, hfv2, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)nm2->flux(i,flux[i]);
-                    riemannflux(elm2->elementType(),hrfv, hrfv2, flux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv, hrfv2, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)nm2->refinementflux(i,flux[i]);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -3123,14 +3336,14 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 }
                 else
                 {
-                    riemannflux(elm2->elementType(),hfv, hfv2, ghostflux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv, hfv2, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
                         nm1->flux(ivar,np->flux(ivar));
                         np->flux(ivar,0.5 * (nm1->flux(ivar) + ghostflux[ivar]));
                     }
                     
-                    riemannflux(elm2->elementType(),hrfv, hrfv2, ghostflux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv, hrfv2, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                     {
                         nm1->refinementflux(ivar,np->refinementflux(ivar));
@@ -3215,9 +3428,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 
                 zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side + 2, hfv, hrfv, elm1, dt);
                 elm1->zdirflux(El_Table, NodeTable, matprops_ptr, integrator, order_flag, side, hfv1, hrfv1, this, dt);
-                riemannflux(elm1->elementType(),hfv1, hfv, flux);
+                riemannflux(elm1->elementType(),elm1->interface_capturing_Type(),hfv1, hfv, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm->flux(i,flux[i]);
-                riemannflux(elm1->elementType(),hrfv1, hrfv, flux);
+                riemannflux(elm1->elementType(),elm1->interface_capturing_Type(),hrfv1, hrfv, flux);
                 for(int i=0;i<NUM_STATE_VARS;++i)nm->refinementflux(i,flux[i]);
                 
                 elm2 = getNeighborPtr(zm + 4); //(Element*) El_Table->lookup(&neighbor[zm + 4][0]);
@@ -3232,9 +3445,9 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                     zp2 = elm2->which_neighbor(key()) % 4;
                     np2 = elm2->getNodePtr(zp2 + 4); //(Node*) NodeTable->lookup(&elm2->node_key[zp2 + 4][0]);
                     
-                    riemannflux(elm2->elementType(),hfv2, hfv, flux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv2, hfv, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)np2->flux(i,flux[i]);
-                    riemannflux(elm2->elementType(),hrfv2, hrfv, flux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv2, hrfv, flux);
                     for(int i=0;i<NUM_STATE_VARS;++i)np2->refinementflux(i,flux[i]);
                     
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
@@ -3245,11 +3458,11 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                 }
                 else
                 {
-                    riemannflux(elm2->elementType(),hfv2, hfv, ghostflux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hfv2, hfv, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm->flux(ivar,0.5 * (nm->flux(ivar) + ghostflux[ivar]));
                     
-                    riemannflux(elm2->elementType(),hrfv2, hrfv, ghostflux);
+                    riemannflux(elm2->elementType(),elm2->interface_capturing_Type(),hrfv2, hrfv, ghostflux);
                     for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                         nm->refinementflux(ivar,0.5 * (nm->refinementflux(ivar) + ghostflux[ivar]));
                 }
