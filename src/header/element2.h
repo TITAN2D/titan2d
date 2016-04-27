@@ -452,7 +452,7 @@ public:
     double dhVy_dx_sol() const;
     double dhVy_dy_sol() const;
     
-    void calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable);
+    void calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTable);
 
     double calc_levelset_flux(double dx);
 

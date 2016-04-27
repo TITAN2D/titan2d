@@ -81,13 +81,16 @@ cxxTitanSimulation::cxxTitanSimulation() :
     SHORTSPEED=false;
     GEOFLOW_TINY=0.0001;
 
+    set_interface_capturing_type(Interface_Capturing_Type::Heuristic);
     set_element_type(ElementType::SinglePhase);
+
 
     NodeTable=new NodeHashTable();
     ElemTable=new ElementsHashTable(NodeTable);
 
     pileprops=nullptr;
 
+    set_interface_capturing_type(Interface_Capturing_Type::Heuristic);
     set_element_type(ElementType::SinglePhase);
 
     statprops=new StatProps(ElemTable,NodeTable);
@@ -115,13 +118,35 @@ cxxTitanSimulation::~cxxTitanSimulation()
     FREE_VAR_IF_NOT_NULLPTR(pileprops);
     FREE_VAR_IF_NOT_NULLPTR(statprops);
 }
+void cxxTitanSimulation::set_interface_capturing_type(const Interface_Capturing_Type m_Interface_Capturing_Type)
+{
+	interfaceCapturingType = m_Interface_Capturing_Type;
+
+    if(ElemTable!=nullptr)
+        ElemTable->set_interface_capturing_type(interfaceCapturingType);
+    if(NodeTable!=nullptr)
+        NodeTable->set_interface_capturing_type(interfaceCapturingType);
+}
 void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
 {
     elementType=m_elementType;
 
     if(elementType==ElementType::SinglePhase)
     {
-        NUM_STATE_VARS = 3;
+    	if(interfaceCapturingType==Interface_Capturing_Type::Heuristic)
+    	{
+    		NUM_STATE_VARS = 3;
+    	}
+
+    	if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+    	{
+    		NUM_STATE_VARS = 6;
+    	}
+
+    	if(interfaceCapturingType==Interface_Capturing_Type::PhaseField)
+    	{
+    		NUM_STATE_VARS = 6;
+    	}
     }
     else if(elementType==ElementType::TwoPhases)
     {
@@ -956,13 +981,19 @@ void cxxTitanSimulation::run(bool start_from_restart)
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+
+	if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+	{
+		initialization(NodeTable, ElemTable, matprops, &timeprops, pileprops, numprocs, myid);
+	}
+
     save_vizoutput_file(XDMF_NEW);
 
     /*
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-     Time Stepping Loop
+     	 	 	 	 	 Time Stepping Loop
 
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1021,6 +1052,16 @@ void cxxTitanSimulation::run(bool start_from_restart)
         {
             update_topo(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops, &mapnames);
         }
+
+    	if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+    	{
+    		if (timeprops.iter)
+    		{		// this is to avoid run for time step 0
+    			move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    			reinitialization(NodeTable, ElemTable, matprops, &timeprops, pileprops, numprocs, myid);
+    		}
+    	}
+
         PROFILING1_STOPADD_RESTART(tsim_iter_update_topo,pt_start);
 
         if((adapt != 0) && (timeprops.iter % 5 == 4))

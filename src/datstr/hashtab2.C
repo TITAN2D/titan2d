@@ -1176,13 +1176,29 @@ void ElementsHashTable::init(double *doublekeyrangein, int size, double XR[], do
 {
     HashTable<Element>::init(doublekeyrangein, size, XR, YR);
 }
+void ElementsHashTable::set_interface_capturing_type(const Interface_Capturing_Type m_Interface_Capturing_Type)
+{
+	interface_capturing_ = m_Interface_Capturing_Type;
+}
 void ElementsHashTable::set_element_type(const ElementType m_elementType)
 {
     elementType_=m_elementType;
-
     if(elementType_==ElementType::SinglePhase)
     {
-        assert(NUM_STATE_VARS == 3);
+    	if(interface_capturing_==Interface_Capturing_Type::Heuristic)
+    	{
+    		assert(NUM_STATE_VARS = 3);
+    	}
+
+    	if(interface_capturing_==Interface_Capturing_Type::LevelSet)
+    	{
+    		assert(NUM_STATE_VARS = 6);
+    	}
+
+    	if(interface_capturing_==Interface_Capturing_Type::PhaseField)
+    	{
+    		assert(NUM_STATE_VARS = 6);
+    	}
     }
     else if(elementType_==ElementType::TwoPhases)
     {

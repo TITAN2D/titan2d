@@ -142,10 +142,10 @@ inline double dabs(double dd)
 
 void find_min_dx(ElementsHashTable* El_Table, double* mindx);
 
-void reinitialization(ElementType elementType, NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
+void reinitialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank);
 
-void initialization(ElementType elementType, NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
+void initialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank);
 
 /* fortran calls */

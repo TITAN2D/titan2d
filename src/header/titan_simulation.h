@@ -138,6 +138,9 @@ public:
     void set_element_type(const ElementType m_elementType);
     const ElementType& get_element_type() const{return elementType;}
 
+    void set_interface_capturing_type(const Interface_Capturing_Type m_Interface_Capturing_Type);
+    const Interface_Capturing_Type& get_interface_capturing_type() const{return interfaceCapturingType;}
+
 protected:
     /** this function intializes the piles, by commenting/uncommenting define statements you can switch from
      * parabaloid to elliptical cylinder shaped piles, or even a hard coded pileshapes written to match particular
@@ -156,6 +159,7 @@ protected:
     void xmdfWrite(const char *xmdf_filename,const char *hf5_filename,bool Quad9);
 
     ElementType elementType;
+    Interface_Capturing_Type interfaceCapturingType;
     std::string prev_hf5_filename;
     std::string prev_xmdf_snapshot;
 

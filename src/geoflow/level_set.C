@@ -587,7 +587,7 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 	}
 }
 
-void calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
+void calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTable) {
 
 	int no_of_buckets = El_Table->get_no_of_buckets();
 	vector<HashEntryLine> &bucket = El_Table->bucket;
@@ -599,26 +599,24 @@ void calc_phi_slope(ElementType elementType, ElementsHashTable* El_Table, NodeHa
 			Element* Em_Temp = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
 			if (Em_Temp->adapted_flag() > 0)
-				Em_Temp->calc_phi_slope(elementType, El_Table, NodeTable);
+				Em_Temp->calc_phi_slope(El_Table, NodeTable);
 		}
 	}
 }
 
 void test_nbflag(ElementType elementType, ElementsHashTable* El_Table) {
-	if (elementType == ElementType::SinglePhase) {
 
-		int no_of_buckets = El_Table->get_no_of_buckets();
-		vector<HashEntryLine> &bucket = El_Table->bucket;
-		tivector<Element> &elenode_ = El_Table->elenode_;
+	int no_of_buckets = El_Table->get_no_of_buckets();
+	vector<HashEntryLine> &bucket = El_Table->bucket;
+	tivector<Element> &elenode_ = El_Table->elenode_;
 
-		//@ElementsBucketDoubleLoop
-		for (int ibuck = 0; ibuck < no_of_buckets; ibuck++) {
-			for (int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++) {
-				Element* Em_Temp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+	//@ElementsBucketDoubleLoop
+	for (int ibuck = 0; ibuck < no_of_buckets; ibuck++) {
+		for (int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++) {
+			Element* Em_Temp = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
-				if (Em_Temp->adapted_flag() > 0 && *(Em_Temp->nbflag()))
+			if (Em_Temp->adapted_flag() > 0 && *(Em_Temp->nbflag()))
 				cout << "Error this should not happen" << endl;
-			}
 		}
 	}
 }
@@ -793,10 +791,8 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 	}
 }
 
-void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops,
+void pde_reinitialization(ElementsHashTable* El_Table, NodeHashTable* NodeTable, TimeProps* timeprops,
     double min_dx, int nump, int rank) {
-
-	if (elementType == ElementType::SinglePhase) {
 
 		const double threshold = 0.5 * min_dx * min_dx * min_dx;
 		double norm, total_norm, normalized_norm;
@@ -812,7 +808,7 @@ void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, 
 			tot_elem = 0;
 			norm = 0.0;
 			normalized_norm = 0.0;
-			calc_phi_slope(elementType, El_Table, NodeTable);
+			calc_phi_slope(El_Table, NodeTable);
 			update_phi(El_Table, min_dx, &norm, &elem);
 #ifdef USE_MPI
 			// after updating this data have to be transmitted into others
@@ -831,11 +827,9 @@ void pde_reinitialization(ElementType elementType, ElementsHashTable* El_Table, 
 		if (rank == 0)
 			cout << "norm: " << normalized_norm << " threshold is: " << threshold << endl;
 
-	}
-
 }
 
-void reinitialization(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr,
+void reinitialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank) {
 
 	reset_nbflag(El_Table);
@@ -883,10 +877,10 @@ void reinitialization(ElementType elementType, ElementsHashTable* El_Table, Node
 		}
 	}
 
-	pde_reinitialization(elementType,El_Table, NodeTable, timeprops, min_dx, nump, rank);
+	pde_reinitialization(El_Table, NodeTable, timeprops, min_dx, nump, rank);
 }
 
-void initialization(ElementType elementType, ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr,
+void initialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatProps* matprops_ptr,
     TimeProps *timeprops, PileProps *pileprops_ptr, int nump, int rank) {
 
 // data in pileprops_ptr are scaled
@@ -910,7 +904,7 @@ void initialization(ElementType elementType, ElementsHashTable* El_Table, NodeHa
 				*((it->elem[j])->nbflag()) = 1;
 			}
 
-	pde_reinitialization(elementType, El_Table, NodeTable, timeprops, min_dx, nump, rank);
+	pde_reinitialization(El_Table, NodeTable, timeprops, min_dx, nump, rank);
 
 }
 
