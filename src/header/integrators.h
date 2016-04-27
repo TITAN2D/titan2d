@@ -85,6 +85,7 @@ protected:
 protected:
     //!references to members of other classes
     const ElementType &elementType;
+    const Interface_Capturing_Type &interfaceCapturingType;
 
     ElementsProperties ElemProp;
 
@@ -142,6 +143,26 @@ public:
     double threshold;
     double erosion_rate;
     int do_erosion;
+
+};
+
+
+/**
+ * First order integrator for single phase and Coulomb material model
+ */
+class Integrator_SinglePhase_Heuristic_Coulomb:public Integrator_SinglePhase
+{
+public:
+    Integrator_SinglePhase_Heuristic_Coulomb(cxxTitanSimulation *_titanSimulation);
+
+    virtual void print0(int spaces=0);
+
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
+    int stopping_criteria;
 protected:
     //!properly named references
     tivector<double> &h;
@@ -154,16 +175,103 @@ protected:
     tivector<double> &dhVx_dy;
     tivector<double> &dhVy_dx;
     tivector<double> &dhVy_dy;
-};
+    /**
+     * Predictor step for second order of nothing for first order
+     *
+     * half timestep update (finite difference predictor finite volume corrector)
+     *
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
 
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    virtual double get_coef_and_eigen(int ghost_flag);
+
+
+protected:
+    //! calculation of k active passive
+    virtual void gmfggetcoef_C(const double h,const double hVx,const double hVy,
+            const double dh_dx,const double dhVx_dx,
+            const double dh_dy,const double dhVy_dy,
+            const double bedfrictang, const double intfrictang,
+            double &Kactx, double &Kacty, const double tiny,
+        const double epsilon)
+    {
+        //vel is used to determine if velocity gradients are converging or diverging
+        double vel;
+
+        //COEFFICIENTS
+        double hSQ=h*h;
+        double cosphiSQ = cos(intfrictang);
+        double tandelSQ = tan(bedfrictang);
+        cosphiSQ*=cosphiSQ;
+        tandelSQ*=tandelSQ;
+
+
+
+        if(h > tiny)
+        {
+             vel=dhVx_dx/h - hVx*dh_dx/hSQ+
+                 dhVy_dy/h - hVy*dh_dy/hSQ;
+             Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+             Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+
+             //if there is no yielding...
+             if(fabs(hVx/h) < tiny && fabs(hVy/h) < tiny)
+             {
+                Kactx = 1.0;
+                Kacty = 1.0;
+             }
+        }
+        else
+        {
+        vel = 0.0;
+        Kactx = 1.0;
+        Kacty = 1.0;
+        }
+        Kactx = epsilon * Kactx;
+        Kacty = epsilon * Kacty;
+    }
+    //! calculation of wave speeds (eigen vectors of the flux jacoboians)
+    virtual void eigen_C( const double h, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z, const double *VxVy)
+    {
+        if (h > tiny)
+        {
+            //     iverson and denlinger
+            if (kactx < 0.0)
+            {
+                //negative kactxy
+                kactx = -kactx;
+            }
+            eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
+            eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
+
+        }
+        else
+        {
+            eigenvxmax = tiny;
+            eigenvymax = tiny;
+        }
+
+        evalue = c_dmax1(eigenvxmax, eigenvymax);
+    }
+};
 
 /**
  * First order integrator for single phase and Coulomb material model
  */
-class Integrator_SinglePhase_Coulomb:public Integrator_SinglePhase
+class Integrator_SinglePhase_LevelSet_Coulomb:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation);
+    Integrator_SinglePhase_LevelSet_Coulomb(cxxTitanSimulation *_titanSimulation);
 
     virtual void print0(int spaces=0);
 
@@ -174,7 +282,18 @@ public:
 
     int stopping_criteria;
 protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+    tivector<double> &phi;
 
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
     /**
      * Predictor step for second order of nothing for first order
      *
@@ -268,10 +387,10 @@ protected:
 /**
  * First order integrator for single phase and Voellmy_Salm material model
  */
-class Integrator_SinglePhase_Voellmy_Salm:public Integrator_SinglePhase
+class Integrator_SinglePhase_Heuristic_Voellmy_Salm:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Voellmy_Salm(cxxTitanSimulation *_titanSimulation);
+    Integrator_SinglePhase_Heuristic_Voellmy_Salm(cxxTitanSimulation *_titanSimulation);
 
     virtual bool scale();
     virtual bool unscale();
@@ -282,6 +401,17 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
 protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
     /**
      * Predictor step for second order of nothing for first order
      */
@@ -338,12 +468,12 @@ protected:
 };
 
 /**
- * First order integrator for single phase and Pouliquen_Forterre basal friction model
+ * First order integrator for single phase and Voellmy_Salm material model
  */
-class Integrator_SinglePhase_Pouliquen_Forterre:public Integrator_SinglePhase
+class Integrator_SinglePhase_LevelSet_Voellmy_Salm:public Integrator_SinglePhase
 {
 public:
-    Integrator_SinglePhase_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation);
+    Integrator_SinglePhase_LevelSet_Voellmy_Salm(cxxTitanSimulation *_titanSimulation);
 
     virtual bool scale();
     virtual bool unscale();
@@ -354,6 +484,180 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
 protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+    tivector<double> &phi;
+
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    virtual double get_coef_and_eigen(int ghost_flag);
+
+public:
+    double mu;
+    double xi;
+
+protected:
+    //! calculation of k active passive
+    virtual void gmfggetcoef_VS(double &Kactx, double &Kacty,const double epsilon)
+    {
+        Kactx = 1.0;
+        Kacty = 1.0;
+
+        Kactx = epsilon * Kactx;
+        Kacty = epsilon * Kacty;
+    }
+    //! calculation of wave speeds (eigen vectors of the flux jacoboians)
+    void eigen_VS( const double h, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z, const double *VxVy)
+    {
+        if (h > tiny)
+        {
+            //     iverson and denlinger
+            if (kactx < 0.0)
+            {
+                //negative kactxy
+                kactx = -kactx;
+            }
+            eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
+            eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
+
+        }
+        else
+        {
+            eigenvxmax = tiny;
+            eigenvymax = tiny;
+        }
+
+        evalue = c_dmax1(eigenvxmax, eigenvymax);
+    }
+
+};
+/**
+ * First order integrator for single phase and Pouliquen_Forterre basal friction model
+ */
+class Integrator_SinglePhase_Heuristic_Pouliquen_Forterre:public Integrator_SinglePhase
+{
+public:
+    Integrator_SinglePhase_Heuristic_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
+protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    virtual double get_coef_and_eigen(int ghost_flag);
+
+public:
+    double phi1;
+    double phi2;
+    double phi3;
+    double Beta;
+    double L_material;
+
+protected:
+    //! calculation of k active passive
+    virtual void gmfggetcoef_PF(double &Kactx, double &Kacty,const double epsilon)
+    {
+        Kactx = 1.0;
+        Kacty = 1.0;
+
+        Kactx = epsilon * Kactx;
+        Kacty = epsilon * Kacty;
+    }
+    //! calculation of wave speeds (eigen vectors of the flux jacoboians)
+    void eigen_PF( const double h, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z, const double *VxVy)
+    {
+        if (h > tiny)
+        {
+            eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
+            eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
+
+        }
+        else
+        {
+            eigenvxmax = tiny;
+            eigenvymax = tiny;
+        }
+
+        evalue = c_dmax1(eigenvxmax, eigenvymax);
+    }
+};
+
+/**
+ * First order integrator for single phase and Pouliquen_Forterre basal friction model
+ */
+class Integrator_SinglePhase_LevelSet_Pouliquen_Forterre:public Integrator_SinglePhase
+{
+public:
+    Integrator_SinglePhase_LevelSet_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
+protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+    tivector<double> &phi;
+
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
     /**
      * Predictor step for second order of nothing for first order
      */

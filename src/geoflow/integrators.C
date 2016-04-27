@@ -39,6 +39,7 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     outline_ptr(_titanSimulation->get_outline()),
     discharge_ptr(_titanSimulation->get_discharge_planes()),
     elementType(_titanSimulation->get_element_type()),
+	interfaceCapturingType(_titanSimulation->get_interface_capturing_type()),
     adapt(_titanSimulation->adapt),
     TiScalableObject(_titanSimulation->scale_),
     ElemProp(ElemTable, NodeTable)
@@ -266,18 +267,42 @@ Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSim
     H5::Group group(parent->openGroup(group_name));
     TiH5_readStringAttribute__(group,integratorType,"Type");
 
-    if (integratorType == "Integrator_SinglePhase_Coulomb")
+    if (integratorType == "Integrator_SinglePhase_Heurisic_Coulomb")
     {
-        integrator = new Integrator_SinglePhase_Coulomb(_titanSimulation);
+        integrator = new Integrator_SinglePhase_Heuristic_Coulomb(_titanSimulation);
     }
-    else if (integratorType == "Integrator_SinglePhase_Voellmy_Salm")
+    else if (integratorType == "Integrator_SinglePhase_LevelSet_Coulomb")
     {
-        integrator = new Integrator_SinglePhase_Voellmy_Salm(_titanSimulation);
+        integrator = new Integrator_SinglePhase_LevelSet_Coulomb(_titanSimulation);
     }
-    else if (integratorType == "Integrator_SinglePhase_Pouliquen_Forterre")
+//    else if (integratorType == "Integrator_SinglePhase_PhaseField_Coulomb")
+//    {
+//        integrator = new Integrator_SinglePhase_PhaseField_Coulomb(_titanSimulation);
+//    }
+    else if (integratorType == "Integrator_SinglePhase_Heurisic_Voellmy_Salm")
     {
-        integrator = new Integrator_SinglePhase_Pouliquen_Forterre(_titanSimulation);
+        integrator = new Integrator_SinglePhase_Heuristic_Voellmy_Salm(_titanSimulation);
     }
+    else if (integratorType == "Integrator_SinglePhase_LevelSet_Voellmy_Salm")
+    {
+        integrator = new Integrator_SinglePhase_LevelSet_Voellmy_Salm(_titanSimulation);
+    }
+//    else if (integratorType == "Integrator_SinglePhase_PhaseField_Voellmy_Salm")
+//    {
+//        integrator = new Integrator_SinglePhase_PhaseField_Voellmy_Salm(_titanSimulation);
+//    }
+    else if (integratorType == "Integrator_SinglePhase_Heurisic_Pouliquen_Forterre")
+    {
+        integrator = new Integrator_SinglePhase_Heuristic_Pouliquen_Forterre(_titanSimulation);
+    }
+    else if (integratorType == "Integrator_SinglePhase_LevelSet_Pouliquen_Forterre")
+    {
+        integrator = new Integrator_SinglePhase_LevelSet_Pouliquen_Forterre(_titanSimulation);
+    }
+//    else if (integratorType == "Integrator_SinglePhase_PhaseField_Pouliquen_Forterre")
+//    {
+//        integrator = new Integrator_SinglePhase_PhaseField_Pouliquen_Forterre(_titanSimulation);
+//    }
     else if (integratorType == "Integrator_TwoPhases_Coulomb")
     {
         integrator = new Integrator_TwoPhases_Coulomb(_titanSimulation);
@@ -292,16 +317,7 @@ Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSim
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase::Integrator_SinglePhase(cxxTitanSimulation *_titanSimulation):
-        Integrator(_titanSimulation),
-        h(state_vars_[0]),
-        hVx(state_vars_[1]),
-        hVy(state_vars_[2]),
-        dh_dx(d_state_vars_[0]),
-        dh_dy(d_state_vars_[NUM_STATE_VARS]),
-        dhVx_dx(d_state_vars_[1]),
-        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
-        dhVy_dx(d_state_vars_[2]),
-        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
+        Integrator(_titanSimulation)
 {
     assert(elementType==ElementType::SinglePhase);
 
@@ -336,24 +352,34 @@ void Integrator_SinglePhase::h5read(const H5::CommonFG *parent, const  string gr
     TiH5_readIntAttribute(group, do_erosion);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Coulomb::Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation):
-        Integrator_SinglePhase(_titanSimulation)
+Integrator_SinglePhase_Heuristic_Coulomb::Integrator_SinglePhase_Heuristic_Coulomb(cxxTitanSimulation *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
 {
     assert(elementType==ElementType::SinglePhase);
+    assert(interfaceCapturingType==Interface_Capturing_Type::Heuristic);
     assert(order==1);
 
     stopping_criteria=0;
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
 }
-void Integrator_SinglePhase_Coulomb::print0(int spaces)
+void Integrator_SinglePhase_Heuristic_Coulomb::print0(int spaces)
 {
-    printf("%*cIntegrator: single phase, Coulomb model\n", spaces,' ');
+    printf("%*cIntegrator: single phase, Heuristic Interface Capturing Method, Coulomb model\n", spaces,' ');
     printf("%*cint_frict:%.3f\n", spaces+4,' ',scaled?int_frict*180.0/PI:int_frict);
     Integrator_SinglePhase::print0(spaces+4);
 }
 
-void Integrator_SinglePhase_Coulomb::predictor()
+void Integrator_SinglePhase_Heuristic_Coulomb::predictor()
 {
     //@TODO OMP me
     if(order==1)return;
@@ -586,7 +612,7 @@ void Integrator_SinglePhase_Coulomb::predictor()
     }
 }
 
-void Integrator_SinglePhase_Coulomb::corrector()
+void Integrator_SinglePhase_Heuristic_Coulomb::corrector()
 {
     //for comparison of magnitudes of forces in slumping piles
     double m_forceint = 0.0;
@@ -927,28 +953,357 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
 
 }
-void Integrator_SinglePhase_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
+void Integrator_SinglePhase_Heuristic_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
-    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Coulomb","Type");
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Heuristic_Coulomb","Type");
 }
-void Integrator_SinglePhase_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
+void Integrator_SinglePhase_Heuristic_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Voellmy_Salm::Integrator_SinglePhase_Voellmy_Salm(cxxTitanSimulation *_titanSimulation):
-        Integrator_SinglePhase(_titanSimulation)
+Integrator_SinglePhase_LevelSet_Coulomb::Integrator_SinglePhase_LevelSet_Coulomb(cxxTitanSimulation *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+		phi(state_vars_[3]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
 {
     assert(elementType==ElementType::SinglePhase);
+    assert(interfaceCapturingType==Interface_Capturing_Type::LevelSet);
+    assert(order==1);
+
+    stopping_criteria=0;
+    //intfrictang=matprops_ptr->intfrict;
+    //frict_tiny=matprops_ptr->frict_tiny;
+}
+void Integrator_SinglePhase_LevelSet_Coulomb::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, level set Interface Capturing Method, Coulomb model\n", spaces,' ');
+    printf("%*cint_frict:%.3f\n", spaces+4,' ',scaled?int_frict*180.0/PI:int_frict);
+    Integrator_SinglePhase::print0(spaces+4);
+}
+
+void Integrator_SinglePhase_LevelSet_Coulomb::predictor()
+{
+}
+
+void Integrator_SinglePhase_LevelSet_Coulomb::corrector()
+{
+    //for comparison of magnitudes of forces in slumping piles
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
+
+    const double sin_intfrictang=sin(int_frict);
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+    tivector<double> *dgdx=d_gravity_;
+    tivector<double> &kactxy=effect_kactxy_[0];
+    tivector<double> &bedfrictang=effect_bedfrict_;
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    //ANNOTATE_SITE_BEGIN(ISPC_cor);
+    //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        //ANNOTATE_ITERATION_TASK(ISPC_cor_iter);
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[MAX_NUM_STATE_VARS], fluxyp[MAX_NUM_STATE_VARS];
+        double fluxxm[MAX_NUM_STATE_VARS], fluxym[MAX_NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+
+        double VxVy[2];
+        if(h[ndx] > tiny)
+        {
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector itself
+
+
+
+        double speed;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedmax, forcebedequil, forcegrav;
+        double unitvx, unitvy;
+        double tanbed;
+        double Ustore[4];
+
+        double h_inv;
+        double sgn_dudy, sgn_dvdx, tmp;
+        double es, totalShear;
+
+        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
+
+        Ustore[0] = prev_state_vars_[0][ndx]
+                - dtdx * (fluxxp[0] - fluxxm[0])
+                - dtdy * (fluxyp[0] - fluxym[0])
+                + dt * Influx_[0][ndx];
+        Ustore[0] = c_dmax1(Ustore[0], 0.0);
+
+        Ustore[1] = prev_state_vars_[1][ndx]
+                - dtdx * (fluxxp[1] - fluxxm[1])
+                - dtdy * (fluxyp[1] - fluxym[1])
+                + dt * Influx_[1][ndx];
+
+        Ustore[2] = prev_state_vars_[2][ndx]
+                - dtdx * (fluxxp[2] - fluxxm[2])
+                - dtdy * (fluxyp[2] - fluxym[2])
+                + dt * Influx_[2][ndx];
+
+        Ustore[3] = prev_state_vars_[3][ndx]
+                - dtdx * (fluxxp[3] + fluxxm[6])
+                - dtdy * (fluxyp[3] + fluxym[6]);
+
+        // initialize to zero
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        elem_eroded = 0.0;
+
+        if(h[ndx] > tiny)
+        {
+            double inertial_x,inertial_y,drag_x, drag_y;
+            // S terms
+            // here speed is speed squared
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            tanbed = tan(bedfrictang[ndx]);
+            h_inv = 1.0 / h[ndx];
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // x direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the x direction
+            forcegrav = g[0][ndx] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVx_dy[ndx] - VxVy[0] * dh_dy[ndx]);
+            sgn_dudy = sgn_tiny(tmp, frict_tiny);
+            forceintx = sgn_dudy * h[ndx]* kactxy[ndx] * (g[2][ndx] * dh_dy[ndx] + dgdx[1][ndx] * h[ndx]) * sin_intfrictang;
+
+            // the bed friction force for fast moving flow
+
+
+            Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx - forceintx);
+            //STOPPING CRITERIA
+            if(stopping_criteria==1)
+            {
+                inertial_x = fabs(Ustore[1] + dt * forcegrav);
+                drag_x = fabs(dt * (forcebedx + forceintx) );
+
+                if (inertial_x <= drag_x)
+                    Ustore[1] = 0.0;
+            }
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // y direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the y direction
+            forcegrav = g[1][ndx] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVy_dx[ndx] - VxVy[1] * dh_dx[ndx]);
+            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
+            forceinty = sgn_dvdx * h[ndx] * kactxy[ndx] * (g[2][ndx] * dh_dx[ndx] + dgdx[0][ndx] * h[ndx]) * sin_intfrictang;
+
+            // the bed friction force for fast moving flow
+            forcebedy = unitvy * c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0) * tanbed;
+
+            Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy - forceinty);
+            //STOPPING CRITERIA
+            if(stopping_criteria==1)
+            {
+                inertial_y = fabs(Ustore[2] + dt * forcegrav);
+                drag_y = fabs(dt * (forcebedy + forceinty) );
+
+                if (inertial_y <= drag_y)
+                    Ustore[2] = 0.0;
+            }
+
+            if ((do_erosion != 0) && (h[ndx] > threshold)) {
+                es = erosion_rate * sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+                Ustore[0] = Ustore[0] + dt * es;
+                Ustore[1] = Ustore[1] + dt * es * Ustore[1];
+                Ustore[2] = Ustore[2] + dt * es * Ustore[2];
+                //write (*,*) 'Doing Camil Erosion Model'
+            }
+
+        }
+
+
+        // computation of magnitude of friction forces for statistics
+        elem_forceint = unitvx * forceintx + unitvy*forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
+
+        // update the state variables
+        h[ndx]=Ustore[0];
+        hVx[ndx]=Ustore[1];
+        hVy[ndx]=Ustore[2];
+        phi[ndx]=Ustore[3];
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
+
+
+        if(stoppedflags_[ndx] == 2)
+            elem_deposited = h[ndx] * dxdy;
+        else
+            elem_deposited = 0.0;
+
+        if(stoppedflags_[ndx])
+            elem_eroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
+    //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
+    //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
+
+
+}
+void Integrator_SinglePhase_LevelSet_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_LevelSet_Coulomb","Type");
+}
+void Integrator_SinglePhase_LevelSet_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_SinglePhase_Heuristic_Voellmy_Salm::Integrator_SinglePhase_Heuristic_Voellmy_Salm(cxxTitanSimulation *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
+{
+    assert(elementType==ElementType::SinglePhase);
+    assert(interfaceCapturingType==Interface_Capturing_Type::Heuristic);
     assert(order==1);
 
     mu = 0.5;
     xi = 120.0;
 }
-bool Integrator_SinglePhase_Voellmy_Salm::scale()
+bool Integrator_SinglePhase_Heuristic_Voellmy_Salm::scale()
 {
     if(Integrator_SinglePhase::scale())
     {
@@ -957,7 +1312,7 @@ bool Integrator_SinglePhase_Voellmy_Salm::scale()
     }
     return false;
 }
-bool Integrator_SinglePhase_Voellmy_Salm::unscale()
+bool Integrator_SinglePhase_Heuristic_Voellmy_Salm::unscale()
 {
     if(Integrator_SinglePhase::unscale())
     {
@@ -966,18 +1321,18 @@ bool Integrator_SinglePhase_Voellmy_Salm::unscale()
     }
     return false;
 }
-void Integrator_SinglePhase_Voellmy_Salm::print0(int spaces)
+void Integrator_SinglePhase_Heuristic_Voellmy_Salm::print0(int spaces)
 {
-    printf("%*cIntegrator: single phase, Voellmy_Salm model, first order\n", spaces,' ');
+    printf("%*cIntegrator: single phase, Heuristic Interface Capturing Method, Voellmy_Salm model, first order\n", spaces,' ');
     printf("%*cmu:%.3f\n", spaces+4,' ',mu);
     printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
     Integrator_SinglePhase::print0(spaces+4);
 }
-void Integrator_SinglePhase_Voellmy_Salm::predictor()
+void Integrator_SinglePhase_Heuristic_Voellmy_Salm::predictor()
 {
 }
 
-void Integrator_SinglePhase_Voellmy_Salm::corrector()
+void Integrator_SinglePhase_Heuristic_Voellmy_Salm::corrector()
 {
     //for comparison of magnitudes of forces in slumping piles
     double m_forceint = 0.0;
@@ -1219,15 +1574,15 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     deposited = m_deposited;
     realvolume = m_realvolume;
 }
-void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
+void Integrator_SinglePhase_Heuristic_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
-    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Voellmy_Salm","Type");
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Heuristic_Voellmy_Salm","Type");
     TiH5_writeDoubleAttribute(group, mu);
     TiH5_writeDoubleAttribute(group, xi);
 }
-void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
+void Integrator_SinglePhase_Heuristic_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
@@ -1235,10 +1590,324 @@ void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, con
     TiH5_readDoubleAttribute(group, xi);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation):
-        Integrator_SinglePhase(_titanSimulation)
+Integrator_SinglePhase_LevelSet_Voellmy_Salm::Integrator_SinglePhase_LevelSet_Voellmy_Salm(cxxTitanSimulation *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+		phi(state_vars_[3]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
 {
     assert(elementType==ElementType::SinglePhase);
+    assert(interfaceCapturingType==Interface_Capturing_Type::LevelSet);
+    assert(order==1);
+
+    mu = 0.5;
+    xi = 120.0;
+}
+bool Integrator_SinglePhase_LevelSet_Voellmy_Salm::scale()
+{
+    if(Integrator_SinglePhase::scale())
+    {
+        xi = xi/scale_.gravity;
+        return true;
+    }
+    return false;
+}
+bool Integrator_SinglePhase_LevelSet_Voellmy_Salm::unscale()
+{
+    if(Integrator_SinglePhase::unscale())
+    {
+        xi = xi*scale_.gravity;
+        return true;
+    }
+    return false;
+}
+void Integrator_SinglePhase_LevelSet_Voellmy_Salm::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, Heuristic Interface Capturing Method, Voellmy_Salm model, first order\n", spaces,' ');
+    printf("%*cmu:%.3f\n", spaces+4,' ',mu);
+    printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
+    Integrator_SinglePhase::print0(spaces+4);
+}
+void Integrator_SinglePhase_LevelSet_Voellmy_Salm::predictor()
+{
+}
+
+void Integrator_SinglePhase_LevelSet_Voellmy_Salm::corrector()
+{
+    //for comparison of magnitudes of forces in slumping piles
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
+
+    double inv_xi= 1.0/xi;
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+    tivector<double> &kactxy=effect_kactxy_[0];
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
+        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+
+        double VxVy[2];
+        if(h[ndx] > tiny)
+        {
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector itself
+        double speed, speed_squared;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcegrav_x,forcegrav_y;
+        double force_CoulombFrict_x,force_CoulombFrict_y;
+        double force_Turbulence_x,force_Turbulence_y;
+        double unitvx, unitvy;
+        double Ustore[4];
+        double force_curv_x, force_curv_y;
+
+        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
+
+        Ustore[0] = prev_state_vars_[0][ndx]
+                - dtdx * (fluxxp[0] - fluxxm[0])
+                - dtdy * (fluxyp[0] - fluxym[0])
+                + dt * Influx_[0][ndx];
+        Ustore[0] = c_dmax1(Ustore[0], 0.0);
+
+        Ustore[1] = prev_state_vars_[1][ndx]
+                - dtdx * (fluxxp[1] - fluxxm[1])
+                - dtdy * (fluxyp[1] - fluxym[1])
+                + dt * Influx_[1][ndx];
+
+        Ustore[2] = prev_state_vars_[2][ndx]
+                - dtdx * (fluxxp[2] - fluxxm[2])
+                - dtdy * (fluxyp[2] - fluxym[2])
+                + dt * Influx_[2][ndx];
+
+        Ustore[3] = prev_state_vars_[3][ndx]
+                - dtdx * (fluxxp[3] + fluxxm[6])
+                - dtdy * (fluxyp[3] + fluxym[6]);
+
+        // initialize to zero
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        elem_eroded = 0.0;
+
+
+        if(h[ndx] > tiny)
+        {
+            // S terms
+        	speed_squared = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+
+            if (speed_squared > 0.0)
+            {
+
+                speed = sqrt(speed_squared);
+
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+             // x direction source terms
+             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+            // the gravity force in the x direction
+            forcegrav_x = g[0][ndx] * h[ndx];
+
+            //the Coulomb type friction force in x direction
+            force_CoulombFrict_x = unitvx * mu * g[2][ndx] * h[ndx];
+
+            //the Turbulent type force for fast moving flow in x direction
+            force_Turbulence_x = unitvx * speed_squared * inv_xi;
+
+            //the Curvature dependent force for fast moving flow in x direction
+            force_curv_x = unitvx * mu * speed_squared * h[ndx] * curvature_[0][ndx];
+
+
+            Ustore[1] = Ustore[1] + dt * (forcegrav_x - force_CoulombFrict_x - force_Turbulence_x - force_curv_x);
+
+             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+             // y direction source terms
+             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+            // the gravity force in the y direction
+            forcegrav_y = g[1][ndx] * h[ndx];
+
+            // the Coulomb type friction force  in y direction
+            force_CoulombFrict_y = unitvy * mu * g[2][ndx] * h[ndx];
+
+            // the Turbulent type force for fast moving flow in y direction
+            force_Turbulence_y = unitvy * speed_squared * inv_xi;
+
+            //the Curvature dependent force for fast moving flow in y direction
+            force_curv_y = unitvy * mu * speed_squared * h[ndx] * curvature_[1][ndx];
+
+            Ustore[2] = Ustore[2] + dt * (forcegrav_y - force_CoulombFrict_y - force_Turbulence_y - force_curv_y);
+
+        }
+
+        // computation of magnitude of friction forces for statistics
+        elem_forceint = unitvx * forceintx + unitvy*forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
+
+        // update the state variables
+        h[ndx]=Ustore[0];
+        hVx[ndx]=Ustore[1];
+        hVy[ndx]=Ustore[2];
+        phi[ndx]=Ustore[3];
+
+        //end of correct
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
+
+
+        if(stoppedflags_[ndx] == 2)
+            elem_deposited = h[ndx] * dxdy;
+        else
+            elem_deposited = 0.0;
+
+        if(stoppedflags_[ndx])
+            elem_eroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
+}
+void Integrator_SinglePhase_LevelSet_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_LevelSet_Voellmy_Salm","Type");
+    TiH5_writeDoubleAttribute(group, mu);
+    TiH5_writeDoubleAttribute(group, xi);
+}
+void Integrator_SinglePhase_LevelSet_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group, mu);
+    TiH5_readDoubleAttribute(group, xi);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::Integrator_SinglePhase_Heuristic_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
+{
+    assert(elementType==ElementType::SinglePhase);
+    assert(interfaceCapturingType==Interface_Capturing_Type::Heuristic);
     assert(order==1);
 
     phi1=32.9;//in degrees, will convert to rad on scale (0.41887902 rad);
@@ -1248,7 +1917,7 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     L_material=1.0E-3;
 }
 
-bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
+bool Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::scale()
 {
     if(Integrator_SinglePhase::scale())
     {
@@ -1260,7 +1929,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
     }
     return false;
 }
-bool Integrator_SinglePhase_Pouliquen_Forterre::unscale()
+bool Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::unscale()
 {
     if(Integrator_SinglePhase::unscale())
     {
@@ -1272,9 +1941,9 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::unscale()
     }
     return false;
 }
-void Integrator_SinglePhase_Pouliquen_Forterre::print0(int spaces)
+void Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::print0(int spaces)
 {
-    printf("%*cIntegrator: single phase, Pouliquen_Forterre model, first order\n", spaces,' ');
+    printf("%*cIntegrator: single phase, Heuristic Interface Capturing Method, Pouliquen_Forterre model, first order\n", spaces,' ');
     printf("%*cphi1:%.3f\n", spaces+4,' ',scaled?phi1*180.0/PI:phi1);
     printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
     printf("%*cphi3:%.3f\n", spaces+4,' ',scaled?phi3*180.0/PI:phi3);
@@ -1283,13 +1952,13 @@ void Integrator_SinglePhase_Pouliquen_Forterre::print0(int spaces)
     Integrator_SinglePhase::print0(spaces+4);
 }
 
-void Integrator_SinglePhase_Pouliquen_Forterre::predictor()
+void Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::predictor()
 {
 }
 
 
 
-void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
+void Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::corrector()
 {
     Element* Curr_El;
 
@@ -1361,15 +2030,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
          rather than the only bedfriction
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
-
-#ifdef STOPPED_FLOWS
-    #ifdef STOPCRIT_CHANGE_SOURCE
-        int IF_STOPPED=stoppedflags_[ndx];
-    #else
-        int IF_STOPPED = !(!stoppedflags_[ndx]);
-    #endif
-#endif
-
 
         double VxVy[2];
         if(h[ndx] > tiny)
@@ -1569,18 +2229,380 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     deposited = m_deposited;
     realvolume = m_realvolume;
 }
-void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
+void Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
-    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Pouliquen_Forterre","Type");
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Heuristic_Pouliquen_Forterre","Type");
     TiH5_writeDoubleAttribute(group, phi1);
     TiH5_writeDoubleAttribute(group, phi2);
     TiH5_writeDoubleAttribute(group, phi3);
     TiH5_writeDoubleAttribute(group, Beta);
     TiH5_writeDoubleAttribute(group, L_material);
 }
-void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
+void Integrator_SinglePhase_Heuristic_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_SinglePhase::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleAttribute(group, phi1);
+    TiH5_readDoubleAttribute(group, phi2);
+    TiH5_readDoubleAttribute(group, phi3);
+    TiH5_readDoubleAttribute(group, Beta);
+    TiH5_readDoubleAttribute(group, L_material);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::Integrator_SinglePhase_LevelSet_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation):
+        Integrator_SinglePhase(_titanSimulation),
+        h(state_vars_[0]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+		phi(state_vars_[3]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2])
+{
+    assert(elementType==ElementType::SinglePhase);
+    assert(interfaceCapturingType==Interface_Capturing_Type::LevelSet);
+    assert(order==1);
+
+    phi1=32.9;//in degrees, will convert to rad on scale (0.41887902 rad);
+    phi2=42.0;//in degrees, will convert to rad on scale (0.523598776 rad);
+    phi3=33.9;
+    Beta=0.65;
+    L_material=1.0E-3;
+}
+
+bool Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::scale()
+{
+    if(Integrator_SinglePhase::scale())
+    {
+        phi1*=PI/180.0;
+        phi2*=PI/180.0;
+        phi3*=PI/180.0;
+        L_material = L_material/scale_.length;
+        return true;
+    }
+    return false;
+}
+bool Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::unscale()
+{
+    if(Integrator_SinglePhase::unscale())
+    {
+        phi1*=180.0/PI;
+        phi2*=180.0/PI;
+        phi3*=180.0/PI;
+        L_material = L_material*scale_.length;
+        return true;
+    }
+    return false;
+}
+void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::print0(int spaces)
+{
+    printf("%*cIntegrator: single phase, LevelSet Interface Capturing Method, Pouliquen_Forterre model, first order\n", spaces,' ');
+    printf("%*cphi1:%.3f\n", spaces+4,' ',scaled?phi1*180.0/PI:phi1);
+    printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
+    printf("%*cphi3:%.3f\n", spaces+4,' ',scaled?phi3*180.0/PI:phi3);
+    printf("%*cBeta:%.3f\n", spaces+4,' ',Beta);
+    printf("%*cL_material:%.3e\n", spaces+4,' ',scaled?L_material*scale_.length:L_material);
+    Integrator_SinglePhase::print0(spaces+4);
+}
+
+void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::predictor()
+{
+}
+
+void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::corrector()
+{
+    Element* Curr_El;
+
+    //for comparison of magnitudes of forces in slumping piles
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+    tivector<double> &kactxy=effect_kactxy_[0];
+
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
+        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+        double VxVy[2];
+        if(h[ndx] > tiny)
+        {
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+        }
+        else
+        {
+            VxVy[0] = VxVy[1] = 0.0;
+        }
+
+        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector itself
+
+
+
+        double speed;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedx1, forcebedy1;
+        double forcebedx2, forcebedy2;
+        double forcegravx, forcegravy;
+        double unitvx, unitvy;
+        double Ustore[4];
+        double mu_bed, mu_1, mu_2, mu_3, Local_Fr;
+        double inertial_x,inertial_y,drag_x, drag_y;
+
+
+        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
+
+        Ustore[0] = prev_state_vars_[0][ndx]
+                - dtdx * (fluxxp[0] - fluxxm[0])
+                - dtdy * (fluxyp[0] - fluxym[0])
+                + dt * Influx_[0][ndx];
+        Ustore[0] = c_dmax1(Ustore[0], 0.0);
+
+        Ustore[1] = prev_state_vars_[1][ndx]
+                - dtdx * (fluxxp[1] - fluxxm[1])
+                - dtdy * (fluxyp[1] - fluxym[1])
+                + dt * Influx_[1][ndx];
+
+        Ustore[2] = prev_state_vars_[2][ndx]
+                - dtdx * (fluxxp[2] - fluxxm[2])
+                - dtdy * (fluxyp[2] - fluxym[2])
+                + dt * Influx_[2][ndx];
+
+        Ustore[3] = prev_state_vars_[3][ndx]
+                - dtdx * (fluxxp[3] + fluxxm[6])
+                - dtdy * (fluxyp[3] + fluxym[6]);
+
+        // initialize to zero
+        forcegravx = 0.0;
+        forcegravy = 0.0;
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        forcebedx1 = 0.0;
+        forcebedy1 = 0.0;
+        forcebedx2 = 0.0;
+        forcebedy2 = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        inertial_x = 0.0;
+        inertial_y = 0.0;
+        drag_x = 0.0;
+        drag_y = 0.0;
+        elem_eroded = 0.0;
+        mu_bed = 0.0;
+
+        if(h[ndx] > tiny)
+        {
+            // S terms
+            // here speed is speed squared
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] );
+
+            mu_1 = tan(phi1);
+            mu_2 = tan(phi2);
+            mu_3 = tan(phi3);
+
+            //ccccccccccccccc Calculation of mu_bed(Local_Fr,h) ccccccccccccccccc
+
+            //Dynamic flow regime
+			if ( Local_Fr >= Beta )
+				mu_bed = mu_1 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] * Beta / ( L_material * Local_Fr ) );
+
+            //Intermediate flow regime
+			else if ( ( Local_Fr < Beta ) && ( Local_Fr > 0.0 ) )
+				mu_bed = mu_3 + pow( ( Local_Fr / Beta ), 0.001 ) * ( mu_1 - mu_3 ) + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material );
+
+            //Static regime
+			else if ( Local_Fr == 0.0 )
+				mu_bed = mu_3 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material);
+
+			//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+			// x direction source terms
+			//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+			// the gravity force in the x direction
+			forcegravx = g[0][ndx] * h[ndx];
+
+			// the bed friction forces for fast moving flow in x direction
+			forcebedx1 = h[ndx] * unitvx * mu_bed * g[2][ndx];
+
+			forcebedx2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
+
+			//STOPPING CRITERIA
+//			inertial_x = fabs( Ustore[1] + dt * forcegravx );
+
+//			drag_x = fabs( dt * ( forcebedx1 + forcebedx2 ) );
+
+//			if ( inertial_x > drag_x )
+				Ustore[1] = Ustore[1] + dt * ( forcegravx - forcebedx1 - forcebedx2 );
+//			else
+//				Ustore[1] = 0.0;
+
+			//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+			// y direction source terms
+			//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+			// the gravity force in the y direction
+
+			forcegravy = g[1][ndx] * h[ndx];
+
+			// the bed friction forces for fast moving flow in y direction
+			forcebedy1 = h[ndx] * unitvy * mu_bed * g[2][ndx];
+
+			forcebedy2 = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
+
+			//STOPPING CRITERIA
+//			inertial_y = fabs( Ustore[2] + dt * forcegravy );
+
+//			drag_y = fabs( dt * ( forcebedy1 + forcebedy2 ) );
+
+//			if ( inertial_y > drag_y )
+				Ustore[2] = Ustore[2] + dt * ( forcegravy - forcebedy1 - forcebedy2 );
+//			else
+//				Ustore[2] = 0.0;
+        }
+
+
+        // computation of magnitude of friction forces for statistics
+        elem_forceint = unitvx * forceintx + unitvy*forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy*forcebedy;
+
+        // update the state variables
+        h[ndx]=Ustore[0];
+        hVx[ndx]=Ustore[1];
+        hVy[ndx]=Ustore[2];
+        phi[ndx]=Ustore[3];
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
+
+
+        if(stoppedflags_[ndx] == 2)
+            elem_deposited = h[ndx] * dxdy;
+        else
+            elem_deposited = 0.0;
+
+        if(stoppedflags_[ndx])
+            elem_eroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
+}
+void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_SinglePhase::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_LevelSet_Pouliquen_Forterre","Type");
+    TiH5_writeDoubleAttribute(group, phi1);
+    TiH5_writeDoubleAttribute(group, phi2);
+    TiH5_writeDoubleAttribute(group, phi3);
+    TiH5_writeDoubleAttribute(group, Beta);
+    TiH5_writeDoubleAttribute(group, L_material);
+}
+void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
