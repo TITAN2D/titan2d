@@ -665,8 +665,8 @@ public:
 
     ElementsProperties *ElemProp;
 
-	//! Drag-force
-    tivector<double> drag_[DIMENSION];
+//	//! Drag-force
+//    tivector<double> drag_[DIMENSION];
 
     tivector<int> narrow_bound_flag_;
 };
@@ -741,7 +741,7 @@ public:
     tivector<double> *eigenvxymax_;
     tivector<double> *coord_;
 
-    tivector<double> *drag_;
+//    tivector<double> *drag_;
     tivector<int> &narrow_bound_flag_;
 
 

@@ -2135,16 +2135,16 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 			for (int j = 0; j < 4; j++)
 				if (neigh_proc(j) == INIT)
 					if (j == xp) {
-						phi_slope(1) = 0.0;
+						El_Table->phi_slope_[1][ndx_] = 0.0;
 						xpflag = 1;
 					} else if (j == xm) {
-						phi_slope(0) = 0.0;
+						El_Table->phi_slope_[0][ndx_] = 0.0;
 						xmflag = 1;
 					} else if (j == ym) {
-						phi_slope(2) = 0.0;
+						El_Table->phi_slope_[2][ndx_] = 0.0;
 						ymflag = 1;
 					} else {
-						phi_slope(3) = 0.0;
+						El_Table->phi_slope_[3][ndx_] = 0.0;
 						ypflag = 1;
 					}
 
@@ -2167,7 +2167,7 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 				dp = (ep->state_vars(3) - state_vars(3)) / dxp;
 				if (ep2 != NULL)
 					dp = .5 * (dp + (ep2->state_vars(3) - state_vars(3)) / dxp);
-				phi_slope(1) = dp;
+				El_Table->phi_slope_[1][ndx_] = dp;
 			}
 
 			if (!xmflag) {
@@ -2183,7 +2183,7 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 				dm = (state_vars(3) - em->state_vars(3)) / dxm;
 				if (em2 != NULL)
 					dm = .5 * (dm + (state_vars(3) - em2->state_vars(3)) / dxm);
-				phi_slope(0) = dm;
+				El_Table->phi_slope_[0][ndx_] = dm;
 			}
 
 			/* y direction */
@@ -2200,7 +2200,7 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 				dp = (ep->state_vars(3) - state_vars(3)) / dxp;
 				if (ep2 != NULL)
 					dp = .5 * (dp + (ep2->state_vars(3) - state_vars(3)) / dxp);
-				phi_slope(3) = dp;
+				El_Table->phi_slope_[3][ndx_] = dp;
 			}
 
 			if (!ymflag) {
@@ -2215,7 +2215,7 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 				dm = (state_vars(3) - em->state_vars(3)) / dxm;
 				if (em2 != NULL)
 					dm = .5 * (dm + (state_vars(3) - em2->state_vars(3)) / dxm);
-				phi_slope(2) = dm;
+				El_Table->phi_slope_[2][ndx_] = dm;
 			}
 
 	return;

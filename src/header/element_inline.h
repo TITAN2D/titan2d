@@ -323,17 +323,17 @@ inline void Element::set_opposite_brother_flag(int new_opposite_brother_flag) {
 }
 
 //! get drag-force
-inline const double* Element::get_drag() const {
-	return elementsHashTable->drag_[ndx_];
-}
+//inline const double* Element::get_drag() const {
+//	return elementsHashTable->drag_[ndx_];
+//}
 
 //! update drag force
-inline void Element::put_drag(double df[]) {
-	for (int i = 0; i < DIMENSION; i++)
-		elementsHashTable->drag_[ndx_] = df[i];
-}
+//inline void Element::put_drag(double df[]) {
+//	for (int i = 0; i < DIMENSION; i++)
+//		elementsHashTable->drag_[ndx_] = df[i];
+//}
 
-inline int* Element::nbflag() {
+inline int Element::nbflag() {
 	return elementsHashTable->narrow_bound_flag_[ndx_];
 }
 
@@ -378,7 +378,7 @@ inline double Element::dhVy_dx_sol() const {return d_state_vars(3);}
 inline double Element::dhVy_dy_sol() const {return d_state_vars(NUM_STATE_VARS+3);}
 
 
-inline double* Element::phi_slope(int idim) const {return elementsHashTable->phi_slope_[idim][ndx_];};
+inline double Element::phi_slope(int idim) const {return elementsHashTable->phi_slope_[idim][ndx_];};
 
 
 //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
@@ -613,7 +613,7 @@ inline void Element::put_height_mom(double pile_height, double xmom, double ymom
 	    state_vars(5, 1.0);
 	}
 
-	if (interface_capturing_Type() == Interface_Capturing_Type::PhasePhield){
+	if (interface_capturing_Type() == Interface_Capturing_Type::PhaseField){
 
 	}
 
