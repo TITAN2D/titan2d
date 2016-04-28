@@ -831,8 +831,8 @@ void find_min_dx(ElementsHashTable* El_Table, double* mindx) {
 
 			if ((EmTemp->adapted_flag() > 0) || (EmTemp->adapted_flag() < 0)) {
 				*mindx = (
-						(*(EmTemp->dx(0)) < *(EmTemp->dx(1))) ?
-								*(EmTemp->dx(0)) : *(EmTemp->dx(1)))
+						((EmTemp->dx(0)) < (EmTemp->dx(1))) ?
+								(EmTemp->dx(0)) : (EmTemp->dx(1)))
 						* pow(0.5, REFINE_LEVEL - EmTemp->generation());
 				break;
 			}

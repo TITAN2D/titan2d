@@ -124,8 +124,8 @@ void cxxTitanSimulation::set_interface_capturing_type(const Interface_Capturing_
 
     if(ElemTable!=nullptr)
         ElemTable->set_interface_capturing_type(interfaceCapturingType);
-    if(NodeTable!=nullptr)
-        NodeTable->set_interface_capturing_type(interfaceCapturingType);
+//    if(NodeTable!=nullptr)
+//        NodeTable->set_interface_capturing_type(interfaceCapturingType);
 }
 void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
 {

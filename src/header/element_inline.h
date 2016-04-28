@@ -336,6 +336,7 @@ inline void Element::set_opposite_brother_flag(int new_opposite_brother_flag) {
 inline int Element::nbflag() {
 	return elementsHashTable->narrow_bound_flag_[ndx_];
 }
+inline void Element::nbflag(int value) {elementsHashTable->narrow_bound_flag_[ndx_] =value;}
 
 /* geoflow functions */
 

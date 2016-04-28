@@ -221,9 +221,9 @@ void bilinear_interp(Quad quad, double* bilinear_coef) {
 	double A[dim * dim], x[dim], y[dim];
 
 	for (int i = 0; i < dim; ++i) {
-		x[i] = *(quad.elem[i]->coord(0));
-		y[i] = *(quad.elem[i]->coord(1));
-		bilinear_coef[i] = *(quad.elem[i]->state_vars(3));
+		x[i] = quad.elem[i]->coord(0);
+		y[i] = quad.elem[i]->coord(1);
+		bilinear_coef[i] = quad.elem[i]->state_vars(3);
 		A[i] = 1;
 		A[i + 4] = x[i];
 		A[i + 8] = y[i];
@@ -246,8 +246,8 @@ void bilinear_interp(Quad quad, double* bilinear_coef) {
 
 struct ElLess {
 	bool operator()(Element* a, Element* b) {
-		if (*(a->coord(0)) < *(b->coord(0))
-		    || (*(a->coord(0)) == *(b->coord(0)) && *(a->coord(1)) < *(b->coord(1))))
+		if ((a->coord(0)) < (b->coord(0))
+		    || ((a->coord(0)) == (b->coord(0)) && (a->coord(1)) < (b->coord(1))))
 			return true;
 		return false;
 	}
@@ -433,14 +433,14 @@ void make_surface(Triangle triangle, double* surface_coef) {
 	double a[3], b[3], normal[3];
 
 	// first creating two vectors from these three points
-	a[0] = *(triangle.elem[1]->coord(0)) - *(triangle.elem[0]->coord(0));
-	b[0] = *(triangle.elem[2]->coord(0)) - *(triangle.elem[0]->coord(0));
+	a[0] = triangle.elem[1]->coord(0) - triangle.elem[0]->coord(0);
+	b[0] = triangle.elem[2]->coord(0) - triangle.elem[0]->coord(0);
 
-	a[1] = *(triangle.elem[1]->coord(1)) - *(triangle.elem[0]->coord(1));
-	b[1] = *(triangle.elem[2]->coord(1)) - *(triangle.elem[0]->coord(1));
+	a[1] = triangle.elem[1]->coord(1) - triangle.elem[0]->coord(1);
+	b[1] = triangle.elem[2]->coord(1) - triangle.elem[0]->coord(1);
 
-	a[2] = *(triangle.elem[1]->state_vars(3)) - *(triangle.elem[0]->state_vars(3));
-	b[2] = *(triangle.elem[2]->state_vars(3)) - *(triangle.elem[0]->state_vars(3));
+	a[2] = triangle.elem[1]->state_vars(3) - triangle.elem[0]->state_vars(3);
+	b[2] = triangle.elem[2]->state_vars(3) - triangle.elem[0]->state_vars(3);
 
 	// finding the normal vector of the two vectors
 	normal[0] = a[1] * b[2] - b[1] * a[2];
@@ -451,9 +451,9 @@ void make_surface(Triangle triangle, double* surface_coef) {
 	if (normal[2] != 0) {
 		c = -1 / normal[2];
 		surface_coef[0] = -c
-		    * (normal[0] * *(triangle.elem[0]->coord(0))
-		        + normal[1] * *(triangle.elem[0]->coord(1)))
-		    + *(triangle.elem[0]->state_vars(3));
+		    * (normal[0] * (triangle.elem[0]->coord(0))
+		        + normal[1] * (triangle.elem[0]->coord(1)))
+		    + (triangle.elem[0]->state_vars(3));
 		surface_coef[1] = normal[0] * c;
 		surface_coef[2] = normal[1] * c;
 
@@ -496,10 +496,10 @@ void initialize_distance(Element* elem, Pt2Path& p_value_func, Pt2Grad& p_grad_f
 	    y_old, x_half, y_half, epslon = 0.01;
 
 // initializing the solution
-	x_new = x_old = *(elem->coord(0));
-	y_new = y_old = *(elem->coord(1));
+	x_new = x_old = elem->coord(0);
+	y_new = y_old = elem->coord(1);
 
-	double& phi_old = *(elem->state_vars(3));
+	double phi_old = elem->state_vars(3);
 
 	int iter = 0, max_iter = 20;// Chopp's paper says it normally has to converge after 4 or 5 iterations
 	double sgn = 1.0;
@@ -551,20 +551,22 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 
 			if (Curr_El->adapted_flag() > 0) {
 
-				double *phi = (Curr_El->state_vars(3));
+				double phi = Curr_El->state_vars(3);
 
 				for (int ineigh = 0; ineigh < 8; ineigh++)
 					// should ask Hossein about MPI and OpenMP
-					if (*(Curr_El->neigh_proc(ineigh)) >= 0) {
+					if (Curr_El->neigh_proc(ineigh) >= 0) {
 						// this condition is to avoid elements on the boundary, or duplicated neighbors
 
-						SFC_Key& neigh_key = Curr_El->neighbor(ineigh * KEYLENGTH);
-						// input "neigh_key + ineigh * KEYLENGTH" for lookup function should be asked
-						Element* ElemNeigh = (Element*) El_Table->lookup(neigh_key);
+//						SFC_Key neigh_key = Curr_El->neighbor(ineigh * KEYLENGTH);
+//						// input "neigh_key + ineigh * KEYLENGTH" for lookup function should be asked
+//						Element* ElemNeigh = (Element*) El_Table->lookup(neigh_key);
 
-						double neighb_phi = *(ElemNeigh->state_vars(3));
+						Element* ElemNeigh = (Element*) El_Table->lookup(Curr_El->neighbor(ineigh * KEYLENGTH));
 
-						if (neighb_phi * phi[0] < 0.) {
+						double neighb_phi = ElemNeigh->state_vars(3);
+
+						if (neighb_phi * phi < 0.) {
 
 							int yp, xm, ym, xp = Curr_El->positive_x_side();
 							yp = (xp + 1) % 4;
@@ -577,8 +579,10 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 									|| orientation % 4 == 1)
 								accepted.insert(Edge(Curr_El, ElemNeigh, ineigh));
 							else {
-								SFC_Key& c_key = Curr_El->key(); // I'm not sure about what I did here instead of "Curr_El->key()"
-								accepted.insert(Edge(ElemNeigh, Curr_El,ElemNeigh->which_neighbor(c_key)));
+//								SFC_Key c_key = Curr_El->key(); // I'm not sure about what I did here instead of "Curr_El->key()"
+//								accepted.insert(Edge(ElemNeigh, Curr_El,ElemNeigh->which_neighbor(c_key)));
+
+								accepted.insert(Edge(ElemNeigh, Curr_El,ElemNeigh->which_neighbor(Curr_El->key())));
 							}
 						}
 					}
@@ -615,7 +619,7 @@ void test_nbflag(ElementType elementType, ElementsHashTable* El_Table) {
 		for (int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++) {
 			Element* Em_Temp = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
-			if (Em_Temp->adapted_flag() > 0 && *(Em_Temp->nbflag()))
+			if ( (Em_Temp->adapted_flag() > 0) && Em_Temp->nbflag() )
 				cout << "Error this should not happen" << endl;
 		}
 	}
@@ -633,7 +637,7 @@ void reset_nbflag(ElementsHashTable* El_Table) {
 			Element* Em_Temp = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
 			if (Em_Temp->adapted_flag() > 0)
-				*(Em_Temp->nbflag()) = 0;
+				Em_Temp->nbflag(0);
 		}
 	}
 }
@@ -649,24 +653,24 @@ void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* e
 		for (int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++) {
 			Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
-			if (Curr_El->adapted_flag() > 0 && *(Curr_El->nbflag()) != 1
+			if ((Curr_El->adapted_flag() > 0) && (Curr_El->nbflag() != 1)
 					// I did note get good result from the following condition
-					&& fabs((Curr_El->state_vars(3))) <= 10.0 * min_dx) {
+					&& (fabs((Curr_El->state_vars(3))) <= 10.0 * min_dx)) {
 				// with the last condition we narrow the range of update
 				// to maximum of 10 cell-width far the the interface
 
 				(*elem)++;
 
-				double Dphi_Dx_p = *(Curr_El->phi_slope(0));
-				double Dphi_Dx_m = *(Curr_El->phi_slope(1));
-				double Dphi_Dy_p = *(Curr_El->phi_slope(2));
-				double Dphi_Dy_m = *(Curr_El->phi_slope(3));
+				double Dphi_Dx_p = Curr_El->phi_slope(0);
+				double Dphi_Dx_m = Curr_El->phi_slope(1);
+				double Dphi_Dy_p = Curr_El->phi_slope(2);
+				double Dphi_Dy_m = Curr_El->phi_slope(3);
 
-				double phi = *(Curr_El->state_vars(3));
-				double phi_0 = *(Curr_El->state_vars(4));
-				double updated_phi = *(Curr_El->state_vars(5));
+				double phi = Curr_El->state_vars(3);
+				double phi_0 = Curr_El->state_vars(4);
+				double updated_phi = Curr_El->state_vars(5);
 
-				double prev_phi = *(Curr_El->prev_state_vars(3));
+				double prev_phi = Curr_El->prev_state_vars(3);
 
 				double flux_phi, a_p, a_m, b_p, b_m, c_p, c_m, d_p, d_m;
 				const double CFL = 0.5;
@@ -716,7 +720,7 @@ void record_of_phi(ElementsHashTable* El_Table) {
 			Element* Curr_El = &(elenode_[bucket[ibuck].ndx[ielm]]);
 
 			if (Curr_El->adapted_flag() > 0)
-				*(Curr_El->state_vars(4)) = *(Curr_El->state_vars(3));
+				Curr_El->state_vars(4,Curr_El->state_vars(3));
 		}
 	}
 }
@@ -740,33 +744,42 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 			elem[0] = it->elem[1];
 			elem[1] = it->elem[0];
 
-			SFC_Key& c_key = elem[1]->key(); // I'm not sure about what I did here instead of "Curr_El->key()"
-			neigh_num = elem[0]->which_neighbor(c_key);			//= (it->neigh_num + 2) % 8;
+//			SFC_Key& c_key = elem[1]->key(); // I'm not sure about what I did here instead of "Curr_El->key()"
+//			neigh_num = elem[0]->which_neighbor(c_key);			//= (it->neigh_num + 2) % 8;
+
+			neigh_num = elem[0]->which_neighbor(elem[1]->key());
 		}
 
 		// given the neighbor number, we can build 2 Quads, but we do not care.
 		// what we need to do is to find 4 points for making approximated surface
 		// from the bilinear map, and then computing the distance to the interface
 
-		SFC_Key& elem_key = elem[0]->neighbor(((neigh_num + 1) % 8) * KEYLENGTH);
-		elem[2] = (Element*) El_Table->lookup(elem_key);
+//		SFC_Key& elem_key = elem[0]->neighbor(((neigh_num + 1) % 8) * KEYLENGTH);
+//		elem[2] = (Element*) El_Table->lookup(elem_key);
 
-		SFC_Key& neigh_key;
+		elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num + 1) % 8) * KEYLENGTH));
+
+//		SFC_Key& neigh_key;
 
 		if (elem[2] && elem[2]->adapted_flag() > 0) {
 			// first condition is to avoid the case that elem[2] is not available
 
-			neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
-			elem[3] = (Element*) El_Table->lookup(neigh_key);
+//			neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
+			elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num * KEYLENGTH));
+
 		} else {
 			// this means that this proc has not access to this direction, so we have to change the direction
-			elem_key = elem[0]->neighbor(((neigh_num - 1 + 8) % 8) * KEYLENGTH);
-			elem[2] = (Element*) El_Table->lookup(elem_key);
+//			elem_key = elem[0]->neighbor(((neigh_num - 1 + 8) % 8) * KEYLENGTH);
+//			elem[2] = (Element*) El_Table->lookup(elem_key);
+
+			elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num - 1 + 8) % 8) * KEYLENGTH));
 
 			if (elem[2]) {
 				// the condition is to avoid the case that elem[2] is not available
-				neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
-				elem[3] = (Element*) El_Table->lookup(neigh_key);
+//				neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
+//				elem[3] = (Element*) El_Table->lookup(neigh_key);
+
+				elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num * KEYLENGTH));
 			}
 		}
 
@@ -858,7 +871,7 @@ void reinitialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, Mat
 
 		for (int j = 0; j < 4; ++j) {
 			initialize_distance(it->elem[j], p2path, p2grad, (void*) bilinear_coef, min_dx);
-			*((it->elem[j])->nbflag()) = 1;
+			(it->elem[j])->nbflag(1);
 		}
 	}
 
@@ -873,7 +886,7 @@ void reinitialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, Mat
 
 		for (int j = 0; j < 3; ++j) {
 			initialize_distance(it->elem[j], p2path, p2grad, (void*) surface_coef, min_dx);
-			*((it->elem[j])->nbflag()) = 1;
+			(it->elem[j])->nbflag(1);
 		}
 	}
 
@@ -901,7 +914,7 @@ void initialization(NodeHashTable* NodeTable, ElementsHashTable* El_Table, MatPr
 		for (int j = 0; j < 2; ++j)
 			if (it->elem[j]->adapted_flag() > 0) {		// we do not want to update ghost element
 				initialize_distance(it->elem[j], p2path, p2grad, (void*) &ellipse, min_dx);
-				*((it->elem[j])->nbflag()) = 1;
+				(it->elem[j])->nbflag(1);
 			}
 
 	pde_reinitialization(El_Table, NodeTable, timeprops, min_dx, nump, rank);

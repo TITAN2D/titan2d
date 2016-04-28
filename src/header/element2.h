@@ -710,6 +710,7 @@ public:
 //	void put_drag(double df[]);
 
 	int nbflag();
+	void nbflag(int value);
 //*************************************
 protected:
     //index in storage

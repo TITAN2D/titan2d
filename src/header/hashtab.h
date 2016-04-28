@@ -665,9 +665,6 @@ public:
 
     ElementsProperties *ElemProp;
 
-//	//! Drag-force
-//    tivector<double> drag_[DIMENSION];
-
     tivector<int> narrow_bound_flag_;
 };
 
