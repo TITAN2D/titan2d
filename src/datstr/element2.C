@@ -2125,7 +2125,8 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 
 		//x plus, x minus, y plus, y minus
 			int yp, xm, ym, xp, xpflag, xmflag, ypflag, ymflag;
-			xp = positive_x_side();
+
+			xp = El_Table->positive_x_side_[ndx_];
 			yp = (xp + 1) % 4;
 			xm = (xp + 2) % 4;
 			ym = (xp + 3) % 4;
@@ -2148,96 +2149,97 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 						ypflag = 1;
 					}
 
-			/* x direction */
+		    /* x direction */
 			double dp, dm, dc, dxp, dxm;
-			Node* ndtemp;
-			Element *em, *ep;
-			Element *em2 = NULL, *ep2 = NULL;
 
-			if (!xpflag) {
-				ep = (Element*) (El_Table->lookup(neighbor(xp)));
-				ep2 = NULL;
-				//check if element has 2 neighbors on either side
-				ndtemp = (Node*) NodeTable->lookup(node_key(xp + 4));
-				if (ndtemp->info() == S_C_CON) {
-					ep2 = (Element*) (El_Table->lookup(neighbor(xp + 4)));
-					assert(neigh_proc(xp + 4) >= 0 && ep2);
-				}
-				dxp = ep->coord(0) - coord(0);
-				dp = (ep->state_vars(3) - state_vars(3)) / dxp;
-				if (ep2 != NULL)
-					dp = .5 * (dp + (ep2->state_vars(3) - state_vars(3)) / dxp);
-				El_Table->phi_slope_[1][ndx_] = dp;
-			}
 
-			if (!xmflag) {
-				em = (Element*) (El_Table->lookup(neighbor(xm)));
-				em2 = NULL;
-				//check if element has 2 neighbors on either side
-				ndtemp = (Node*) NodeTable->lookup(node_key(xm + 4));
-				if (ndtemp->info() == S_C_CON) {
-					em2 = (Element*) (El_Table->lookup(neighbor(xm + 4)));
-					assert(neigh_proc(xm + 4) >= 0 && em2);
-				}
-				dxm = coord(0) - em->coord(0);
-				dm = (state_vars(3) - em->state_vars(3)) / dxm;
-				if (em2 != NULL)
-					dm = .5 * (dm + (state_vars(3) - em2->state_vars(3)) / dxm);
-				El_Table->phi_slope_[0][ndx_] = dm;
-			}
+		    if (!xpflag) {
+			    ti_ndx_t ep = El_Table->neighbor_ndx_[xp][ndx_]; //(Element*) (ElemTable->lookup(&neighbor(xp)[0]));
+			    ti_ndx_t ep2 = ti_ndx_doesnt_exist;
+			    ti_ndx_t ndtemp = El_Table->node_key_ndx_[xp + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+			    if(NodeTable->info_[ndtemp] == S_C_CON)
+			    {
+			        ep2 = El_Table->neighbor_ndx_[xp + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
+			        assert(El_Table->neigh_proc_[xp + 4][ndx_] >= 0 && ti_ndx_not_negative(ep2));
+			    }
+			    dxp = El_Table->coord_[0][ep] - El_Table->coord_[0][ndx_];
+			    dp = (El_Table->state_vars_[3][ep] - El_Table->state_vars_[3][ndx_]) / dxp;
+		        if(ti_ndx_not_negative(ep2))
+		            dp = .5 * (dp + (El_Table->state_vars_[3][ep2] - El_Table->state_vars_[3][ndx_]) / dxp);
+		        El_Table->phi_slope_[1][ndx_] = dp;
+		    }
+
+
+		    if (!xmflag) {
+			    ti_ndx_t em = El_Table->neighbor_ndx_[xm][ndx_]; //(Element*) (ElemTable->lookup(&neighbor(xp)[0]));
+			    ti_ndx_t em2 = ti_ndx_doesnt_exist;
+			    ti_ndx_t ndtemp = El_Table->node_key_ndx_[xm + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+			    if(NodeTable->info_[ndtemp] == S_C_CON)
+			    {
+			        em2 = El_Table->neighbor_ndx_[xm + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
+			        assert(El_Table->neigh_proc_[xm + 4][ndx_] >= 0 && ti_ndx_not_negative(em2));
+			    }
+			    dxm = El_Table->coord_[0][ndx_] - El_Table->coord_[0][em];
+			    dm = (El_Table->state_vars_[3][em] - El_Table->state_vars_[3][ndx_]) / dxm;
+		        if(ti_ndx_not_negative(em2))
+		            dm = .5 * (dm + (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em2]) / dxm);
+		        El_Table->phi_slope_[0][ndx_] = dm;
+		    }
 
 			/* y direction */
-			if (!ypflag) {
-				ep = (Element*) (El_Table->lookup(neighbor(yp)));
-				ep2 = NULL;
-				//check if element has 2 neighbors on either side
-				ndtemp = (Node*) NodeTable->lookup(node_key(yp + 4));
-				if (ndtemp->info() == S_C_CON) {
-					ep2 = (Element*) (El_Table->lookup(neighbor(yp + 4)));
-					assert(neigh_proc[yp + 4] >= 0 && ep2);
-				}
-				dxp = ep->coord(1) - coord(1);
-				dp = (ep->state_vars(3) - state_vars(3)) / dxp;
-				if (ep2 != NULL)
-					dp = .5 * (dp + (ep2->state_vars(3) - state_vars(3)) / dxp);
-				El_Table->phi_slope_[3][ndx_] = dp;
-			}
 
-			if (!ymflag) {
-				em = (Element*) (El_Table->lookup(neighbor(ym)));
-				em2 = NULL;
-				ndtemp = (Node*) NodeTable->lookup(node_key(ym + 4));
-				if (ndtemp->info() == S_C_CON) {
-					em2 = (Element*) (El_Table->lookup(neighbor(ym + 4)));
-					assert(neigh_proc(ym + 4) >= 0 && em2);
-				}
-				dxm = coord[1] - em->coord[1];
-				dm = (state_vars(3) - em->state_vars(3)) / dxm;
-				if (em2 != NULL)
-					dm = .5 * (dm + (state_vars(3) - em2->state_vars(3)) / dxm);
-				El_Table->phi_slope_[2][ndx_] = dm;
-			}
+		    if (!ypflag) {
+			    ti_ndx_t ep = El_Table->neighbor_ndx_[yp][ndx_]; //(Element*) (ElemTable->lookup(&neighbor(xp)[0]));
+			    ti_ndx_t ep2 = ti_ndx_doesnt_exist;
+			    ti_ndx_t ndtemp = El_Table->node_key_ndx_[yp + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+			    if(NodeTable->info_[ndtemp] == S_C_CON)
+			    {
+			        ep2 = El_Table->neighbor_ndx_[yp + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
+			        assert(El_Table->neigh_proc_[yp + 4][ndx_] >= 0 && ti_ndx_not_negative(ep2));
+			    }
+			    dxp = El_Table->coord_[1][ep] - El_Table->coord_[1][ndx_];
+			    dp = (El_Table->state_vars_[3][ep] - El_Table->state_vars_[3][ndx_]) / dxp;
+		        if(ti_ndx_not_negative(ep2))
+		            dp = .5 * (dp + (El_Table->state_vars_[3][ep2] - El_Table->state_vars_[3][ndx_]) / dxp);
+		        El_Table->phi_slope_[3][ndx_] = dp;
+		    }
+
+		    if (!ymflag) {
+			    ti_ndx_t em = El_Table->neighbor_ndx_[ym][ndx_]; //(Element*) (ElemTable->lookup(&neighbor(xp)[0]));
+			    ti_ndx_t em2 = ti_ndx_doesnt_exist;
+			    ti_ndx_t ndtemp = El_Table->node_key_ndx_[ym + 4][ndx_]; //(Node*) NodeTable->lookup(&node_key[xp + 4][0]);
+			    if(NodeTable->info_[ndtemp] == S_C_CON)
+			    {
+			        em2 = El_Table->neighbor_ndx_[ym + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
+			        assert(El_Table->neigh_proc_[ym + 4][ndx_] >= 0 && ti_ndx_not_negative(em2));
+			    }
+			    dxm = El_Table->coord_[1][em] - El_Table->coord_[1][ndx_];
+			    dm = (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em]) / dxm;
+		        if(ti_ndx_not_negative(em2))
+		            dm = .5 * (dp + (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em2]) / dxm);
+		        El_Table->phi_slope_[2][ndx_] = dm;
+		    }
 
 	return;
 }
 
-double Element::calc_levelset_flux(double dx) {
-
-	double sqr_phi_x = .5 * (phi_slope(0) + phi_slope(1)) * .5 * (phi_slope(0) + phi_slope(1));
-	double sqr_phi_y = .5 * (phi_slope(2) + phi_slope(3)) * .5 * (phi_slope(2) + phi_slope(3));
-
-	if (state_vars(3) == 0.0)
-		state_vars(4) = 0.0;
-	else
-		state_vars(4) = state_vars(3)
-		    / (sqrt(state_vars(3) * state_vars(3) + (sqr_phi_x + sqr_phi_y) * dx * dx));
-
-	if (isnan(state_vars(4)))
-		cout << "state_vars[4]=  " << state_vars(4) << "  state_vars[4]= " << state_vars(3)
-		    << "  sqr_phi_x= " << sqr_phi_x << "  sqr_phi_y=  " << sqr_phi_y << endl;
-
-	return state_vars(4);
-}
+//double Element::calc_levelset_flux(double dx) {
+//
+//	double sqr_phi_x = .5 * (phi_slope(0) + phi_slope(1)) * .5 * (phi_slope(0) + phi_slope(1));
+//	double sqr_phi_y = .5 * (phi_slope(2) + phi_slope(3)) * .5 * (phi_slope(2) + phi_slope(3));
+//
+//	if (state_vars(3) == 0.0)
+//		state_vars(4) = 0.0;
+//	else
+//		state_vars(4) = state_vars(3)
+//		    / (sqrt(state_vars(3) * state_vars(3) + (sqr_phi_x + sqr_phi_y) * dx * dx));
+//
+//	if (isnan(state_vars(4)))
+//		cout << "state_vars[4]=  " << state_vars(4) << "  state_vars[4]= " << state_vars(3)
+//		    << "  sqr_phi_x= " << sqr_phi_x << "  sqr_phi_y=  " << sqr_phi_y << endl;
+//
+//	return state_vars(4);
+//}
 
 //x direction flux in current cell
 void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double dz, double wetnessfactor, double hfv[3][MAX_NUM_STATE_VARS],
@@ -2970,7 +2972,7 @@ void riemannflux(const ElementType elementType,const Interface_Capturing_Type in
         }
         if(elementType == ElementType::SinglePhase)
         {
-        	if(interface_capturing_Type() == Interface_Capturing_Type::Heuristic)
+        	if(interface_capturing_Type == Interface_Capturing_Type::Heuristic)
         	{
                 if(hfvl[0][0] == 0.0)
                 {
@@ -3003,7 +3005,7 @@ void riemannflux(const ElementType elementType,const Interface_Capturing_Type in
                                 / (sr - sl);
         	}
 
-        	if(interface_capturing_Type() == Interface_Capturing_Type::LevelSet)
+        	if(interface_capturing_Type == Interface_Capturing_Type::LevelSet)
         	{
         		//hfv: h=state variable, f=flux, v=wave speeds
         		//l="left" (the minus side), r="right" (the plus side)
@@ -3088,7 +3090,7 @@ void riemannflux(const ElementType elementType,const Interface_Capturing_Type in
         		}
         	}
 
-        	if(interface_capturing_Type() == Interface_Capturing_Type::PhaseField)
+        	if(interface_capturing_Type == Interface_Capturing_Type::PhaseField)
         	{
 
         	}

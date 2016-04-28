@@ -742,7 +742,7 @@ public:
     tivector<double> *coord_;
 
 //    tivector<double> *drag_;
-    tivector<int> &narrow_bound_flag_;
+//    tivector<int> &narrow_bound_flag_;
 
 
     int myid;
