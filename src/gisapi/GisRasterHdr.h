@@ -33,9 +33,9 @@ public:
     {
     }
     
-    bool isCompressed()
+    int isCompressed()
     {
-        return (_compressed == 1);
+        return _compressed;
     }
     
     int Rows()

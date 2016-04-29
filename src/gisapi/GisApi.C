@@ -359,7 +359,7 @@ int load_GIS_data()
         binFile.setEndian("big");
         binFile.setDataSize(4);
         binFile.setIsInteger(false);
-        binFile.isCompressed(gis_grid.ghead.compressed == 1);
+        binFile.isCompressed(gis_grid.ghead.compressed);
         // 0 = uncompressed, 1 = compressed
         
         nrows = gis_grid.ghead.nrows;

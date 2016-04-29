@@ -198,6 +198,13 @@ bool GisBinFile::readRow(int row, char* charValues)
 bool GisBinFile::readCompressdRow(int row, float* floatValues)
 {
     char nBytes;
+    if(this->isCompressed()>2)
+    {
+        printf("ERROR: This map compression is not implemented for floating point data.\n");
+        printf("       Only ZLIB is implemented now!\n");
+        printf("       Recompress your data or/and complain to developers.\n");
+
+    }
     if(file_.get(nBytes))
     {
         if((int) nBytes == 4 || (int) nBytes == 8)
@@ -262,6 +269,14 @@ bool GisBinFile::readCompressdRow(int row, float* floatValues)
 bool GisBinFile::readCompressdRow(int row, char* charValues)
 {
     char nBytes;
+    if(this->isCompressed()>1)
+    {
+        printf("ERROR: This map compression is not implemented for integer data.\n");
+        printf("       Only RLE is implemented now!\n");
+        printf("       Recompress your data or/and complain to developers.\n");
+        exit(1);
+
+    }
     if(file_.get(nBytes))
     {
         if((int) nBytes == 4 || (int) nBytes == 8)
