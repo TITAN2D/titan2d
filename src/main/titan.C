@@ -22,6 +22,10 @@
 # include <config.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -46,12 +50,12 @@ extern "C" void init_cxxtitan();
 
 int main(int argc, char *argv[])
 {
-    int myid, master, numprocs;
+    int myid=0, master, numprocs=1;
     int namelen;
     
     IF_MPI(MPI_Init(&argc, &argv);)
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    IF_MPI(MPI_Comm_size(MPI_COMM_WORLD, &numprocs);)
+    IF_MPI(MPI_Comm_rank(MPI_COMM_WORLD, &myid);)
     
     //set program full name
     int i;
@@ -59,8 +63,18 @@ int main(int argc, char *argv[])
     char python_home[1028];
     char buffer[1028];
     
+#ifdef __linux__
     i = readlink("/proc/self/exe", executable, 1028);
     executable[i] = '\0';
+#endif
+#ifdef __APPLE__
+    uint32_t namesize=1024;
+    _NSGetExecutablePath(executable, &namesize);
+    executable[namesize] = '\0';
+#endif
+#ifdef _WIN32
+    somthing with GetModuleFileName()
+#endif
     Py_SetProgramName(executable);
 
 //#define MAKE_PORTABLE
@@ -83,6 +97,8 @@ int main(int argc, char *argv[])
     printf("%s\n",python_home);
     Py_SetPythonHome(python_home);
 #endif
+    printf("Executable location: %s\n", executable);
+    printf("python home: %s\n", Py_GetPythonHome());
     Py_Initialize();
     
     if(myid == 0)
