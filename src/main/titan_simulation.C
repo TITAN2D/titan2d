@@ -954,6 +954,8 @@ void cxxTitanSimulation::run(bool start_from_restart)
     HAdapt hadapt(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,5);
     HAdaptUnrefine Unrefine(ElemTable, NodeTable, &timeprops,matprops_ptr);
 
+    HAdapt_LevelSet hadapt_levelset(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,5);
+
     outline.setElemNodeTable(ElemTable,NodeTable);
 
     assert(integrator!=nullptr);
@@ -1070,7 +1072,16 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
             TIMING1_START(t_start2);
             ElemTable->conformation++;
-            hadapt.adapt(h_count, TARGET);
+
+            if(interfaceCapturingType==Interface_Capturing_Type::Heuristic)
+            {
+            	hadapt.adapt(h_count, TARGET);
+            }
+            else if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+            {
+            	hadapt_levelset.adapt(h_count, TARGET);
+            }
+
             TIMING1_STOPADD(refinementTime, t_start2);
             
             

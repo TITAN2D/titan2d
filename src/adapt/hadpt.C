@@ -805,7 +805,7 @@ void HAdapt_LevelSet::adapt(int h_count, double target)
         for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
         {
            if(status[ndx] >=0 &&
-                   ((ElemProp->if_first_buffer_boundary_levelset(ndx, PHI_ZERO) > 0))
+                   ((ElemProp->if_first_buffer_boundary_levelset(ndx, PHI_ZERO) > 0)) )
             {
             		adapted[ndx]=BUFFER;
             }

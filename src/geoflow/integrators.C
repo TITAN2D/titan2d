@@ -134,6 +134,8 @@ void Integrator::step()
     // assign influxes and then if any new sources are activating in current time step refine and re-mark cells
     adapt_fluxsrc_region(ElemTable, NodeTable, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, dt, myid,
                          adapt);
+    /* below function is for future when flux sources will be available with Level Set method*/
+    // adapt_fluxsrc_region(ElemTable, NodeTable, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, dt, myid, adapt);
     PROFILING3_STOPADD_RESTART(step_adapt_fluxsrc_region,pt_start);
 
     int i;

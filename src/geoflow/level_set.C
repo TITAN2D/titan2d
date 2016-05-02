@@ -554,7 +554,7 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 				double phi = Curr_El->state_vars(3);
 
 				for (int ineigh = 0; ineigh < 8; ineigh++)
-					// should ask Hossein about MPI and OpenMP
+
 					if (Curr_El->neigh_proc(ineigh) >= 0) {
 						// this condition is to avoid elements on the boundary, or duplicated neighbors
 
