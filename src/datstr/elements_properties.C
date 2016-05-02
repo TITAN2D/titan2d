@@ -206,6 +206,183 @@ int ElementsProperties::if_next_buffer_boundary(ti_ndx_t ndx,  double contour_he
     return 0;
 }
 
+int ElementsProperties::if_pile_boundary_levelset(ti_ndx_t ndx, double contour_phi)
+{
+    int ineigh;
+
+//    ASSERT3(state_vars_[0][ndx] >= 0.0);
+
+    if(state_vars_[3][ndx] <= contour_phi)
+    {
+        for(int ineigh = 0; ineigh < 8; ineigh++)
+        {
+            if(neigh_proc_[ineigh][ndx] >= 0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+                if(state_vars_[3][neighbor_ndx_[ineigh][ndx]] > contour_phi)
+                    return 2; //inside of pileheight contour line
+            }
+        }
+    }
+    else
+    {
+        for(int ineigh = 0; ineigh < 8; ineigh++)
+        {
+            if(neigh_proc_[ineigh][ndx] >= 0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+                ASSERT3(ElemTable->state_vars_[0][ElemTable->neighbor_ndx_[ineigh][ndx]] >= 0.0);
+                if(state_vars_[3][neighbor_ndx_[ineigh][ndx]] <= contour_phi)
+                    return 1; //outside of pileheight contour line
+            }
+        }
+    }
+    return 0; //not on pileheight contour line
+}
+int ElementsProperties::if_source_boundary_levelset(ti_ndx_t ndx)
+{
+//    ASSERT3(Influx_[0][ndx] >= 0.0); //currently mass sinks are not allowed
+
+    if(Influx_[1][ndx] > 0.0)
+    {
+        for(int ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc_[ineigh][ndx] >= 0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+                if(Influx_[1][ neighbor_ndx_[ineigh][ndx] ] <= 0.0)
+                    return 2; //inside of line bounding area with a mass source
+            }
+    }
+
+    else if(Influx_[1][ndx] == 0.0)
+    {
+        for(int ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc_[ineigh][ndx] >= 0.0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+                ASSERT3(ElemTable->Influx_[0][ ElemTable->neighbor_ndx_[ineigh][ndx] ] >= 0.0);
+                if(Influx_[1][ neighbor_ndx_[ineigh][ndx] ] != 0.0)
+                    return 1; //outside of line bounding area with a mass source/sink
+            }
+    }
+    else if(Influx_[1][ndx] < 0.0)
+    {
+        for(int ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc_[ineigh][ndx] >= 0.0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+                if(Influx_[1][ neighbor_ndx_[ineigh][ndx] ] >= 0.0)
+                    return -1; //inside of line bounding area with a mass sink
+            }
+    }
+
+    return 0; //not on line bounding area with mass source/sink
+}
+int ElementsProperties::if_first_buffer_boundary_levelset(ti_ndx_t ndx, double contour_phi) const
+{
+
+    int ineigh;
+    int iffirstbuffer = 0;
+    ti_ndx_t neig_ndx;
+
+    if(ElemTable->adapted_[ndx] <= 0)
+        return (ElemTable->adapted_[ndx] - 1);
+
+//    ASSERT3(ElemTable->state_vars_[0][ndx] >= 0.0);
+//    ASSERT3(ElemTable->Influx_[0][ndx] >= 0.0);
+
+    if((ElemTable->state_vars_[3][ndx] < contour_phi) && (ElemTable->Influx_[1][ndx] == 0.0))
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(ElemTable->neigh_proc_[ineigh][ndx]  >= 0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                neig_ndx=ElemTable->neighbor_ndx_[ineigh][ndx];
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+
+                if((ElemTable->state_vars_[3][neig_ndx] >= contour_phi) || (ElemTable->Influx_[1][neig_ndx] > 0.0))
+                {
+                    iffirstbuffer = 1;
+                    break;
+                }
+            }
+    }
+    else
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(ElemTable->neigh_proc_[ineigh][ndx] >= 0)
+            {
+                //don't check outside map boundary or duplicate neighbor
+                neig_ndx=ElemTable->neighbor_ndx_[ineigh][ndx];
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+
+                if((ElemTable->state_vars_[3][neig_ndx] < contour_phi) && (ElemTable->Influx_[1][neig_ndx] == 0.0))
+                {
+                    iffirstbuffer = 1;
+                    break;
+                }
+            }
+    }
+
+    if(iffirstbuffer)
+    {
+        if((ElemTable->adapted_[ndx] >= NEWSON) || (ElemTable->generation_[ndx] == REFINE_LEVEL))
+            return 2; //is a member of the buffer but doesn't need to be refined
+        else
+            return 1; //needs to be refined and some of its sons will be members
+    }
+
+    return 0;
+}
+int ElementsProperties::if_next_buffer_boundary_levelset(ti_ndx_t ndx,  double contour_phi)
+{
+
+    int ineigh;
+    ti_ndx_t neigh_ndx;
+    int ifnextbuffer = 0;
+
+    if(adapted_[ndx] <= 0)
+        //GHOST element or element that should be deleted soon
+        return (adapted_[ndx] - 1);
+
+    if((adapted_[ndx] != BUFFER) && //this element is not in the buffer
+            ((Influx_[0][ndx] == 0.0)/*&&(state_vars[0]<contour_height)*/) //&& //this element is OUTSIDE the buffer layer "circle"
+    //(state_vars[0]>=GEOFLOW_TINY)
+    )
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+        {
+            if(neigh_proc_[ineigh][ndx] >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
+                neigh_ndx=neighbor_ndx_[ineigh][ndx];
+
+                if((abs(adapted_[neigh_ndx]) == BUFFER) && (state_vars_[3][ndx]
+                        >= state_vars_[3][neigh_ndx]))
+                { //this element is next to a member of the old buffer layer
+                    ifnextbuffer = 1; //which means this element is a member of the next outer boundary of the buffer layer
+                    break;
+                }
+            }
+        }
+    }
+
+    if(ifnextbuffer == 1)
+    {
+        if((adapted_[ndx] >= NEWSON) || (generation_[ndx] == REFINE_LEVEL))
+            return 2; //is a member of the buffer but doesn't need to be refined
+        else
+            return 1; //needs to be refined and some of its sons will be members
+    }
+
+    return 0;
+}
+
 void ElementsProperties::calc_flux_balance(ti_ndx_t ndx)
 {
     int i, j;

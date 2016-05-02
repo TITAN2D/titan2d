@@ -755,6 +755,11 @@ public:
     int if_first_buffer_boundary(ti_ndx_t ndx, double contour_height) const;
     int if_next_buffer_boundary(ti_ndx_t ndx,  double contour_height);
 
+    int if_pile_boundary_levelset(ti_ndx_t ndx, double contour_phi);
+    int if_source_boundary_levelset(ti_ndx_t ndx);
+    int if_first_buffer_boundary_levelset(ti_ndx_t ndx, double contour_phi) const;
+    int if_next_buffer_boundary_levelset(ti_ndx_t ndx,  double contour_phi);
+
     //! This function assigns a global_weight to the collection of elements based on the sum of their element_weight
     double element_weight();
 

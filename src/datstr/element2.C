@@ -4541,6 +4541,57 @@ int Element::if_pile_boundary(ElementsHashTable *ElemTable, double contour_heigh
 
     return (0); //not on pileheight contour line
 }
+
+int Element::if_pile_boundary_levelset(ElementsHashTable *ElemTable, double contour_phi)
+{
+
+    int ineigh;
+    Element* ElemNeigh;
+
+//    assert(state_vars(0) >= 0.0);
+
+    if(state_vars(3) >= contour_phi)
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                if(ElemNeigh == NULL)
+                {
+                    cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
+                    cout.flush();
+                }
+                assert(ElemNeigh);
+                if(ElemNeigh->state_vars(3) < contour_phi)
+                    return (2); //inside of pileheight contour line
+            }
+        //else if(neigh_proc[ineigh%4]==-1) return(2); //pileheight on boundary of domain
+    }
+    else
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                if(ElemNeigh == NULL)
+                {
+                    cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
+                    cout.flush();
+                }
+                assert(ElemNeigh);
+//                assert(ElemNeigh->state_vars(0) >= 0.0);
+                if(ElemNeigh->state_vars(3) >= contour_phi)
+                    return (1); //outside of pileheight contour line
+            }
+    }
+
+    return (0); //not on pileheight contour line
+}
+
 int Element::if_source_boundary(ElementsHashTable *ElemTable)
 {
     
@@ -4614,6 +4665,82 @@ int Element::if_source_boundary(ElementsHashTable *ElemTable)
         //else if(neigh_proc[ineigh%4]==-1) return(-1); //mass sink on boundary of domain
     }
     
+    return (0); //not on line bounding area with mass source/sink
+}
+
+int Element::if_source_boundary_levelset(ElementsHashTable *ElemTable)
+{
+
+    int ineigh;
+    Element* ElemNeigh;
+
+    if(!(Influx(1) >= 0.0))
+    {
+        printf("if_source_boundary() Influx[1]=%g\n", Influx(1));
+        fflush(stdout);
+    }
+
+    assert(Influx(1) >= 0.0); //currently mass sinks are not allowed
+
+    if(Influx(1) > 0.0)
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                if(ElemNeigh == NULL)
+                {
+                    cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
+                    cout.flush();
+                }
+                assert(ElemNeigh);
+                if(ElemNeigh->Influx(1) <= 0.0)
+                    return (2); //inside of line bounding area with a mass source
+            }
+        //else if(neigh_proc[ineigh%4]==-1) return(2); //mass source on boundary of domain
+    }
+
+    else if(Influx(1) == 0.0)
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0.0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                if(ElemNeigh == NULL)
+                {
+                    cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
+                    cout.flush();
+                }
+                assert(ElemNeigh);
+                assert(ElemNeigh->Influx(1) >= 0.0);
+                if(ElemNeigh->Influx(1) != 0.0)
+                    return (1); //outside of line bounding area with a mass source/sink
+            }
+    }
+    else if(Influx(1) < 0.0)
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0.0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                if(ElemNeigh == NULL)
+                {
+                    cout<<"ElemNeigh==NULL ineigh="<<ineigh<<"\n";
+                    cout<<" mykey   ={"<<key()<<"} myprocess ="<<myprocess()<<" generation="<<generation()<<" refined="<<refined_flag()<<" adapted="<<adapted_flag()<<"\n";
+                    cout<<" neighbor={"<<neighbor(ineigh)<<"} neigh_proc="<<neigh_proc(ineigh)<<" neigh_gen ="<<neigh_gen(ineigh) <<"\n\n";
+                    cout.flush();
+                }
+                assert(ElemNeigh);
+                if(ElemNeigh->Influx(1) >= 0.0)
+                    return (-1); //inside of line bounding area with a mass sink
+            }
+        //else if(neigh_proc[ineigh%4]==-1) return(-1); //mass sink on boundary of domain
+    }
+
     return (0); //not on line bounding area with mass source/sink
 }
 
@@ -4698,6 +4825,87 @@ int Element::if_first_buffer_boundary(ElementsHashTable *ElemTable, double conto
     return (0);
 }
 
+int Element::if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, double contour_phi) const
+{
+
+    int ineigh;
+    Element* ElemNeigh;
+    int iffirstbuffer = 0;
+
+    if(adapted_flag() <= 0)
+        return (adapted_flag() - 1);
+
+//    assert(state_vars(0) >= 0.0);
+//    assert(Influx(0) >= 0.0);
+    if((state_vars(3) < contour_phi) && (Influx(1) == 0.0))
+    {
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                /*
+                 if(ElemNeigh==NULL){
+                 printf("ElemNeigh==NULL\n mykey   ={%u,%u} myprocess =%d generation=%d refined=%d adapted=%d\n",
+                 key[0],key[1],myprocess,generation,refined,adapted);
+                 printf(" neighbor={%u,%u} neigh_proc=%d neigh_gen =%d\n\n",
+                 neighbor(ineigh)[0],neighbor(ineigh)[1],neigh_proc[ineigh],neigh_gen[ineigh]);
+                 fflush(stdout);
+                 }
+                 */
+                assert(ElemNeigh);
+                /*
+                 assert((ElemNeigh->get_adapted_flag()!=0)&&
+                 ((abs(ElemNeigh->get_adapted_flag())<=BUFFER)||
+                 (ElemNeigh->get_adapted_flag()==OLDFATHER)
+                 )
+                 );
+
+                 if(!(*(ElemNeigh->get_influx())>=0.0)){
+                 printf("Neigh Influx<0\n");
+                 printf("Elem     ={%u,%u} myprocess=%d generation=%d refined=%d adapted=%d Influx[0]=%g\n",
+                 key[0],key[1],myprocess,generation,refined,adapted,Influx[0]);
+                 printf("Elemneigh={%u,%u} myprocess=%d generation=%d refined=%d adapted=%d Influx[0]=%g\n",
+                 neighbor(ineigh)[0],neighbor(ineigh)[1],ElemNeigh->get_myprocess(),ElemNeigh->get_gen(),
+                 ElemNeigh->get_refined_flag(),ElemNeigh->get_adapted_flag(),ElemNeigh->get_influx());
+                 fflush(stdout);
+                 }
+                 assert(*(ElemNeigh->get_influx())>=0.0);
+                 assert(*(ElemNeigh->get_state_vars())>=0.0);
+                 */
+                if((ElemNeigh->state_vars(3) >= contour_phi) || (ElemNeigh->Influx(1) > 0.0))
+                {
+                    iffirstbuffer = 1;
+                    break;
+                }
+            }
+    }
+    else
+    {/* if((state_vars[0]>=contour_height)||
+     (Influx[0]>0)){*/
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                assert(ElemNeigh);
+                if((ElemNeigh->state_vars(3) < contour_phi) && (ElemNeigh->Influx(1) == 0.0))
+                {
+                    iffirstbuffer = 1;
+                    break;
+                }
+            }
+    }
+
+    if(iffirstbuffer)
+    {
+        if((adapted_flag() >= NEWSON) || (generation() == REFINE_LEVEL))
+            return (2); //is a member of the buffer but doesn't need to be refined
+        else
+            return (1); //needs to be refined and some of its sons will be members
+    }
+
+    return (0);
+}
+
 int Element::if_next_buffer_boundary(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_height)
 {
     
@@ -4743,6 +4951,54 @@ int Element::if_next_buffer_boundary(ElementsHashTable *ElemTable, NodeHashTable
             return (1); //needs to be refined and some of its sons will be members
     }
     
+    return (0);
+}
+
+int Element::if_next_buffer_boundary_levelset(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_phi)
+{
+
+    int ineigh;
+    Element* ElemNeigh;
+    int ifnextbuffer;
+    ifnextbuffer = 0;
+    if(adapted_flag() <= 0)
+        //GHOST element or element that should be deleted soon
+        return (adapted_flag() - 1);
+
+    if((adapted_flag() != BUFFER) && //this element is not in the buffer
+    ((Influx(0) == 0.0)/*&&(state_vars[0]<contour_height)*/) //&& //this element is OUTSIDE the buffer layer "circle"
+    //(state_vars[0]>=GEOFLOW_TINY)
+    )
+        for(ineigh = 0; ineigh < 8; ineigh++)
+            if(neigh_proc(ineigh) >= 0)
+            { //don't check outside map boundary or duplicate neighbor
+                ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
+                if(!ElemNeigh)
+                {
+                    cout<<"Elem={"<<key()<<"} missing neighbor ineigh="<<ineigh<<" {"<<neighbor(ineigh)<<"}\n";
+                    ElemBackgroundCheck(ElemTable, NodeTable, key(), stdout);
+                    assert(ElemNeigh);
+                }
+                //assert(ElemNeigh->get_adapted_flag()!=0);
+
+                if((abs(ElemNeigh->adapted_flag()) == BUFFER) && (fabs(state_vars(3))
+                		>= ElemNeigh->state_vars(3)))  //for levelset >=
+                //if(abs(ElemNeigh->get_adapted_flag())==BUFFER)
+                { //this element is next to a member of the old buffer layer
+                  //if((ElemNeigh->get_adapted_flag())==BUFFER){ //this element is next to a member of the old buffer layer
+                    ifnextbuffer = 1; //which means this element is a member of the next outer boundary of the buffer layer
+                    break;
+                }
+            }
+
+    if(ifnextbuffer == 1)
+    {
+        if((adapted_flag() >= NEWSON) || (generation() == REFINE_LEVEL))
+            return (2); //is a member of the buffer but doesn't need to be refined
+        else
+            return (1); //needs to be refined and some of its sons will be members
+    }
+
     return (0);
 }
 

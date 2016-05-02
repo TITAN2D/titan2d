@@ -307,6 +307,36 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="PileProps");
 };
 
+//! the PilePropsLevelSet is PileProps for LevelSet Method
+class PilePropsLevelSet: public PileProps
+{
+public:
+
+    PilePropsLevelSet();
+    virtual ~PilePropsLevelSet();
+
+    virtual void allocpiles(int numpiles_in);
+
+    virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type);
+    virtual void print_pile(int i);
+    /**
+     * assign height to point of an elliptical (in (x,y)) shaped pile,
+     * the pile can be either parabolic (in the z direction) or be
+     * cylindrical (have uniform pile height)
+     */
+    virtual void set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
+    virtual double get_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops, double* m_xmom=NULL, double* ymom=NULL);
+    virtual PileProps::PileType get_default_piletype()
+    {
+        return PARABALOID;
+    }
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="PileProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="PileProps");
+};
+
 /*************************************************************************/
 /* the gis map properties                                                */
 /*************************************************************************/
