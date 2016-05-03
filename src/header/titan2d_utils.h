@@ -611,7 +611,10 @@ void merge_vectors_from_threads_to0_omp(vector< vector<T> > &vec)
 //!string conversions
 
 extern vector<string> coord_names;
-extern vector<string> SinglePhaseVarNames;
+//extern vector<string> SinglePhaseVarNames;
+extern vector<string> SinglePhaseHeuristicVarNames;
+extern vector<string> SinglePhaseLevelSetVarNames;
+extern vector<string> SinglePhasePhaseFieldVarNames;
 extern vector<string> TwoPhasesVarNames;
 
 //!file system

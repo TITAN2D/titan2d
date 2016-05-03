@@ -592,7 +592,15 @@ void cxxTitanSimulation::xmdfWrite(const char *xmdf_filename,const char *hf5_fil
     //write xmdf part
     vector<string> *ElementTypesVarNames=nullptr;
     if(elementType==ElementType::SinglePhase)
-        ElementTypesVarNames=&SinglePhaseVarNames;
+    {
+    	if(interfaceCapturingType==Interface_Capturing_Type::Heuristic)
+    		ElementTypesVarNames=&SinglePhaseHeuristicVarNames;
+    	else if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+    		ElementTypesVarNames=&SinglePhaseLevelSetVarNames;
+    	else if(interfaceCapturingType==Interface_Capturing_Type::PhaseField)
+    		ElementTypesVarNames=&SinglePhasePhaseFieldVarNames;
+    }
+
     else if(elementType==ElementType::TwoPhases)
         ElementTypesVarNames=&TwoPhasesVarNames;
 
@@ -728,8 +736,17 @@ void cxxTitanSimulation::xmdfWrite(const char *xmdf_filename,const char *hf5_fil
 
     if(elementType==ElementType::SinglePhase)
     {
-        xmdfScalarAttribute(xmdf,"h", hf5_filename, "/ElemTable/state_vars_h", NumberOfElements, "Float",8, "Cell");
-        xmdfVectorAttributeXY(xmdf,"hV", hf5_filename, "/ElemTable/state_vars_hVx", "/ElemTable/state_vars_hVy", NumberOfElements, "Float",8, "Cell");
+    	if(interfaceCapturingType==Interface_Capturing_Type::Heuristic)
+    	{
+            xmdfScalarAttribute(xmdf,"h", hf5_filename, "/ElemTable/state_vars_h", NumberOfElements, "Float",8, "Cell");
+            xmdfVectorAttributeXY(xmdf,"hV", hf5_filename, "/ElemTable/state_vars_hVx", "/ElemTable/state_vars_hVy", NumberOfElements, "Float",8, "Cell");
+    	}
+    	else if((interfaceCapturingType==Interface_Capturing_Type::LevelSet) || (interfaceCapturingType==Interface_Capturing_Type::PhaseField))
+    	{
+            xmdfScalarAttribute(xmdf,"h", hf5_filename, "/ElemTable/state_vars_h", NumberOfElements, "Float",8, "Cell");
+            xmdfVectorAttributeXY(xmdf,"hV", hf5_filename, "/ElemTable/state_vars_hVx", "/ElemTable/state_vars_hVy", NumberOfElements, "Float",8, "Cell");
+            xmdfScalarAttribute(xmdf,"phi", hf5_filename, "/ElemTable/state_vars_phi", NumberOfElements, "Float",8, "Cell");
+    	}
     }
     else if(elementType==ElementType::TwoPhases)
     {

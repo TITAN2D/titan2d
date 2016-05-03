@@ -267,6 +267,11 @@ class TitanSimulationBase(object):
          #'ID1':PileProps.ID1,
          #'ID2':PileProps.ID2
     }
+    possible_Interface_Capturing_Type={
+        'Heuristic':Interface_Capturing_Type_Heuristic,
+        'LevelSet':Interface_Capturing_Type_LevelSet,
+        'PhaseField':Interface_Capturing_Type_PhaseField
+    }
     #defaultParameters can be removed
     possible_internal_mat_models={
         'Coulomb':{
@@ -410,9 +415,12 @@ class TitanSimulationBase(object):
                 },
                 'short_speed':{'desc':'',
                     'validator':VarType(bool).chk
-                },    
+                },
+                'interface_capturing_type':{'desc':'',
+                    'validator':VarTypeDictConvert(TitanSimulationBase.possible_Interface_Capturing_Type).chk
+                },
             },
-            defaultParameters={'short_speed':False,'geoflow_tiny':0.0001}
+            defaultParameters={'short_speed':False,'geoflow_tiny':0.0001,'interface_capturing_type':'Heuristic'}
         )
         #setMatModel
         self.ui_MatModel=None
@@ -977,6 +985,8 @@ class TitanSimulation(TitanSimulationBase):
         self.sim.set_integrator(integrator_obj)
         self.integrator_initialized=True
         
+        self.sim.set_interface_capturing_type(ui_NumModmProp['interface_capturing_type'])
+        
         ##################
         #
         
@@ -1057,9 +1067,16 @@ class TitanSimulation(TitanSimulationBase):
         self.pileprops=None
         if self.sim.get_element_type()==ElementType_SinglePhase:
             if self.pileprops==None:
-                self.pileprops=PileProps()
-                self.pileprops.thisown=0
-                self.sim.set_pileprops(self.pileprops)
+                if self.sim.get_interface_capturing_type()==Interface_Capturing_Type_Heuristic:
+                    self.pileprops=PileProps()
+                    self.pileprops.thisown=0
+                    self.sim.set_pileprops(self.pileprops)
+                elif Interface_Capturing_Type_LevelSet:
+                    self.pileprops=PilePropsLevelSet()
+                    self.pileprops.thisown=0
+                    self.sim.set_pileprops(self.pileprops)
+                else:
+                    raise Exception("ERROR: this interface_capturing_type is not implemented yet!")
         elif self.sim.get_element_type()==ElementType_TwoPhases:
             if self.pileprops==None:
                 self.pileprops=PilePropsTwoPhases()

@@ -26,17 +26,22 @@
 
 
 H5::EnumType datatypeElementType;
+H5::EnumType datatypeInterface_Capturing_Type;
 H5::EnumType datatypePileType;
 H5::EnumType datatypeOutLineInitSize;
 
 vector<string> coord_names;
-vector<string> SinglePhaseVarNames;
+//vector<string> SinglePhaseVarNames;
+vector<string> SinglePhaseHeuristicVarNames;
+vector<string> SinglePhaseLevelSetVarNames;
+vector<string> SinglePhasePhaseFieldVarNames;
 vector<string> TwoPhasesVarNames;
 
 void init_TiH5()
 {
     //init enums
     ElementType val;
+    Interface_Capturing_Type val_;
 
     datatypeElementType=H5::EnumType(sizeof(ElementType));
     val=ElementType::UnknownElementType;
@@ -45,6 +50,14 @@ void init_TiH5()
     datatypeElementType.insert("SinglePhase",&val);
     val=ElementType::TwoPhases;
     datatypeElementType.insert("TwoPhases",&val);
+
+    datatypeInterface_Capturing_Type=H5::EnumType(sizeof(Interface_Capturing_Type));
+    val_=Interface_Capturing_Type::Heuristic;
+    datatypeInterface_Capturing_Type.insert("Heuristic",&val_);
+    val_=Interface_Capturing_Type::LevelSet;
+    datatypeInterface_Capturing_Type.insert("LevelSet",&val_);
+    val_=Interface_Capturing_Type::PhaseField;
+    datatypeInterface_Capturing_Type.insert("PhaseField",&val_);
 
     datatypePileType=H5::EnumType(sizeof(PileProps::PileType));
     PileProps::PileType pile_type;
@@ -75,9 +88,20 @@ void init_TiH5()
     coord_names.push_back("Y");
     coord_names.push_back("Z");
 
-    SinglePhaseVarNames.push_back("h");
-    SinglePhaseVarNames.push_back("hVx");
-    SinglePhaseVarNames.push_back("hVy");
+    SinglePhaseHeuristicVarNames.push_back("h");
+    SinglePhaseHeuristicVarNames.push_back("hVx");
+    SinglePhaseHeuristicVarNames.push_back("hVy");
+
+
+    SinglePhaseLevelSetVarNames.push_back("h");
+    SinglePhaseLevelSetVarNames.push_back("hVx");
+    SinglePhaseLevelSetVarNames.push_back("hVy");
+    SinglePhaseLevelSetVarNames.push_back("phi");
+
+    SinglePhasePhaseFieldVarNames.push_back("h");
+    SinglePhasePhaseFieldVarNames.push_back("hVx");
+    SinglePhasePhaseFieldVarNames.push_back("hVy");
+    SinglePhasePhaseFieldVarNames.push_back("phi");
 
     TwoPhasesVarNames.push_back("h");
     TwoPhasesVarNames.push_back("h_liq");
