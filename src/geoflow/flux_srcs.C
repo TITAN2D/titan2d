@@ -144,7 +144,8 @@ void adapt_fluxsrc_region(ElementsHashTable *ElemTable, NodeHashTable *NodeTable
     return;
 }
 
-void adapt_fluxsrc_region_LevelSet(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, MatProps *matprops, PilePropsLevelSet *pileprops,
+// For Level Set Method (for future! when the level set method will be compatible with in flux sources)
+void adapt_fluxsrc_region_LevelSet(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, MatProps *matprops, PileProps *pileprops,
                           FluxProps *fluxprops, TimeProps *timeprops, double dt, int myid, int adaptflag)
 {
 

@@ -278,10 +278,23 @@ class TitanSimulationBase(object):
             'allParameters':('order','int_frict','stopping_criteria'),
             'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
             'elementType':ElementType_SinglePhase,
+            'interface_capturing_type':Interface_Capturing_Type_Heuristic,
             'integrators':[
                 {
                     'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1 or numprop['order']==2],
-                    'constructor':Integrator_SinglePhase_Coulomb
+                    'constructor':Integrator_SinglePhase_Heuristic_Coulomb
+                }
+            ]
+        },
+        'Coulomb':{
+            'allParameters':('order','int_frict','stopping_criteria'),
+            'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
+            'elementType':ElementType_SinglePhase,
+            'interface_capturing_type':Interface_Capturing_Type_LevelSet,
+            'integrators':[
+                {
+                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                    'constructor':Integrator_SinglePhase_LevelSet_Coulomb
                 }
             ]
         },
@@ -293,9 +306,24 @@ class TitanSimulationBase(object):
                 'xi' : 120.0,
             },
             'elementType':ElementType_SinglePhase,
+            'interface_capturing_type':Interface_Capturing_Type_Heuristic,
             'integrators':[{
                     'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Voellmy_Salm
+                    'constructor':Integrator_SinglePhase_Heuristic_Voellmy_Salm
+            }]
+        },
+        'Voellmy-Salm':{
+            'allParameters':('order','mu','xi'), 
+            'defaultParameters':{
+                'order':'First',
+                'mu' : 0.5,
+                'xi' : 120.0,
+            },
+            'elementType':ElementType_SinglePhase,
+            'interface_capturing_type':Interface_Capturing_Type_LevelSet,
+            'integrators':[{
+                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                    'constructor':Integrator_SinglePhase_LevelSet_Voellmy_Salm
             }]
         },
         'Pouliquen-Forterre':{
@@ -309,9 +337,27 @@ class TitanSimulationBase(object):
                 'L_material':1.0E-3
             },
             'elementType':ElementType_SinglePhase,
+            'interface_capturing_type':Interface_Capturing_Type_Heuristic,
             'integrators':[{
                     'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Pouliquen_Forterre
+                    'constructor':Integrator_SinglePhase_Heuristic_Pouliquen_Forterre
+            }]
+        },
+        'Pouliquen-Forterre':{
+            'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
+            'defaultParameters':{
+                'order':'First',
+                'phi1':32.9,
+                'phi2':42.0,
+                'phi3':33.9,
+                'Beta':0.65,
+                'L_material':1.0E-3
+            },
+            'elementType':ElementType_SinglePhase,
+            'interface_capturing_type':Interface_Capturing_Type_LevelSet,
+            'integrators':[{
+                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                    'constructor':Integrator_SinglePhase_LevelSet_Pouliquen_Forterre
             }]
         },
         'TwoPhases_Coulomb':{

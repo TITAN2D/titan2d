@@ -1042,7 +1042,14 @@ void NodeHashTable::h5write(H5::CommonFG *parent, string const group_name)
     //datasets
     vector<string> *ElementTypesVarNames=nullptr;
     if(elementType_==ElementType::SinglePhase)
-        ElementTypesVarNames=&SinglePhaseVarNames;
+    {
+    	if (interface_capturing_==Interface_Capturing_Type::Heuristic)
+    		ElementTypesVarNames=&SinglePhaseHeuristicVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::LevelSet)
+    		ElementTypesVarNames=&SinglePhaseLevelSetVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::PhaseField)
+    		ElementTypesVarNames=&SinglePhasePhaseFieldVarNames;
+    }
     else if(elementType_==ElementType::TwoPhases)
         ElementTypesVarNames=&TwoPhasesVarNames;
 
@@ -1096,7 +1103,12 @@ void NodeHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
     vector<string> *ElementTypesVarNames=nullptr;
     if(elementType_==ElementType::SinglePhase)
     {
-        ElementTypesVarNames=&SinglePhaseVarNames;
+    	if (interface_capturing_==Interface_Capturing_Type::Heuristic)
+    		ElementTypesVarNames=&SinglePhaseHeuristicVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::LevelSet)
+    		ElementTypesVarNames=&SinglePhaseLevelSetVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::PhaseField)
+    		ElementTypesVarNames=&SinglePhasePhaseFieldVarNames;
     }
     else if(elementType_==ElementType::TwoPhases)
     {
@@ -2380,7 +2392,15 @@ void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
 
     vector<string> *ElementTypesVarNames=nullptr;
     if(elementType_==ElementType::SinglePhase)
-        ElementTypesVarNames=&SinglePhaseVarNames;
+    {
+    	if (interface_capturing_==Interface_Capturing_Type::Heuristic)
+    		ElementTypesVarNames=&SinglePhaseHeuristicVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::LevelSet)
+    		ElementTypesVarNames=&SinglePhaseLevelSetVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::PhaseField)
+    		ElementTypesVarNames=&SinglePhasePhaseFieldVarNames;
+    }
+
     else if(elementType_==ElementType::TwoPhases)
         ElementTypesVarNames=&TwoPhasesVarNames;
 
@@ -2453,7 +2473,14 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
 
     vector<string> *ElementTypesVarNames=nullptr;
     if(elementType_==ElementType::SinglePhase)
-        ElementTypesVarNames=&SinglePhaseVarNames;
+    {
+    	if (interface_capturing_==Interface_Capturing_Type::Heuristic)
+    		ElementTypesVarNames=&SinglePhaseHeuristicVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::LevelSet)
+    		ElementTypesVarNames=&SinglePhaseLevelSetVarNames;
+    	else if (interface_capturing_==Interface_Capturing_Type::PhaseField)
+    		ElementTypesVarNames=&SinglePhasePhaseFieldVarNames;
+    }
     else if(elementType_==ElementType::TwoPhases)
         ElementTypesVarNames=&TwoPhasesVarNames;
     NUM_STATE_VARS=ElementTypesVarNames->size();

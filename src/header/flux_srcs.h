@@ -13,7 +13,7 @@ extern void adapt_fluxsrc_region(ElementsHashTable *ElemTable, NodeHashTable *No
 // For Level Set Method (for future! when the level set method will be compatible with in flux sources)
 //! this function triggers refinement when a flux sources starts adding material. TODO currently this is crudely implemented. Needs improvement, keith's idea of using binary flag is a good idea.
 extern void adapt_fluxsrc_region_LevelSet(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, MatProps *matprops,
-                                 PilePropsLevelSet *pileprops, FluxProps *fluxprops, TimeProps *timeprops, double dt, int myid,
+                                 PileProps *pileprops, FluxProps *fluxprops, TimeProps *timeprops, double dt, int myid,
                                  int adaptflag);
 
 //! this fuction calculates the flux contribution of the current cell based on its position relative to the source center and outflow-profie.

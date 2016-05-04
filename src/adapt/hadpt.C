@@ -2014,7 +2014,7 @@ void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Mat
 }
 
 /***********************************************************************/
-void H_adapt_to_level_levelset(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
+void H_adapt_to_level_LevelSet(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
                       FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel)
 {
     if(refinelevel > REFINE_LEVEL)

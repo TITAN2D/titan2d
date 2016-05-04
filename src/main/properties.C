@@ -489,11 +489,11 @@ void PilePropsLevelSet::allocpiles(int numpiles_in)
 {
     PileProps::allocpiles(numpiles_in);
 }
-void PilePropsLevelSet::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
-                                 double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type)
-{
-    addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, m_pile_type);
-}
+//void PilePropsLevelSet::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+//                                 double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type)
+//{
+//    addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, m_pile_type);
+//}
 void PilePropsLevelSet::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
                                  double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type)
 {
@@ -636,13 +636,11 @@ void PilePropsLevelSet::h5write(H5::CommonFG *parent, string group_name) const
     PileProps::h5write(parent, group_name);
     H5::Group group(parent->openGroup(group_name));
     TiH5_writeStringAttribute__(group,"PilePropsLevelSet","Type");
-    TiH5_writeDoubleVectorAttribute(group, numpiles);
 }
 void PilePropsLevelSet::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     PileProps::h5read(parent, group_name);
     H5::Group group(parent->openGroup(group_name));
-    TiH5_readDoubleVectorAttribute(group, numpiles);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void FluxProps::h5write(H5::CommonFG *parent, string group_name) const

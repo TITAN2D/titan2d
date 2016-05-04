@@ -4674,15 +4674,15 @@ int Element::if_source_boundary_levelset(ElementsHashTable *ElemTable)
     int ineigh;
     Element* ElemNeigh;
 
-    if(!(Influx(1) >= 0.0))
+    if(!(Influx(0) >= 0.0))
     {
-        printf("if_source_boundary() Influx[1]=%g\n", Influx(1));
+        printf("if_source_boundary() Influx[1]=%g\n", Influx(0));
         fflush(stdout);
     }
 
-    assert(Influx(1) >= 0.0); //currently mass sinks are not allowed
+    assert(Influx(0) >= 0.0); //currently mass sinks are not allowed
 
-    if(Influx(1) > 0.0)
+    if(Influx(0) > 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0)
@@ -4696,13 +4696,13 @@ int Element::if_source_boundary_levelset(ElementsHashTable *ElemTable)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                if(ElemNeigh->Influx(1) <= 0.0)
+                if(ElemNeigh->Influx(0) <= 0.0)
                     return (2); //inside of line bounding area with a mass source
             }
         //else if(neigh_proc[ineigh%4]==-1) return(2); //mass source on boundary of domain
     }
 
-    else if(Influx(1) == 0.0)
+    else if(Influx(0) == 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0.0)
@@ -4716,12 +4716,12 @@ int Element::if_source_boundary_levelset(ElementsHashTable *ElemTable)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                assert(ElemNeigh->Influx(1) >= 0.0);
-                if(ElemNeigh->Influx(1) != 0.0)
+                assert(ElemNeigh->Influx(0) >= 0.0);
+                if(ElemNeigh->Influx(0) != 0.0)
                     return (1); //outside of line bounding area with a mass source/sink
             }
     }
-    else if(Influx(1) < 0.0)
+    else if(Influx(0) < 0.0)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0.0)
@@ -4735,7 +4735,7 @@ int Element::if_source_boundary_levelset(ElementsHashTable *ElemTable)
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                if(ElemNeigh->Influx(1) >= 0.0)
+                if(ElemNeigh->Influx(0) >= 0.0)
                     return (-1); //inside of line bounding area with a mass sink
             }
         //else if(neigh_proc[ineigh%4]==-1) return(-1); //mass sink on boundary of domain
@@ -4837,7 +4837,7 @@ int Element::if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, dou
 
 //    assert(state_vars(0) >= 0.0);
 //    assert(Influx(0) >= 0.0);
-    if((state_vars(3) < contour_phi) && (Influx(1) == 0.0))
+    if((state_vars(3) < contour_phi) && (Influx(0) == 0.0))
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0)
@@ -4872,7 +4872,7 @@ int Element::if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, dou
                  assert(*(ElemNeigh->get_influx())>=0.0);
                  assert(*(ElemNeigh->get_state_vars())>=0.0);
                  */
-                if((ElemNeigh->state_vars(3) >= contour_phi) || (ElemNeigh->Influx(1) > 0.0))
+                if((ElemNeigh->state_vars(3) >= contour_phi) || (ElemNeigh->Influx(0) > 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -4887,7 +4887,7 @@ int Element::if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, dou
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 assert(ElemNeigh);
-                if((ElemNeigh->state_vars(3) < contour_phi) && (ElemNeigh->Influx(1) == 0.0))
+                if((ElemNeigh->state_vars(3) < contour_phi) && (ElemNeigh->Influx(0) == 0.0))
                 {
                     iffirstbuffer = 1;
                     break;

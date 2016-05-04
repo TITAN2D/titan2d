@@ -92,12 +92,31 @@ void cxxTitanSimulation::init_piles()
     if(pileprops_ptr->numpiles>0)pile_type= pileprops_ptr->pile_type[0];
 
     if(!adapt)
-        H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
+    {
+    	if (interfaceCapturingType==Interface_Capturing_Type::Heuristic)
+    	{
+    		H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
+    	}
+    	else if (interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+    	{
+    		H_adapt_to_level_LevelSet(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
+    	}
+    }
+
 
     if(allPilesAreElliptical)
     {
         if(adapt)
-            initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
+        {
+        	if (interfaceCapturingType==Interface_Capturing_Type::Heuristic)
+        	{
+        		initial_H_adapt(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
+        	}
+        	else if (interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+        	{
+        		initial_H_adapt_LevelSet(HT_Elem_Ptr, HT_Node_Ptr, 0, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, 4);
+        	}
+        }
     }
     else
     {

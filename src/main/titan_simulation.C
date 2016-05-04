@@ -138,12 +138,12 @@ void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
     		NUM_STATE_VARS = 3;
     	}
 
-    	if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
+    	else if(interfaceCapturingType==Interface_Capturing_Type::LevelSet)
     	{
     		NUM_STATE_VARS = 6;
     	}
 
-    	if(interfaceCapturingType==Interface_Capturing_Type::PhaseField)
+    	else if(interfaceCapturingType==Interface_Capturing_Type::PhaseField)
     	{
     		NUM_STATE_VARS = 6;
     	}

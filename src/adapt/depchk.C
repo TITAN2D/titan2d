@@ -128,6 +128,105 @@ void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement,
 	return;
 }
 
+void HAdapt_LevelSet::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement, vector<int> &set_for_refinement, vector<ti_ndx_t> &allRefinement)
+
+/*---
+ refined[] stores the address of ready-for-refinement element of the sub-domain
+ refined_temp[] stores the address of ready-for-refinement element triggered by one element refinement
+ count is counting the number of refinement of the subdomain
+ j is counting the number of refinement triggered by one element refinement
+ ---------------*/
+{
+	for(ti_ndx_t primary_ndx:primaryRefinement)
+	{
+		int ifg=1;
+
+		tempList.resize(0);
+
+		//the trigger of this round of refinement:
+		tempList.push_back(primary_ndx);
+
+		int elem_to_refine = 0;
+
+		int ielem=0;
+		while ((ielem<tempList.size()) && (elem_to_refine < NumTriggerRef))
+		{ //--element is temporary varible
+			ti_ndx_t ndx=tempList[ielem];
+
+			for(int i = 0; i < 4; i++)
+			{ //-- checking the four neighbors to identify which must be refined
+
+				int neigh_proc = ElemTable->neigh_proc_[i][ndx];
+
+				if((neigh_proc != -1) && (neigh_proc != -2))
+				{ //-- if there is a neighbor
+
+					ti_ndx_t neigh_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);//ElemTable->neighbor_ndx_[i][ndx];
+
+					//assert(Neigh);
+					if(ti_ndx_not_negative(neigh_ndx) && neigh_proc == myid)
+					{ //-- if this neighbor is in the same proc as element is
+
+						if(ElemTable->generation_[ndx] > ElemTable->generation_[neigh_ndx])
+						{
+							//-- if the neighbor is bigger, then it must be refined
+
+							if((ElemTable->adapted_[neigh_ndx] == NOTRECADAPTED) || (ElemTable->adapted_[neigh_ndx] == NEWFATHER))
+							{
+								if(find(tempList.begin(), tempList.end(), neigh_ndx)==tempList.end() )
+								{ //-- if this neighbor has not yet been marked
+									tempList.push_back(neigh_ndx);
+									++elem_to_refine;
+								}
+							}
+							else if(ElemTable->adapted_[neigh_ndx] != OLDFATHER)
+							{
+								ifg = 0;
+								break;
+							}
+						}
+
+					}
+					else
+					{ //-- need neighbor's generation infomation
+
+						if(ElemTable->generation_[ndx] > ElemTable->generation_[neigh_ndx])
+						{ //--stop this round of refinement
+
+							ifg = 0;
+							break;
+						}
+					}
+				}
+
+			}
+			if(!ifg)
+				break;
+			++ielem;
+			//k++;
+			//element = TempList.get(k); //--check next
+		}
+
+		//copy TempList to RefinedList
+		if(ifg)
+		{
+			if(elem_to_refine < NumTriggerRef) //-- NumTriggerRef is the maximum tolerence of related refinement
+				for(int m = 0; m < tempList.size(); m++)
+				{
+					if(set_for_refinement[tempList[m]]==0)
+					{
+						allRefinement.push_back(tempList[m]);
+						set_for_refinement[tempList[m]]=1;
+					}
+				}
+			else
+			{
+				ifg = 0; //-- refuse to do the refinement
+			}
+		}
+	}
+	return;
+}
 
 void depchk(Element* EmTemp, ElementsHashTable* ElemTable, NodeHashTable* NodeTable, int* ifg, ElemPtrList* RefinedList)
 

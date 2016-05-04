@@ -89,7 +89,14 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
 void H_adapt_to_level(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
                       FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel);
 
+//! this function performs adaptive refinement at timestep zero for refining initial piles and whenever a flux source is activated which was modified for the refinement based on the Level Set method.
+void initial_H_adapt_LevelSet(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
+                     PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr,
+                     int num_buffer_layer);
 
+//! this function refines all elements whose generation is less than refinelevel, until they are of generation refinelevel and then places the flux sources and, if it is at timestep zero, initial piles which was modified for the refinement based on the Level Set method.
+void H_adapt_to_level_LevelSet(ElementsHashTable* El_Table, NodeHashTable* NodeTable, MatProps* matprops_ptr, PileProps* pileprops_ptr,
+                      FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int refinelevel);
 
 //! this function flushes the hashtables, it is called during grid adaptation in hadpt.C
 extern void htflush(ElementsHashTable*, NodeHashTable*, int);

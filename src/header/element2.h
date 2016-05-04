@@ -636,13 +636,13 @@ public:
     int if_first_buffer_boundary(ElementsHashTable *ElemTable, double contour_height) const;
 
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the innermost boundary of the buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be members of the innermost boundary of the buffer layer
-    int Element::if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, double contour_phi) const;
+    int if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, double contour_phi) const;
 
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the boundary of the buffer that is one element wider than the current buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be in the next buffer boundary
     int if_next_buffer_boundary(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_height);
 
     //! the buffer layer is a layer of refined cells on the outside of the pile, i.e. ((pileheight<contour_height)&&(Influx[0]==0)) and adjacent to the pile.  It is "N" elements wide, and the "N" element width is increased one element at a time.  This function returns 2 if this element a member of the boundary of the buffer that is one element wider than the current buffer and does not need to be adapted.  It returns 1 if this elment needs to be refined and some of its sons will be in the next buffer boundary
-    int Element::if_next_buffer_boundary_levelset(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_phi);
+    int if_next_buffer_boundary_levelset(ElementsHashTable *ElemTable, NodeHashTable *NodeTable, double contour_phi);
 
     //! when sorted by keys this element is the ithelem element on this processor, ithelem is just storage for a value you have to assign before using, if you do not compute it before you use it will be wrong.
 

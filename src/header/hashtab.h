@@ -308,6 +308,10 @@ private:
 public:
     //! Element type
     ElementType elementType_;
+
+    //! Interface Capturing Type
+    Interface_Capturing_Type interface_capturing_;
+
     //! used in delete_unused_nodes_and_elements() function 
     tivector<int> id_;
 
