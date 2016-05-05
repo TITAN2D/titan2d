@@ -275,99 +275,101 @@ class TitanSimulationBase(object):
     #defaultParameters can be removed
     possible_internal_mat_models={
         'Coulomb':{
-            'allParameters':('order','int_frict','stopping_criteria'),
-            'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
-            'elementType':ElementType_SinglePhase,
-            'interface_capturing_type':Interface_Capturing_Type_Heuristic,
-            'integrators':[
-                {
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1 or numprop['order']==2],
-                    'constructor':Integrator_SinglePhase_Heuristic_Coulomb
-                }
-            ]
-        },
-        'Coulomb':{
-            'allParameters':('order','int_frict','stopping_criteria'),
-            'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
-            'elementType':ElementType_SinglePhase,
-            'interface_capturing_type':Interface_Capturing_Type_LevelSet,
-            'integrators':[
-                {
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_LevelSet_Coulomb
-                }
-            ]
+            Interface_Capturing_Type_Heuristic:{
+                'allParameters':('order','int_frict','stopping_criteria'),
+                'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
+                'elementType':ElementType_SinglePhase,
+                'integrators':[
+                    {
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1 or numprop['order']==2],
+                        'constructor':Integrator_SinglePhase_Heuristic_Coulomb
+                    }
+                ]
+            },
+            Interface_Capturing_Type_LevelSet:{
+                'allParameters':('order','int_frict','stopping_criteria'),
+                'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
+                'elementType':ElementType_SinglePhase,
+                'integrators':[
+                    {
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                        'constructor':Integrator_SinglePhase_LevelSet_Coulomb
+                    }
+                ]
+            }
         },
         'Voellmy-Salm':{
-            'allParameters':('order','mu','xi'), 
-            'defaultParameters':{
-                'order':'First',
-                'mu' : 0.5,
-                'xi' : 120.0,
+            Interface_Capturing_Type_Heuristic:{
+                'allParameters':('order','mu','xi'), 
+                'defaultParameters':{
+                    'order':'First',
+                    'mu' : 0.5,
+                    'xi' : 120.0,
+                },
+                'elementType':ElementType_SinglePhase,
+                'integrators':[{
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                        'constructor':Integrator_SinglePhase_Heuristic_Voellmy_Salm
+                }]
             },
-            'elementType':ElementType_SinglePhase,
-            'interface_capturing_type':Interface_Capturing_Type_Heuristic,
-            'integrators':[{
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Heuristic_Voellmy_Salm
-            }]
-        },
-        'Voellmy-Salm':{
-            'allParameters':('order','mu','xi'), 
-            'defaultParameters':{
-                'order':'First',
-                'mu' : 0.5,
-                'xi' : 120.0,
-            },
-            'elementType':ElementType_SinglePhase,
-            'interface_capturing_type':Interface_Capturing_Type_LevelSet,
-            'integrators':[{
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_LevelSet_Voellmy_Salm
-            }]
-        },
-        'Pouliquen-Forterre':{
-            'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
-            'defaultParameters':{
-                'order':'First',
-                'phi1':32.9,
-                'phi2':42.0,
-                'phi3':33.9,
-                'Beta':0.65,
-                'L_material':1.0E-3
-            },
-            'elementType':ElementType_SinglePhase,
-            'interface_capturing_type':Interface_Capturing_Type_Heuristic,
-            'integrators':[{
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_Heuristic_Pouliquen_Forterre
-            }]
+            Interface_Capturing_Type_LevelSet:{
+                'allParameters':('order','mu','xi'), 
+                'defaultParameters':{
+                    'order':'First',
+                    'mu' : 0.5,
+                    'xi' : 120.0,
+                },
+                'elementType':ElementType_SinglePhase,
+                'integrators':[{
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                        'constructor':Integrator_SinglePhase_LevelSet_Voellmy_Salm
+                }]
+            }
         },
         'Pouliquen-Forterre':{
-            'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
-            'defaultParameters':{
-                'order':'First',
-                'phi1':32.9,
-                'phi2':42.0,
-                'phi3':33.9,
-                'Beta':0.65,
-                'L_material':1.0E-3
+            Interface_Capturing_Type_Heuristic:{
+                'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
+                'defaultParameters':{
+                    'order':'First',
+                    'phi1':32.9,
+                    'phi2':42.0,
+                    'phi3':33.9,
+                    'Beta':0.65,
+                    'L_material':1.0E-3
+                },
+                'elementType':ElementType_SinglePhase,
+                'integrators':[{
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                        'constructor':Integrator_SinglePhase_Heuristic_Pouliquen_Forterre
+                }]
             },
-            'elementType':ElementType_SinglePhase,
-            'interface_capturing_type':Interface_Capturing_Type_LevelSet,
-            'integrators':[{
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_SinglePhase_LevelSet_Pouliquen_Forterre
-            }]
+            Interface_Capturing_Type_LevelSet:{
+                'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
+                'defaultParameters':{
+                    'order':'First',
+                    'phi1':32.9,
+                    'phi2':42.0,
+                    'phi3':33.9,
+                    'Beta':0.65,
+                    'L_material':1.0E-3
+                },
+                'elementType':ElementType_SinglePhase,
+                'integrators':[{
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                        'constructor':Integrator_SinglePhase_LevelSet_Pouliquen_Forterre
+                }]
+            }
         },
         'TwoPhases_Coulomb':{
-            'allParameters':('order','int_frict',), 
-            'defaultParameters':{'order':'First','int_frict':37.0},
-            'elementType':ElementType_TwoPhases,
-            'integrators':[{
-                    'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
-                    'constructor':Integrator_TwoPhases_Coulomb
-            }]
+                Interface_Capturing_Type_Heuristic:{
+                'allParameters':('order','int_frict',), 
+                'defaultParameters':{'order':'First','int_frict':37.0},
+                'elementType':ElementType_TwoPhases,
+                'integrators':[{
+                        'conditions' :[lambda tsim,modprop,numprop: numprop['order']==1],
+                        'constructor':Integrator_TwoPhases_Coulomb
+                }]
+            }
         }
     }
     possible_stopping_criteria={
@@ -877,7 +879,8 @@ class TitanSimulationBase(object):
         #check satisfaction of integrator
         integrator=None
         model=self.ui_MatModel['model']
-        integrators=TitanSimulationBase.possible_internal_mat_models[model]['integrators']
+        
+        integrators=TitanSimulationBase.possible_internal_mat_models[model][self.ui_NumProp['interface_capturing_type']]['integrators']
         msg=""
         
         for desc in integrators:
@@ -1005,7 +1008,7 @@ class TitanSimulation(TitanSimulationBase):
         #######################################################################
         # NumProp and MatModel
         #set element type
-        elementType=TitanSimulationBase.possible_internal_mat_models[model]['elementType']
+        elementType=TitanSimulationBase.possible_internal_mat_models[model][ui_NumProp['interface_capturing_type']]['elementType']
         self.sim.set_element_type(elementType)
         
         self.sim.adapt=int(ui_NumProp['AMR'])
@@ -1016,13 +1019,14 @@ class TitanSimulation(TitanSimulationBase):
         
         ##################
         # build integrator
+        self.sim.set_interface_capturing_type(ui_NumProp['interface_capturing_type'])
         
         # get parameters
         ui_NumModmProp=copy.deepcopy(ui_NumProp)
         ui_NumModmProp.update(ui_MatModel)
         
         ui_Integrator={}
-        integrator_all_parameters=TitanSimulationBase.possible_internal_mat_models[model]['allParameters']
+        integrator_all_parameters=TitanSimulationBase.possible_internal_mat_models[model][ui_NumProp['interface_capturing_type']]['allParameters']
         for param in integrator_all_parameters:
             ui_Integrator[param]=ui_NumModmProp[param]
      
@@ -1037,7 +1041,7 @@ class TitanSimulation(TitanSimulationBase):
         self.sim.set_integrator(integrator_obj)
         self.integrator_initialized=True
         
-        self.sim.set_interface_capturing_type(ui_NumModmProp['interface_capturing_type'])
+        
         
         ##################
         #
