@@ -700,12 +700,14 @@ NodeHashTable::NodeHashTable()
     :HashTable<Node>(node_reserved_size)
 {
     nodeHashTable=this;
+    interface_capturing_=Interface_Capturing_Type::Heuristic;
     elementType_=ElementType::UnknownElementType;
 }
 NodeHashTable::NodeHashTable(const H5::CommonFG *parent, const  string group_name)
     :HashTable<Node>(node_reserved_size)
 {
     nodeHashTable=this;
+    interface_capturing_=Interface_Capturing_Type::Heuristic;
     elementType_=ElementType::UnknownElementType;
     h5read(parent,group_name);
 }
@@ -1128,13 +1130,27 @@ void NodeHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readTiVector(group,connection_id_);
 
 }
-void NodeHashTable::set_element_type(const ElementType m_elementType)
+void NodeHashTable::set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type)
 {
     elementType_=m_elementType;
+    interface_capturing_ = m_Interface_Capturing_Type;
 
     if(elementType_==ElementType::SinglePhase)
     {
-        assert(NUM_STATE_VARS == 3);
+    	if(interface_capturing_==Interface_Capturing_Type::Heuristic)
+    	{
+    		assert(NUM_STATE_VARS == 3);
+    	}
+
+    	if(interface_capturing_==Interface_Capturing_Type::LevelSet)
+    	{
+    		assert(NUM_STATE_VARS == 6);
+    	}
+
+    	if(interface_capturing_==Interface_Capturing_Type::PhaseField)
+    	{
+    		assert(NUM_STATE_VARS == 6);
+    	}
     }
     else if(elementType_==ElementType::TwoPhases)
     {
@@ -1155,6 +1171,7 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     elementsHashTable=this;
     
     elementType_=ElementType::UnknownElementType;
+    interface_capturing_=Interface_Capturing_Type::Heuristic;
     conformation=0;
 
     ElemProp=new ElementsProperties(this,nodeTable);
@@ -1167,6 +1184,8 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonF
     elementsHashTable=this;
 
     elementType_=ElementType::UnknownElementType;
+    interface_capturing_=Interface_Capturing_Type::Heuristic;
+
     conformation=0;
 
     h5read(parent,group_name);
@@ -1192,24 +1211,26 @@ void ElementsHashTable::set_interface_capturing_type(const Interface_Capturing_T
 {
 	interface_capturing_ = m_Interface_Capturing_Type;
 }
-void ElementsHashTable::set_element_type(const ElementType m_elementType)
+void ElementsHashTable::set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type)
 {
     elementType_=m_elementType;
+    interface_capturing_ = m_Interface_Capturing_Type;
+
     if(elementType_==ElementType::SinglePhase)
     {
     	if(interface_capturing_==Interface_Capturing_Type::Heuristic)
     	{
-    		assert(NUM_STATE_VARS = 3);
+    		assert(NUM_STATE_VARS == 3);
     	}
 
     	if(interface_capturing_==Interface_Capturing_Type::LevelSet)
     	{
-    		assert(NUM_STATE_VARS = 6);
+    		assert(NUM_STATE_VARS == 6);
     	}
 
     	if(interface_capturing_==Interface_Capturing_Type::PhaseField)
     	{
-    		assert(NUM_STATE_VARS = 6);
+    		assert(NUM_STATE_VARS == 6);
     	}
     }
     else if(elementType_==ElementType::TwoPhases)

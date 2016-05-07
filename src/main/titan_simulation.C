@@ -71,6 +71,7 @@ cxxTitanSimulation::cxxTitanSimulation() :
         ElemTable(nullptr)
 {
     elementType=ElementType::UnknownElementType;
+    interfaceCapturingType=Interface_Capturing_Type::UnknownInterfaceCapturingType;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
@@ -81,8 +82,8 @@ cxxTitanSimulation::cxxTitanSimulation() :
     SHORTSPEED=false;
     GEOFLOW_TINY=0.0001;
 
-    set_interface_capturing_type(Interface_Capturing_Type::Heuristic);
-    set_element_type(ElementType::SinglePhase);
+//    set_interface_capturing_type(Interface_Capturing_Type::Heuristic);
+    set_element_type(ElementType::SinglePhase,Interface_Capturing_Type::Heuristic);
 
 
     NodeTable=new NodeHashTable();
@@ -90,8 +91,8 @@ cxxTitanSimulation::cxxTitanSimulation() :
 
     pileprops=nullptr;
 
-    set_interface_capturing_type(Interface_Capturing_Type::Heuristic);
-    set_element_type(ElementType::SinglePhase);
+//    set_interface_capturing_type(Interface_Capturing_Type::Heuristic);
+    set_element_type(ElementType::SinglePhase,Interface_Capturing_Type::Heuristic);
 
     statprops=new StatProps(ElemTable,NodeTable);
 
@@ -124,12 +125,11 @@ void cxxTitanSimulation::set_interface_capturing_type(const Interface_Capturing_
 
     if(ElemTable!=nullptr)
         ElemTable->set_interface_capturing_type(interfaceCapturingType);
-//    if(NodeTable!=nullptr)
-//        NodeTable->set_interface_capturing_type(interfaceCapturingType);
 }
-void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
+void cxxTitanSimulation::set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type)
 {
     elementType=m_elementType;
+    interfaceCapturingType = m_Interface_Capturing_Type;
 
     if(elementType==ElementType::SinglePhase)
     {
@@ -159,9 +159,9 @@ void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
     }
     get_outline()->elementType=elementType;
     if(ElemTable!=nullptr)
-        ElemTable->set_element_type(elementType);
+        ElemTable->set_element_type(elementType,interfaceCapturingType);
     if(NodeTable!=nullptr)
-        NodeTable->set_element_type(elementType);
+        NodeTable->set_element_type(elementType,interfaceCapturingType);
 
 }
 void cxxTitanSimulation::set_short_speed(bool short_speed)
