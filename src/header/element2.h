@@ -457,6 +457,7 @@ public:
     double calc_levelset_flux(double dx);
 
     double phi_slope(int idim) const;
+    void phi_slope(int idim, double value);
     
     //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
     double prev_state_vars(int idim) const;

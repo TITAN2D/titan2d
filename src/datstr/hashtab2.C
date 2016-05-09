@@ -700,14 +700,14 @@ NodeHashTable::NodeHashTable()
     :HashTable<Node>(node_reserved_size)
 {
     nodeHashTable=this;
-    interface_capturing_=Interface_Capturing_Type::Heuristic;
+    interface_capturing_=Interface_Capturing_Type::UnknownInterfaceCapturingType;
     elementType_=ElementType::UnknownElementType;
 }
 NodeHashTable::NodeHashTable(const H5::CommonFG *parent, const  string group_name)
     :HashTable<Node>(node_reserved_size)
 {
     nodeHashTable=this;
-    interface_capturing_=Interface_Capturing_Type::Heuristic;
+    interface_capturing_=Interface_Capturing_Type::UnknownInterfaceCapturingType;
     elementType_=ElementType::UnknownElementType;
     h5read(parent,group_name);
 }
@@ -1171,7 +1171,7 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable)
     elementsHashTable=this;
     
     elementType_=ElementType::UnknownElementType;
-    interface_capturing_=Interface_Capturing_Type::Heuristic;
+    interface_capturing_=Interface_Capturing_Type::UnknownInterfaceCapturingType;
     conformation=0;
 
     ElemProp=new ElementsProperties(this,nodeTable);
@@ -1184,7 +1184,7 @@ ElementsHashTable::ElementsHashTable(NodeHashTable* nodeTable, const H5::CommonF
     elementsHashTable=this;
 
     elementType_=ElementType::UnknownElementType;
-    interface_capturing_=Interface_Capturing_Type::Heuristic;
+    interface_capturing_=Interface_Capturing_Type::UnknownInterfaceCapturingType;
 
     conformation=0;
 

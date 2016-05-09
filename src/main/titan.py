@@ -1009,7 +1009,7 @@ class TitanSimulation(TitanSimulationBase):
         # NumProp and MatModel
         #set element type
         elementType=TitanSimulationBase.possible_internal_mat_models[model][ui_NumProp['interface_capturing_type']]['elementType']
-        self.sim.set_element_type(elementType)
+        self.sim.set_element_type(elementType,ui_NumProp['interface_capturing_type'])
         
         self.sim.adapt=int(ui_NumProp['AMR'])
         self.sim.set_short_speed(ui_NumProp['short_speed'])

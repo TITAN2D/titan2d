@@ -124,11 +124,35 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], i
     set_new_old(OLD);
     if(elementType() == ElementType::SinglePhase)
     {
-        state_vars(0, pile_height);
-        state_vars(1, 0.0);
-        if(state_vars(0) != 0.0)
-            state_vars(1, 0.0001);
-        state_vars(2, 0.0);
+    	if(interface_capturing_Type()==Interface_Capturing_Type::Heuristic)
+    	{
+            state_vars(0, pile_height);
+            state_vars(1, 0.0);
+            if(state_vars(0) != 0.0)
+                state_vars(1, 0.0001);
+            state_vars(2, 0.0);
+
+            set_shortspeed(0.0);
+
+            set_iwetnode(8);
+            drypoint(0, 0.0);
+            drypoint(1, 0.0);
+            set_Awet((pile_height > GEOFLOW_TINY) ? 1.0 : 0.0);
+            set_Swet(Awet());
+    	}
+    	else if(interface_capturing_Type()==Interface_Capturing_Type::LevelSet)
+    	{
+            state_vars(3, -1.0);
+            state_vars(4, -1.0);
+
+            state_vars(0, pile_height);
+            state_vars(1, 0.);
+            state_vars(2, 0.);
+            if(state_vars(3) != 0){
+                state_vars(2, 0.0001);
+            }
+            state_vars(5, 0);
+    	}
     }
 
     if(elementType() == ElementType::TwoPhases)
@@ -143,14 +167,15 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], i
         }
         state_vars(3, 0);
         state_vars(5, 0);
-    }
-    set_shortspeed(0.0);
 
-    set_iwetnode(8);
-    drypoint(0, 0.0);
-    drypoint(1, 0.0);
-    set_Awet((pile_height > GEOFLOW_TINY) ? 1.0 : 0.0);
-    set_Swet(Awet());
+        set_shortspeed(0.0);
+
+        set_iwetnode(8);
+        drypoint(0, 0.0);
+        drypoint(1, 0.0);
+        set_Awet((pile_height > GEOFLOW_TINY) ? 1.0 : 0.0);
+        set_Swet(Awet());
+    }
 
 
     if(elementType() == ElementType::TwoPhases)
@@ -168,11 +193,30 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], i
     }
     if(elementType() == ElementType::SinglePhase)
     {
-        prev_state_vars(0, pile_height);
-        prev_state_vars(1, 0.0);
-        if(prev_state_vars(0) != 0.0)
-            prev_state_vars(1, 0.0001);
-        prev_state_vars(2, 0.0);
+    	if(interface_capturing_Type()==Interface_Capturing_Type::Heuristic)
+    	{
+            prev_state_vars(0, pile_height);
+            prev_state_vars(1, 0.0);
+            if(prev_state_vars(0) != 0.0)
+                prev_state_vars(1, 0.0001);
+            prev_state_vars(2, 0.0);
+    	}
+    	else if(interface_capturing_Type()==Interface_Capturing_Type::LevelSet)
+    	{
+            prev_state_vars(0, pile_height);
+            prev_state_vars(1, 0.);
+            prev_state_vars(3, 0.);
+            prev_state_vars(4, 0.);
+            if(prev_state_vars(3) != 0.0)
+                prev_state_vars(1, 0.0001);
+            prev_state_vars(2, 0.0);
+            prev_state_vars(5, 0.0);
+
+            nbflag(0);
+
+        	for (int i = 0; i < 4; ++i)
+        		phi_slope(i, 0.0);
+    	}
     }
 
     for(i = 0; i < DIMENSION * NUM_STATE_VARS; i++)
@@ -275,43 +319,71 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], i
     set_iwetnode(iwetnodefather);
     
     drypoint(0, drypoint_in[0]);
-    drypoint(1, drypoint_in[1]);
-    
-    double myfractionoffather;
-    if((Awetfather == 0.0) || (Awetfather == 1.0))
-    {
-        set_Awet(Awetfather);
-        myfractionoffather = 1.0;
+	drypoint(1, drypoint_in[1]);
+
+	if (interface_capturing_Type() == Interface_Capturing_Type::Heuristic) {
+		double myfractionoffather;
+		if ((Awetfather == 0.0) || (Awetfather == 1.0)) {
+			set_Awet(Awetfather);
+			myfractionoffather = 1.0;
+		} else {
+			set_Awet(convect_dryline(dx(0), dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
+			myfractionoffather = Awet() / Awetfather;
+		}
+		set_Swet(1.0);
+
+		double dxx = coord_in[0] - fthTemp->coord(0);
+		double dyy = coord_in[1] - fthTemp->coord(1);
+		for (i = 0; i < NUM_STATE_VARS; i++) {
+			// state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+			state_vars(i, fthTemp->state_vars(i) * myfractionoffather);
+			prev_state_vars(i,
+					fthTemp->prev_state_vars(i) * myfractionoffather);
+			set_shortspeed(fthTemp->shortspeed());
+		}
+
+		if (state_vars(0) < 0.)
+			state_vars(0, 0.);
+
+		find_positive_x_side(NodeTable);
+
+		calc_topo_data(matprops_ptr);
+		calc_gravity_vector(matprops_ptr);
+
+		set_coord(0, coord_in[0]);
+		set_coord(1, coord_in[1]);
+
+		set_stoppedflags(fthTemp->stoppedflags());
     }
-    else
-    {
-        set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
-        myfractionoffather = Awet() / Awetfather;
-    }
-    set_Swet(1.0);
-    
-    double dxx = coord_in[0] - fthTemp->coord(0);
-    double dyy = coord_in[1] - fthTemp->coord(1);
-    for(i = 0; i < NUM_STATE_VARS; i++)
-    {
-        // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
-        state_vars(i, fthTemp->state_vars(i) * myfractionoffather);
-        prev_state_vars(i, fthTemp->prev_state_vars(i) * myfractionoffather);
-        set_shortspeed(fthTemp->shortspeed());
-    }
-    
-    if(state_vars(0) < 0.)
-        state_vars(0, 0.);
-    
-    find_positive_x_side(NodeTable);
-    
-    calc_topo_data(matprops_ptr);
-    calc_gravity_vector(matprops_ptr);
-    
-    set_coord(0, coord_in[0]);
-    set_coord(1, coord_in[1]);
-    
-    set_stoppedflags(fthTemp->stoppedflags());
+	else if (interface_capturing_Type() == Interface_Capturing_Type::LevelSet) {
+
+		double dxx = coord_in[0] - fthTemp->coord(0);
+		double dyy = coord_in[1] - fthTemp->coord(1);
+		for (i = 0; i < NUM_STATE_VARS; i++) {
+			// state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+			state_vars(i, fthTemp->state_vars(i));
+			prev_state_vars(i,fthTemp->prev_state_vars(i);
+			set_shortspeed(fthTemp->shortspeed());
+		}
+
+//		if (state_vars(0) < 0.)
+//			state_vars(0, 0.);
+
+		find_positive_x_side(NodeTable);
+
+		calc_topo_data(matprops_ptr);
+		calc_gravity_vector(matprops_ptr);
+
+		set_coord(0, coord_in[0]);
+		set_coord(1, coord_in[1]);
+
+		set_stoppedflags(fthTemp->stoppedflags());
+
+		nbflag(0);
+
+    	for (int i = 0; i < 4; ++i)
+    		phi_slope(i, 0.0);
+	}
     
     return;
 }
@@ -395,42 +467,72 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], i
     
     drypoint(0, drypoint_in[0]);
     drypoint(1, drypoint_in[1]);
-    
-    double myfractionoffather;
-    if((Awetfather == 0.0) || (Awetfather == 1.0))
-    {
-        set_Awet(Awetfather);
-        myfractionoffather = 1.0;
+    if (interface_capturing_Type() == Interface_Capturing_Type::Heuristic) {
+        double myfractionoffather;
+        if((Awetfather == 0.0) || (Awetfather == 1.0))
+        {
+            set_Awet(Awetfather);
+            myfractionoffather = 1.0;
+        }
+        else
+        {
+            set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
+            myfractionoffather = Awet() / Awetfather;
+        }
+        set_Swet(1.0);
+
+        double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
+        double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
+        for(i = 0; i < NUM_STATE_VARS; i++)
+        {
+            // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+            state_vars(i, ElemTable->state_vars_[i][fthTemp] * myfractionoffather);
+            prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp] * myfractionoffather);
+            set_shortspeed(ElemTable->shortspeed_[fthTemp]);
+        }
+
+        if(state_vars(0) < 0.)
+            state_vars(0, 0.);
+
+        find_positive_x_side(NodeTable);
+
+        calc_topo_data(matprops_ptr);
+        calc_gravity_vector(matprops_ptr);
+
+        set_coord(0, coord_in[0]);
+        set_coord(1, coord_in[1]);
+
+        set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
     }
-    else
-    {
-        set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
-        myfractionoffather = Awet() / Awetfather;
+    else if (interface_capturing_Type() == Interface_Capturing_Type::LevelSet) {
+        double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
+        double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
+        for(i = 0; i < NUM_STATE_VARS; i++)
+        {
+            // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+            state_vars(i, ElemTable->state_vars_[i][fthTemp]);
+            prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp]);
+            set_shortspeed(ElemTable->shortspeed_[fthTemp]);
+        }
+
+//        if(state_vars(0) < 0.)
+//            state_vars(0, 0.);
+
+        find_positive_x_side(NodeTable);
+
+        calc_topo_data(matprops_ptr);
+        calc_gravity_vector(matprops_ptr);
+
+        set_coord(0, coord_in[0]);
+        set_coord(1, coord_in[1]);
+
+        set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
+
+		nbflag(0);
+
+    	for (int i = 0; i < 4; ++i)
+    		phi_slope(i, 0.0);
     }
-    set_Swet(1.0);
-    
-    double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
-    double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
-    for(i = 0; i < NUM_STATE_VARS; i++)
-    {
-        // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
-        state_vars(i, ElemTable->state_vars_[i][fthTemp] * myfractionoffather);
-        prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp] * myfractionoffather);
-        set_shortspeed(ElemTable->shortspeed_[fthTemp]);
-    }
-    
-    if(state_vars(0) < 0.)
-        state_vars(0, 0.);
-    
-    find_positive_x_side(NodeTable);
-    
-    calc_topo_data(matprops_ptr);
-    calc_gravity_vector(matprops_ptr);
-    
-    set_coord(0, coord_in[0]);
-    set_coord(1, coord_in[1]);
-    
-    set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
     
     return;
 }
@@ -524,41 +626,72 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
     drypoint(0, drypoint_in[0]);
     drypoint(1, drypoint_in[1]);
 
-    double myfractionoffather;
-    if((Awetfather == 0.0) || (Awetfather == 1.0))
-    {
-        set_Awet(Awetfather);
-        myfractionoffather = 1.0;
+    if (interface_capturing_Type() == Interface_Capturing_Type::Heuristic) {
+        double myfractionoffather;
+        if((Awetfather == 0.0) || (Awetfather == 1.0))
+        {
+            set_Awet(Awetfather);
+            myfractionoffather = 1.0;
+        }
+        else
+        {
+            set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
+            myfractionoffather = Awet() / Awetfather;
+        }
+        set_Swet(1.0);
+
+        double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
+        double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
+        for(i = 0; i < NUM_STATE_VARS; i++)
+        {
+            // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+            state_vars(i, ElemTable->state_vars_[i][fthTemp] * myfractionoffather);
+            prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp] * myfractionoffather);
+            set_shortspeed(ElemTable->shortspeed_[fthTemp]);
+        }
+
+        if(state_vars(0) < 0.)
+            state_vars(0, 0.);
+
+        find_positive_x_side(NodeTable);
+
+        calc_topo_data(matprops_ptr);
+        calc_gravity_vector(matprops_ptr);
+
+        set_coord(0, coord_in[0]);
+        set_coord(1, coord_in[1]);
+
+        set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
     }
-    else
-    {
-        set_Awet(convect_dryline(dx(0),dx(1), 0.0)); //dx is a dummy stand in for convection speed... value doesn't matter because it's being multiplied by a timestep of zero
-        myfractionoffather = Awet() / Awetfather;
+    else if (interface_capturing_Type() == Interface_Capturing_Type::LevelSet) {
+        double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
+        double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
+        for(i = 0; i < NUM_STATE_VARS; i++)
+        {
+            // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
+            state_vars(i, ElemTable->state_vars_[i][fthTemp]);
+            prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp]);
+            set_shortspeed(ElemTable->shortspeed_[fthTemp]);
+        }
+
+//        if(state_vars(0) < 0.)
+//            state_vars(0, 0.);
+
+        find_positive_x_side(NodeTable);
+
+        calc_topo_data(matprops_ptr);
+        calc_gravity_vector(matprops_ptr);
+
+        set_coord(0, coord_in[0]);
+        set_coord(1, coord_in[1]);
+
+        set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
+
+        nbflag(0);
+
+    	for (int i = 0; i < 4; ++i)
+    		phi_slope(i, 0.0);
     }
-    set_Swet(1.0);
-
-    double dxx = coord_in[0] - ElemTable->coord_[0][fthTemp];
-    double dyy = coord_in[1] - ElemTable->coord_[1][fthTemp];
-    for(i = 0; i < NUM_STATE_VARS; i++)
-    {
-        // state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
-        state_vars(i, ElemTable->state_vars_[i][fthTemp] * myfractionoffather);
-        prev_state_vars(i, ElemTable->prev_state_vars_[i][fthTemp] * myfractionoffather);
-        set_shortspeed(ElemTable->shortspeed_[fthTemp]);
-    }
-
-    if(state_vars(0) < 0.)
-        state_vars(0, 0.);
-
-    find_positive_x_side(NodeTable);
-
-    calc_topo_data(matprops_ptr);
-    calc_gravity_vector(matprops_ptr);
-
-    set_coord(0, coord_in[0]);
-    set_coord(1, coord_in[1]);
-
-    set_stoppedflags(ElemTable->stoppedflags_[fthTemp]);
 
     return;
 }
@@ -913,23 +1046,33 @@ void Element::init(ti_ndx_t *sons_ndx, NodeHashTable* NodeTable, ElementsHashTab
             prev_state_vars(i, prev_state_vars(i) + sons[j]->prev_state_vars(i) * 0.25);
         }
     }
-    set_Awet(0.0);
-    for(int ison = 0; ison < 4; ison++)
-        set_Awet(Awet() + sons[ison]->Awet());
-    set_Awet(Awet() * 0.25);
-    
-    //uninitialized flag values... will fix shortly 
-    drypoint(0, 0.0);
-    drypoint(1, 0.0);
-    set_iwetnode(8);
-    set_Swet(1.0);
-    
-    //calculate the shortspeed
-    set_shortspeed(0.0);
-    for(j = 0; j < 4; j++)
-        set_shortspeed(shortspeed() + sons[j]->state_vars(0) * sons[j]->shortspeed());
-    if(state_vars(0) > 0.0)
-       set_shortspeed(shortspeed()/(4.0 * state_vars(0)));
+    if (interface_capturing_Type() == Interface_Capturing_Type::Heuristic) {
+        set_Awet(0.0);
+        for(int ison = 0; ison < 4; ison++)
+            set_Awet(Awet() + sons[ison]->Awet());
+        set_Awet(Awet() * 0.25);
+
+        //uninitialized flag values... will fix shortly
+        drypoint(0, 0.0);
+        drypoint(1, 0.0);
+        set_iwetnode(8);
+        set_Swet(1.0);
+
+        //calculate the shortspeed
+        set_shortspeed(0.0);
+        for(j = 0; j < 4; j++)
+            set_shortspeed(shortspeed() + sons[j]->state_vars(0) * sons[j]->shortspeed());
+        if(state_vars(0) > 0.0)
+           set_shortspeed(shortspeed()/(4.0 * state_vars(0)));
+    }
+    else if (interface_capturing_Type() == Interface_Capturing_Type::LevelSet) {
+
+        nbflag(0);
+
+    	for (int i = 0; i < 4; ++i)
+    		phi_slope(i, 0.0);
+    }
+
     
     return;
 }

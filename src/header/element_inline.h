@@ -379,7 +379,8 @@ inline double Element::dhVy_dx_sol() const {return d_state_vars(3);}
 inline double Element::dhVy_dy_sol() const {return d_state_vars(NUM_STATE_VARS+3);}
 
 
-inline double Element::phi_slope(int idim) const {return elementsHashTable->phi_slope_[idim][ndx_];};
+inline double Element::phi_slope(int idim) const {return elementsHashTable->phi_slope_[idim][ndx_];}
+inline void Element::phi_slope(int idim, double value) {elementsHashTable->phi_slope_[idim][ndx_]=value;}
 
 
 //! this function returns a vector containing the previous state variables, previous mean beginning of timestep before the finite difference predictor halfstep
