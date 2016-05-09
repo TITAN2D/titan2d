@@ -362,7 +362,7 @@ void Element::init(const SFC_Key* nodekeys, const SFC_Key* neigh, int n_pro[], i
 		for (i = 0; i < NUM_STATE_VARS; i++) {
 			// state_vars[i] = fthTemp->state_vars[i]+fthTemp->d_state_vars[i]*dxx + fthTemp->d_state_vars[i+NUM_STATE_VARS]*dyy;
 			state_vars(i, fthTemp->state_vars(i));
-			prev_state_vars(i,fthTemp->prev_state_vars(i);
+			prev_state_vars(i,fthTemp->prev_state_vars(i));
 			set_shortspeed(fthTemp->shortspeed());
 		}
 
