@@ -299,7 +299,7 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="NodeTable");
 
     void set_interface_capturing_type(const Interface_Capturing_Type m_Interface_Capturing_Type);
-    void set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type);
+    void set_element_type(const ElementType m_elementType);
 private:
      Node* addNode(const SFC_Key& keyi);
      ti_ndx_t addNode_ndx(const SFC_Key& keyi);
@@ -369,7 +369,7 @@ public:
     void init(double *doublekeyrangein, int size, double XR[], double YR[]);
 
     void set_interface_capturing_type(const Interface_Capturing_Type m_Interface_Capturing_Type);
-    void set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type);
+    void set_element_type(const ElementType m_elementType);
 
     int getNumberOfLocalElements()
     {

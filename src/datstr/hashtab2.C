@@ -1130,10 +1130,10 @@ void NodeHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readTiVector(group,connection_id_);
 
 }
-void NodeHashTable::set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type)
+void NodeHashTable::set_element_type(const ElementType m_elementType)
 {
     elementType_=m_elementType;
-    interface_capturing_ = m_Interface_Capturing_Type;
+//    interface_capturing_ = m_Interface_Capturing_Type;
 
     if(elementType_==ElementType::SinglePhase)
     {
@@ -1211,10 +1211,10 @@ void ElementsHashTable::set_interface_capturing_type(const Interface_Capturing_T
 {
 	interface_capturing_ = m_Interface_Capturing_Type;
 }
-void ElementsHashTable::set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type)
+void ElementsHashTable::set_element_type(const ElementType m_elementType)
 {
     elementType_=m_elementType;
-    interface_capturing_ = m_Interface_Capturing_Type;
+//    interface_capturing_ = m_Interface_Capturing_Type;
 
     if(elementType_==ElementType::SinglePhase)
     {

@@ -135,7 +135,7 @@ public:
     NodeHashTable* get_HT_Node(){return NodeTable;}
     ElementsHashTable* get_HT_Elem(){return ElemTable;}
 
-    void set_element_type(const ElementType m_elementType, const Interface_Capturing_Type m_Interface_Capturing_Type);
+    void set_element_type(const ElementType m_elementType);
     const ElementType& get_element_type() const{return elementType;}
 
     void set_interface_capturing_type(const Interface_Capturing_Type m_Interface_Capturing_Type);
