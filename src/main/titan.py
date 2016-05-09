@@ -1009,7 +1009,7 @@ class TitanSimulation(TitanSimulationBase):
         # NumProp and MatModel
         #set element type
         elementType=TitanSimulationBase.possible_internal_mat_models[model][ui_NumProp['interface_capturing_type']]['elementType']
-        self.sim.set_element_type(elementType)
+        self.sim.set_element_interface_type(elementType,ui_NumProp['interface_capturing_type'])
         
         self.sim.adapt=int(ui_NumProp['AMR'])
         self.sim.set_short_speed(ui_NumProp['short_speed'])
@@ -1019,7 +1019,7 @@ class TitanSimulation(TitanSimulationBase):
         
         ##################
         # build integrator
-        self.sim.set_interface_capturing_type(ui_NumProp['interface_capturing_type'])
+        #self.sim.set_interface_capturing_type(ui_NumProp['interface_capturing_type'])
         
         # get parameters
         ui_NumModmProp=copy.deepcopy(ui_NumProp)

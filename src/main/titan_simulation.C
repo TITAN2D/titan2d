@@ -154,7 +154,7 @@ void cxxTitanSimulation::set_element_interface_type(const ElementType m_elementT
     }
     else
     {
-        printf("Unknown type of element!\n");
+        printf("Unknown type of element or interface capturing method!\n");
         assert(0);
     }
     get_outline()->elementType=elementType;
