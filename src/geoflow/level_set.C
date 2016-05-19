@@ -561,7 +561,7 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 //						// input "neigh_key + ineigh * KEYLENGTH" for lookup function should be asked
 //						Element* ElemNeigh = (Element*) El_Table->lookup(neigh_key);
 
-						Element* ElemNeigh = (Element*) El_Table->lookup(Curr_El->neighbor(ineigh * KEYLENGTH));
+						Element* ElemNeigh = (Element*) El_Table->lookup(Curr_El->neighbor(ineigh));
 
 						double neighb_phi = ElemNeigh->state_vars(3);
 

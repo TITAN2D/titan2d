@@ -97,11 +97,16 @@ void init_TiH5()
     SinglePhaseLevelSetVarNames.push_back("hVx");
     SinglePhaseLevelSetVarNames.push_back("hVy");
     SinglePhaseLevelSetVarNames.push_back("phi");
+    SinglePhaseLevelSetVarNames.push_back("junk1");
+    SinglePhaseLevelSetVarNames.push_back("junk2");
 
     SinglePhasePhaseFieldVarNames.push_back("h");
     SinglePhasePhaseFieldVarNames.push_back("hVx");
     SinglePhasePhaseFieldVarNames.push_back("hVy");
     SinglePhasePhaseFieldVarNames.push_back("phi");
+    SinglePhasePhaseFieldVarNames.push_back("junk1");
+    SinglePhasePhaseFieldVarNames.push_back("junk2");
+
 
     TwoPhasesVarNames.push_back("h");
     TwoPhasesVarNames.push_back("h_liq");
