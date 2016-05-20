@@ -1190,10 +1190,11 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
     // output max over time pile-height
     {
         int ix, iy;
-        ostringstream filename;
+        FILE *fp;
+        ostringstream filename1;
 
-        filename<<output_prefix<<"pileheightrecord."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<std::ends;
-        FILE *fp = fopen(filename.str().c_str(), "wt");
+        filename1<<output_prefix<<"pileheightrecord."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<std::ends;
+        fp = fopen(filename1.str().c_str(), "wt");
 
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
@@ -1207,6 +1208,71 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
             fprintf(fp, "%g\n", pileheight[iy*stride+ix] * matprops_ptr->scale.height);
         }
         fclose(fp);
+
+        /*ostringstream filename2;
+        filename2<<output_prefix<<"pileheightrecord."<<setw(6)<< setfill('0') <<internal<<statprops_ptr->runid<<".mat"<<std::ends;
+        fp = fopen(filename2.str().c_str(), "wb");
+
+        const char *map_name="max_pile_hight";
+        const char *map_data="map_data";
+        const char *map_title="map_title";
+        const char *map_northern_edge="map_northern_edge";
+        const char *map_southern_edge="map_southern_edge";
+        const char *map_eastern_edge="map_eastern_edge";
+        const char *map_western_edge="map_western_edge";
+
+        //header format: {MOPT,mrows,ncols,imagf,namlen}
+        //rows-y,cols-x
+        unsigned int map_data_header[5]={0,(unsigned int)Ny,(unsigned int)Nx,0,(unsigned int)strlen(map_data)+1};
+        unsigned int map_title_header[5]={51,1,(unsigned int)strlen(map_name)+1,0,(unsigned int)strlen(map_title)+1};
+        unsigned int map_northern_edge_header[5]={0,1,1,0,(unsigned int)strlen(map_northern_edge)+1};
+        unsigned int map_southern_edge_header[5]={0,1,1,0,(unsigned int)strlen(map_southern_edge)+1};
+        unsigned int map_eastern_edge_header[5]={0,1,1,0,(unsigned int)strlen(map_eastern_edge)+1};
+        unsigned int map_western_edge_header[5]={0,1,1,0,(unsigned int)strlen(map_western_edge)+1};
+
+        double western_edge=xminmax[0] * matprops_ptr->scale.length;
+        double eastern_edge=xminmax[1] * matprops_ptr->scale.length;
+        double southern_edge=yminmax[0] * matprops_ptr->scale.length;
+        double northern_edge= yminmax[1] * matprops_ptr->scale.length;
+
+        double *buffer=new double[Ny];
+
+        fwrite(map_data_header,sizeof(unsigned int),5,fp);
+        fwrite(map_data,sizeof(char),strlen(map_data)+1,fp);
+
+        for(ix = 0; ix < Nx; ix++)
+        {
+            //for(iy = 0; iy < Ny; iy++)
+            int iy2=0;
+            //why it is backward?
+            for(iy = Ny-1; iy >=0; iy--,iy2++)
+                buffer[iy2]=pileheight[iy*stride+ix] * matprops_ptr->scale.height;
+            fwrite(buffer,sizeof(double),Ny,fp);
+        }
+
+        fwrite(map_title_header,sizeof(unsigned int),5,fp);
+        fwrite(map_title,sizeof(char),strlen(map_title)+1,fp);
+        fwrite(map_name,sizeof(char),strlen(map_name)+1,fp);
+
+        fwrite(map_northern_edge_header,sizeof(unsigned int),5,fp);
+        fwrite(map_northern_edge,sizeof(char),strlen(map_northern_edge)+1,fp);
+        fwrite(&northern_edge,sizeof(double),1,fp);
+
+        fwrite(map_southern_edge_header,sizeof(unsigned int),5,fp);
+        fwrite(map_southern_edge, sizeof(char), strlen(map_southern_edge) + 1, fp);
+        fwrite(&southern_edge, sizeof(double), 1, fp);
+
+        fwrite(map_eastern_edge_header, sizeof(unsigned int), 5, fp);
+        fwrite(map_eastern_edge, sizeof(char), strlen(map_eastern_edge) + 1, fp);
+        fwrite(&eastern_edge, sizeof(double), 1, fp);
+
+        fwrite(map_western_edge_header, sizeof(unsigned int), 5, fp);
+        fwrite(map_western_edge, sizeof(char), strlen(map_western_edge) + 1, fp);
+        fwrite(&western_edge, sizeof(double), 1, fp);
+
+
+        fclose(fp);
+        delete [] buffer;*/
     }
 
     //output max over time kinetic energy
