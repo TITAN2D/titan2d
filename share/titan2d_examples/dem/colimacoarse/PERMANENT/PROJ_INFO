@@ -1,0 +1,7 @@
+name: UTM Zone 13, Northern Hemisphere
+proj: utm
+zone: 13
+no_defs: defined
+datum: wgs84
+ellps: wgs84
+towgs84: 0.000,0.000,0.000

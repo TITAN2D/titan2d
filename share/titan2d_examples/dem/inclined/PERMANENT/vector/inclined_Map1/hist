@@ -1,0 +1,8 @@
+COMMAND: v.edit map="inclined_Map1" layer="1" type="point,line,boundary,centroid" tool="create" threshold=-1,0,0 snap="no"
+GISDBASE: /home/mikola/grassdata
+LOCATION: inclined MAPSET: PERMANENT USER: mikola DATE: Thu Apr 28 16:28:55 2016
+---------------------------------------------------------------------------------
+COMMAND: v.db.connect --quiet map="inclined_Map1" driver="sqlite" database="$GISDBASE/$LOCATION_NAME/$MAPSET/sqlite/sqlite.db" table="inclined_Map1" key="cat" layer="1" separator="pipe"
+GISDBASE: /home/mikola/grassdata
+LOCATION: inclined MAPSET: PERMANENT USER: mikola DATE: Thu Apr 28 16:28:55 2016
+---------------------------------------------------------------------------------

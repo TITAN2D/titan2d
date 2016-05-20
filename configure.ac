@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(titan, 3.1.0)
+AC_INIT(titan2d, 3.1.0)
 AM_INIT_AUTOMAKE
 
 ## Host specific stuff
@@ -231,7 +231,8 @@ AC_CONFIG_FILES([Makefile
                  src/vectordatapreproc/Makefile
                  src/main/titanvars.sh
                  tests/Makefile
-                 tests/ticore/Makefile])
+                 tests/ticore/Makefile
+                 share/Makefile])
 
 
 AC_OUTPUT
