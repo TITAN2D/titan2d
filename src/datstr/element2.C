@@ -3214,7 +3214,7 @@ void riemannflux(const ElementType elementType,const Interface_Capturing_Type in
 
         			} else {
 
-        				for (ivar = 1; ivar < NUM_STATE_VARS - 2; ivar++)
+        				for (ivar = 0; ivar < NUM_STATE_VARS - 3; ivar++)
         					flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar]
         					    + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar])) / (sr - sl);
 

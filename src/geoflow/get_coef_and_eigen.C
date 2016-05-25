@@ -159,12 +159,14 @@ double Integrator_SinglePhase_LevelSet_Coulomb::get_coef_and_eigen(int ghost_fla
 
         for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
         {
-            if(adapted_[ndx]!=0)
+            if((adapted_[ndx]> 0) || (adapted_[ndx]< 0))
             {
                 mindx = (dx_[0][ndx] < dx_[1][ndx]) ? dx_[0][ndx] : dx_[1][ndx]
                         * pow(0.5, REFINE_LEVEL - generation_[ndx]);
                 break;
             }
+            if (mindx > 0.0)
+            		break;
         }
 
         double dttemp = mindx / maxinflux; //equivalent to dx/eigen_speed

@@ -756,7 +756,7 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 //		SFC_Key& elem_key = elem[0]->neighbor(((neigh_num + 1) % 8) * KEYLENGTH);
 //		elem[2] = (Element*) El_Table->lookup(elem_key);
 
-		elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num + 1) % 8) * KEYLENGTH));
+		elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num + 1) % 8)));
 
 //		SFC_Key& neigh_key;
 
@@ -764,21 +764,21 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 			// first condition is to avoid the case that elem[2] is not available
 
 //			neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
-			elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num * KEYLENGTH));
+			elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num));
 
 		} else {
 			// this means that this proc has not access to this direction, so we have to change the direction
 //			elem_key = elem[0]->neighbor(((neigh_num - 1 + 8) % 8) * KEYLENGTH);
 //			elem[2] = (Element*) El_Table->lookup(elem_key);
 
-			elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num - 1 + 8) % 8) * KEYLENGTH));
+			elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num - 1 + 8) % 8)));
 
 			if (elem[2]) {
 				// the condition is to avoid the case that elem[2] is not available
 //				neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
 //				elem[3] = (Element*) El_Table->lookup(neigh_key);
 
-				elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num * KEYLENGTH));
+				elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num));
 			}
 		}
 

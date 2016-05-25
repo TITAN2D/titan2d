@@ -1130,8 +1130,8 @@ void Integrator_SinglePhase_LevelSet_Coulomb::corrector()
                 + dt * Influx_[2][ndx];
 
         Ustore[3] = prev_state_vars_[3][ndx]
-                - dtdx * (fluxxp[3] + fluxxm[6])
-                - dtdy * (fluxyp[3] + fluxym[6]);
+                - dtdx * (fluxxp[3] + fluxxm[4])
+                - dtdy * (fluxyp[3] + fluxym[4]);
 
         // initialize to zero
         forceintx = 0.0;
