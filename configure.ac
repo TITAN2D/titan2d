@@ -126,6 +126,7 @@ case "$with_gdal" in
         # for building RPMS and DEBIAN packages
         GDAL_CFLAGS=`$GDAL_CONFIG --cflags`
         GDAL_LIBS=`$GDAL_CONFIG --libs`
+        GDAL_PATH=`$GDAL_CONFIG --prefix`
         CPPFLAGS="$CPPFLAGS $GDAL_CFLAGS" 
         LIBS="$GDAL_LIBS $LIBS"
         AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"])
@@ -134,16 +135,19 @@ case "$with_gdal" in
     no)
         gdal_lib=
         gdal_inc=
+        GDAL_PATH=
         ;;
     *)
         CPPFLAGS="$CPPFLAGS -I$with_gdal/include"
         LIBS="$GDAL_LIBS $LIBS"
+        GDAL_PATH="$with_gdal"
         AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"],
                      [AC_MSG_FAILURE([couldn't find GDAL libraries])])
         AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"],
                      [AC_MSG_FAILURE([couldn't find GDAL headers])])
         ;;
 esac
+AC_SUBST([GDAL_PATH],[$GDAL_PATH])
 AC_MSG_CHECKING([for GDAL availability])
 if test "x$gdal_inc" = "xyes" -a  "x$gdal_lib" = "xyes"; then
     AC_DEFINE([HAVE_GDAL], [1], [If Gdal is available])
