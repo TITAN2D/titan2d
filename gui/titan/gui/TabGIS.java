@@ -1,0 +1,109 @@
+package titan.gui;
+
+import javax.swing.BoxLayout;
+
+import titan.graphics.DirectorySelector;
+import titan.graphics.TextInput;
+import titan.graphics.RadioButtonGroup;
+import titan.io.NameValuePairComponent;
+
+
+public class TabGIS extends TitanTab {
+
+	private DirectorySelector mainDir;
+	private DirectorySelector subDir;
+	private DirectorySelector mapSet;
+	private DirectorySelector map;
+	private TextInput vector;
+	private TextInput zoneOverride;
+	private RadioButtonGroup hemisphere;
+	private TextInput minX;
+	private TextInput minY;
+	private TextInput maxX;
+	private TextInput maxY;
+
+	public TabGIS() {
+
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+		values = new NameValuePairComponent[11];
+		
+		// GIS Main Directory
+		mainDir = new DirectorySelector("GIS Information Main Directory");
+		mainDir.setChooserStyle(DirectorySelector.DIRECTORIES_ONLY);
+		values[0] = new NameValuePairComponent(TitanConstants.GIS_INFO_DIRECTORY, mainDir);
+
+		// GIS Sub-directory
+		subDir = new DirectorySelector("GIS Sub-Directory");
+		subDir.setOutputStyle(DirectorySelector.DIR_ONLY);
+		subDir.setChooserStyle(DirectorySelector.DIRECTORIES_ONLY);
+		values[1] = new NameValuePairComponent(TitanConstants.GIS_SUBDIR, subDir);
+
+		// GIS Map Set
+		mapSet = new DirectorySelector("GIS Map Set");
+		mapSet.setOutputStyle(DirectorySelector.DIR_ONLY);
+		mapSet.setChooserStyle(DirectorySelector.DIRECTORIES_ONLY);
+		values[2] = new NameValuePairComponent(TitanConstants.GIS_MAPSET, mapSet);
+		
+		// GIS Map
+		map = new DirectorySelector("GIS Map");
+		map.setOutputStyle(DirectorySelector.DIR_ONLY);
+		map.setChooserStyle(DirectorySelector.DIRECTORIES_ONLY);
+		values[3] = new NameValuePairComponent(TitanConstants.GIS_MAP, map);
+		
+		// GIS Vector
+		vector = new TextInput("GIS Vector");
+		values[4] = new NameValuePairComponent(TitanConstants.GIS_VECTOR, vector);
+
+		// Zone Override and Hemisphere are used to create the zone.txt file required
+		// for creating KML files when the KML button is clicked on the JobDetailsDialog tab.
+		// Please see the Job Submission tab for more details
+
+		// Zone
+		zoneOverride = new TextInput("Zone Override");
+		values[5] = new NameValuePairComponent(TitanConstants.ZONEOVERRIDE, zoneOverride);
+
+		// Hemisphere
+		hemisphere = new RadioButtonGroup("Hemisphere", TitanConstants.HemisphereHalves);
+		values[6] = new NameValuePairComponent(TitanConstants.HEMISPHERE, hemisphere);
+
+		int bSize = 0;
+		bSize = bSize > mainDir.getButtonWidth() ? bSize : mainDir.getButtonWidth();
+		bSize = bSize > subDir.getButtonWidth() ? bSize : subDir.getButtonWidth();
+		bSize = bSize > mapSet.getButtonWidth() ? bSize : mapSet.getButtonWidth();
+		bSize = bSize > map.getButtonWidth() ? bSize : map.getButtonWidth();
+		mainDir.setButtonWidth(bSize);
+		subDir.setButtonWidth(bSize);
+		mapSet.setButtonWidth(bSize);
+		map.setButtonWidth(bSize);
+
+		// min x location
+		minX = new TextInput("Minimum X Location [UTM E]");
+		values[7] = new NameValuePairComponent(TitanConstants.MIN_X_LOC, minX);
+
+		// min y location
+		minY = new TextInput("Minimum Y Location [UTM N]");
+		values[8] = new NameValuePairComponent(TitanConstants.MIN_Y_LOC, minY);
+
+		// max x location
+		maxX = new TextInput("Maximum X Location [UTM E]");
+		values[9] = new NameValuePairComponent(TitanConstants.MAX_X_LOC, maxX);
+
+		// max y location
+		maxY = new TextInput("Maximum Y Location [UTM N]");
+		values[10] = new NameValuePairComponent(TitanConstants.MAX_Y_LOC, maxY);
+
+		// Add components to main panel
+		add(mainDir.getPanel());
+		add(subDir.getPanel());
+		add(mapSet.getPanel());
+		add(map.getPanel());
+		add(vector.getPanel());
+		add(zoneOverride.getPanel());
+		add(hemisphere.getPanel());
+		add(minX.getPanel());
+		add(minY.getPanel());
+		add(maxX.getPanel());
+		add(maxY.getPanel());
+    }
+}
