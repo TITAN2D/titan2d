@@ -3054,6 +3054,8 @@ void Element::zdirflux(ElementsHashTable* El_Table, NodeHashTable* NodeTable, Ma
     
     double wetnessfactor = calc_elem_edge_wetness_factor(ineigh, dt);
     //double thissideSwet=(calc_elem_edge_wet_fraction(ineigh%4,1)>0.0)?1.0:0.0;
+    if(interface_capturing_Type() == Interface_Capturing_Type::LevelSet)
+    	wetnessfactor = 1.0;
     
     if(order_flag == 2)
         dz = (1.0 + dir % 2 - dir) * 0.5 * dx(dir % 2); //+ or - 1/2 dx or dy
@@ -3900,19 +3902,19 @@ void Element::calc_shortspeed(double inv_dt)
 }
 double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
 {
-    if(!(shortspeed() >= 0.0))
-        printf("shortspeed=%g\n", shortspeed());
-
-    assert(shortspeed() >= 0.0);
-    
-    double temp_state_vars[MAX_NUM_STATE_VARS];
-
-    for(int ivar = 0; ivar < NUM_STATE_VARS; ivar++)
-        temp_state_vars[ivar] = state_vars(ivar) + d_state_vars(ivar) * xoffset +  //distfromcenter[0]+
-                                d_state_vars(NUM_STATE_VARS + ivar) * yoffset;  //distfromcenter[1];
-                                
     if(elementType() == ElementType::TwoPhases)
     {
+        if(!(shortspeed() >= 0.0))
+            printf("shortspeed=%g\n", shortspeed());
+
+        assert(shortspeed() >= 0.0);
+
+        double temp_state_vars[MAX_NUM_STATE_VARS];
+
+        for(int ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            temp_state_vars[ivar] = state_vars(ivar) + d_state_vars(ivar) * xoffset +  //distfromcenter[0]+
+                                    d_state_vars(NUM_STATE_VARS + ivar) * yoffset;  //distfromcenter[1];
+
         if(!(temp_state_vars[0] > 0))
         {
             for(int i = 0; i < 4; i++)
@@ -3960,48 +3962,82 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
         }
         return Vel;
     }
-    if(elementType() == ElementType::SinglePhase)
+    else if(elementType() == ElementType::SinglePhase)
     {
-        if(!(temp_state_vars[0] > 0))
+        if(interface_capturing_Type() == Interface_Capturing_Type::Heuristic)
         {
-            Vel[0] = Vel[1] = 0.0;
-            return Vel;
-        }
+            if(!(shortspeed() >= 0.0))
+                printf("shortspeed=%g\n", shortspeed());
 
-        if(SHORTSPEED)
-        {
-            double doubleswap = (temp_state_vars[1]) * (temp_state_vars[1])
-                    + (temp_state_vars[2]) * (temp_state_vars[2]);
+            assert(shortspeed() >= 0.0);
 
-            if(!(doubleswap > (temp_state_vars[0] * temp_state_vars[0] *
-            GEOFLOW_TINY
-                               * GEOFLOW_TINY)))
+            double temp_state_vars[MAX_NUM_STATE_VARS];
+
+            for(int ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                temp_state_vars[ivar] = state_vars(ivar) + d_state_vars(ivar) * xoffset +  //distfromcenter[0]+
+                                        d_state_vars(NUM_STATE_VARS + ivar) * yoffset;  //distfromcenter[1];
+
+            if(!(temp_state_vars[0] > 0))
             {
                 Vel[0] = Vel[1] = 0.0;
                 return Vel;
             }
 
-            if((temp_state_vars[0] < GEOFLOW_SHORT) && (doubleswap
-                    > shortspeed() * shortspeed() * temp_state_vars[0] * temp_state_vars[0]))
+            if(SHORTSPEED)
             {
-                doubleswap = sqrt(doubleswap);
-                Vel[0] = shortspeed() * temp_state_vars[1] / doubleswap;
-                Vel[1] = shortspeed() * temp_state_vars[2] / doubleswap;
+                double doubleswap = (temp_state_vars[1]) * (temp_state_vars[1])
+                        + (temp_state_vars[2]) * (temp_state_vars[2]);
+
+                if(!(doubleswap > (temp_state_vars[0] * temp_state_vars[0] *
+                GEOFLOW_TINY
+                                   * GEOFLOW_TINY)))
+                {
+                    Vel[0] = Vel[1] = 0.0;
+                    return Vel;
+                }
+
+                if((temp_state_vars[0] < GEOFLOW_SHORT) && (doubleswap
+                        > shortspeed() * shortspeed() * temp_state_vars[0] * temp_state_vars[0]))
+                {
+                    doubleswap = sqrt(doubleswap);
+                    Vel[0] = shortspeed() * temp_state_vars[1] / doubleswap;
+                    Vel[1] = shortspeed() * temp_state_vars[2] / doubleswap;
+                }
+                else
+                {
+                    Vel[0] = temp_state_vars[1] / temp_state_vars[0];
+                    Vel[1] = temp_state_vars[2] / temp_state_vars[0];
+                }
             }
             else
             {
                 Vel[0] = temp_state_vars[1] / temp_state_vars[0];
                 Vel[1] = temp_state_vars[2] / temp_state_vars[0];
             }
-        }
-        else
-        {
-            Vel[0] = temp_state_vars[1] / temp_state_vars[0];
-            Vel[1] = temp_state_vars[2] / temp_state_vars[0];
-        }
-        assert((Vel[0] * Vel[0] * Vel[1] * Vel[1]) >= 0.0);
+            assert((Vel[0] * Vel[0] * Vel[1] * Vel[1]) >= 0.0);
 
-        return Vel;
+            return Vel;
+        }
+        else if(interface_capturing_Type() == Interface_Capturing_Type::LevelSet)
+        {
+            double temp_state_vars[MAX_NUM_STATE_VARS];
+
+            for(int ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+                temp_state_vars[ivar] = state_vars(ivar) + d_state_vars(ivar) * xoffset +  //distfromcenter[0]+
+                                        d_state_vars(NUM_STATE_VARS + ivar) * yoffset;  //distfromcenter[1];
+
+        	int i;
+        	for (i = 0; i < 2; i++)
+        		Vel[i] = 0;
+
+        	if (temp_state_vars[0] > GEOFLOW_TINY) {
+                Vel[0] = temp_state_vars[1] / temp_state_vars[0];
+                Vel[1] = temp_state_vars[2] / temp_state_vars[0];
+        	}
+        	assert((Vel[0] * Vel[0] * Vel[1] * Vel[1]) >= 0.0);
+
+        	return Vel;
+        }
     }
     return NULL;
 }
@@ -4556,55 +4592,58 @@ void Element::calc_stop_crit(MatProps *matprops_ptr,Integrator *integrator)
     }
     if(state_vars(0) <= GEOFLOW_TINY)
         stopcrit = HUGE_VAL;
-    else
+    else if(elementType() == ElementType::SinglePhase)
     {
-        double dirx, diry, Vtemp, bedslope, slopetemp;
-        double VxVy[2];
-        eval_velocity(0.0, 0.0, VxVy);
-        
-        Vtemp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
-        
-        //these are the element force balance test, will the pile slide
-        if(Vtemp > 0)
-        {
-            dirx = VxVy[0] / Vtemp;
-            diry = VxVy[1] / Vtemp;
+    	if(interface_capturing_Type() == Interface_Capturing_Type::Heuristic)
+    	{
+            double dirx, diry, Vtemp, bedslope, slopetemp;
+            double VxVy[2];
+            eval_velocity(0.0, 0.0, VxVy);
             
-            bedslope = dirx * zeta(0) + diry * zeta(1);
-            slopetemp = bedslope
-                    + (dirx * effect_kactxy(0) * d_state_vars(0) + diry * effect_kactxy(1)
-                                                                   * d_state_vars(NUM_STATE_VARS));
+            Vtemp = sqrt(VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1]);
             
-            stopcrit = (slopetemp + effect_tanbedfrict()) / Vtemp * NUM_FREEFALLS_2_STOP
-                       * sqrt(2.0 * 9.8 / matprops_ptr->scale.gravity * state_vars(0) / (1 + bedslope * bedslope));
-        }
-        else
-        {
-            set_stoppedflags(1); //erosion off
-            bedslope = -sqrt(zeta(0) * zeta(0) + zeta(1) * zeta(1));
-            if(bedslope < 0)
+            //these are the element force balance test, will the pile slide
+            if(Vtemp > 0)
             {
+                dirx = VxVy[0] / Vtemp;
+                diry = VxVy[1] / Vtemp;
+
+                bedslope = dirx * zeta(0) + diry * zeta(1);
                 slopetemp = bedslope
-                        + (zeta(0) / bedslope * effect_kactxy(0) * d_state_vars(0) + zeta(1) / bedslope
-                                * effect_kactxy(1) * d_state_vars(NUM_STATE_VARS));
+                        + (dirx * effect_kactxy(0) * d_state_vars(0) + diry * effect_kactxy(1)
+                                                                       * d_state_vars(NUM_STATE_VARS));
                 
-                stopcrit = sign(slopetemp + effect_tanbedfrict()) * HUGE_VAL;
+                stopcrit = (slopetemp + effect_tanbedfrict()) / Vtemp * NUM_FREEFALLS_2_STOP
+                           * sqrt(2.0 * 9.8 / matprops_ptr->scale.gravity * state_vars(0) / (1 + bedslope * bedslope));
             }
             else
-                stopcrit = HUGE_VAL;
-        }
-        
-        //this is the internal friction test, will the pile slump
-        if(stopcrit >= 1.0)
-        {
-            set_stoppedflags(1);
-            slopetemp = -sqrt(
-                    (zeta(0) + effect_kactxy(0) * d_state_vars(0)) * (zeta(0) + effect_kactxy(0) * d_state_vars(0))
-                    * (zeta(1) + effect_kactxy(1) * d_state_vars(NUM_STATE_VARS))
-                    * (zeta(1) + effect_kactxy(1) * d_state_vars(NUM_STATE_VARS)));
-            if(slopetemp + tan(integrator->int_frict) > 0)
-                set_stoppedflags(2);
-        }
+            {
+                set_stoppedflags(1); //erosion off
+                bedslope = -sqrt(zeta(0) * zeta(0) + zeta(1) * zeta(1));
+                if(bedslope < 0)
+                {
+                    slopetemp = bedslope
+                            + (zeta(0) / bedslope * effect_kactxy(0) * d_state_vars(0) + zeta(1) / bedslope
+                                    * effect_kactxy(1) * d_state_vars(NUM_STATE_VARS));
+
+                    stopcrit = sign(slopetemp + effect_tanbedfrict()) * HUGE_VAL;
+                }
+                else
+                    stopcrit = HUGE_VAL;
+            }
+
+            //this is the internal friction test, will the pile slump
+            if(stopcrit >= 1.0)
+            {
+                set_stoppedflags(1);
+                slopetemp = -sqrt(
+                        (zeta(0) + effect_kactxy(0) * d_state_vars(0)) * (zeta(0) + effect_kactxy(0) * d_state_vars(0))
+                        * (zeta(1) + effect_kactxy(1) * d_state_vars(NUM_STATE_VARS))
+                        * (zeta(1) + effect_kactxy(1) * d_state_vars(NUM_STATE_VARS)));
+                if(slopetemp + tan(integrator->int_frict) > 0)
+                    set_stoppedflags(2);
+            }
+    	}
     }
     
     //stoppedflags=2;

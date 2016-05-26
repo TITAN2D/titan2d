@@ -971,7 +971,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     HAdapt hadapt(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,5);
     HAdaptUnrefine Unrefine(ElemTable, NodeTable, &timeprops,matprops_ptr);
 
-    HAdapt_LevelSet hadapt_levelset(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,5);
+    HAdapt_LevelSet hadapt_levelset(ElemTable, NodeTable, ElemProp,&timeprops,matprops_ptr,6);
 
     outline.setElemNodeTable(ElemTable,NodeTable);
 
