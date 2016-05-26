@@ -1,4 +1,15 @@
+# ====================================================================
 # Titan2D Installation
+# ====================================================================
+
+Titan2D is supplied with binaries for Linux and Mac OS X.
+There number of dependencies and unless you absolutly have to compile
+it please use provided binary package. See manual on how to install 
+binary package.
+
+
+Below is information on Titan2D compilation.
+
 # ====================================================================
 # Developer installation guide
 # ====================================================================
