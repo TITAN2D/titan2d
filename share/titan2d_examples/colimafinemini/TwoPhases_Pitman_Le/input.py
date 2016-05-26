@@ -45,7 +45,7 @@ sim.addPile(
 )
 
 sim.setTimeProps(
-    max_iter=30000,
+    max_iter=18000,
 )
 
 sim.setTimeSeriesOutput(
