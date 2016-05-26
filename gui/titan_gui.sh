@@ -29,10 +29,10 @@ export E_VHUB="false"
 
 fullpath="$(readlink -f $0)"
 
-libpath="$(echo "$fullpath" | sed "s?/bin/run_titan?/bin?")"
+libpath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/bin?")"
 
 # Help files are installed to $(docdir)
-helppath="$(echo "$fullpath" | sed "s?/bin/run_titan?/share/doc/titan2d?")"
+helppath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/share/doc/titan2d?")"
 
 export CLASSPATH=${CLASSPATH}:$libpath/titan_gui.jar:$libpath/jh.jar:$libpath/derby.jar:$helppath
 
