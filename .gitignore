@@ -45,6 +45,7 @@ Makefile.in
 /config.h.in
 /aclocal.m4
 /config.log
+/ltmain.sh
 #configure generated file, for thouse who like to compile in source
 Makefile
 
