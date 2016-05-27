@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/bash
 
 # Script to start the Titan2D GUI.  Enter: ./run_titan
 
@@ -12,6 +12,7 @@
 # Add the path to the Titan2D application binary to the PATH environment variable.
 # Example, in your .bashrc file:
 # export PATH=$PATH:"/projects/academic/gmfg/renettej/titan2d_github/titan2d/bin"
+
 
 # Note: on VHub, the TOOLDIR environment variable is set via HUBzero invoke processing when the Titan2D tool GUI is launched.  Need TOOLDIR defined to create KML files.  Setting TOOLDIR to the parent directory.
 export TOOLDIR="$(dirname "$(pwd)")"
@@ -29,13 +30,18 @@ export E_VHUB="false"
 
 fullpath="$(readlink -f $0)"
 
-export PATH="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/bin?"):$PATH"
+TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh??")"
 
-libpath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/lib/titan_java_gui?")"
+#load titan2d enviroment variables
+source "$TITAN2D_HOME/bin/titanvars.sh"
+
+export PATH="$TITAN2D_HOME/bin:$PATH"
+
+libpath="$TITAN2D_HOME/lib/titan_java_gui"
 
 # Help files are installed to $(docdir)
-helppath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/share/doc/titan2d?")"
+helppath="$TITAN2D_HOME/share/doc/titan2d"
 
-export CLASSPATH=${CLASSPATH}:$libpath/titan_gui.jar:$libpath/jh.jar:$libpath/derby.jar:$helppath
+export CLASSPATH=$libpath/titan_gui.jar:$libpath/jh.jar:$libpath/derby.jar:$helppath:${CLASSPATH}
 
 java titan.gui.Titan
