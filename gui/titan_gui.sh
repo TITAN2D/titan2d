@@ -29,7 +29,9 @@ export E_VHUB="false"
 
 fullpath="$(readlink -f $0)"
 
-libpath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/bin?")"
+export PATH="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/bin?"):$PATH"
+
+libpath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/lib/titan_java_gui?")"
 
 # Help files are installed to $(docdir)
 helppath="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh?/share/doc/titan2d?")"
