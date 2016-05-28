@@ -238,7 +238,6 @@ public class TitanRunInput {
 
             // Use a material map?
             // titan errors if use material map and not Coulomb
-            //if (COULOMB_MODEL == true || TWOPHASES_COULOMB_MODEL == true) {
             if (COULOMB_MODEL == true) {
                 writer.write(tab + "use_gis_matmap=" + useMaterialMap + ",\n");
             }
@@ -381,7 +380,7 @@ public class TitanRunInput {
             numVizTypes = numVizTypes + 1;
         }
 
-        if (data.mshplot) {
+        if (data.meshplot) {
             // meshplot?
             vizTypes[numVizTypes] = "meshplot";
             numVizTypes = numVizTypes + 1;
@@ -675,7 +674,7 @@ public class TitanRunInput {
 
         // Output types
         public boolean tecplot = false;
-        public boolean mshplot = false;
+        public boolean meshplot = false;
         public boolean xdmf = false;
         public boolean grass = false;
         public boolean webviz = false;

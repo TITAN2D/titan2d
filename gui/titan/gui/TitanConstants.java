@@ -97,11 +97,11 @@ public abstract class TitanConstants {
 	public static final String SAVE_TIME_DELTA2 = "SAVE_TIME_DELTA2";
 	public static final String OUTPUT_PREFIX2 = "OUTPUT_PREFIX2";
 
-	public static final String[] VizTypes = {"tecplotxxx.tec", "mshplotxxx.tec",
+	public static final String[] VizTypes = {"tecplot", "meshplot",
 			"XDMF/Paraview", "grass_sites",
 			"Web Viz", "GMFG Viz"};
 	public static final int VIS_OUTPUT_TECPLOT = 0;
-	public static final int VIS_OUTPUT_MSHPLOT = 1;
+	public static final int VIS_OUTPUT_MESHPLOT = 1;
 	public static final int VIS_OUTPUT_XDMF = 2;
 	public static final int VIS_OUTPUT_GRASS = 3;
 	public static final int VIS_OUTPUT_WEBVIZ = 4;

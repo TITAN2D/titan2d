@@ -1033,8 +1033,8 @@ public class TabJobSubmission extends JPanel {
                 String visType = mainData.getValue(TitanConstants.VIS_OUTPUT);
                 if (visType.indexOf(TitanConstants.VizTypes[TitanConstants.VIS_OUTPUT_TECPLOT]) != -1)
                     data.tecplot = true;
-                if (visType.indexOf(TitanConstants.VizTypes[TitanConstants.VIS_OUTPUT_MSHPLOT]) != -1)
-                    data.mshplot = true;
+                if (visType.indexOf(TitanConstants.VizTypes[TitanConstants.VIS_OUTPUT_MESHPLOT]) != -1)
+                    data.meshplot = true;
                 if (visType.indexOf(TitanConstants.VizTypes[TitanConstants.VIS_OUTPUT_XDMF]) != -1)
                     data.xdmf = true;
                 if (visType.indexOf(TitanConstants.VizTypes[TitanConstants.VIS_OUTPUT_GRASS]) != -1)
