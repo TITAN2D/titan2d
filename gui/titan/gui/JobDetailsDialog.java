@@ -21,17 +21,7 @@ import java.lang.Runtime;
 import java.lang.Exception;
 import java.lang.Process;
 
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JProgressBar;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 import titan.graphics.LabelDisplay;
 import titan.io.GenericReader;
@@ -99,6 +89,8 @@ public class JobDetailsDialog extends JDialog {
             stringBuilder.deleteCharAt(stringBuilder.length() - 1);
             stdout.setText(stringBuilder.toString());
 
+        } catch (FileNotFoundException e) {
+            stdout.setText("THE FILE APPPEARS TO BE MISSING.");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -187,6 +179,7 @@ public class JobDetailsDialog extends JDialog {
         String pathfile2 = "";
         //Check if images have already been created
         if (animationContour.exists() && animation3D.exists()) {
+            // Display the images
             ImageIcon i1 = new ImageIcon(filePath + "/vizout/animation.gif");
             ImageIcon i2 = new ImageIcon(filePath + "/vizout/animation3D.gif");
             imageCountourScroll = new JScrollPane(new JLabel(i1));
@@ -218,9 +211,9 @@ public class JobDetailsDialog extends JDialog {
             } else {
 
                 //if the files are not in the output dir, then check if they are in iRODS
-                outputdir_1 = filePath.substring(filePath.lastIndexOf("/") + 1);  //get final output dir
-                String tmp_dir = filePath.substring(0, filePath.lastIndexOf("/"));
-                outputdir_2 = tmp_dir.substring(tmp_dir.lastIndexOf("/") + 1);  //get possible run name
+                outputdir_1 = filePath.substring(filePath.lastIndexOf(File.separator) + 1);  //get final output dir
+                String tmp_dir = filePath.substring(0, filePath.lastIndexOf(File.separator));
+                outputdir_2 = tmp_dir.substring(tmp_dir.lastIndexOf(File.separator) + 1);  //get possible run name
 
                 //System.out.println("outputdir_1: " + outputdir_1);
                 //System.out.println("tmp_dir: " + tmp_dir);
@@ -232,7 +225,7 @@ public class JobDetailsDialog extends JDialog {
 
                 pathfile2 = java.lang.System.getProperty("user.home") + "/irods/" +
                         java.lang.System.getProperty("user.name") + "/TitanVhubResults/" +
-                        outputdir_2 + "/" + outputdir_1;
+                        outputdir_2 + File.separator + outputdir_1;
 
                 //System.out.println("path1: " + pathfile1);
                 //System.out.println("path2: " + pathfile2);
@@ -279,11 +272,8 @@ public class JobDetailsDialog extends JDialog {
                         Thread thread = this.new ImageOutput(filePath, pathfile2);
                         thread.start();
                     }
-
                 }
-
             }
-
         }
 
         // display of condor description file if necessary
@@ -358,7 +348,6 @@ public class JobDetailsDialog extends JDialog {
             } else {
                 //System.out.println("outputdir is empty: "+outputdir_1);
             }
-
         }
 
         if (data.submitMethod.compareTo("Condor") == 0) {
@@ -459,6 +448,8 @@ public class JobDetailsDialog extends JDialog {
             content = content.concat(reader.read());
         } catch (FileNotFoundException e) {
             content = new String("THE FILE APPPEARS TO BE MISSING.");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return content;
     }
@@ -524,8 +515,8 @@ public class JobDetailsDialog extends JDialog {
             }
 
             //display images
-            ImageIcon i1 = new ImageIcon(filePath + "/animation.gif");
-            ImageIcon i2 = new ImageIcon(filePath + "/animation3D.gif");
+            ImageIcon i1 = new ImageIcon(filePath + "/vizout/animation.gif");
+            ImageIcon i2 = new ImageIcon(filePath + "/vizout/animation3D.gif");
 
             //update images
             _label1.setText(null);
@@ -537,11 +528,14 @@ public class JobDetailsDialog extends JDialog {
             _label1.setIcon(i1);
             _label2.setIcon(i2);
 
+            _label1.setHorizontalAlignment(SwingConstants.CENTER);
+            _label2.setHorizontalAlignment(SwingConstants.CENTER);
+
             _label1.updateUI();
             _label2.updateUI();
 
             kmlButton.setEnabled(true);
-        }
+       }
     }
 
     //used to create kml files

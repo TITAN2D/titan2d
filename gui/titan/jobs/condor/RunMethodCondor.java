@@ -31,7 +31,7 @@ public class RunMethodCondor extends RunMethod {
 				preCommands, jobParms, srestartFile, irestartMaxNumberTimeSteps, frestartMaxTime);
 
 		this.zipGISData(gisParms[2]);
-		gisParms[2] = gisParms[2].substring(gisParms[2].lastIndexOf("/")+1);
+		gisParms[2] = gisParms[2].substring(gisParms[2].lastIndexOf(File.separator)+1);
 		//createScript(preprocParms, jobParms, preCommands);
 		createCondorScript(jobParms.getJobParameter(JobSubmissionParameters.REQUIREMENTS));
 	}

@@ -26,6 +26,11 @@ public abstract class TitanConstants {
 	public static final String SIM_DIR = "SIM_DIR";
 
 	// GIS Tab Parameters
+	public static final String GIS_FORMAT = "GIS_FORMAT";
+	public static final String[] GisFormats = { "GIS_GRASS", "GDAL" };
+	public static final int GIS_FORMAT_GIS_GRASS = 0;
+	public static final int GIS_FORMAT_GDAL = 1;
+
 	public static final String GIS_INFO_DIRECTORY = "GIS_INFO_DIRECTORY";
 	public static final String GIS_SUBDIR = "GIS_SUBDIR";
 	public static final String GIS_MAPSET = "GIS_MAPSET";
@@ -108,9 +113,9 @@ public abstract class TitanConstants {
 	public static final String USE_GIS_MAT_MAP = "USE_GIS_MAT_MAP";
 	public static final String STOPPING_CRITERIA = "STOPPING_CRITERIA";
 
-	public static final String[] PhysicsModels = {"Coulomb", "TwoPhases_Coulomb", "Voellmy-Salm", "Pouliquen-Forterre"};
+	public static final String[] PhysicsModels = {"Coulomb", "TwoPhases-Pitman-Le", "Voellmy-Salm", "Pouliquen-Forterre"};
 	public static final int PHYSICS_MODEL_COULOMB = 0;
-	public static final int PHYSICS_MODEL_TWOPHASES_COULOMB = 1;
+	public static final int PHYSICS_MODEL_TWOPHASES_PITMAN_LE = 1;
 	public static final int PHYSICS_MODEL_VOELLMY_SALM = 2;
 	public static final int PHYSICS_MODEL_POULIQUEN_FORTERRE = 3;
 
@@ -132,7 +137,7 @@ public abstract class TitanConstants {
 	public static final String[] CoulombParmNames =
 			{"int_frict", "bed_frict"};
 
-	public static final String[] TwoPhasesCoulombParmNames =
+	public static final String[] TwoPhasesPitmanLeParmNames =
 			{"int_frict", "bed_frict"};
 
 	public static final String[] VoellmySalmParmNames =
@@ -143,7 +148,7 @@ public abstract class TitanConstants {
 
 	public static final String[] CoulombParmUnits =
 			{"[deg]", "[deg]"};
-	public static final String[] TwoPhasesCoulombParmUnits =
+	public static final String[] TwoPhasesPitmanLeParmUnits =
 			{"[deg]", "[deg]"};
 	public static final String[] VoellmySalmParmUnits =
 			{"[deg]", "[deg]"};
@@ -151,10 +156,10 @@ public abstract class TitanConstants {
 			{"[deg]", "[deg]", "[deg]", "", ""};
 
 	public static final String[][] matParmNames =
-			{CoulombParmNames, TwoPhasesCoulombParmNames, VoellmySalmParmNames, PouliquenForterreParmNames};
+			{CoulombParmNames, TwoPhasesPitmanLeParmNames, VoellmySalmParmNames, PouliquenForterreParmNames};
 
 	public static final String[][] matParmUnits =
-			{CoulombParmUnits, TwoPhasesCoulombParmUnits, VoellmySalmParmUnits, PouliquenForterreParmUnits};
+			{CoulombParmUnits, TwoPhasesPitmanLeParmUnits, VoellmySalmParmUnits, PouliquenForterreParmUnits};
 
 	// Note: these are not constants;
 	// These get read in from the material map file.
@@ -203,7 +208,7 @@ public abstract class TitanConstants {
 
 	public static final String[] parameterKeyList = {
 			SIM_DIR, ZONEOVERRIDE, HEMISPHERE, EMAIL_ADDRESS,
-			GIS_INFO_DIRECTORY, GIS_SUBDIR, GIS_MAPSET, GIS_MAP, GIS_VECTOR,
+			GIS_FORMAT,GIS_INFO_DIRECTORY, GIS_SUBDIR, GIS_MAPSET, GIS_MAP, GIS_VECTOR,
 			MIN_X_LOC, MIN_Y_LOC, MAX_X_LOC, MAX_Y_LOC,
 	        RESTART_ENABLED, RESTART_FILE, MAX_NUM_TIME_STEPS, MAX_TIME, NUM_CELLS_ACROSS, AMR, ORDER_METHOD,
 			SCALE_SIM, LENGTH_SCALE, GRAVITY_SCALE, HEIGHT_SCALE,
@@ -218,7 +223,7 @@ public abstract class TitanConstants {
 
 	public static final String[] parameterValueDefaults = {
 			"","",HemisphereHalves[0],"",
-		    "", "", "", "", "",
+		    GisFormats[GIS_FORMAT_GIS_GRASS], "", "", "", "", "",
 			"", "", "", "",
 		    FALSE, "", "", "", "20", TRUE, OrderMethod[ORDER_METHOD_FIRST],
 			FALSE, "", "9.8", "",

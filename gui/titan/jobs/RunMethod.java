@@ -47,26 +47,26 @@ public abstract class RunMethod {
 			Integer.parseInt(jobParms.getJobParameter(JobSubmissionParameters.NODES)) *
 			Integer.parseInt(jobParms.getJobParameter(JobSubmissionParameters.CPUS));
 
-        gisParms = new String[12];
+        gisParms = new String[13];
         gisParms[0] = new String(Integer.toString(numProcessors));
-        gisParms[1] = new String(gParms.NUM_CELLS_ACROSS);
-        gisParms[2] = new String(gParms.GIS_INFO_DIRECTORY);
-        gisParms[3] = new String(gParms.GIS_SUBDIR);
-        gisParms[4] = new String(gParms.GIS_MAPSET);
-        gisParms[5] = new String(gParms.GIS_MAP);
-        gisParms[6] = new String(gParms.MIN_X_LOC);
-        gisParms[7] = new String(gParms.MIN_Y_LOC);
-        gisParms[8] = new String(gParms.MAX_X_LOC);
-        gisParms[9] = new String(gParms.MAX_Y_LOC);
-		gisParms[10] = new String(gParms.ZONEOVERRIDE);
-        gisParms[11] = new String(gParms.HEMISPHERE);
+		gisParms[1] = new String(gParms.NUM_CELLS_ACROSS);
+        gisParms[2] = new String(gParms.GIS_FORMAT);
+        gisParms[3] = new String(gParms.GIS_INFO_DIRECTORY);
+        gisParms[4] = new String(gParms.GIS_SUBDIR);
+        gisParms[5] = new String(gParms.GIS_MAPSET);
+        gisParms[6] = new String(gParms.GIS_MAP);
+        gisParms[7] = new String(gParms.MIN_X_LOC);
+        gisParms[8] = new String(gParms.MIN_Y_LOC);
+        gisParms[9] = new String(gParms.MAX_X_LOC);
+        gisParms[10] = new String(gParms.MAX_Y_LOC);
+		gisParms[11] = new String(gParms.ZONEOVERRIDE);
+        gisParms[12] = new String(gParms.HEMISPHERE);
 
         binMode = useExternal;
         binDir = binaryDir;
 		restartFile = srestartFile;
 		restartMaxNumberTimeSteps = irestartMaxNumberTimeSteps;
 		restartMaxTime = frestartMaxTime;
-
 	}
 	
 	public JobDetails runJob() { return null; }
@@ -78,8 +78,8 @@ public abstract class RunMethod {
 	protected void zipGISData(String gisData) {
 		try {
 
-			String cdDir = gisData.substring(0, gisData.lastIndexOf("/"));
-			String tarDir = gisData.substring(gisData.lastIndexOf("/")+1);
+			String cdDir = gisData.substring(0, gisData.lastIndexOf(File.separator));
+			String tarDir = gisData.substring(gisData.lastIndexOf(File.separator)+1);
 			Process tarJob = Runtime.getRuntime().exec("tar cvf " +
 		    		basedir + File.separator + GIS_DATA_TAR + " -C" + cdDir + " " + tarDir);
 			tarJob.waitFor();
@@ -93,6 +93,7 @@ public abstract class RunMethod {
 	
 	public class GisParms {
 		public String NUM_CELLS_ACROSS = null;
+		public String GIS_FORMAT = null;
 		public String GIS_INFO_DIRECTORY = null;
 		public String GIS_SUBDIR = null;
 		public String GIS_MAPSET = null;
@@ -105,5 +106,4 @@ public abstract class RunMethod {
 		public String ZONEOVERRIDE = null;
 		public String HEMISPHERE = null;
 	}
-
 }

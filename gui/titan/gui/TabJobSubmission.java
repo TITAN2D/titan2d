@@ -321,8 +321,8 @@ public class TabJobSubmission extends JPanel {
     private class SaveAction implements ActionListener {
         public void actionPerformed(ActionEvent e) {
 
-            // Send pile volume_fraction field for the TwoPhases_Coulomb physics model only,
-            boolean TWOPHASES_COULOMB_MODEL = false;
+            // Send pile volume_fraction field for the TwoPhases-Pitman-Le model only,
+            boolean TWOPHASES_PITMAN_LE_MODEL = false;
 
             Calendar currentDate = Calendar.getInstance();
 
@@ -380,7 +380,7 @@ public class TabJobSubmission extends JPanel {
                                 "when modifying a field, click enter <Enter> or another field.\n\n" +
                                 "Note: this will occur when loading an Input Directory from a previous version of the Titan2D tool;\n" +
                                 "to fix, set the Pile(s) Type(s) field(s) on the Piles Tab.  Please see Help for more information.\n\n" +
-                                "Note: this will occur after changing the Material Model of a loaded test to TwoPhases_Coulomb;\n" +
+                                "Note: this will occur after changing the Material Model of a loaded test to TwoPhases-Pitman-Le;\n" +
                                 "to fix, set the Volume Fraction field(s) on the Piles tab.\n\n" +
                                 "Unable to submit the job.",
                         "Job Submission Error",
@@ -637,32 +637,71 @@ public class TabJobSubmission extends JPanel {
 
                 // GIS tab
 
-                //change mainDirectory
-                if (runStyle.getValue().compareTo(JobSubmissionContainer.RUN_STYLE_SUBMIT) == 0) {
-                    String fullPathTemp = mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY);
-                    int index = fullPathTemp.lastIndexOf("/");
-                    data.mainDirectory = fullPathTemp.substring(index + 1);
-                } else {
-                    data.mainDirectory = mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY);
-                }
+                data.format = mainData.getValue(TitanConstants.GIS_FORMAT);
 
-                //data.mainDirectory = mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY);
-                data.subDirectory = mainData.getValue(TitanConstants.GIS_SUBDIR);
-                data.mapset = mainData.getValue(TitanConstants.GIS_MAPSET);
-                data.map = mainData.getValue(TitanConstants.GIS_MAP);
-                if (data.mainDirectory.compareTo("") == 0 ||
-                        data.subDirectory.compareTo("") == 0 ||
-                        data.mapset.compareTo("") == 0 ||
-                        data.map.compareTo("") == 0) {
-                    JOptionPane.showMessageDialog(TabJobSubmission.this,
-                            "A field on the GIS tab is blank.\n" +
-                                    "Unable to submit the job.",
-                            "Job Submission Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                if (data.format.compareTo(TitanConstants.GisFormats[TitanConstants.GIS_FORMAT_GIS_GRASS]) == 0) {
 
-                data.vector = mainData.getValue(TitanConstants.GIS_VECTOR);
+                    // GIS_GRASS
+
+                    //For HUB-Submits, the information main directory is zipped into a tar.gz file
+                    if (runStyle.getValue().compareTo(JobSubmissionContainer.RUN_STYLE_SUBMIT) == 0) {
+                        String fullPathTemp = mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY);
+                        int index = fullPathTemp.lastIndexOf(File.separator);
+                        data.mainDirectory = fullPathTemp.substring(index + 1);
+                    } else {
+                        data.mainDirectory = mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY);
+                    }
+
+                    data.subDirectory = mainData.getValue(TitanConstants.GIS_SUBDIR);
+                    data.mapset = mainData.getValue(TitanConstants.GIS_MAPSET);
+                    data.map = mainData.getValue(TitanConstants.GIS_MAP);
+                    data.vector = mainData.getValue(TitanConstants.GIS_VECTOR);
+
+                    if (data.mainDirectory.compareTo("") == 0 ||
+                            data.subDirectory.compareTo("") == 0 ||
+                            data.mapset.compareTo("") == 0 ||
+                            data.map.compareTo("") == 0) {
+                        JOptionPane.showMessageDialog(TabJobSubmission.this,
+                                "The Information Main Directory, Sub-Directory, Map Set and/or Map field(s) on the GIS tab are blank.\n" +
+                                        "Unable to submit the job.",
+                                "Job Submission Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }else {
+
+                    // GDAL
+
+                    //For HUB-Submits, the mapset directory is zipped into a tar.gz file
+                    if (runStyle.getValue().compareTo(JobSubmissionContainer.RUN_STYLE_SUBMIT) == 0) {
+
+                        String fullPathTemp;
+                        String map;
+                        String cellhddir;
+                        String cellhd;
+                        String mapsetdir;
+                        String mapset;
+
+                        fullPathTemp = mainData.getValue(TitanConstants.GIS_MAP);
+                        map = fullPathTemp.substring(fullPathTemp.lastIndexOf(File.separator) + 1);
+                        cellhddir = fullPathTemp.substring(0, fullPathTemp.lastIndexOf(File.separator));
+                        cellhd = cellhddir.substring(cellhddir.lastIndexOf(File.separator) + 1);
+                        mapsetdir = cellhddir.substring(0, cellhddir.lastIndexOf(File.separator));
+                        mapset = mapsetdir.substring(mapsetdir.lastIndexOf(File.separator) + 1);
+                        data.map = mapset + File.separator + cellhd + File.separator + map;
+                    } else {
+                        data.map = mainData.getValue(TitanConstants.GIS_MAP);
+                    }
+
+                    if (data.map.compareTo("") == 0) {
+                       JOptionPane.showMessageDialog(TabJobSubmission.this,
+                                "The Map field on the GIS tab is blank.\n" +
+                                        "Unable to submit the job.",
+                                "Job Submission Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
 
                 if (mainData.getValue(TitanConstants.ZONEOVERRIDE).compareTo("") != 0) {
                     try {
@@ -731,7 +770,7 @@ public class TabJobSubmission extends JPanel {
                     }
                 }
 
-			/*if(data.mainDirectory.startsWith("/") == false) {
+			/*if(data.mainDirectory.startsWith(File.separator) == false) {
                 JOptionPane.showMessageDialog(TabJobSubmission.this,
 						"The GIS Main Directory on the GIS tab must be an\n" +
                         "absolute path.  Unable to submit the job.",
@@ -958,6 +997,8 @@ public class TabJobSubmission extends JPanel {
 
                 data.overwriteOutput = Boolean.valueOf(mainData.getValue(TitanConstants.OVERWRITE_OUTPUT)).booleanValue();
 
+                data.restartOutputEnabled = Boolean.valueOf(mainData.getValue(TitanConstants.RESTART_OUTPUT_ENABLED)).booleanValue();
+
                 if (mainData.getValue(TitanConstants.RESULT_OUTPUT_TIME_DELTA1).compareTo("") != 0) {
                     try {
                         data.resultOutputDelta1 = Float.parseFloat(mainData.getValue(TitanConstants.RESULT_OUTPUT_TIME_DELTA1));
@@ -1036,9 +1077,9 @@ public class TabJobSubmission extends JPanel {
                 // Material map material model datum
                 data.physicsModel = (mainData.getValue(TitanConstants.PHYSICS_MODEL));
 
-                // Send pile vol_fract field for the TwoPhases_Coulomb physics model only
-                if (TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB].compareTo(data.physicsModel) == 0) {
-                    TWOPHASES_COULOMB_MODEL = true;
+                // Send pile vol_fract field for the TwoPhases-Pitman-Le model only
+                if (TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_PITMAN_LE].compareTo(data.physicsModel) == 0) {
+                    TWOPHASES_PITMAN_LE_MODEL = true;
                 }
 
                 data.useMaterialMap = Boolean.valueOf(mainData.getValue(TitanConstants.USE_GIS_MAT_MAP)).booleanValue();
@@ -1094,8 +1135,7 @@ public class TabJobSubmission extends JPanel {
 
                 int index;
                 for (int i = 0; i < numParms; i++) {
-                    if ((physicsModelIndex == TitanConstants.PHYSICS_MODEL_COULOMB ||
-                            physicsModelIndex == TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB) &&
+                    if (physicsModelIndex == TitanConstants.PHYSICS_MODEL_COULOMB &&
                             data.useMaterialMap == true) {
                         if (i == TitanConstants.INT_FRICT_INDEX) {
                             matParmName = matParmNames[TitanConstants.INT_FRICT_INDEX];
@@ -1148,8 +1188,8 @@ public class TabJobSubmission extends JPanel {
                         data.pile[i].centerVolumeX = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_CENTER_INIT_VOLUME_XC));
                         data.pile[i].centerVolumeY = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_CENTER_INIT_VOLUME_YC));
 
-                        // Allow a blank field for volume fraction when physics model is not TwoPhases_Coulomb
-                        if (TWOPHASES_COULOMB_MODEL == true) {
+                        // Allow a blank field for volume fraction when physics model is not TwoPhases-Pitman-Le
+                        if (TWOPHASES_PITMAN_LE_MODEL == true) {
                             data.pile[i].volumeFraction = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_VOLUME_FRACTION));
                         }
 
@@ -1248,9 +1288,17 @@ public class TabJobSubmission extends JPanel {
                 // Create the zone.txt file
                 int zone = 0;
                 boolean zoneFound = false;
-                String cellhdmapfile =
-                        data.mainDirectory + File.separator + data.subDirectory + File.separator + data.mapset + File.separator
-                                + "cellhd" + File.separator + data.map;
+                String cellhdmapfile;
+                if (data.format.compareTo(TitanConstants.GisFormats[TitanConstants.GIS_FORMAT_GIS_GRASS]) == 0) {
+                    cellhdmapfile =
+                            mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY) + File.separator +
+                                    mainData.getValue(TitanConstants.GIS_SUBDIR) + File.separator +
+                                    mainData.getValue(TitanConstants.GIS_MAPSET) + File.separator +
+                                    "cellhd" + File.separator + mainData.getValue(TitanConstants.GIS_MAP);
+                } else {
+                    // For GDAL, GIS Map is a full path name
+                    cellhdmapfile = mainData.getValue(TitanConstants.GIS_MAP);
+                }
                 BufferedWriter writer;
                 String fn;
 
@@ -1460,6 +1508,7 @@ public class TabJobSubmission extends JPanel {
             RunMethod.GisParms gParms = runMethod.new GisParms();
 
             gParms.NUM_CELLS_ACROSS = mainData.getValue(TitanConstants.NUM_CELLS_ACROSS);
+            gParms.GIS_FORMAT = mainData.getValue(TitanConstants.GIS_FORMAT);
             gParms.GIS_INFO_DIRECTORY = mainData.getValue(TitanConstants.GIS_INFO_DIRECTORY);
             gParms.GIS_SUBDIR = mainData.getValue(TitanConstants.GIS_SUBDIR);
             gParms.GIS_MAPSET = mainData.getValue(TitanConstants.GIS_MAPSET);

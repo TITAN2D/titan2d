@@ -56,19 +56,6 @@ public class RunMethodLocal extends RunMethod {
                 writer.write(pre);
                 writer.write("\n");
 
-                //Display the zone
-                //String zoneFile = null;
-                //String cellhdDirectory =
-                        //preprocParms[2]+File.separator+preprocParms[3]+File.separator+preprocParms[4]+File.separator+"cellhd";
-
-                //if (binMode == true)
-                    //zoneFile = new String(binDir + File.separator + "getZone.pl " + cellhdDirectory + " " + basedir + " " + preprocParms[10]);
-                //else
-                    //zoneFile = new String("getZone.pl " + cellhdDirectory + " " + basedir + " " + preprocParms[10]);
-                //writer.write("# Find the zone\n");
-                //writer.write(zoneFile + " 1>> " + STDOUT + " 2>> " + STDERR + "\n");
-                //writer.write("\n");
-
                 // titan
                 // this is where we need to run with the different run modes.
                 // openMP mode

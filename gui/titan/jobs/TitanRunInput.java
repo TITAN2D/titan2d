@@ -20,8 +20,8 @@ public class TitanRunInput {
     private BufferedWriter writer;
     private String baseDir;
 
-    // Send pile volume_fraction field for the TwoPhases_Coulomb physics model only
-    private boolean TWOPHASES_COULOMB_MODEL = false;
+    // Send pile volume_fraction field for the TwoPhases-Pitman-Le model only
+    private boolean TWOPHASES_PITMAN_LE_MODEL = false;
 
     public TitanRunInput(String dir) {
 
@@ -45,7 +45,7 @@ public class TitanRunInput {
             writeSetGIS(writer, data);
             writeSetScale(writer, data, scaleData);
             writeSetNumProp(writer, data);
-            // Send pile vol_fract field for the TwoPhases_Coulomb physics model only,
+            // Send pile vol_fract field for the TwoPhases-Pitman-Le model only,
             // therefore call SetMatModel before writeAddPile
             writeSetMatModel(writer, data);
             writeSetTimeProps(writer, data);
@@ -74,26 +74,37 @@ public class TitanRunInput {
             writer.write("sim.setGIS(\n");
 
             // GIS format
-            // rlj - TODO - add and test GDAL support
-            writer.write(tab + "gis_format='" + "GIS_GRASS" + "',\n");
+            writer.write(tab + "gis_format='" + data.format + "',\n");
 
-            // GIS Main directory
-            writer.write(tab + "gis_main='" + data.mainDirectory + "',\n");
+            if (data.format.compareTo(TitanConstants.GisFormats[TitanConstants.GIS_FORMAT_GIS_GRASS]) == 0) {
 
-            // GIS subdirectory
-            writer.write(tab + "gis_sub='" + data.subDirectory + "',\n");
+                // GIS_GRASS
 
-            // GIS Mapset
-            writer.write(tab + "gis_mapset='" + data.mapset + "',\n");
+                // GIS Main directory
+                writer.write(tab + "gis_main='" + data.mainDirectory + "',\n");
 
-            // GIS Map
-            writer.write(tab + "gis_map='" + data.map + "',\n");
+                // GIS subdirectory
+                writer.write(tab + "gis_sub='" + data.subDirectory + "',\n");
 
-            // GIS Vector
-            if (data.vector.compareTo("") == 0) {
-                writer.write(tab + "gis_vector=" + "None" + ",\n");
+                // GIS Mapset
+                writer.write(tab + "gis_mapset='" + data.mapset + "',\n");
+
+                // GIS Map
+                writer.write(tab + "gis_map='" + data.map + "',\n");
+
+                // GIS Vector
+                if (data.vector.compareTo("") == 0) {
+                    writer.write(tab + "gis_vector=" + "None" + ",\n");
+                } else {
+                    writer.write(tab + "gis_vector='" + data.vector + "',\n");
+                }
             } else {
-                writer.write(tab + "gis_vector='" + data.vector + "',\n");
+
+                // GDAL
+
+                // GIS Map
+                // Need full path name for GDAL
+                writer.write(tab + "gis_map='" + data.map + "',\n");
             }
 
             // Min and Max x and y locations
@@ -205,9 +216,9 @@ public class TitanRunInput {
             if (data.physicsModel.compareTo(TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_COULOMB]) == 0) {
                 COULOMB_MODEL = true;
             }
-            // Send pile vol_fract field for the TwoPhases_Coulomb physics model only
-            if (data.physicsModel.compareTo(TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB]) == 0) {
-                TWOPHASES_COULOMB_MODEL = true;
+            // Send pile vol_fract field for the TwoPhases-Pitman-Le physics model only
+            if (data.physicsModel.compareTo(TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_PITMAN_LE]) == 0) {
+                TWOPHASES_PITMAN_LE_MODEL = true;
             }
 
             for (int i = 0; i < TitanConstants.PhysicsModels.length; i++) {
@@ -227,8 +238,9 @@ public class TitanRunInput {
 
             // Use a material map?
             // titan errors if use material map and not Coulomb
+            //if (COULOMB_MODEL == true || TWOPHASES_COULOMB_MODEL == true) {
             if (COULOMB_MODEL == true) {
-               writer.write(tab + "use_gis_matmap=" + useMaterialMap + ",\n");
+                writer.write(tab + "use_gis_matmap=" + useMaterialMap + ",\n");
             }
 
             // Send stopping_criteria for the Coulomb physics model only
@@ -258,10 +270,10 @@ public class TitanRunInput {
                 String materialName;
 
                 for (int i = 1; i < data.numPhysicsModelParameters; i++) {
-                    materialName = TitanConstants.MATERIAL_MAP_NAMES[i-1].replaceAll ("\\s","");
+                    materialName = TitanConstants.MATERIAL_MAP_NAMES[i - 1].replaceAll("\\s", "");
                     if (i < data.numPhysicsModelParameters - 1)
-                       writer.write(tab + tab + "'" + materialName +
-                               "':" + data.matParmsVals[i] + ",\n");
+                        writer.write(tab + tab + "'" + materialName +
+                                "':" + data.matParmsVals[i] + ",\n");
                     else writer.write(tab + tab + "'" + materialName +
                             "':" + data.matParmsVals[i] + "\n");
                 }
@@ -271,12 +283,12 @@ public class TitanRunInput {
                 for (int i = 0; i < matParmNames.length; i++) {
                     matParmName = matParmNames[i];
                     if (i < matParmNames.length - 1)
-                       writer.write(tab + matParmName + "=" + data.matParmsVals[i] + ",\n");
+                        writer.write(tab + matParmName + "=" + data.matParmsVals[i] + ",\n");
                     else writer.write(tab + matParmName + "=" + data.matParmsVals[i] + "\n");
                 }
             }
 
-           writer.write(")\n\n");
+            writer.write(")\n\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -314,42 +326,45 @@ public class TitanRunInput {
 
     public void writeSetRestartOutput(BufferedWriter writer, TitanSimulationData data) {
 
-        try {
+        if (data.restartOutputEnabled == true) {
 
-            // Check flags
+            try {
 
-            String keepAll = "";
-            String keepRedundantData = "";
+                // Check flags
 
-            if (data.keepAll == true) keepAll = new String("True");
-            else keepAll = new String("False");
-            if (data.keepRedundantData == true) keepRedundantData = new String("True");
-            else keepRedundantData = new String("False");
+                String keepAll = "";
+                String keepRedundantData = "";
 
-            writer.write("sim.setRestartOutput(\n");
+                if (data.keepAll == true) keepAll = new String("True");
+                else keepAll = new String("False");
+                if (data.keepRedundantData == true) keepRedundantData = new String("True");
+                else keepRedundantData = new String("False");
 
-            // Time between result output
-            if (data.resultOutputDelta1 == TitanSimulationData.BLANK_FIELD) {
-                writer.write(tab + "dtime=" + "None" + ",\n");
-            } else {
-                writer.write(tab + "dtime=" + data.resultOutputDelta1 + ",\n");
+                writer.write("sim.setRestartOutput(\n");
+
+                // Time between result output
+                if (data.resultOutputDelta1 == TitanSimulationData.BLANK_FIELD) {
+                    writer.write(tab + "dtime=" + "None" + ",\n");
+                } else {
+                    writer.write(tab + "dtime=" + data.resultOutputDelta1 + ",\n");
+                }
+
+                // Time between saves
+                if (data.saveDelta1 == TitanSimulationData.BLANK_FIELD) {
+                    writer.write(tab + "diter=" + "None" + ",\n");
+                } else {
+                    writer.write(tab + "diter=" + data.saveDelta1 + ",\n");
+                }
+
+                writer.write(tab + "keep_all=" + keepAll + ",\n");
+                writer.write(tab + "keep_redundant_data=" + keepRedundantData + ",\n");
+
+                writer.write(tab + "output_prefix='" + data.outputPrefix1 + "'\n");
+
+                writer.write(")\n\n");
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
-
-            // Time between saves
-            if (data.saveDelta1 == TitanSimulationData.BLANK_FIELD) {
-                writer.write(tab + "diter=" + "None" + ",\n");
-            } else {
-                writer.write(tab + "diter=" + data.saveDelta1 + ",\n");
-            }
-
-            writer.write(tab + "keep_all=" + keepAll + ",\n");
-            writer.write(tab + "keep_redundant_data=" + keepRedundantData + ",\n");
-
-            writer.write(tab + "output_prefix='" + data.outputPrefix1 + "'\n");
-
-            writer.write(")\n\n");
-        } catch (IOException ex) {
-            ex.printStackTrace();
         }
     }
 
@@ -357,46 +372,46 @@ public class TitanRunInput {
 
     public void writeSetTimeSeriesOutput(BufferedWriter writer, TitanSimulationData data) {
 
-        try {
+        // 0 - 4 vizoutput
+        String[] vizTypes = new String[4];
+        int numVizTypes = 0;
 
-            // 0 - 4 vizoutput
-            String[] vizTypes = new String[4];
-            int numVizTypes = 0;
+        if (data.tecplot) {
+            vizTypes[numVizTypes] = "tecplot";
+            numVizTypes = numVizTypes + 1;
+        }
 
-            if (data.tecplot) {
-                vizTypes[numVizTypes] = "tecplot";
-                numVizTypes = numVizTypes + 1;
-            }
+        if (data.mshplot) {
+            // meshplot?
+            vizTypes[numVizTypes] = "meshplot";
+            numVizTypes = numVizTypes + 1;
+        }
 
-            if (data.mshplot) {
-                // meshplot?
-                vizTypes[numVizTypes] = "meshplot";
-                numVizTypes = numVizTypes + 1;
-            }
+        if (data.xdmf) {
+            vizTypes[numVizTypes] = "xdmf";
+            numVizTypes = numVizTypes + 1;
+        }
 
-            if (data.xdmf) {
-                vizTypes[numVizTypes] = "xdmf";
-                numVizTypes = numVizTypes + 1;
-            }
+        if (data.grass) {
+            vizTypes[numVizTypes] = "grasssites";
+            numVizTypes = numVizTypes + 1;
+        }
 
-            if (data.grass) {
-                vizTypes[numVizTypes] = "grasssites";
-                numVizTypes = numVizTypes + 1;
-            }
+        if (data.webviz) {
+            // Previously handled by vhub version of titan2d only.
+            // Ability to select webviz disabled.
+            // Stub for adding handling in this version of titan
+        }
 
-            if (data.webviz) {
-                // Previously handled by vhub version of titan2d only.
-                // Ability to select webviz disabled.
-                // Stub for adding handling in this version of titan
-            }
+        if (data.webviz) {
+            // Previously handled by vhub version of titan2d only.
+            // Ability to select gmfg disabled.
+            // Stub for adding handling in this version of titan
+        }
 
-            if (data.webviz) {
-                // Previously handled by vhub version of titan2d only.
-                // Ability to select gmfg disabled.
-                // Stub for adding handling in this version of titan
-            }
+        if (numVizTypes > 0) {
 
-            if (numVizTypes > 0) {
+            try {
 
                 writer.write("sim.setTimeSeriesOutput(\n");
 
@@ -424,9 +439,9 @@ public class TitanRunInput {
                 writer.write(tab + "output_prefix='" + data.outputPrefix2 + "'\n");
 
                 writer.write(")\n\n");
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
-        } catch (IOException ex) {
-            ex.printStackTrace();
         }
     }
 
@@ -529,8 +544,8 @@ public class TitanRunInput {
                 writer.write(tab + "orientation=" + data.pile[pile].orientation + ",\n");
                 writer.write(tab + "Vmagnitude=" + data.pile[pile].speed + ",\n");
 
-                // Send pile vol_fract field for the TwoPhases_Coulomb physics model only
-                if (TWOPHASES_COULOMB_MODEL == true) {
+                // Send pile vol_fract field for the TwoPhases-Pitman-Le model only
+                if (TWOPHASES_PITMAN_LE_MODEL == true) {
                     writer.write(tab + "Vdirection=" + data.pile[pile].direction + ",\n");
                     writer.write(tab + "vol_fract" + "=" + data.pile[pile].volumeFraction + "\n");
                 } else {
@@ -609,6 +624,7 @@ public class TitanRunInput {
         public TitanSimulationPlane[] plane = new TitanSimulationPlane[0];
 
         // GIS Tab
+        public String format;
         public String mainDirectory;
         public String subDirectory;
         public String mapset;
@@ -650,6 +666,7 @@ public class TitanRunInput {
 
         public boolean overwriteOutput = false;
 
+        public boolean restartOutputEnabled = false;
         public float resultOutputDelta1 = BLANK_FIELD;
         public int saveDelta1 = BLANK_FIELD;
         public boolean keepAll = false;

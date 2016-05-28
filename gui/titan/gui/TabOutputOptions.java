@@ -126,6 +126,7 @@ public class TabOutputOptions extends TitanTab {
             }
         }, TitanConstants.TRUE);
     }
+
     public void setData(INameValuePair[] data) {
         super.setData(data);
 

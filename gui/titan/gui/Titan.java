@@ -419,8 +419,8 @@ public class Titan extends JPanel {
             String physicsModel = matModelMap.getPhysicsModel();
             //System.out.println("Saved material model: " + physicsModel);
 
-            // If the physics model is TwoPhases_Coulomb, need to read in volume fraction
-            if (TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB].compareTo(physicsModel) == 0) {
+            // If the material model is TwoPhases-Pitman-Le, need to read in volume fraction
+            if (TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_PITMAN_LE].compareTo(physicsModel) == 0) {
                 piles.setHeadings(true);
             }
 
@@ -524,5 +524,4 @@ public class Titan extends JPanel {
             Titan.Exit(titan, titan.getDB(), 0);
         }
     }
-
 }

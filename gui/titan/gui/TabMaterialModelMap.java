@@ -12,10 +12,7 @@ import titan.io.INameValuePair;
 import titan.io.NameValuePairComponent;
 import titan.io.NameValuePairGroup;
 
-import java.io.FileInputStream;
-import java.io.DataInputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -101,10 +98,10 @@ public class TabMaterialModelMap extends TitanTab {
             public void actionPerformed(ActionEvent ev) {
                 useMaterialMap.setEditable(false);
                 stoppingCriteria.setEditable(false);
-                setUseMaterialMap(TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB, true);
+                setUseMaterialMap(TitanConstants.PHYSICS_MODEL_TWOPHASES_PITMAN_LE, true);
                 titan.gui.Titan.updatePileTab(true);
             }
-        }, TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB]);
+        }, TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_PITMAN_LE]);
 
         physicsModel.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ev) {
@@ -124,7 +121,7 @@ public class TabMaterialModelMap extends TitanTab {
             }
         }, TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_POULIQUEN_FORTERRE]);
 
-        // useMaterialMap ActionListeners valid for Coulomb and TwoPhases_Coulomb only
+        // useMaterialMap ActionListeners valid for Coulomb model only
         useMaterialMap.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ev) {
                 for (int i = 0; i < TitanConstants.PhysicsModels.length; i++) {
@@ -155,8 +152,6 @@ public class TabMaterialModelMap extends TitanTab {
         if (physicsModel.getValue().compareTo(TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_COULOMB]) == 0) {
             stoppingCriteria.setEditable(true);
             useMaterialMap.setEditable(true);
-        //} else if (physicsModel.getValue().compareTo(TitanConstants.PhysicsModels[TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB]) == 0) {
-            //useMaterialMap.setEditable(true);
         } else {
             stoppingCriteria.setEditable(false);
             useMaterialMap.setEditable(false);
@@ -174,8 +169,6 @@ public class TabMaterialModelMap extends TitanTab {
 
         // set == true to verify the GIS info and setup for Material Map processing;
         // set == false to verify the GIS info
-        //if ((physicsModelIndex == TitanConstants.PHYSICS_MODEL_COULOMB ||
-                //physicsModelIndex == TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB) &&
         if (physicsModelIndex == TitanConstants.PHYSICS_MODEL_COULOMB &&
                 useMaterialMap.getValue() == TitanConstants.TRUE) {
 
@@ -200,7 +193,7 @@ public class TabMaterialModelMap extends TitanTab {
                 return false;
             }
 
-            String matPath = mainDirectory + "/" + subDirectory + "/" + mapset + "/cats/" + map + "_Mat";
+            String matPath = mainDirectory + File.separator + subDirectory + File.separator + mapset + "/cats/" + map + "_Mat";
             System.out.println(matPath);
 
             // vector to hold material names
@@ -304,8 +297,6 @@ public class TabMaterialModelMap extends TitanTab {
         String matParmUnit;
 
         int index = 0;
-        //if ((physicsModelIndex == TitanConstants.PHYSICS_MODEL_COULOMB ||
-        //        physicsModelIndex == TitanConstants.PHYSICS_MODEL_TWOPHASES_COULOMB) &&
         if (physicsModelIndex == TitanConstants.PHYSICS_MODEL_COULOMB &&
                 useMaterialMap.getValue() == TitanConstants.TRUE) {
 

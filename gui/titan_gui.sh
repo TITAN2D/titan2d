@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to start the Titan2D GUI.  Enter: ./run_titan
+# Script to start the Titan2D GUI.  Enter: titan_gui.sh
 
 # The location of the Titan2D application binary must be included in the PATH environment variable.  
 # (Note: On VHub, the location of the Titan application binary is set via HUBzero invoke processing when the Titan2D tool GUI is launched).  Examples:
@@ -17,23 +17,19 @@ fullpath="$(readlink -f $0)"
 
 export TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh??")"
 
-# Note: on VHub, the TOOLDIR environment variable is set via HUBzero invoke processing when the Titan2D tool GUI is launched.  Need TOOLDIR defined to create KML files.  Setting TOOLDIR to the parent directory.
-#export TOOLDIR="$(dirname "$(pwd)")"
-#export TOOLDIR="$TITAN2D_HOME"
-
 # Note: The Titan2D GUI's Job Submission Tab's Hub-Submit Run Style option is available on VHub only.
 # Note: On VHub, only 1 node and 1 cpu are allowed per job.
 # Default, assumes running Titan2d GUI on VHub
-export E_VHUB="false"
+# export E_VHUB="false"
 
 # Specify the start directory for the Titan2D GUI's directory selectors.
 # Default, $Home
 # Example:
-# export E_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui"
+# export E_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui_input"
 
 
 
-#load titan2d enviroment variables
+#load titan2d environment variables
 source "$TITAN2D_HOME/bin/titanvars.sh"
 
 export PATH="$TITAN2D_HOME/bin:$PATH"
