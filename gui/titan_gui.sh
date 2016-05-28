@@ -13,10 +13,13 @@
 # Example, in your .bashrc file:
 # export PATH=$PATH:"/projects/academic/gmfg/renettej/titan2d_github/titan2d/bin"
 
+fullpath="$(readlink -f $0)"
+
+export TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh??")"
 
 # Note: on VHub, the TOOLDIR environment variable is set via HUBzero invoke processing when the Titan2D tool GUI is launched.  Need TOOLDIR defined to create KML files.  Setting TOOLDIR to the parent directory.
-export TOOLDIR="$(dirname "$(pwd)")"
-echo $TOOLDIR
+#export TOOLDIR="$(dirname "$(pwd)")"
+#export TOOLDIR="$TITAN2D_HOME"
 
 # Note: The Titan2D GUI's Job Submission Tab's Hub-Submit Run Style option is available on VHub only.
 # Note: On VHub, only 1 node and 1 cpu are allowed per job.
@@ -28,9 +31,7 @@ export E_VHUB="false"
 # Example:
 # export E_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui"
 
-fullpath="$(readlink -f $0)"
 
-TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh??")"
 
 #load titan2d enviroment variables
 source "$TITAN2D_HOME/bin/titanvars.sh"

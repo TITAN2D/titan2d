@@ -495,7 +495,7 @@ public class JobDetailsDialog extends JDialog {
 
         public void run() {
 
-            String tooldir = System.getenv("TOOLDIR");
+            String tooldir = System.getenv("TITAN2D_HOME");
             kmlButton.setEnabled(false);
 
             try {
@@ -561,7 +561,7 @@ public class JobDetailsDialog extends JDialog {
 
         public void run() {
             kmlButton.setEnabled(false);
-            String tooldir = System.getenv("TOOLDIR");
+            String tooldir = System.getenv("TITAN2D_HOME");
             System.err.println(tooldir);
 
             try {
