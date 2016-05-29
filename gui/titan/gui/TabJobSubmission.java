@@ -81,8 +81,8 @@ public class TabJobSubmission extends JPanel {
     private TabMaterialModelMap matModelMap;
     private JobSubmissionContainer submitContainer;
 
-    // Note: on vhub only 1 node and 1 cpu are allowed per job.
-    // E_VHUB environment variable read in Titan.java
+    // The Hub-Submit Run Style option is valid on VHub only.
+    // On VHub, only 1 node and 1 cpu are allowed per job.
     public boolean eVHUB;
 
     public TabJobSubmission(FetchData create, TitanDBAccess db,

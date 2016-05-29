@@ -424,10 +424,9 @@ public class JobDetailsDialog extends JDialog {
                 summary = summary.concat("be the same as the Condor job manager on ");
                 summary = summary.concat(data.submitHost + ".\n");
             }
-       } else if (data.submitMethod.compareTo("Hub-Submit") == 0) {
+        } else if (data.submitMethod.compareTo("Hub-Submit") == 0) {
             summary = summary.concat("  The Hub-Submit job manager does not appear to hold the job.\n");
-            summary = summary.concat("  The Hub-Submit Run Style option is valid on VHub only.\n"); 
-            summary = summary.concat("  Please verify the setting for the E_VHUB environment variable in <path to root titan2d>/bin/titan_gui.sh.\n"); 
+            summary = summary.concat("  NOTE: The Hub-Submit Run Style option is valid on VHub only.\n"); 
             if (data.submitHost.compareTo(localHost) != 0) {
                 summary = summary.concat("    The job was not submitted from this host and");
                 summary = summary.concat("the job list for the machine " + data.submitHost);
@@ -496,15 +495,15 @@ public class JobDetailsDialog extends JDialog {
 
         public void run() {
 
-            String tooldir = System.getenv("TITAN2D_HOME");
+            String titan2dHome = System.getenv("TITAN2D_HOME");
             kmlButton.setEnabled(false);
 
             try {
                 Process p;
                 if (filePath_irods.isEmpty()) {
-                    p = Runtime.getRuntime().exec(tooldir + "/bin/driverMultiProcessor.sh " + filePath + " " + tooldir);
+                   p = Runtime.getRuntime().exec(titan2dHome + "/bin/driverMultiProcessor.sh " + filePath + " " + titan2dHome);
                 } else {
-                    p = Runtime.getRuntime().exec(tooldir + "/bin/driverMultiProcessor.sh " + filePath_irods + " " + tooldir + " " + filePath);
+                   p = Runtime.getRuntime().exec(titan2dHome + "/bin/driverMultiProcessor.sh " + filePath_irods + " " + titan2dHome + " " + filePath);
                 }
                 p.waitFor();
                 //Debug code (comment out later)
@@ -565,17 +564,16 @@ public class JobDetailsDialog extends JDialog {
 
         public void run() {
             kmlButton.setEnabled(false);
-            String tooldir = System.getenv("TITAN2D_HOME");
-            System.err.println(tooldir);
-
+            String titan2dHome = System.getenv("TITAN2D_HOME");
+ 
             try {
                 Process p;
                 if (filePath_irods.isEmpty()) {
-                    System.err.println(tooldir + "/bin/driverKML.sh " + filePath + " " + tooldir);
-                    p = Runtime.getRuntime().exec(tooldir + "/bin/driverKML.sh " + filePath + " " + tooldir);
+                    System.err.println(titan2dHome + "/bin/driverKML.sh " + filePath + " " + titan2dHome);
+                    p = Runtime.getRuntime().exec(titan2dHome + "/bin/driverKML.sh " + filePath + " " + titan2dHome);
                 } else {
-                    System.err.println(tooldir + "/bin/driverKML.sh " + filePath_irods + " " + tooldir);
-                    p = Runtime.getRuntime().exec(tooldir + "/bin/driverKML.sh " + filePath_irods + " " + tooldir);
+                    System.err.println(titan2dHome + "/bin/driverKML.sh " + filePath_irods + " " + titan2dHome);
+                    p = Runtime.getRuntime().exec(titan2dHome + "/bin/driverKML.sh " + filePath_irods + " " + titan2dHome);
                 }
                 //p.waitFor();
                 BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));

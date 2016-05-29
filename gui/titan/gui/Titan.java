@@ -56,8 +56,9 @@ public class Titan extends JPanel {
 
     public Titan() {
 
-        // Note: on vhub only 1 node and 1 cpu are allowed per job.
-        // Default, assume running titan2d on VHUB
+        // The Hub-Submit Run Style option is valid on VHub only.
+        // On VHub, only 1 node and 1 cpu are allowed per job.
+        // Default, assume running Titan2D GUI on VHub
         boolean eVHUB = true;
         String eInputDir = "";
 
@@ -82,28 +83,18 @@ public class Titan extends JPanel {
 
             try {
 
-                String eVHUBStr = System.getenv("E_VHUB");
-                if (eVHUBStr != null) {
+                String tooldir = System.getenv("TOOLDIR");
+                if (tooldir != null) {
 
-                    try {
-                        eVHUB = Boolean.valueOf(eVHUBStr).booleanValue();
-                        System.out.println("E_VHUB environment variable eVHUBStr: " + eVHUBStr + " => eVHUB:" + eVHUB);
+		    System.out.println("The TOOLDIR environment variable is defined as: " + tooldir + ". Setting eVHUB to true.");
 
-                    } catch (NumberFormatException ex) {
-                        eVHUB = true;
-                        JOptionPane.showMessageDialog(this, "The E_VHUB environment variable is defined but not set to \"true\" or \"false\"." +
-                                "Setting eVHUB=true.");
-                    }
                 } else {
-                    eVHUB = true;
-                    //JOptionPane.showMessageDialog(this, "The E_VHUB environment variable is not defined." +
-                    //"Setting eVHUB=true.");
+                    System.out.println("The TOOLDIR environment variable is not defined. Setting eVHUB to false.");
+                    eVHUB = false;
                 }
             } catch (Exception e) {
 
-                eVHUB = true;
-                JOptionPane.showMessageDialog(this, "The E_VHUB environment variable is not accessible using System.getenv()." +
-                        "Setting eVHUB=true.");
+               JOptionPane.showMessageDialog(this, "The TOOLDIR  environment variable is not accessible using System.getenv().  Setting eVHUB to true (default).");
             }
 
             try {

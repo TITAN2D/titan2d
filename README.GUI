@@ -16,9 +16,9 @@ If java can be launched from the command line, determine which version of java i
 
 java -version
 
-If java is not installed or the installed version of java is not 1.7 or greater, contact the system administator for assistance.
+On CCR's general compute cluster, rush, verify that an approriate version of Java is loaded.  For example, module load java/1.7.0_25.
 
-On CCR's general compute cluster, rush, verify that an approriate version for Java is loaded.  For example, module load java/1.7.0_25.
+If java is not installed or the installed version of java is not 1.7 or greater, contact the system administator for assistance.
 
 OR
 
@@ -30,16 +30,14 @@ https://www.oracle.com/java/index.html(as of 05/28/2016)
 == Titan2D Application Installation ==
 
 The Titan2D GUI is now installed with the Titan2D Application.
-Please see the install notes in INSTALL for more inforamtion on installing the Titan2D Application.
+Please see the install notes in INSTALL for more information on installing the Titan2D Application.
 
 == Running the Titan2D GUI ==
 
-The Titan2D GUI is launched from the titan_gui.sh shell script that is located in the bin directory and invoked by the command:
+The Titan2D GUI is launched from the titan_gui.sh shell script that is located in the <path to root of titan2d>/bin directory and invoked by the command:
 
 titan_gui.sh
 
-# Note: Please verify titan_gui.sh environment variable settings before invoking titan_gui.sh.
-
 == Help using the Titan2D GUI ==
 
-An explanation of the Titan2D GUI components is available from the Help menu on the main toolbar of the Titan2D GUI application. Detailed information is also provided in the Titan2D Mass-Flow Simulation User Guide. 
+An explanation of the Titan2D GUI components is available from the Help menu on the main toolbar of the Titan2D GUI application. Detailed information is also provided in the Titan2D Mass-Flow Simulation Tool User Guide. 
