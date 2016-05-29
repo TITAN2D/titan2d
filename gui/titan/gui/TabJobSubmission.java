@@ -66,9 +66,10 @@ public class TabJobSubmission extends JPanel {
     private TextInput maxRuntimeSubmit;   // Hub-Submit
     private TextInput nodesSubmit;        // Hub-Submit
     private TextInput cpusSubmit;         // Hub-Submit
-    private JLabel suggestedCPU;          // Hub-Submit
+    private JLabel suggestedCPU1;         // Hub-Submit
     private JLabel suggestedCPU2;         // Hub-Submit
     private JLabel suggestedCPU3;         // Hub-Submit
+    private JLabel suggestedCPU4;         // Hub-Submit
     private TextArea additional;
     private TitanDBAccess dba;
     private RadioButtonGroup runStyle;
@@ -165,22 +166,25 @@ public class TabJobSubmission extends JPanel {
         cpusSubmit = new TextInput("CPUs per node");
         cpusSubmit.setValue("1");
 
-        suggestedCPU = new JLabel("NOTE: 1 or 2 CPUs are suggested for small DEM's (32MB/process), although there is a max of 8 CPUs allowed per job.", javax.swing.SwingConstants.LEFT);
-        suggestedCPU2 = new JLabel("Also note that, larger processor counts can experience longer queue waiting times on the cluster.", javax.swing.SwingConstants.LEFT);
-        suggestedCPU3 = new JLabel("Currently there is only 1 node allowed per job, however this restraint will be changed in the future.", javax.swing.SwingConstants.LEFT);
+        suggestedCPU1 = new JLabel("NOTE: The Hub-Submit Run Style option is valid on VHub only.", javax.swing.SwingConstants.LEFT);
+        suggestedCPU2 = new JLabel("NOTE: 1 or 2 CPUs are suggested for small DEM's (32MB/process), although there is a max of 8 CPUs allowed per job.", javax.swing.SwingConstants.LEFT);
+        suggestedCPU3 = new JLabel("Also note that, larger processor counts can experience longer queue waiting times on the cluster.", javax.swing.SwingConstants.LEFT);
+        suggestedCPU4 = new JLabel("Currently there is only 1 node allowed per job, however this restraint will be changed in the future.", javax.swing.SwingConstants.LEFT);
         //suggestedCPU.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-        suggestedCPU.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.black));
+        suggestedCPU1.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.black));
         suggestedCPU2.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.black));
         suggestedCPU3.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.black));
+        suggestedCPU4.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.black));
 
         JPanel submitJobPanel = new JPanel();
         submitJobPanel.setLayout(new BoxLayout(submitJobPanel, BoxLayout.Y_AXIS));
         submitJobPanel.add(maxRuntimeSubmit.getPanel());
         submitJobPanel.add(nodesSubmit.getPanel());
         submitJobPanel.add(cpusSubmit.getPanel());
-        submitJobPanel.add(suggestedCPU);
+        submitJobPanel.add(suggestedCPU1);
         submitJobPanel.add(suggestedCPU2);
         submitJobPanel.add(suggestedCPU3);
+        submitJobPanel.add(suggestedCPU4);
 
         JPanel runStylePanel = new JPanel();
         runStylePanel.setLayout(new BoxLayout(runStylePanel, BoxLayout.Y_AXIS));

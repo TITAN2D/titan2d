@@ -400,20 +400,20 @@ public class JobDetailsDialog extends JDialog {
         }
 
         // YES, I hate the hardcoded string here
-        if (data.submitMethod.compareTo("PBS") == 0) {
-            summary = summary.concat("  The PBS job manager does not appear to hold the job.\n");
-            if (data.submitHost.compareTo(localHost) != 0) {
-                summary = summary.concat("    The job was not submitted from this host and");
-                summary = summary.concat("the PBS job manager on the local machine may not");
-                summary = summary.concat("be the same as the PBS job manager on ");
-                summary = summary.concat(data.submitHost + ".\n");
-            }
-        } else if (data.submitMethod.compareTo("Local") == 0) {
+        if (data.submitMethod.compareTo("Local") == 0) {
             summary = summary.concat("  The job is not active on the local machine.\n");
             if (data.submitHost.compareTo(localHost) != 0) {
                 summary = summary.concat("    The job was not submitted from this host and");
                 summary = summary.concat("the job list for the machine " + data.submitHost);
                 summary = summary.concat(" cannot be queried.  The job may be running on ");
+                summary = summary.concat(data.submitHost + ".\n");
+            }
+	} else if (data.submitMethod.compareTo("PBS") == 0) {
+            summary = summary.concat("  The PBS job manager does not appear to hold the job.\n");
+            if (data.submitHost.compareTo(localHost) != 0) {
+                summary = summary.concat("    The job was not submitted from this host and");
+                summary = summary.concat("the PBS job manager on the local machine may not");
+                summary = summary.concat("be the same as the PBS job manager on ");
                 summary = summary.concat(data.submitHost + ".\n");
             }
         } else if (data.submitMethod.compareTo("Condor") == 0) {
@@ -424,6 +424,16 @@ public class JobDetailsDialog extends JDialog {
                 summary = summary.concat("be the same as the Condor job manager on ");
                 summary = summary.concat(data.submitHost + ".\n");
             }
+       } else if (data.submitMethod.compareTo("Hub-Submit") == 0) {
+            summary = summary.concat("  The Hub-Submit job manager does not appear to hold the job.\n");
+            summary = summary.concat("  The Hub-Submit Run Style option is valid on VHub only.\n"); 
+            summary = summary.concat("  Please verify the setting for the E_VHUB environment variable in <path to root titan2d>/bin/titan_gui.sh.\n"); 
+            if (data.submitHost.compareTo(localHost) != 0) {
+                summary = summary.concat("    The job was not submitted from this host and");
+                summary = summary.concat("the job list for the machine " + data.submitHost);
+                summary = summary.concat(" cannot be queried.  The job may be running on ");
+                summary = summary.concat(data.submitHost + ".\n");
+            }
         }
         File outputDir = new File(data.outputDirectory);
         if (!outputDir.exists()) {
@@ -431,7 +441,7 @@ public class JobDetailsDialog extends JDialog {
             if (data.submitHost.compareTo(localHost) != 0) {
                 summary = summary.concat("    The job was not submitted from this host and");
                 summary = summary.concat("the output directory may not be visible ");
-                summary = summary.concat("from the local maching.\n");
+                summary = summary.concat("from the local machine.\n");
             } else {
                 summary = summary.concat("    It appears the directory has been removed.\n");
             }

@@ -17,7 +17,7 @@ fullpath="$(readlink -f $0)"
 
 export TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh??")"
 
-# Note: The Titan2D GUI's Job Submission Tab's Hub-Submit Run Style option is available on VHub only.
+# Note: The Titan2D GUI's Job Submission Tab's Hub-Submit Run Style option is valid on VHub only.
 # Note: On VHub, only 1 node and 1 cpu are allowed per job.
 # Default, assumes running Titan2d GUI on VHub
 # export E_VHUB="false"
