@@ -41,10 +41,6 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
-AC_CHECK_CLASSPATH
-AX_PROG_JAVAC
-AX_PROG_JAVA
-AC_PATH_PROG([JAR],[jar])
 AC_SYS_LARGEFILE
 
 AM_PATH_PYTHON([2.7],, [:])
@@ -61,22 +57,29 @@ AC_SUBST([PYTHON_ROOT],[$PYTHON_ROOT])
 # checks for omp
 #------------------------------------------------------------------------------------
 AC_ARG_ENABLE(openmp,
-	[AS_HELP_STRING([--enable-openmp],[Compile with OpenMP support])],
+	[AS_HELP_STRING([--enable-openmp],[Compile with OpenMP support (default:disabled)])],
+	[],[enable_openmp=no]
+)
+AS_IF([test "x$enable_openmp" != xno],
 	[
-	AC_OPENMP()
-	CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-	AC_CHECK_FUNCS([omp_get_num_threads],,AC_MSG_FAILURE([Can not compile simple OpenMP program]))
-	],)
+		AC_OPENMP
+		CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+		AC_CHECK_FUNCS([omp_get_num_threads],,AC_MSG_FAILURE([Can not compile simple OpenMP program]))
+	]
+)
 #AC_CHECK_LIB([pthread],[pthread_create])
 # checks for mpich installation
 #------------------------------------------------------------------------------------
 AC_ARG_ENABLE(mpi,
-	[AS_HELP_STRING([--enable-mpi],[Compile with MPI support CXX variable should point to MPI enabled compiler])],
+	[AS_HELP_STRING([--enable-mpi],[Compile with MPI support, CXX variable should point to MPI enabled compiler (default:disabled)])],
+	[],[enable_mpi=no]
+)
+AS_IF([test "x$enable_mpi" != xno],
 	[
-	CPPFLAGS="$CPPFLAGS -DUSE_MPI -DMPICH_IGNORE_CXX_SEEK"
-	AC_CHECK_FUNCS([MPI_Init],,AC_MSG_FAILURE([Can not compile simple MPI program]))
-	],)
-    
+		CPPFLAGS="$CPPFLAGS -DUSE_MPI -DMPICH_IGNORE_CXX_SEEK"
+		AC_CHECK_FUNCS([MPI_Init],,AC_MSG_FAILURE([Can not compile simple MPI program]))
+	]
+)  
 
 # checks for HDF5 installation
 #------------------------------------------------------------------------------------
@@ -199,6 +202,37 @@ else
 fi           
 AM_CONDITIONAL([WITH_SWIG], test "x$with_swig" != "xno")
 
+## checks for java
+#------------------------------------------------------------------------------------
+AC_ARG_VAR(JAVA,[java interpretator (needed for java GUI)])
+AC_ARG_VAR(JAVAC,[java compiler (needed for java GUI)])
+AC_ARG_VAR(JAR,[java packager (needed for java GUI)])
+AC_ARG_ENABLE(java-gui,
+	[AS_HELP_STRING([--disable-java-gui],[Do not compile java GUI (default compile)])],
+	[],
+	[enable_java_gui=yes]
+)
+AS_IF([test "x$enable_java_gui" != xno],
+	[
+		AS_IF([test "x$JAVA" == x], [AC_PATH_PROG([JAVA],[java])])
+		AS_IF([test "x$JAVAC" == x], [AC_PATH_PROG([JAVAC],[javac])])
+		AS_IF([test "x$JAR" == x], [AC_PATH_PROG([JAR],[jar])])
+		
+		JAVA_VERSION1=`$JAVA -version 2>&1 |grep 'java version'|cut -d '"' -f 2|cut -d '.' -f 1`
+		JAVA_VERSION2=`$JAVA -version 2>&1 |grep 'java version'|cut -d '"' -f 2|cut -d '.' -f 2`
+		
+		AS_IF([test "x$JAVA_VERSION1" == x1], [], [AC_MSG_ERROR([Java should be 1.7 or 1.8!])])
+		AS_IF([test "x$JAVA_VERSION2" == x7 || test "x$JAVA_VERSION2" == x8], [], [AC_MSG_ERROR([Java should be 1.7 or 1.8!])])
+		
+		AC_MSG_RESULT("HELLO JAVA")
+		
+		AC_MSG_NOTICE([java $JAVA])
+		AC_MSG_NOTICE([javac $JAVAC])
+		AC_MSG_NOTICE([jar $JAR])
+		
+	]
+)
+
 #-------------------------------------------------------------------------------------
 AC_CHECK_LIB(m,matherr)
 
@@ -244,3 +278,33 @@ AC_CONFIG_FILES([Makefile
 
 
 AC_OUTPUT
+
+## Configuration Summary
+#======================================================================================
+AC_MSG_RESULT()
+AC_MSG_RESULT(Configuration Summary:)
+AC_MSG_RESULT([AS_HELP_STRING([CXX],[$CXX])])
+AC_MSG_RESULT([AS_HELP_STRING([CXXFLAGS],[$CXXFLAGS])])
+AC_MSG_RESULT([AS_HELP_STRING([LDFLAGS],[$LDFLAGS])])
+AS_IF([test "x$enable_openmp" != xno],
+	[AC_MSG_RESULT([AS_HELP_STRING([OpenMP],[enabled])])],
+	[AC_MSG_RESULT([AS_HELP_STRING([OpenMP],[disabled])])]
+)
+AS_IF([test "x$enable_mpi" != xno],
+	[AC_MSG_RESULT([AS_HELP_STRING([MPI],[enabled])])],
+	[AC_MSG_RESULT([AS_HELP_STRING([MPI],[disabled])])]
+)
+AS_IF([test "x$enable_java_gui" != xno],
+	[
+		AC_MSG_RESULT([AS_HELP_STRING([java GUI],[enabled])])
+		AC_MSG_RESULT([AS_HELP_STRING([JAVA],[$JAVA])])
+		AC_MSG_RESULT([AS_HELP_STRING([JAVAC],[$JAVAC])])
+		AC_MSG_RESULT([AS_HELP_STRING([JAR],[$JAR])])
+	],
+	[
+		AC_MSG_RESULT([AS_HELP_STRING([java GUI],[disabled])])
+	]
+)
+
+
+
