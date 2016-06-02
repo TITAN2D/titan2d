@@ -33,10 +33,14 @@ for line in pointsf:
     #find greatest x
     if arr[0] > greatest_x:
         greatest_x = arr[0]
-    #find y in scientific notation
-    split = arr[1].split("e+")
-    numberY = float(split[0]) * (10**int(split[1]))
-    #print split[0] + " * " + split[1] + " = " + str(numberY)
+    #find y
+    #check if scientific notation
+    if (str(arr[1]).find("e+", 0, len(arr[1])) != -1):
+        split = arr[1].split("e+")
+        numberY = float(split[0]) * (10**int(split[1]))
+        #print split[0] + " * " + split[1] + " = " + str(numberY)
+    else:
+        numberY = float(arr[1])
     #find least y
     if numberY < least_y:
         least_y = numberY
