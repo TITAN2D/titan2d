@@ -1171,6 +1171,9 @@ public class TabJobSubmission extends JPanel {
 
                 data.stoppingCriteria = mainData.getValue(TitanConstants.STOPPING_CRITERIA);
 
+                // Calculate total volume for height scale calculation
+                double totalvolume = 0.0;
+
                 // Piles Tab
 
                 // Check for presence of material sources
@@ -1202,6 +1205,11 @@ public class TabJobSubmission extends JPanel {
                         data.pile[i].orientation = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_ORIENTATION_ANGLE));
                         data.pile[i].speed = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_INIT_SPEED));
                         data.pile[i].direction = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_INIT_DIRECTION));
+
+                        totalvolume = totalvolume +
+                                (((float) Math.PI * data.pile[i].maxThickness *
+                                        data.pile[i].majorExtent * data.pile[i].minorExtent)/2.0);
+
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(TabJobSubmission.this,
                                 "There is a problem with the piles data.\n" +
@@ -1230,6 +1238,12 @@ public class TabJobSubmission extends JPanel {
                         data.fluxSource[i].extrusionFluxRate = Float.parseFloat(fluxData[i].getValue(TitanConstants.SRC_EXTRUSION_FLUX_RATE));
                         data.fluxSource[i].activeTimeStart = Float.parseFloat(fluxData[i].getValue(TitanConstants.SRC_ACTIVE_TIME_START));
                         data.fluxSource[i].activeTimeEnd = Float.parseFloat(fluxData[i].getValue(TitanConstants.SRC_ACTIVE_TIME_END));
+
+                        totalvolume = totalvolume +
+                                (0.5 * (float) Math.PI * data.fluxSource[i].extrusionFluxRate *
+                                        data.fluxSource[i].majorExtent * data.fluxSource[i].minorExtent *
+                                        0.5 * (data.fluxSource[i].activeTimeEnd - data.fluxSource[i].activeTimeEnd));
+
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(TabJobSubmission.this,
                                 "There is a problem with the flux sources data.\n" +
@@ -1392,8 +1406,21 @@ public class TabJobSubmission extends JPanel {
                 fn = new String(parmDir + File.separator + "height_scale_for_KML.data");
 
                 try {
+
+                    float heightScale;
+                    if (scaleData.scaleSim == false){
+                        heightScale = 1.0f;
+                    } else {
+                        if (scaleData.heightScale == TitanSimulationData.BLANK_FIELD) {
+                            // Height scale calculation based on calculation in the
+                            // titan2d/src/header/properties.h MatProps::set_scale inline function.
+                            heightScale = (float) Math.pow (totalvolume, 1.0/3.0);
+                        } else {
+                            heightScale = scaleData.heightScale;
+                        }
+                    }
                     writer = new BufferedWriter(new FileWriter(fn));
-                    writer.write("" + scaleData.heightScale + "\n");
+                    writer.write("" + heightScale + "\n");
                     writer.close();
                 } catch (IOException ex) {
                     int selectionOption = JOptionPane.showConfirmDialog(TabJobSubmission.this,
