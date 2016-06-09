@@ -293,6 +293,18 @@ AS_IF([test "x$enable_java_gui" != xno],
 	]
 )
 
+# compile for vhub
+#------------------------------------------------------------------------------------
+AC_ARG_ENABLE(vhub,
+	[AS_HELP_STRING([--enable-vhub],[Compile for VHub (default: disabled)])],
+	[],[enable_vhub=no]
+)
+AS_IF([test "x$enable_vhub" != xno],
+	[TITAN2D_ON_VHUB=yes],
+	[TITAN2D_ON_VHUB=no]
+)
+AC_SUBST([TITAN2D_ON_VHUB],[$TITAN2D_ON_VHUB])
+
 ## Checks for header files
 #=====================================================================================
 AC_HEADER_STDC
@@ -316,6 +328,7 @@ AC_SUBST(RPATH,$RPATH)
 #======================================================================================
 AC_CONFIG_FILES([Makefile
                  gui/Makefile
+                 gui/titan_gui.sh
                  doc/Makefile
                  doc/help/Makefile
                  doc/help/html/Makefile
@@ -385,5 +398,5 @@ AS_IF([test "x$enable_java_gui" != xno],
 	]
 )
 
-
+AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_ON_VHUB],[$TITAN2D_ON_VHUB])])
 

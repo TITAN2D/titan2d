@@ -14,7 +14,9 @@
 #******************************************************************* 
 #*
 
-export TITAN_HOME=@prefix@
+TITAN2D_HOME="$(readlink -f $0)"
+TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
+export TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
 
 #export path to GDAL if needed
 if [ "@GDAL_PATH@" != "" ];

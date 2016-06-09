@@ -13,9 +13,11 @@
 # Example, in your .bashrc file:
 # export PATH=$PATH:"/projects/academic/gmfg/renettej/titan2d_github/titan2d/bin"
 
-fullpath="$(readlink -f $0)"
+TITAN2D_HOME="$(readlink -f $0)"
+TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
+export TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
 
-export TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/titan_gui.sh??")"
+export TITAN2D_ON_VHUB=@TITAN2D_ON_VHUB@
 
 # Specify the start directory for the Titan2D GUI's directory selectors.
 # Default, $Home
@@ -36,4 +38,4 @@ helppath="$TITAN2D_HOME/share/doc/titan2d"
 
 export CLASSPATH=$libpath/titan_gui.jar:$libpath/jh.jar:$libpath/derby.jar:$helppath:${CLASSPATH}
 
-java titan.gui.Titan
+@JAVA@ titan.gui.Titan
