@@ -3,6 +3,9 @@
 import os
 import sys
 
+from images2gif import writeGif
+from PIL import Image
+
 if len(sys.argv) == 2:
     baseDir = sys.argv[1]
 else:
@@ -51,9 +54,9 @@ timestamp() #populate the dictionary
 
 
 
-
-dirList = os.listdir(baseDir)
-for fname in dirList:
+if 0:
+  dirList = os.listdir(baseDir)
+  for fname in dirList:
     basename, extension = fname.split('.')
     if extension == "lava":
         
@@ -125,8 +128,16 @@ for fname in dirList:
         os.system("gnuplot "+baseDir+"/"+basename+".gnuplot")
         os.system("gnuplot "+baseDir+"/"+basename+".gnuplot3D")
 
-os.system("convert -delay 100 "+baseDir+"/"+"*.gif -loop 0 "+baseDirOld+"/"+"animation.gif")
-os.system("convert -delay 100 "+baseDir+"/"+"*.gif3D -loop 0 "+baseDirOld+"/"+"animation3D.gif")
+
+#os.system("convert -delay 100 "+baseDir+"/"+"*.gif -loop 0 "+baseDirOld+"/"+"animation.gif")
+#os.system("convert -delay 100 "+baseDir+"/"+"*.gif3D -loop 0 "+baseDirOld+"/"+"animation3D.gif")
+file_names=sorted([fn for fn in os.listdir(baseDir) if fn.endswith('.gif')])
+images = [Image.open(baseDir+"/"+fn) for fn in file_names]
+writeGif(baseDirOld+"/animation.gif", images, duration=0.2)
+
+file_names=sorted([fn for fn in os.listdir(baseDir) if fn.endswith('.gif3D')])
+images = [Image.open(baseDir+"/"+fn) for fn in file_names]
+writeGif(baseDirOld+"/animation3D.gif", images, duration=0.2)
 
 if len(sys.argv) == 3:
     os.system("cp "+baseDirOld+"/"+"animation.gif "+localDir)
