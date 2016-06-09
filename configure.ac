@@ -12,11 +12,14 @@ AC_ARG_ENABLE(portable,
 )
 AS_IF([test "x$enable_portable" != xno],
 	[
+	    TITAN2D_PORTABLE=yes
 		AC_SUBST(MAKE_PORTABLE)
 		RPATH=-rpath="'\$ORIGIN/../lib:\$ORIGIN/../lib/titan2d_dep/lib'"
 	],
-	[]
-)  
+	[TITAN2D_PORTABLE=no]
+)
+AC_SUBST([TITAN2D_PORTABLE],[$TITAN2D_PORTABLE])
+
 ## Check if titan dependencies are provided
 #===================================================================================
 AC_ARG_WITH([titan2d-dep],
@@ -31,9 +34,11 @@ AS_IF([test "x$with_titan2d_dep" != xno],
 		[
 			PYTHON=$with_titan2d_dep/bin/python
 		],[])
+		TITAN2D_DEP=$with_titan2d_dep
 	],
-	[]
+	[TITAN2D_DEP=no]
 ) 
+AC_SUBST([TITAN2D_DEP],[$TITAN2D_DEP])
 ## Host specific stuff
 #===================================================================================
 AC_CANONICAL_HOST
@@ -397,6 +402,7 @@ AS_IF([test "x$enable_java_gui" != xno],
 		AC_MSG_RESULT([AS_HELP_STRING([java GUI],[disabled])])
 	]
 )
-
+AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_DEP],[$TITAN2D_DEP])])
+AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_PORTABLE],[$TITAN2D_PORTABLE])])
 AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_ON_VHUB],[$TITAN2D_ON_VHUB])])
 
