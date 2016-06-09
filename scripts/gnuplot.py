@@ -54,9 +54,8 @@ timestamp() #populate the dictionary
 
 
 
-if 0:
-  dirList = os.listdir(baseDir)
-  for fname in dirList:
+dirList = os.listdir(baseDir)
+for fname in dirList:
     basename, extension = fname.split('.')
     if extension == "lava":
         
