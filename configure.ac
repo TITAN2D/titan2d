@@ -338,6 +338,8 @@ AC_CONFIG_FILES([Makefile
                  doc/help/Makefile
                  doc/help/html/Makefile
                  scripts/Makefile
+                 scripts/driverKML.sh
+                 scripts/driverMultiProcessor.sh
                  src/Makefile
                  src/adapt/Makefile
                  src/datstr/Makefile
