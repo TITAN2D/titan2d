@@ -86,6 +86,9 @@ cd Python-2.7.11
 make -j $CORES_TO_USE
 make install
 
+rsync -a /usr/lib64/libcrypto.so* $TITAN2D_DEP/lib
+rsync -a /usr/lib64/libssl.so* $TITAN2D_DEP/lib
+
 # after that stage python can complain that some of the modules was not 
 # successfully compiled, usually thouse modules are not needed for titan
 # bellow is example of such complains: 
@@ -163,6 +166,73 @@ cd h5py-2.6.0
 $TITAN2D_DEP/bin/python setup.py build
 $TITAN2D_DEP/bin/python setup.py install
 
+# ====================================================================
+# Proper jpeg for PIL 
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://www.ijg.org/files/jpegsrc.v6b.tar.gz
+tar xvzf jpegsrc.v6b.tar.gz
+cd jpeg-6b
+./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS -fPIC"
+make
+mkdir -p $TITAN2D_DEP/man/man1
+make install
+make install-lib
+
+# ====================================================================
+# Proper freetype2 for PIL 
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://sourceforge.net/projects/freetype/files/freetype2/2.3.12/freetype-2.3.12.tar.gz
+tar xvzf freetype-2.3.12.tar.gz
+cd freetype-2.3.12
+
+./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS -fPIC"
+make
+make install
+
+# ====================================================================
+# PIL installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://effbot.org/downloads/Imaging-1.1.7.tar.gz
+tar xvzf Imaging-1.1.7.tar.gz
+cd Imaging-1.1.7
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+
+# ====================================================================
+# libgd for gnuplot installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://github.com/libgd/libgd/releases/download/gd-2.2.1/libgd-2.2.1.tar.gz
+tar xvzf libgd-2.2.1.tar.gz
+cd libgd-2.2.1
+./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+# ====================================================================
+# gnuplot installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://sourceforge.net/projects/gnuplot/files/gnuplot/4.6.6/gnuplot-4.6.6.tar.gz
+tar xvzf gnuplot-4.6.6.tar.gz
+cd gnuplot-4.6.6
+./configure --prefix=$TITAN2D_DEP CXXFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+
+# ====================================================================
+# images2gifinstallation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://pypi.python.org/packages/d3/f9/4bd6d3dcf525cdbc7c0a4a15ab675edff81b6659dbd992abb5f5440c5c88/images2gif-1.0.1.tar.gz
+tar xvzf images2gif-1.0.1.tar.gz
+cd images2gif-1.0.1
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
 # ====================================================================
 # java installation
 # ====================================================================
