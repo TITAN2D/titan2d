@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     }
 
     printf("%s\n",python_home);
-    sprintf(python_home+strlen(python_home),"/lib/python");
+    sprintf(python_home+strlen(python_home),"/lib/titan2d_dep");
     printf("%s\n",python_home);
     Py_SetPythonHome(python_home);
 #endif
