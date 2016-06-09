@@ -9,6 +9,16 @@ TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/driverMultiProcessor.sh??")"
 TITAN2D_PYUTIL_DIR=$TITAN2D_HOME/lib/python2.7/site-packages
 TITAN2D_PYTHON=$TITAN2D_HOME/bin/titan
 
+if [ "@TITAN2D_PORTABLE@" = "yes" ] 
+then
+	#PATHS for portable version
+	export PATH=$TITAN2D_HOME/lib/titan2d_dep/bin:$PATH
+elif [ "@TITAN2D_DEP@" != "no" ] 
+then
+	#PATHS for titan with titan_dep
+	export PATH=$TITAN2D_DEP/bin:$PATH
+fi
+
 RUN_DIR=$1/vizout
 
 cp $1/Stdout.txt $1/vizout/Stdout.txt

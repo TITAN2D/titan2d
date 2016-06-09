@@ -9,6 +9,15 @@ TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/driverKML.sh??")"
 TITAN2D_PYUTIL_DIR=$TITAN2D_HOME/lib/python2.7/site-packages
 TITAN2D_PYTHON=$TITAN2D_HOME/bin/titan
 
+if [ "@TITAN2D_PORTABLE@" = "yes" ] 
+then
+	#PATHS for portable version
+	export PATH=$TITAN2D_HOME/lib/titan2d_dep/bin:$PATH
+elif [ "@TITAN2D_DEP@" != "no" ] 
+then
+	#PATHS for titan with titan_dep
+	export PATH=$TITAN2D_DEP/bin:$PATH
+fi
 
 cp $1/zone.txt $1/vizout/zone.txt
 cp $1/height_scale_for_KML.data $1/vizout/height_scale_for_KML.data

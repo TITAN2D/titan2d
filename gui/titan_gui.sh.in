@@ -19,6 +19,16 @@ export TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
 
 export TITAN2D_ON_VHUB=@TITAN2D_ON_VHUB@
 
+if [ "@TITAN2D_PORTABLE@" = "yes" ] 
+then
+	#PATHS for portable version
+	export PATH=$TITAN2D_HOME/lib/titan2d_dep/bin:$PATH
+elif [ "@TITAN2D_DEP@" != "no" ] 
+then
+	#PATHS for titan with titan_dep
+	export PATH=$TITAN2D_DEP/bin:$PATH
+fi
+
 # Specify the start directory for the Titan2D GUI's directory selectors.
 # Default, $Home
 # Example:
