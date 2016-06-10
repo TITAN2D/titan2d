@@ -24,14 +24,17 @@ if [ "@TITAN2D_PORTABLE@" = "yes" ]
 then
 	#PATHS for portable version
 	export PATH=$TITAN2D_HOME/lib/titan2d_dep/bin:$PATH
+	JAVA_TO_USE=$TITAN2D_HOME/lib/titan2d_dep/lib/java-1.7/bin/java
 elif [ "@TITAN2D_DEP@" != "no" ] 
 then
 	#PATHS for titan with titan_dep
 	export PATH="@TITAN2D_DEP@/bin:$PATH"
+	JAVA_TO_USE=@TITAN2D_DEP@/lib/java-1.7/bin/java
 else
 	#PATHS for titan with user specified dependencies
 	export PATH=@HDF5_PATH@/bin:$PATH
 	export LD_LIBRARY_PATH=@HDF5_PATH@/lib:$LD_LIBRARY_PATH
+	JAVA_TO_USE=@JAVA@
 fi
 
 # Specify the start directory for the Titan2D GUI's directory selectors.
@@ -56,4 +59,4 @@ helppath="$TITAN2D_HOME/share/doc/titan2d"
 
 export CLASSPATH=$libpath/titan_gui.jar:$libpath/jh.jar:$libpath/derby.jar:$helppath:${CLASSPATH}
 
-@JAVA@ titan.gui.Titan
+$JAVA_TO_USE titan.gui.Titan
