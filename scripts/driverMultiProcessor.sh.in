@@ -4,7 +4,7 @@
 # $1 - Run Directory
 # $2 - TOOLDIR (not used)
 
-fullpath="$(readlink -f $0)"
+fullpath="$(readlink -f ${BASH_SOURCE})"
 TITAN2D_HOME="$(echo "$fullpath" | sed "s?/bin/driverMultiProcessor.sh??")"
 TITAN2D_PYUTIL_DIR=$TITAN2D_HOME/lib/python2.7/site-packages
 TITAN2D_PYTHON=$TITAN2D_HOME/bin/titan
@@ -17,6 +17,10 @@ elif [ "@TITAN2D_DEP@" != "no" ]
 then
 	#PATHS for titan with titan_dep
 	export PATH=$TITAN2D_DEP/bin:$PATH
+else
+	#PATHS for titan with user specified dependencies
+	export PATH=@HDF5_PATH@/bin:$PATH
+	export LD_LIBRARY_PATH=@HDF5_PATH@/lib:$LD_LIBRARY_PATH
 fi
 
 RUN_DIR=$1/vizout

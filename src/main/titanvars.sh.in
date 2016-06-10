@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #*******************************************************************
 #* Copyright (C) 2003-2015 University at Buffalo
 #*
@@ -13,17 +13,8 @@
 #*
 #******************************************************************* 
 #*
-
-TITAN2D_HOME="$(readlink -f $0)"
+TITAN2D_HOME="$(readlink -f ${BASH_SOURCE})"
 TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
 export TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
-
-#export path to GDAL if needed
-if [ "@GDAL_PATH@" != "" ];
-then
-export LD_LIBRARY_PATH=@GDAL_PATH@/lib:@PYTHON_ROOT@/lib:$LD_LIBRARY_PATH
-fi
-
-#export path to python
-export LD_LIBRARY_PATH=@PYTHON_ROOT@/lib:@PYTHON_ROOT@/lib:$LD_LIBRARY_PATH
+export PATH=$TITAN2D_HOME/bin:$PATH
 

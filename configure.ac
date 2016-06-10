@@ -14,7 +14,7 @@ AS_IF([test "x$enable_portable" != xno],
 	[
 	    TITAN2D_PORTABLE=yes
 		AC_SUBST(MAKE_PORTABLE)
-		RPATH=-rpath="'\$ORIGIN/../lib:\$ORIGIN/../lib/titan2d_dep/lib'"
+		LDFLAGS="$LDFLAGS -Wl,-rpath,'\$\$ORIGIN/../lib:\$\$ORIGIN/../lib/titan2d_dep/lib'"
 	],
 	[TITAN2D_PORTABLE=no]
 )
@@ -35,6 +35,11 @@ AS_IF([test "x$with_titan2d_dep" != xno],
 			PYTHON=$with_titan2d_dep/bin/python
 		],[])
 		TITAN2D_DEP=$with_titan2d_dep
+		AS_IF([test "x$enable_portable" == xno],
+			[
+				LDFLAGS="$LDFLAGS -Wl,-rpath,'\$\$ORIGIN/../lib:\$(TITAN2D_DEP)/lib'"
+			]
+		)
 	],
 	[TITAN2D_DEP=no]
 ) 
@@ -74,7 +79,7 @@ AS_IF([test "x$enable_portable" != xno],
 )  
 
 AC_CONFIG_SRCDIR([src/main/titan.C])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADER([src/header/titan_config.h])
 AC_PREFIX_DEFAULT([${PWD}])
 AC_LANG_CPLUSPLUS
 
@@ -162,7 +167,7 @@ AC_CHECK_LIB([hdf5],[H5open],,
 AC_CHECK_LIB([hdf5_cpp],[H5open],,
               AC_MSG_FAILURE([HDF5 should be compiled with c++ support.Re-run configure --with-hdf5=/path/to/hdf5.])
 )
-
+AC_SUBST([HDF5_PATH],[$with_hdf5])
 
 ## checks for GRASS
 #------------------------------------------------------------------------------------
@@ -213,8 +218,7 @@ AS_IF([test "x$GDAL_CONFIG" != xno],
     	AC_MSG_RESULT([yes])
 	],
 	[
-	    gdal_lib=
-        gdal_inc=
+        GDAL_LIBS=
         GDAL_PATH=
         with_gdal=no
         AC_DEFINE([HAVE_GDAL], [0], [If Gdal is available])
@@ -222,6 +226,7 @@ AS_IF([test "x$GDAL_CONFIG" != xno],
 	]
 )
 AC_SUBST([GDAL_PATH],[$GDAL_PATH])
+AC_SUBST([GDAL_LIBS],[$GDAL_LIBS])
 AM_CONDITIONAL([WITH_GDAL], test "x$with_gdal" != "xno")
 
 
@@ -264,6 +269,22 @@ AS_IF([test "x$with_swig" != xno],
     )
 ])          
 AM_CONDITIONAL([WITH_SWIG], test "x$with_swig" != "xno")
+
+## set rpath if without_titan2d_dep
+#------------------------------------------------------------------------------------
+AS_IF([test "x$with_titan2d_dep" == xno],
+	[
+		RPATH=$PYTHON_ROOT/lib
+		AS_IF([test "x$with_hdf5" != xno],
+			[RPATH=$RPATH:$with_hdf5/lib]
+		)
+		AS_IF([test "x$with_gdal" != xno],
+			[RPATH=$RPATH:$with_gdal/lib]
+		)
+		LDFLAGS="$LDFLAGS -Wl,-rpath,'\$\$ORIGIN/../lib:$RPATH'"
+	]
+	
+)
 
 ## checks for java
 #------------------------------------------------------------------------------------
@@ -327,9 +348,6 @@ AC_HEADER_MAJOR
 AC_CHECK_FUNCS([floor pow sqrt strchr strdup])
 
 
-
-AC_SUBST(RPATH,$RPATH)
-
 #======================================================================================
 AC_CONFIG_FILES([Makefile
                  gui/Makefile
@@ -373,7 +391,6 @@ AC_MSG_RESULT([AS_HELP_STRING([LIBS],[$LIBS])])
 AS_IF([test "x$enable_portable" != xno],
 	[
 	AC_MSG_RESULT([AS_HELP_STRING([portable],[yes])])
-	AC_MSG_RESULT([AS_HELP_STRING([RPATH],[$RPATH])])
 	]
 )
 AS_IF([test "x$enable_openmp" != xno],
@@ -388,6 +405,7 @@ AS_IF([test "x$with_gdal" != xno],
 	[
 		AC_MSG_RESULT([AS_HELP_STRING([GDAL],[enabled])])
 		AC_MSG_RESULT([AS_HELP_STRING([GDAL_CONFIG],[$GDAL_CONFIG])])
+		AC_MSG_RESULT([AS_HELP_STRING([GDAL_LIBS],[$GDAL_LIBS])])
 	],
 	[AC_MSG_RESULT([AS_HELP_STRING([GDAL],[disabled])])]
 )

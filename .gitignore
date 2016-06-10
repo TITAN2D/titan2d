@@ -46,6 +46,8 @@ Makefile.in
 /aclocal.m4
 /config.log
 /ltmain.sh
+/src/header/titan_config.h.in
+/src/header/titan_config.h.in~
 #configure generated file, for thouse who like to compile in source
 Makefile
 

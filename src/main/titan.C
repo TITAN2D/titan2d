@@ -19,7 +19,7 @@
 #include <inttypes.h>
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <titan_config.h>
 #endif
 
 #ifdef __APPLE__
@@ -96,6 +96,8 @@ int main(int argc, char *argv[])
     sprintf(python_home+strlen(python_home),"/lib/titan2d_dep");
     printf("%s\n",python_home);
     Py_SetPythonHome(python_home);
+#else
+
 #endif
     printf("Executable location: %s\n", executable);
     printf("python home: %s\n", Py_GetPythonHome());
