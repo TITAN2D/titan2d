@@ -11,5 +11,5 @@ install-data-local:
 		echo "Moving dependencies"; \
 		rsync -a $(TITAN2D_DEP) $(libdir); \
 		echo "Clean-up dependencies"; \
-		rm /home/mikola/titan_wsp/titan2d_bld/gccportinstall/lib/titan2d_dep/lib/*.a; \
+		rm $(libdir)/titan2d_dep/lib/*.a; \
 	fi
