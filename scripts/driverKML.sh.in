@@ -16,7 +16,7 @@ then
 elif [ "@TITAN2D_DEP@" != "no" ] 
 then
 	#PATHS for titan with titan_dep
-	export PATH=$TITAN2D_DEP/bin:$PATH
+	export PATH="@TITAN2D_DEP@/bin:$PATH"
 else
 	#PATHS for titan with user specified dependencies
 	export PATH=@HDF5_PATH@/bin:$PATH
