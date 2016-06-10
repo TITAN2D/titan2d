@@ -92,11 +92,19 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("%s\n",python_home);
     sprintf(python_home+strlen(python_home),"/lib/titan2d_dep");
-    printf("%s\n",python_home);
+    printf("Python home: %s\n",python_home);
     Py_SetPythonHome(python_home);
 #else
+    if(getenv("PYTHONHOME"))
+    {
+        printf("PYTHONHOME is set would use it: %s\n",getenv("PYTHONHOME"));
+    }
+    else
+    {
+      printf("Python home: %s\n",python_home);
+      Py_SetPythonHome(TITAN_PYTHONHOME);
+    }
 
 #endif
     printf("Executable location: %s\n", executable);

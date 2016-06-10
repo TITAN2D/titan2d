@@ -96,6 +96,8 @@ PYTHON_BIN_DIR=`AS_DIRNAME($PYTHON)`
 PYTHON_ROOT=`AS_DIRNAME($PYTHON_BIN_DIR)`
 AC_SUBST([PYTHON_ROOT],[$PYTHON_ROOT])
 
+AH_TEMPLATE([TITAN_PYTHONHOME],[eventually PYTHONHOME])
+AC_DEFINE_UNQUOTED([TITAN_PYTHONHOME],["$PYTHON_ROOT"])
 ## debug option
 #======================================================================================
 
