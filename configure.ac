@@ -254,6 +254,13 @@ AS_IF([test "x$with_swig" != xno],
 	if test "x$SWIG_VERSION_MAJOR" != "x3"; then
 		AC_MSG_ERROR([swig is too old should be at least 3.0, set SWIG variable for custom location!])
 	fi
+	
+	AS_IF([test "x$with_titan2d_dep" != xno],
+	[
+		SWIG="SWIG_LIB=$with_titan2d_dep/share/swig/3.0.5 $SWIG"
+	],[]
+	) 
+	
 	AC_MSG_NOTICE([swig: $SWIG])
 	AC_MSG_NOTICE([swig version: $SWIG_VERSION])
 ],
