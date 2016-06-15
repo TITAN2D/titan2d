@@ -29,6 +29,13 @@ AC_ARG_WITH([titan2d-dep],
 )
 AS_IF([test "x$with_titan2d_dep" != xno],
 	[
+		case $with_titan2d_dep in
+		/*)
+		    ;;
+		*)
+			AC_MSG_ERROR([with_titan2d_dep should be full path!])
+			;;
+		esac
 		AC_MSG_RESULT([Titan2D dependencies package is at $with_titan2d_dep])
 		AS_IF([test "x$PYTHON" == x],
 		[
@@ -39,6 +46,9 @@ AS_IF([test "x$with_titan2d_dep" != xno],
 			[
 				LDFLAGS="$LDFLAGS -Wl,-rpath,'\$\$ORIGIN/../lib:\$(TITAN2D_DEP)/lib'"
 			]
+		)
+		AC_CHECK_FILE([$with_titan2d_dep/bin/python],[],
+		[AC_MSG_ERROR([Titan2D dependency package ($with_titan2d_dep) do not contain python. Check path.])]
 		)
 	],
 	[TITAN2D_DEP=no]
