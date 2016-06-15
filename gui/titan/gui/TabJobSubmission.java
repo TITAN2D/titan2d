@@ -608,13 +608,13 @@ public class TabJobSubmission extends JPanel {
                     }
                 }
 
-                fn1 = new File(restartRunDir + File.separator + "height_scale_for_KML.data");
-                fn2 = new File(parmDir + File.separator + "height_scale_for_KML.data");
+                fn1 = new File(restartRunDir + File.separator + "maxHeight_for_KML.data");
+                fn2 = new File(parmDir + File.separator + "maxHeight_for_KML.data");
                 try {
                     Files.copy(fn1.toPath(), fn2.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException ex) {
                     int selectionOption = JOptionPane.showConfirmDialog(TabJobSubmission.this,
-                            "Unable to copy the height_scale_for_KML.data file, required for creating KML files, from\n" +
+                            "Unable to copy the maxHeight_for_KML.data file, required for creating KML files, from\n" +
                                     restartRunDir + " to\n" +
                                     parmDir + "\n\n" +
                                     "Select the OK Option to continue job submission.",
@@ -1171,8 +1171,8 @@ public class TabJobSubmission extends JPanel {
 
                 data.stoppingCriteria = mainData.getValue(TitanConstants.STOPPING_CRITERIA);
 
-                // Calculate total volume for height scale calculation
-                double totalvolume = 0.0;
+                // Python files for creating the KML files need the maximum height
+                double maxHeight = 1.0e-16d;
 
                 // Piles Tab
 
@@ -1206,9 +1206,7 @@ public class TabJobSubmission extends JPanel {
                         data.pile[i].speed = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_INIT_SPEED));
                         data.pile[i].direction = Float.parseFloat(pileData[i].getValue(TitanConstants.PILE_INIT_DIRECTION));
 
-                        totalvolume = totalvolume +
-                                (((float) Math.PI * data.pile[i].maxThickness *
-                                        data.pile[i].majorExtent * data.pile[i].minorExtent)/2.0);
+                        if (data.pile[i].maxThickness > maxHeight) maxHeight = data.pile[i].maxThickness;
 
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(TabJobSubmission.this,
@@ -1224,6 +1222,7 @@ public class TabJobSubmission extends JPanel {
 
                 // Flux Sources Tab
 
+                double fluxHeight;
                 data.fluxSource = new TitanSimulationFluxSource[fluxData.length];
                 for (int i = 0; i < fluxData.length; i++) {
                     try {
@@ -1239,10 +1238,10 @@ public class TabJobSubmission extends JPanel {
                         data.fluxSource[i].activeTimeStart = Float.parseFloat(fluxData[i].getValue(TitanConstants.SRC_ACTIVE_TIME_START));
                         data.fluxSource[i].activeTimeEnd = Float.parseFloat(fluxData[i].getValue(TitanConstants.SRC_ACTIVE_TIME_END));
 
-                        totalvolume = totalvolume +
-                                (0.5 * (float) Math.PI * data.fluxSource[i].extrusionFluxRate *
-                                        data.fluxSource[i].majorExtent * data.fluxSource[i].minorExtent *
-                                        0.5 * (data.fluxSource[i].activeTimeEnd - data.fluxSource[i].activeTimeEnd));
+                        fluxHeight = data.fluxSource[i].extrusionFluxRate *
+                                (data.fluxSource[i].activeTimeEnd - data.fluxSource[i].activeTimeStart);
+
+                        if (fluxHeight > maxHeight) maxHeight = fluxHeight;
 
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(TabJobSubmission.this,
@@ -1401,30 +1400,16 @@ public class TabJobSubmission extends JPanel {
                     }
                 }
 
-                // Previous versions of titan created a scale.data file containing the height scale.
-                // Python files for creating the KML files need the height scale
-                fn = new String(parmDir + File.separator + "height_scale_for_KML.data");
+                // Python files for creating the KML files need the maximum height
+                fn = new String(parmDir + File.separator + "maxHeight_for_KML.data");
 
                 try {
-
-                    float heightScale;
-                    if (scaleData.scaleSim == false){
-                        heightScale = 1.0f;
-                    } else {
-                        if (scaleData.heightScale == TitanSimulationData.BLANK_FIELD) {
-                            // Height scale calculation based on calculation in the
-                            // titan2d/src/header/properties.h MatProps::set_scale inline function.
-                            heightScale = (float) Math.pow (totalvolume, 1.0/3.0);
-                        } else {
-                            heightScale = scaleData.heightScale;
-                        }
-                    }
                     writer = new BufferedWriter(new FileWriter(fn));
-                    writer.write("" + heightScale + "\n");
+                    writer.write("" + maxHeight + "\n");
                     writer.close();
                 } catch (IOException ex) {
                     int selectionOption = JOptionPane.showConfirmDialog(TabJobSubmission.this,
-                            "Unable to create the height_scale_for_KML.data file required for creating KML files.\n\n" +
+                            "Unable to create the maxHeight_for_KML.data file required for creating KML files.\n\n" +
                                     "Select the OK Option to continue job submission.",
                             "Job Submission Option",
                             JOptionPane.OK_CANCEL_OPTION);

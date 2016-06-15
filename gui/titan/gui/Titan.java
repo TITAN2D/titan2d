@@ -99,14 +99,14 @@ public class Titan extends JPanel {
 
             try {
                 // Allow user to set the start directory for the directory selectors
-                String eInputDirStr = System.getenv("E_INPUTDIR");
+                String eInputDirStr = System.getenv("TITAN2D_INPUTDIR");
                 if (eInputDirStr != null) {
                     eInputDir = eInputDirStr;
-                    System.out.println("E_INPUTDIR environment variable eInputDirStr: " + eInputDirStr + " => eInputDir:" + eInputDir);
+                    System.out.println("TITAN2D_INPUTDIR environment variable eInputDirStr: " + eInputDirStr + " => eInputDir:" + eInputDir);
                 }
             } catch (Exception e) {
 
-                 JOptionPane.showMessageDialog(this, "The E_INPUTDIR environment variable is not accessible using System.getenv().");
+                 JOptionPane.showMessageDialog(this, "The TITAN2D_INPUTDIR environment variable is not accessible using System.getenv().");
             }
 
             dba = new TitanDBAccess(titanDir.getPath() + File.separator + "titan_db");
