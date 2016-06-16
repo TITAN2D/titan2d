@@ -70,7 +70,7 @@ wget http://download.osgeo.org/gdal/2.1.0/gdal-2.1.0.tar.gz
 tar xvzf gdal-2.1.0.tar.gz
 cd gdal-2.1.0
 #disable most of external formats to reduce shared library dependencies
-./configure --prefix=$TITAN2D_DEP CXXFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS" \
+./configure --prefix=$TITAN2D_DEP CXXFLAGS="-g -Os $TITAN2D_DEP_CFLAGS" CFLAGS="-g -Os $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS" \
 --with-png=internal --with-jpeg=internal --without-curl --without-pg --without-mysql --without-sqlite3 --without-pcre --without-xml2
 make -j $CORES_TO_USE
 make install
@@ -280,17 +280,22 @@ done
 # Modify installation
 # ====================================================================
 #change rpath of executables
+#chrpath only can change existing RPATH and can not create a new one
+#some of the dependencies don't have RPATH thus we will use patchelf
 cd $TITAN2D_DEP/bin
 for f in `find . -maxdepth 1 -type f -executable`
 do
 echo $f
-chrpath -r '$ORIGIN:$ORIGIN/../lib' $f
+#chrpath -r '$ORIGIN:$ORIGIN/../lib' $f
+patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib' $f
 done
 
 cd $TITAN2D_DEP/lib
 for f in `find . -maxdepth 1 -type f -executable`
 do
+echo $f
 chrpath -r '$ORIGIN' $f
+patchelf --set-rpath '$ORIGIN' $f
 done
 
 # ====================================================================
