@@ -24,7 +24,7 @@ else
 fi
 
 cp $1/zone.txt $1/vizout/zone.txt
-cp $1/height_scale_for_KML.data $1/vizout/height_scale_for_KML.data
+cp $1/maxHeight_for_KML.data $1/vizout/maxHeight_for_KML.data
  
 echo "Running h5dump"
 $TITAN2D_PYTHON $TITAN2D_PYUTIL_DIR/h5dump.py $1/vizout

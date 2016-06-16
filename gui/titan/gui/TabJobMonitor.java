@@ -41,10 +41,15 @@ public class TabJobMonitor extends TitanTabList {
 
 	public TabJobMonitor(TitanDBAccess db, JobSubmissionContainer sc) {
         super(false, ListSelectionModel.SINGLE_SELECTION);
+
+	//Note: to enable selection of multiple rows use:
+	//super(false, ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        //In this case, job details will show details for the first selected job only
+
 		dba = db;
 		submitContainer = sc;
 	    
-	    refreshList = new RefreshJobList();
+	        refreshList = new RefreshJobList();
 	    
 		addComponentListener(new OnDisplay());
 		

@@ -83,31 +83,30 @@ public class Titan extends JPanel {
 
             try {
 
-                String tooldir = System.getenv("TOOLDIR");
-                if (tooldir != null) {
-
-		    System.out.println("The TOOLDIR environment variable is defined as: " + tooldir + ". Setting eVHUB to true.");
-
-                } else {
-                    System.out.println("The TOOLDIR environment variable is not defined. Setting eVHUB to false.");
-                    eVHUB = false;
+                String eVHUBStr = System.getenv("TITAN2D_ON_VHUB");
+                System.out.println ("TITAN2D_ON_VHUB environment variable: " + eVHUBStr);
+                if (eVHUBStr != null) {
+		    if (eVHUBStr.compareTo("no") == 0) {
+                      eVHUB = false;
+                   }
                 }
             } catch (Exception e) {
 
-               JOptionPane.showMessageDialog(this, "The TOOLDIR  environment variable is not accessible using System.getenv().  Setting eVHUB to true (default).");
+               JOptionPane.showMessageDialog(this, "The TITAN2D_ON_VHUB environment variable is not accessible using System.getenv().");
             }
+            System.out.println("eVHUB: " + eVHUB);
 
             try {
                 // Allow user to set the start directory for the directory selectors
-                String eInputDirStr = System.getenv("E_INPUTDIR");
+                String eInputDirStr = System.getenv("TITAN2D_INPUTDIR");
                 if (eInputDirStr != null) {
                     eInputDir = eInputDirStr;
-                    System.out.println("E_INPUTDIR environment variable eInputDirStr: " + eInputDirStr + " => eInputDir:" + eInputDir);
                 }
             } catch (Exception e) {
 
-                 JOptionPane.showMessageDialog(this, "The E_INPUTDIR environment variable is not accessible using System.getenv().");
+                 JOptionPane.showMessageDialog(this, "The TITAN2D_INPUTDIR environment variable is not accessible using System.getenv().");
             }
+            System.out.println("eInputDir: " + eInputDir);
 
             dba = new TitanDBAccess(titanDir.getPath() + File.separator + "titan_db");
             dba.open();

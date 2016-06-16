@@ -201,12 +201,11 @@ if(hemi == "South"):
    northernHemisphere = False
 
 
-#get Scale
-scalefile = open(outDir+"/height_scale_for_KML.data","r")
-scale = scalefile.readline()
-scale = scale.strip()
-scale = int(float(scale))
-scalefile.close()
+#get the maximum height
+maxHeightFile = open(outDir+"/maxHeight_for_KML.data","r")
+maxHeight = maxHeightFile.readline()
+maxHeight = maxHeight.strip()
+maxHeight = int(float(maxHeight))
 
 #get Image location
 #imagefile = os.path.realpath(__file__)
@@ -217,7 +216,7 @@ scalefile.close()
 #Make label
 blankimage = os.path.realpath(__file__)
 blankimage = string.replace(blankimage, "createVolcanoKML_POLYGONS_ANIMATION.py", "blankheight.png")
-makeLabel(blankimage, fontDir, outDir + "/pileheightlabel.png", scale)
+makeLabel(blankimage, fontDir, outDir + "/pileheightlabel.png", maxHeight)
 
 # ----- MAIN ------
 
@@ -253,7 +252,7 @@ for fname in dirList:
 				if ( float(height) > 0 ):
 					merapi.write('\t\t<Placemark>\n')
 					merapi.write('\t\t\t<name>Height '+str(float(height)) +' meters</name>\n')
-					style = int(float(height)*10/scale)
+					style = int(float(height)*10/maxHeight)
 					if(style > 10):
 						style = 10
 					merapi.write('\t\t\t<styleUrl>#volcanoPolyStyle'+str(style)+'</styleUrl>\n')

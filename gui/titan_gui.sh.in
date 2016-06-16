@@ -40,7 +40,7 @@ fi
 # Specify the start directory for the Titan2D GUI's directory selectors.
 # Default, $Home
 # Example:
-# export E_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui_input"
+# export TITAN2D_INPUTDIR="/projects/academic/gmfg/renettej/titan_java_gui_input"
 
 
 
