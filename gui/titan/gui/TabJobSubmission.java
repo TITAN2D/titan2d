@@ -675,8 +675,7 @@ public class TabJobSubmission extends JPanel {
                 }else {
 
                     // GDAL
-
-                    //For HUB-Submits, the mapset directory is zipped into a tar.gz file
+                    // For HUB-Submits, the mapset file is zipped into a tar.gz file.
                     if (runStyle.getValue().compareTo(JobSubmissionContainer.RUN_STYLE_SUBMIT) == 0) {
 
                         String fullPathTemp;
@@ -687,12 +686,8 @@ public class TabJobSubmission extends JPanel {
                         String mapset;
 
                         fullPathTemp = mainData.getValue(TitanConstants.GIS_MAP);
-                        map = fullPathTemp.substring(fullPathTemp.lastIndexOf(File.separator) + 1);
-                        cellhddir = fullPathTemp.substring(0, fullPathTemp.lastIndexOf(File.separator));
-                        cellhd = cellhddir.substring(cellhddir.lastIndexOf(File.separator) + 1);
-                        mapsetdir = cellhddir.substring(0, cellhddir.lastIndexOf(File.separator));
-                        mapset = mapsetdir.substring(mapsetdir.lastIndexOf(File.separator) + 1);
-                        data.map = mapset + File.separator + cellhd + File.separator + map;
+                        mapset = fullPathTemp.substring(fullPathTemp.lastIndexOf(File.separator) + 1);
+                        data.map = mapset;
                     } else {
                         data.map = mainData.getValue(TitanConstants.GIS_MAP);
                     }
@@ -1623,10 +1618,6 @@ public class TabJobSubmission extends JPanel {
                     writer = new BufferedWriter(new FileWriter(fn));
 
                     String line = "";
-                    boolean getSlurmJobID = true;
-                    int indexOfLeftParen;
-                    int indexOfRightParen;
-                    String slurmJobID;
 
                     text.append("Submit Output Stream :\n");
                     writer.write("Submit Output Stream :\n");
@@ -1641,15 +1632,7 @@ public class TabJobSubmission extends JPanel {
                         }
 
                         if (line != null) {
-                            if (getSlurmJobID) {
-                                getSlurmJobID = false;
-                                // The Slurm Job ID is returned in the message as (Slurm Job ID) message
-                                indexOfLeftParen = line.indexOf("(", 0);
-                                indexOfRightParen = line.indexOf(")", indexOfLeftParen);
-                                slurmJobID = line.substring(indexOfLeftParen + 1, indexOfRightParen);
-                                text.append("Slurm Job ID: " + slurmJobID + "\n");
-                                writer.write("Slurm Job ID: " + slurmJobID + "\n");
-                            }
+                            // Note: lines (3+) display as (Slurm ID) ...
                             text.append("  " + line + "\n");
                             writer.write("  " + line + "\n");
                         }

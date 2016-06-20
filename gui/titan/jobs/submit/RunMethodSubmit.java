@@ -90,21 +90,17 @@ public class RunMethodSubmit extends RunMethod {
         } else {
 
             // GDAL
-            // For GDAL, GIS Map is a full path name to the map metadata file in the mapset cellhd directory.
-            // For HUB-Submits, the mapset directory is zipped into a tar.gz file
-
-            String cellhddir;
-            String mapsetdir;
+            // For GDAL, GIS Map is a full path name to the mapset file.
+            // For HUB-Submits, the mapset file is zipped into a tar.gz file.
+            // In this case, db_dir is actually a db_file
 
             index = preprocParms[preprocParms_GIS_MAP_index].lastIndexOf(File.separator);
-            cellhddir = preprocParms[preprocParms_GIS_MAP_index].substring(0, index);
-            mapsetdir = cellhddir.substring(0, cellhddir.lastIndexOf(File.separator));
-            db_dir = mapsetdir.substring(mapsetdir.lastIndexOf(File.separator) + 1);
-            db_path = mapsetdir.substring(0, mapsetdir.lastIndexOf(File.separator));
+            db_path = preprocParms[preprocParms_GIS_MAP_index].substring(0, index);
+            db_dir = preprocParms[preprocParms_GIS_MAP_index].substring(index + 1);
         }
 
-        //System.out.println("db_path: " + db_dir);
-        //System.out.println("db_dir: " + db_path);
+        //System.out.println("db_path: " + db_path);
+        //System.out.println("db_dir: " + db_dir);
 
         if (restartEnabled.compareTo(TitanConstants.TRUE) == 0) {
 

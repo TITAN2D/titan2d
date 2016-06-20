@@ -58,8 +58,8 @@ public class Titan extends JPanel {
 
         // The Hub-Submit Run Style option is valid on VHub only.
         // On VHub, only 1 node and 1 cpu are allowed per job.
-        // Default, assume running Titan2D GUI on VHub
-        boolean eVHUB = true;
+        // Default, assume not running Titan2D GUI on VHub
+        boolean eVHUB = false;
         String eInputDir = "";
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -86,8 +86,8 @@ public class Titan extends JPanel {
                 String eVHUBStr = System.getenv("TITAN2D_ON_VHUB");
                 System.out.println ("TITAN2D_ON_VHUB environment variable: " + eVHUBStr);
                 if (eVHUBStr != null) {
-		    if (eVHUBStr.compareTo("no") == 0) {
-                      eVHUB = false;
+		    if (eVHUBStr.compareTo("yes") == 0) {
+                      eVHUB = true;
                    }
                 }
             } catch (Exception e) {
