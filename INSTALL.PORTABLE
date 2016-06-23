@@ -17,8 +17,8 @@ scl enable devtoolset-3 bash
 TITAN_WSP=`pwd`
 mkdir titan2d_dep
 mkdir titan2d_dep_src
-TITAN2D_DEP=`pwd`/titan2d_dep
-TITAN2D_DEP_SRC=`pwd`/titan2d_dep_src
+TITAN2D_DEP=$TITAN_WSP/titan2d_dep
+TITAN2D_DEP_SRC=$TITAN_WSP/titan2d_dep_src
 
 # ====================================================================
 # set some common flags
@@ -345,6 +345,12 @@ titan-datread.o titan-hilbert.o titan-init_piles.o titan-update_topo.o titan-res
 ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a ../datstr/libdatstr.a ../geoflow/libgeoflow.a \
 ../useful/libuseful.a ../repartition/librepartition.a ../tecplot/libtecplot.a ../vectordatapreproc/libvectordatpreproc.a \
 -L/home/ccrub/titan_wsp/titan2d_dep/lib -lpython2.7 -L/home/ccrub/titan_wsp/titan2d_dep/lib -lgdal -Wl,-Bstatic   \
+/opt/rh/devtoolset-3/root/usr/lib/gcc/x86_64-redhat-linux/4.9.2/libgomp.a -Wl,-Bdynamic -lhdf5_cpp -lhdf5 -lz -pthread -ldl -lm
+cd ../..
+cd src/preproc
+g++ -static-libgcc -static-libstdc++ -I../../../../titan2d/src/preproc/../gisapi -I../../../../titan2d/src/preproc/../useful -std=c++11 -g -O2 -mtune=generic \
+-Wl,-rpath,'$ORIGIN/../lib:$ORIGIN/../lib/titan2d_dep/lib' -L/home/ccrub/titan_wsp/titan2d_dep/lib -o titan_materialnames \
+titan_materialnames-materialnames.o ../gisapi/libgisapi.a ../useful/libuseful.a  -L/home/ccrub/titan_wsp/titan2d_dep/lib -lgdal -Wl,-Bstatic   \
 /opt/rh/devtoolset-3/root/usr/lib/gcc/x86_64-redhat-linux/4.9.2/libgomp.a -Wl,-Bdynamic -lhdf5_cpp -lhdf5 -lz -pthread -ldl -lm
 cd ../..
 # And install it:
