@@ -104,7 +104,19 @@ AC_PROG_RANLIB
 AM_PATH_PYTHON([2.7],, [:])
 PYTHON_BIN_DIR=`AS_DIRNAME($PYTHON)`
 PYTHON_ROOT=`AS_DIRNAME($PYTHON_BIN_DIR)`
+
+AS_IF([test "$PYTHON_ROOT" == "/usr"],
+	[
+		PYTHON_LIBS="-lpython$PYTHON_VERSION"
+	],
+	[
+		
+		PYTHON_LIBS="-L$PYTHON_ROOT/lib -lpython$PYTHON_VERSION"
+	]
+)
+
 AC_SUBST([PYTHON_ROOT],[$PYTHON_ROOT])
+AC_SUBST([PYTHON_LIBS],[$PYTHON_LIBS])
 
 AH_TEMPLATE([TITAN_PYTHONHOME],[eventually PYTHONHOME])
 AC_DEFINE_UNQUOTED([TITAN_PYTHONHOME],["$PYTHON_ROOT"])
@@ -366,6 +378,9 @@ AC_TYPE_SIZE_T
 AC_HEADER_MAJOR
 AC_CHECK_FUNCS([floor pow sqrt strchr strdup])
 
+## Clean up some stuff
+#======================================================================================
+LDFLAGS=`echo $LDFLAGS |sed 's|-L/usr/lib64||g;s|-L/usr/lib||g'`
 
 #======================================================================================
 AC_CONFIG_FILES([Makefile
