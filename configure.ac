@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(titan2d, 3.99.7)
+AC_INIT(titan2d, 4.0.0)
 AM_INIT_AUTOMAKE
 
 ## Check is portable package is made
