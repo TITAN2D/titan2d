@@ -1671,7 +1671,8 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     Awet_.push_back();
     for(int i=0;i<2;++i)drypoint_[i].push_back();
     Swet_.push_back();
-    
+    narrow_bound_flag_.push_back();
+    for(int i=0;i<2 * DIMENSION;++i)phi_slope_[i].push_back();
     return ndx;
 }
 
@@ -1815,6 +1816,9 @@ void ElementsHashTable::flushElemTable()
     Awet_.__reorder_prolog(size);
     for(int i=0;i<2;++i)drypoint_[i].__reorder_prolog(size);
     Swet_.__reorder_prolog(size);
+
+    narrow_bound_flag_.__reorder_prolog(size);
+    for(int i=0;i<2 * DIMENSION;++i)phi_slope_[i].__reorder_prolog(size);
 
 #if 0
     //DIMENSION__MAX_NUM_STATE_VARS
@@ -2028,6 +2032,8 @@ void ElementsHashTable::flushElemTable()
             iwetnode_.__reorder_body_byblocks(start, end,new_order);
             Awet_.__reorder_body_byblocks(start, end,new_order);
             Swet_.__reorder_body_byblocks(start, end,new_order);
+            narrow_bound_flag_.__reorder_body_byblocks(start, end,new_order);
+            for(int i=0;i<2 * DIMENSION;++i)phi_slope_[i].__reorder_body_byblocks(start, end,new_order);
         }
     }
 #endif
@@ -2130,6 +2136,8 @@ void ElementsHashTable::reserve(const tisize_t new_reserve_size)
     Awet_.reserve(new_reserve_size);
     for(int i=0;i<2;++i)drypoint_[i].reserve(new_reserve_size);
     Swet_.reserve(new_reserve_size);
+    narrow_bound_flag_.reserve(new_reserve_size);
+    for(int i=0;i<2 * DIMENSION;++i)phi_slope_[i].reserve(new_reserve_size);
 }
 void ElementsHashTable::reserve_at_least(const tisize_t new_reserve_size)
 {
@@ -2256,6 +2264,10 @@ void ElementsHashTable::resize(const tisize_t new_resize)
         {for(int i=0;i<2;++i)drypoint_[i].resize(new_resize);}
 #pragma omp section
         Swet_.resize(new_resize);
+#pragma omp section
+        narrow_bound_flag_.resize(new_resize);
+#pragma omp section
+        for(int i=0;i<2 * DIMENSION;++i)phi_slope_[i].resize(new_resize);
     }
 }
 void ElementsHashTable::groupCreateAddNode(vector<array<ti_ndx_t,4> > &new_sons_ndx,
@@ -2481,6 +2493,8 @@ void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
     TiH5_writeTiVector(group,Awet_,dims);
     TiH5_writeTiVectorArray(group,drypoint_,2,dims);
     TiH5_writeTiVector(group,Swet_,dims);
+    TiH5_writeTiVector(group,narrow_bound_flag_,dims);
+    TiH5_writeTiVectorArray(group,phi_slope_,2 * DIMENSION,dims);
 }
 void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -2568,6 +2582,8 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVector(group,Awet_);
     TiH5_readTiVectorArray(group,drypoint_,2);
     TiH5_readTiVector(group,Swet_);
+    TiH5_readTiVector(group,narrow_bound_flag_);
+    TiH5_readTiVectorArray(group,phi_slope_,2 * DIMENSION);
 
     //allocate and initialize not stored properties
     for (int j = 0; j < 8; j++) {

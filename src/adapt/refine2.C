@@ -940,10 +940,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_proc[0] = ElemTable->neigh_proc_[0][ndx];
 		neigh_proc[1] = myid;
 		neigh_proc[2] = myid;
-		if(ElemTable->neigh_proc_[7][ndx] != -2)
-			neigh_proc[3] = ElemTable->neigh_proc_[7][ndx]; //depending if the neighboring element is already refined
-		else
-			neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
 
 		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
 
@@ -1172,7 +1169,7 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_proc[0] = myid;
 		neigh_proc[1] = myid;
 		neigh_proc[2] = (ElemTable->neigh_proc_[6][ndx] != -2) ? ElemTable->neigh_proc_[6][ndx] : ElemTable->neigh_proc_[2][ndx];
-		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+		neigh_proc[3] = (ElemTable->neigh_proc_[7][ndx] != -2) ? ElemTable->neigh_proc_[7][ndx] : ElemTable->neigh_proc_[3][ndx];
 
 		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
 
@@ -2159,10 +2156,7 @@ void HAdapt_LevelSet::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_proc[0] = ElemTable->neigh_proc_[0][ndx];
 		neigh_proc[1] = myid;
 		neigh_proc[2] = myid;
-		if(ElemTable->neigh_proc_[7][ndx] != -2)
-			neigh_proc[3] = ElemTable->neigh_proc_[7][ndx]; //depending if the neighboring element is already refined
-		else
-			neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
 
 		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
 
@@ -2223,6 +2217,7 @@ void HAdapt_LevelSet::refineElements(const vector<ti_ndx_t> &allRefinement)
 			coord[i] = NodeTable->coord_[i][n1_ndx];
 
 		//neighbors
+
 		if(ElemTable->neigh_proc_[4][ndx] != -2)
 			neigh[0] = neigh[4] = ElemTable->neighbors_[4][ndx]; //this should be ok now matter what
 		else
@@ -2240,7 +2235,6 @@ void HAdapt_LevelSet::refineElements(const vector<ti_ndx_t> &allRefinement)
         neigh_ndx[3] = neigh_ndx[7] = ndxSons[0];
 
 		//process of the neighbors
-
 		neigh_proc[0] = (ElemTable->neigh_proc_[4][ndx] != -2) ? ElemTable->neigh_proc_[4][ndx] : ElemTable->neigh_proc_[0][ndx];
 		neigh_proc[1] = ElemTable->neigh_proc_[1][ndx];
 		neigh_proc[2] = myid;
@@ -2391,7 +2385,7 @@ void HAdapt_LevelSet::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_proc[0] = myid;
 		neigh_proc[1] = myid;
 		neigh_proc[2] = (ElemTable->neigh_proc_[6][ndx] != -2) ? ElemTable->neigh_proc_[6][ndx] : ElemTable->neigh_proc_[2][ndx];
-		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+		neigh_proc[3] = (ElemTable->neigh_proc_[7][ndx] != -2) ? ElemTable->neigh_proc_[7][ndx] : ElemTable->neigh_proc_[3][ndx];
 
 		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
 

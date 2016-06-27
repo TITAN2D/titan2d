@@ -79,7 +79,7 @@ private:
 //////////////////////////////////////////////////////////////////////////////
 
 
-//!PrimaryRefinementsFinder
+//!PrimaryRefinementsFinderLevelSet
 class PrimaryRefinementsFinderLevelSet:public SeedRefinementsFinder
 {
 public:

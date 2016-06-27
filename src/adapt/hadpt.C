@@ -159,25 +159,53 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
     PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
     PROFILING1_START(pt_start);
-    #pragma omp parallel
+
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::Heuristic)
     {
-        int ithread=omp_get_thread_num();
-        loc_SeedRefinement[ithread].resize(0);
-        //ti_ndx_t ndx_start=ithread*N/threads_number;
-        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
-        //@ElementsSingleLoop
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=0;ndx<N;++ndx)
+        #pragma omp parallel
         {
-            if(status[ndx]>=0)
+            int ithread=omp_get_thread_num();
+            loc_SeedRefinement[ithread].resize(0);
+            //ti_ndx_t ndx_start=ithread*N/threads_number;
+            //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+            //@ElementsSingleLoop
+            #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+            for(ti_ndx_t ndx=0;ndx<N;++ndx)
             {
-                if(ElemProp->if_next_buffer_boundary_levelset(ndx, REFINE_THRESHOLD) == 1)
+                if(status[ndx]>=0)
                 {
-                    loc_SeedRefinement[ithread].push_back(ndx);
+                    if(ElemProp->if_next_buffer_boundary(ndx, REFINE_THRESHOLD) == 1)
+                    {
+                        loc_SeedRefinement[ithread].push_back(ndx);
+                    }
                 }
             }
         }
     }
+
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::LevelSet || ElemTable->interface_capturing_==Interface_Capturing_Type::PhaseField)
+    {
+        #pragma omp parallel
+        {
+            int ithread=omp_get_thread_num();
+            loc_SeedRefinement[ithread].resize(0);
+            //ti_ndx_t ndx_start=ithread*N/threads_number;
+            //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+            //@ElementsSingleLoop
+            #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+            for(ti_ndx_t ndx=0;ndx<N;++ndx)
+            {
+                if(status[ndx]>=0)
+                {
+                    if(ElemProp->if_next_buffer_boundary_levelset(ndx, REFINE_THRESHOLD) == 1)
+                    {
+                        loc_SeedRefinement[ithread].push_back(ndx);
+                    }
+                }
+            }
+        }
+    }
+
     PROFILING1_STOPADD(BuferNextLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
 
     PROFILING1_START(pt_start);
@@ -220,7 +248,12 @@ void PrimaryRefinementsFinderLevelSet::findSeedRefinements(vector<ti_ndx_t> &see
                     || (ElemProp->if_pile_boundary_levelset(ndx, PHI_ZERO) > 0)
                     || (ElemProp->if_source_boundary_levelset(ndx) > 0) )
                 {
-                    loc_SeedRefinement[ithread].push_back(ndx);
+                    //check that it is not boundary
+                    if( ti_ndx_not_negative(ElemTable->neighbor_ndx_[0][ndx]) &&
+                        ti_ndx_not_negative(ElemTable->neighbor_ndx_[1][ndx]) &&
+                        ti_ndx_not_negative(ElemTable->neighbor_ndx_[2][ndx]) &&
+                        ti_ndx_not_negative(ElemTable->neighbor_ndx_[3][ndx]))
+                        loc_SeedRefinement[ithread].push_back(ndx);
                 }
             }
         }
@@ -482,7 +515,7 @@ void HAdapt::adapt(int h_count, double target)
                 #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
                 for(ti_ndx_t ndx=0;ndx<ElemTable->size();++ndx)
                 {
-                   if(status[ndx] >=0 && ElemProp->if_next_buffer_boundary_levelset(ndx,REFINE_THRESHOLD)> 0)
+                   if(status[ndx] >=0 && ElemProp->if_next_buffer_boundary(ndx,REFINE_THRESHOLD)> 0)
                    {
                             //adapted[ndx]=BUFFER;
                        loc_SeedRefinement[ithread].push_back(ndx);
@@ -927,6 +960,16 @@ void HAdapt_LevelSet::refine2(SeedRefinementsFinder &seedRefinementsFinder)
     seedRefinementsFinder.findSeedRefinements(seedRefinement);
     TIMING3_STOPADD(seedRefinementsSearch,t_start3);
 
+   /* printf("===========================================================\n");
+    for(int i=0;i<seedRefinement.size();++i)
+    {
+        ti_ndx_t ndx=seedRefinement[i];
+        printf("%d %d %d %d %d %d\n", i, ti_ndx_not_negative(ElemTable->neighbor_ndx_[0][ndx]), \
+        ti_ndx_not_negative(ElemTable->neighbor_ndx_[1][ndx]), \
+        ti_ndx_not_negative(ElemTable->neighbor_ndx_[2][ndx]), \
+        ti_ndx_not_negative(ElemTable->neighbor_ndx_[3][ndx]), \
+        ElemTable->neigh_proc_[0][ndx]);
+    }*/
     //findout triggered refinements
     TIMING3_START(t_start3);
     findTriggeredRefinements(seedRefinement, set_for_refinement, allRefinement);
@@ -937,6 +980,7 @@ void HAdapt_LevelSet::refine2(SeedRefinementsFinder &seedRefinementsFinder)
     ElemTable->reserve_at_least(ElemTable->size()+4*seedRefinement.size());
     NodeTable->reserve_at_least(NodeTable->size()+12*seedRefinement.size());
     refineElements(allRefinement);
+
     TIMING3_STOPADD(refineElements,t_start3);
 
     //update neighbours
@@ -1677,7 +1721,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                 for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
                     EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                    if(EmTemp->if_next_buffer_boundary_levelset(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD)== 1)
+                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD)== 1)
                     {
                         refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
                         debug_ref_flag++;
@@ -1708,7 +1752,7 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                 for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
                 {
                     EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                    if(EmTemp->if_next_buffer_boundary_levelset(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD)> 0)
+                    if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr, REFINE_THRESHOLD)> 0)
                         TempList.add(EmTemp);
                 }
             }

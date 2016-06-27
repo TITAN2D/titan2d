@@ -230,8 +230,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
 
                 for(int inode = 0; inode < 8; inode++)
                 {
-                    nodescoord[inode][0] = coord_[0][node_key_ndx_[inode][ndx]];
-                    nodescoord[inode][1] = coord_[1][node_key_ndx_[inode][ndx]];
+                    nodescoord[inode][0] = node_coord_[0][node_key_ndx_[inode][ndx]];
+                    nodescoord[inode][1] = node_coord_[1][node_key_ndx_[inode][ndx]];
                 }
                 nodescoord[8][0] = coord_[0][ndx];
                 nodescoord[8][1] = coord_[1][ndx];
