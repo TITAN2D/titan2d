@@ -4732,7 +4732,7 @@ int Element::if_pile_boundary_levelset(ElementsHashTable *ElemTable, double cont
 
 //    assert(state_vars(0) >= 0.0);
 
-    if(state_vars(3) >= contour_phi)
+    if(state_vars(3) <= contour_phi)
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc(ineigh) >= 0)
@@ -4746,7 +4746,7 @@ int Element::if_pile_boundary_levelset(ElementsHashTable *ElemTable, double cont
                     cout.flush();
                 }
                 assert(ElemNeigh);
-                if(ElemNeigh->state_vars(3) < contour_phi)
+                if(ElemNeigh->state_vars(3) > contour_phi)
                     return (2); //inside of pileheight contour line
             }
         //else if(neigh_proc[ineigh%4]==-1) return(2); //pileheight on boundary of domain
@@ -4766,7 +4766,7 @@ int Element::if_pile_boundary_levelset(ElementsHashTable *ElemTable, double cont
                 }
                 assert(ElemNeigh);
 //                assert(ElemNeigh->state_vars(0) >= 0.0);
-                if(ElemNeigh->state_vars(3) >= contour_phi)
+                if(ElemNeigh->state_vars(3) <= contour_phi)
                     return (1); //outside of pileheight contour line
             }
     }
@@ -5069,7 +5069,7 @@ int Element::if_first_buffer_boundary_levelset(ElementsHashTable *ElemTable, dou
             { //don't check outside map boundary or duplicate neighbor
                 ElemNeigh = (Element*) ElemTable->lookup(neighbor(ineigh));
                 assert(ElemNeigh);
-                if((ElemNeigh->state_vars(3) < contour_phi) && (ElemNeigh->Influx(0) == 0.0))
+                if((ElemNeigh->state_vars(3) <= contour_phi) && (ElemNeigh->Influx(0) == 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
