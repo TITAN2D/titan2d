@@ -91,8 +91,14 @@ void cxxTitanSimulation::init_piles()
     }
     if(pileprops_ptr->numpiles>0)pile_type= pileprops_ptr->pile_type[0];
 
+
+
     if(!adapt)
+    {
         H_adapt_to_level(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
+		HT_Elem_Ptr->updateLocalElements();
+		HT_Elem_Ptr->updateNeighboursIndexes();
+    }
 
     if(allPilesAreElliptical)
     {
