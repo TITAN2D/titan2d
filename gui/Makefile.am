@@ -3,6 +3,8 @@
 #
 
 # Copy files to $(bindir)
+
+if ENABLE_JAVA_GUI
 bin_SCRIPTS = titan_gui.sh
 
 jardir=$(prefix)/lib/titan_java_gui
@@ -73,3 +75,4 @@ dist_noinst_JAVA = \
 
 titan_gui.jar:classnoinst.stamp
 	$(JAR) -cfe titan_gui.jar titan.gui.Titan titan
+endif

@@ -257,11 +257,11 @@ AM_CONDITIONAL([WITH_GDAL], test "x$with_gdal" != "xno")
 #SWIG
 #-------------------------------------------------------------------------------------
 AC_ARG_WITH(swig,
-            AS_HELP_STRING([--with-swig=<path to swig executable>],
+            AS_HELP_STRING([--with-swig=<path to swig home directory>],
             [Specify path to SWIG package. ]
             [If set will (re)generate python API, otherwise will try to use previously generated sources. ]
             [Note that github repository do not track them.]
-            [Provide absolute grass location --with-swig=/path/to/swig (default: without)]),
+            [Provide absolute path to swig top directory, --with-swig=/path/to/swig/home (default: without)]),
             [],[with_swig=$with_titan2d_dep])
 #only developers/advanced user should call swig
 #the public source code releases should come with swig generated files
@@ -349,6 +349,7 @@ AS_IF([test "x$enable_java_gui" != xno],
 		
 	]
 )
+AM_CONDITIONAL([ENABLE_JAVA_GUI], [test "$enable_java_gui" = "yes"])
 
 # compile for vhub
 #------------------------------------------------------------------------------------
