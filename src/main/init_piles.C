@@ -101,6 +101,9 @@ void cxxTitanSimulation::init_piles()
     	{
     		H_adapt_to_level_LevelSet(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr, fluxprops_ptr, timeprops_ptr, REFINE_LEVEL);
     	}
+        HT_Elem_Ptr->updateLocalElements();
+        HT_Elem_Ptr->updateNeighboursIndexes();
+
     }
 
 
