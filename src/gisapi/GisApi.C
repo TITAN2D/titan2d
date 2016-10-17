@@ -879,7 +879,7 @@ int Get_slope(const double resolution, double x, double y, double &xslope, doubl
 {
     int status;
     
-    ASSERT3(gis_grid.xslope == 0 && gis_grid.yslope);
+    ASSERT3(gis_grid.xslope || gis_grid.yslope);
     
     if(x >= gis_grid.ghead.xmin && x <= gis_grid.ghead.xmax && y >= gis_grid.ghead.ymin && y <= gis_grid.ghead.ymax)
     {
