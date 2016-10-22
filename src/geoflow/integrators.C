@@ -1091,7 +1091,7 @@ void Integrator_SinglePhase_LevelSet_Coulomb::corrector()
             VxVy[0] = VxVy[1] = 0.0;
         }
 
-        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+//        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1175,7 +1175,7 @@ void Integrator_SinglePhase_LevelSet_Coulomb::corrector()
             forceintx = sgn_dudy * h[ndx]* kactxy[ndx] * (g[2][ndx] * dh_dy[ndx] + dgdx[1][ndx] * h[ndx]) * sin_intfrictang;
 
             // the bed friction force for fast moving flow
-
+            forcebedx = unitvx * c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0) * tanbed;
 
             Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx - forceintx);
             //STOPPING CRITERIA

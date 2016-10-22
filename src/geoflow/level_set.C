@@ -836,8 +836,8 @@ void pde_reinitialization(ElementsHashTable* El_Table, NodeHashTable* NodeTable,
 			// CFL number is 0.5 and we use 12 iteration to make sure at least 6 neighbor element has been updated
 		} while (normalized_norm > threshold && iter < 13);
 
-		if (rank == 0)
-			cout << "norm: " << normalized_norm << " threshold is: " << threshold << endl;
+//		if (rank == 0)
+//			cout << "norm: " << normalized_norm << " threshold is: " << threshold << endl;
 
 }
 
