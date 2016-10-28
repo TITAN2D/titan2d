@@ -845,7 +845,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 
     int i; //-- counters
-    bool current_state_is_good=true;
+    int current_state_is_good=true;
 
     //-- MPI
     IF_MPI(MPI_Status status);
@@ -1072,39 +1072,51 @@ void cxxTitanSimulation::run(bool start_from_restart)
         PROFILING1_STOPADD_RESTART(tsim_iter_step,pt_start);
 
         //check if current state is good
-        if(statprops_ptr->statvolume==0.0){
-            current_state_is_good=false;
-            if(myid==0){
-                printf("\n###############################################################################\n");
-                printf("Volume is zero, nothing more to model!\n");
-                printf("Be careful with stats, some nans can meke it there!\n");
-                printf("###############################################################################\n\n");
-            }
-            break;
-        }
-        if(isnan(statprops_ptr->vmean) || isnan(statprops_ptr->vstar))
+        if(myid == 0)
         {
-            current_state_is_good=false;
-            if(myid==0){
-                printf("\n###############################################################################\n");
-                printf("Velocity is nan(not a number), something is wrong!\n");
-                printf("Do not forget about restarts, the last one should be without nan.\n");
-                printf("Be careful with stats, some nans can meke it there!\n");
-                printf("###############################################################################\n\n");
-            }
-            break;
+			if(statprops_ptr->statvolume==0.0){
+				current_state_is_good=false;
+
+				printf("\n###############################################################################\n");
+				printf("Volume is zero, nothing more to model!\n");
+				printf("Be careful with stats, some nans can meke it there!\n");
+				printf("###############################################################################\n\n");
+
+				break;
+			}
+			if(isnan(statprops_ptr->vmean) || isnan(statprops_ptr->vstar))
+			{
+				current_state_is_good=false;
+
+				printf("\n###############################################################################\n");
+				printf("Velocity is nan(not a number), something is wrong!\n");
+				printf("Do not forget about restarts, the last one should be without nan.\n");
+				printf("Be careful with stats, some nans can meke it there!\n");
+				printf("###############################################################################\n\n");
+
+				break;
+			}
+			if(isnan(statprops_ptr->statvolume))
+			{
+				current_state_is_good=false;
+
+				printf("\n###############################################################################\n");
+				printf("Volume is nan(not a number), something is wrong!\n");
+				printf("Do not forget about restarts, the last one should be without nan.\n");
+				printf("Be careful with stats, some nans can meke it there!\n");
+				printf("###############################################################################\n\n");
+
+				break;
+			}
+			MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD);
         }
-        if(isnan(statprops_ptr->statvolume))
+        else
         {
-            current_state_is_good=false;
-            if(myid==0){
-                printf("\n###############################################################################\n");
-                printf("Volume is nan(not a number), something is wrong!\n");
-                printf("Do not forget about restarts, the last one should be without nan.\n");
-                printf("Be careful with stats, some nans can meke it there!\n");
-                printf("###############################################################################\n\n");
-            }
-            break;
+        	MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD);
+        }
+        if(current_state_is_good==false)
+        {
+        	break;
         }
         TIMING1_START(t_start);
         /*
