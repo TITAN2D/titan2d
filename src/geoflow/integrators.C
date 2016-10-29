@@ -1728,7 +1728,7 @@ void Integrator_SinglePhase_LevelSet_Voellmy_Salm::corrector()
             VxVy[0] = VxVy[1] = 0.0;
         }
 
-        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+//        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2401,7 +2401,7 @@ void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::corrector()
             VxVy[0] = VxVy[1] = 0.0;
         }
 
-        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
+//        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
