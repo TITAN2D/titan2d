@@ -19,7 +19,7 @@
 #define DISABLE_DRY_FLUX_ZEROING   //this disables the zeroing of fluxes through dry sides facet of thin layer control
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <titan_config.h>
 #endif
 
 #include "../header/hpfem.h"

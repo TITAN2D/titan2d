@@ -1,4 +1,15 @@
+# ====================================================================
 # Titan2D Installation
+# ====================================================================
+
+Titan2D is supplied with binaries for Linux and Mac OS X.
+There number of dependencies and unless you absolutly have to compile
+it please use provided binary package. See manual on how to install 
+binary package.
+
+
+Below is information on Titan2D compilation.
+
 # ====================================================================
 # Developer installation guide
 # ====================================================================
@@ -81,17 +92,6 @@ cd hdf5-1.8.16
 ./configure --prefix=$TITAN_HDF5 --enable-cxx
 make -j 8
 make install
-# ====================================================================
-# GRASS installation
-# ====================================================================
-# At this titan use grass 6th version (titan is currently not 
-# compatible with 7th)
-cd $TITAN_WSP
-export TITAN_GRASS=$TITAN_WSP/grass-6.4.6
-mkdir $TITAN_GRASS
-cd $TITAN_GRASS
-wget http://grass.osgeo.org/grass64/binary/linux/snapshot/grass-6.4.6svn-x86_64-unknown-linux-gnu-18_07_2015.tar.gz
-tar xvzf grass-6.4.6svn-x86_64-unknown-linux-gnu-18_07_2015.tar.gz
 
 # ====================================================================
 # titan2d installation
@@ -117,7 +117,7 @@ mkdir iccoptompmpi
 cd iccoptompmpi
 
 #
-#../../titan2d/configure --with-grass=<path_to_grass_installation> --without-gdal \
+#../../titan2d/configure --without-gdal \
 #    --with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
 #    PYTHON=<path to python2.7> SWIG=<path to swig>\
 #    [--enable-mpi] [--enable-openmp] \

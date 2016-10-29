@@ -25,6 +25,7 @@
 const int XDMF_NEW = 0;
 const int XDMF_OLD = 1;
 const int XDMF_CLOSE = 2;
+const int XDMF_ONLYCLOSE = 3;
 
 #define __STDC_FORMAT_MACROS
 #include <hdf5.h>

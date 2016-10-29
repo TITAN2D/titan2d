@@ -16,7 +16,7 @@
  */
 //#define DEBUG_SAVE_NODE
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <titan_config.h>
 #endif
 
 #ifndef NODE_C

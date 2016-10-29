@@ -98,12 +98,12 @@ public:
         nCols_ = ncols;
     }
     
-    bool isCompressed()
+    int isCompressed()
     {
-        return (compressed_ == 1);
+        return compressed_;
     }
     
-    void isCompressed(bool compFlag)
+    void isCompressed(int compFlag)
     {
         compressed_ = compFlag;
     }
@@ -122,7 +122,7 @@ protected:
     char tempStore_[4];
     int nRows_;
     int nCols_;
-    bool compressed_;
+    int compressed_;
 
 private:
 // No copy allowed

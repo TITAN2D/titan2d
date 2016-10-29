@@ -16,7 +16,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <titan_config.h>
 #endif
 
 #include "../header/integrators.h"
@@ -2688,7 +2688,7 @@ bool Integrator_TwoPhases_Coulomb::unscale()
 }
 void Integrator_TwoPhases_Coulomb::print0(int spaces)
 {
-    printf("%*cIntegrator: two phases, Coulomb model, first order\n", spaces,' ');
+    printf("%*cIntegrator: Two Phases Pitman-Le model, first order\n", spaces,' ');
     Integrator_TwoPhases::print0(spaces+4);
 }
 void Integrator_TwoPhases_Coulomb::predictor()

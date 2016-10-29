@@ -511,7 +511,7 @@ inline void TiH5_readTiVector__(const H5::Group &group, tivector<double> &value,
     // Write the attribute data.
     dataset.read(value.get_ptr(), H5::PredType::NATIVE_DOUBLE);
 }
-inline void TiH5_writeTiVector__(H5::Group &group, const tivector<unsigned long long int> &value, const char *name, const hsize_t dims)
+/*inline void TiH5_writeTiVector__(H5::Group &group, const tivector<unsigned long long int> &value, const char *name, const hsize_t dims)
 {
     hsize_t chunk_dims=10240;
     if(chunk_dims>dims)chunk_dims=dims;
@@ -529,7 +529,7 @@ inline void TiH5_writeTiVector__(H5::Group &group, const tivector<unsigned long 
     H5::DataSet dataset = group.createDataSet(name, H5::PredType::STD_U64LE, dataspace,plist);
     // Write the attribute data.
     dataset.write(value.get_ptr(), H5::PredType::NATIVE_ULLONG);
-}
+}*/
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 inline void TiH5_writeTiVector__(H5::Group &group, const tivector<uint64_t> &value, const char *name, const hsize_t dims)

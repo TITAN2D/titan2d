@@ -360,7 +360,7 @@ class TitanSimulationBase(object):
                 }]
             }
         },
-        'TwoPhases_Coulomb':{
+        'TwoPhases-Pitman-Le':{
                 Interface_Capturing_Type_Heuristic:{
                 'allParameters':('order','int_frict',), 
                 'defaultParameters':{'order':'First','int_frict':37.0},
@@ -528,7 +528,7 @@ class TitanSimulationBase(object):
                                 'L_material':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''}
                             }
                         ),
-                        'TwoPhases_Coulomb':TiArgCheckerAndSetter(
+                        'TwoPhases-Pitman-Le':TiArgCheckerAndSetter(
                             levelZeroParameters={
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'bed_frict':{'desc':'',
@@ -862,14 +862,14 @@ class TitanSimulationBase(object):
     def _validate(self):
         #######################################################################
         #check cross section
-        if self.ui_MatModel['model']=='TwoPhases_Coulomb':
+        if self.ui_MatModel['model']=='TwoPhases-Pitman-Le':
             for pile in self.ui_Pile:
                 if 'vol_fract' not in pile:
-                    raise ValueError('TitanSimulation:addFluxSource: TwoPhases_Coulomb is set addPile should set vol_fract!')
+                    raise ValueError('TitanSimulation:addFluxSource: TwoPhases-Pitman-Le is set addPile should set vol_fract!')
             if len(self.ui_FluxSource)>0:
-                raise NotImplementedError("TitanSimulation:addFluxSource: FluxSources are not imlemented for TwoPhases_Coulomb model!")
+                raise NotImplementedError("TitanSimulation:addFluxSource: FluxSources are not imlemented for TwoPhases-Pitman-Le model!")
             if len(self.ui_DischargePlane)>0:
-                raise NotImplementedError("TitanSimulation:addDischargePlane: DischargePlanes are not imlemented for TwoPhases_Coulomb model!")
+                raise NotImplementedError("TitanSimulation:addDischargePlane: DischargePlanes are not imlemented for TwoPhases-Pitman-Le model!")
         else:
             for pile in self.ui_Pile:
                 if 'vol_fract' in pile:
@@ -1060,7 +1060,7 @@ class TitanSimulation(TitanSimulationBase):
         matprops.number_of_cells_across_axis = int(ui_NumProp['number_of_cells_across_axis'])
         
         if self.sim.use_gis_matmap == False:
-            if ui_MatModel['model']=='Coulomb' or ui_MatModel['model']=='TwoPhases_Coulomb':
+            if ui_MatModel['model']=='Coulomb' or ui_MatModel['model']=='TwoPhases-Pitman-Le':
                 matprops.material_count=1
                 matprops.matnames.push_back("all materials")
                 matprops.bedfrict.push_back(float(ui_MatModel['bed_frict']))

@@ -1,0 +1,360 @@
+#Portable binaries are made with CentOS 6.7 using compilers supplied with devtoolset-3
+
+#Dependencies is installed at $TITAN2D_HOME/lib/titan2d_dep
+
+######################################################################
+# Notes on installation
+######################################################################
+
+# ====================================================================
+# set to use compilers from devtoolset-3
+# ====================================================================
+scl enable devtoolset-3 bash
+
+# ====================================================================
+# make directories for dependencies sources and installation destination
+# ====================================================================
+TITAN_WSP=`pwd`
+mkdir titan2d_dep
+mkdir titan2d_dep_src
+TITAN2D_DEP=$TITAN_WSP/titan2d_dep
+TITAN2D_DEP_SRC=$TITAN_WSP/titan2d_dep_src
+
+# ====================================================================
+# set some common flags
+# ====================================================================
+#compile for architecture and path to headers
+TITAN2D_DEP_CFLAGS="-mtune=generic -I$TITAN2D_DEP/include"
+TITAN2D_DEP_LDFLAGS="-L$TITAN2D_DEP/lib"
+#cores to use for compilation
+CORES_TO_USE=`nproc`
+
+export PATH="$TITAN2D_DEP/bin:$PATH"
+export LD_LIBRARY_PATH="$TITAN2D_DEP/lib:$LD_LIBRARY_PATH"
+
+# ====================================================================
+# get zlib
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://zlib.net/zlib-1.2.8.tar.gz
+tar xvzf zlib-1.2.8.tar.gz
+cd zlib-1.2.8
+
+./configure --prefix=$TITAN2D_DEP
+
+#set to use $TITAN2D_DEP_CFLAGS
+awk -F '=' "(\$1==\"CFLAGS\"){print \$0,\"$TITAN2D_DEP_CFLAGS\"}(\$1!=\"CFLAGS\")" Makefile > Makefile_new
+rm Makefile
+mv Makefile_new Makefile
+make -j $CORES_TO_USE
+make install
+
+# ====================================================================
+# get hdf5
+# ====================================================================
+# serial version of hdf5 with C++ support needed to be installed 
+cd $TITAN2D_DEP_SRC
+wget https://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8.16/src/hdf5-1.8.16.tar.gz
+tar xvzf hdf5-1.8.16.tar.gz
+cd hdf5-1.8.16
+./configure --prefix=$TITAN2D_DEP --enable-cxx CXXFLAGS="-g -O3 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O3 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+
+# ====================================================================
+# get gdal
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://download.osgeo.org/gdal/2.1.0/gdal-2.1.0.tar.gz
+tar xvzf gdal-2.1.0.tar.gz
+cd gdal-2.1.0
+#disable most of external formats to reduce shared library dependencies
+./configure --prefix=$TITAN2D_DEP CXXFLAGS="-g -Os $TITAN2D_DEP_CFLAGS" CFLAGS="-g -Os $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS" \
+--with-png=internal --with-jpeg=internal --without-curl --without-pg --without-mysql --without-sqlite3 --without-pcre --without-xml2
+make -j $CORES_TO_USE
+make install
+
+# ====================================================================
+# Python installation
+# ====================================================================
+#get openssl dev
+# Download, untar and compile python:
+cd $TITAN2D_DEP_SRC
+wget https://www.python.org/ftp/python/2.7.11/Python-2.7.11.tar.xz
+tar -xJf Python-2.7.11.tar.xz
+cd Python-2.7.11
+./configure --prefix=$TITAN2D_DEP --enable-shared CXXFLAGS="$TITAN2D_DEP_CFLAGS" CFLAGS="$TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+rsync -a /usr/lib64/libcrypto.so* $TITAN2D_DEP/lib
+rsync -a /usr/lib64/libssl.so* $TITAN2D_DEP/lib
+
+# after that stage python can complain that some of the modules was not 
+# successfully compiled, usually thouse modules are not needed for titan
+# bellow is example of such complains: 
+#    Python build finished, but the necessary bits to build these modules were not found:
+#    _bsddb             bsddb185           bz2             
+#    dbm                dl                 gdbm            
+#    imageop            readline           sunaudiodev     
+
+
+
+
+# ====================================================================
+# PCRE installation, used by SWIG
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://downloads.sourceforge.net/project/pcre/pcre/8.37/pcre-8.37.tar.gz
+tar xvzf pcre-8.37.tar.gz
+cd pcre-8.37
+./configure --prefix=$TITAN2D_DEP --disable-shared CXXFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+# ====================================================================
+# Swig installation
+# ====================================================================
+#
+# swig is a tool for building python API
+# 
+# Download, untar, compile and instal python:
+cd $TITAN2D_DEP_SRC
+wget http://prdownloads.sourceforge.net/swig/swig-3.0.5.tar.gz
+tar xvzf swig-3.0.5.tar.gz
+cd swig-3.0.5
+./configure --prefix=$TITAN2D_DEP  --with-python=$TITAN2D_DEP/bin/python --with-pcre-prefix=$TITAN2D_DEP CXXFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+# ====================================================================
+# cython installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://cython.org/release/Cython-0.24.tar.gz
+tar xvzf Cython-0.24.tar.gz
+cd Cython-0.24
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+
+# ====================================================================
+# setuptools
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://pypi.python.org/packages/f5/90/010892bde11d2da00548285da29a055e6b0e3b81592bb6021571b87f34a1/setuptools-22.0.0.tar.gz
+tar xvzf setuptools-22.0.0.tar.gz
+cd setuptools-22.0.0
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+
+# ====================================================================
+# numpy installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://github.com/numpy/numpy/archive/v1.11.0.tar.gz
+tar xvzf v1.11.0.tar.gz
+cd numpy-1.11.0
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+
+# ====================================================================
+# h5py installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://pypi.python.org/packages/22/82/64dada5382a60471f85f16eb7d01cc1a9620aea855cd665609adf6fdbb0d/h5py-2.6.0.tar.gz
+tar xvzf h5py-2.6.0.tar.gz
+cd h5py-2.6.0
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+
+# ====================================================================
+# Proper jpeg for PIL 
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://www.ijg.org/files/jpegsrc.v6b.tar.gz
+tar xvzf jpegsrc.v6b.tar.gz
+cd jpeg-6b
+./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS -fPIC"
+make
+mkdir -p $TITAN2D_DEP/man/man1
+make install
+make install-lib
+
+# ====================================================================
+# Proper freetype2 for PIL 
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://sourceforge.net/projects/freetype/files/freetype2/2.3.12/freetype-2.3.12.tar.gz
+tar xvzf freetype-2.3.12.tar.gz
+cd freetype-2.3.12
+
+./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS -fPIC"
+make
+make install
+
+# ====================================================================
+# PIL installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget http://effbot.org/downloads/Imaging-1.1.7.tar.gz
+tar xvzf Imaging-1.1.7.tar.gz
+cd Imaging-1.1.7
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+
+# ====================================================================
+# libgd for gnuplot installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://github.com/libgd/libgd/releases/download/gd-2.2.1/libgd-2.2.1.tar.gz
+tar xvzf libgd-2.2.1.tar.gz
+cd libgd-2.2.1
+./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+# ====================================================================
+# gnuplot installation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://sourceforge.net/projects/gnuplot/files/gnuplot/4.6.6/gnuplot-4.6.6.tar.gz
+tar xvzf gnuplot-4.6.6.tar.gz
+cd gnuplot-4.6.6
+./configure --prefix=$TITAN2D_DEP CXXFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+make -j $CORES_TO_USE
+make install
+
+
+# ====================================================================
+# images2gifinstallation
+# ====================================================================
+cd $TITAN2D_DEP_SRC
+wget https://pypi.python.org/packages/d3/f9/4bd6d3dcf525cdbc7c0a4a15ab675edff81b6659dbd992abb5f5440c5c88/images2gif-1.0.1.tar.gz
+tar xvzf images2gif-1.0.1.tar.gz
+cd images2gif-1.0.1
+$TITAN2D_DEP/bin/python setup.py build
+$TITAN2D_DEP/bin/python setup.py install
+# ====================================================================
+# java installation
+# ====================================================================
+# we will get binaries from distro itself
+cd $TITAN2D_DEP/lib
+rsync -a /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.79.x86_64 ./
+mv java-1.7.0-openjdk-1.7.0.79.x86_64 java-1.7
+
+#now reinforce rpath
+cd $TITAN2D_DEP/lib/java-1.7/bin
+
+for f in `find . -maxdepth 1 -type f -executable`
+do
+chrpath -r '$ORIGIN/../lib/amd64/jli:$ORIGIN/../lib/amd64:$ORIGIN/../jre/lib/amd64/jli:$ORIGIN/../jre/lib/amd64' $f
+done
+
+cd $TITAN2D_DEP/lib/java-1.7/lib/amd64/jli
+for f in `find . -maxdepth 1 -type f -executable`
+do
+chrpath -r '$ORIGIN:$ORIGIN/../../../jre/lib/amd64:$ORIGIN/../../../jre/lib/amd64' $f
+done
+
+cd $TITAN2D_DEP/lib/java-1.7/jre/bin
+for f in `find . -maxdepth 1 -type f -executable`
+do
+chrpath -r '$ORIGIN/../lib/amd64/jli:$ORIGIN/../lib/amd64' $f
+done
+
+cd $TITAN2D_DEP/lib/java-1.7/jre/lib/amd64
+for f in `find . -maxdepth 1 -type f -executable`
+do
+chrpath -r '$ORIGIN:$ORIGIN/jli' $f
+done
+
+cd $TITAN2D_DEP/lib/java-1.7/jre/lib/amd64/jli
+for f in `find . -maxdepth 1 -type f -executable`
+do
+chrpath -r '$ORIGIN:$ORIGIN/..' $f
+done
+
+
+# ====================================================================
+# Modify installation
+# ====================================================================
+#change rpath of executables
+#chrpath only can change existing RPATH and can not create a new one
+#some of the dependencies don't have RPATH thus we will use patchelf
+cd $TITAN2D_DEP/bin
+for f in `find . -maxdepth 1 -type f -executable`
+do
+echo $f
+#chrpath -r '$ORIGIN:$ORIGIN/../lib' $f
+patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib' $f
+done
+
+cd $TITAN2D_DEP/lib
+for f in `find . -maxdepth 1 -type f -executable`
+do
+echo $f
+chrpath -r '$ORIGIN' $f
+patchelf --set-rpath '$ORIGIN' $f
+done
+
+# ====================================================================
+# titan2d installation
+# ====================================================================
+#
+# Now as all dependecies are installed, titan2d can be compiled
+cd $TITAN_WSP
+git clone https://github.com/TITAN2D/titan2d.git
+cd titan2d
+
+# If you are installing titan2d from github repository you need first
+# to generate all autotools scripts (i.e. configure script and others).
+# Execute following in top source directory:
+aclocal;autoheader;autoconf;automake --add-missing --copy
+
+# Now you need to configure the installation. Titan2D support out of 
+# source compilation. Execute configure in building directory, for
+# example:
+cd $TITAN_WSP
+mkdir titan2d_bld
+cd titan2d_bld
+mkdir gccoptomp
+cd gccoptomp
+
+#
+#../../titan2d/configure --with-grass=<path_to_grass_installation> --without-gdal \
+#    --with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
+#    PYTHON=<path to python2.7> SWIG=<path to swig>\
+#    [--enable-mpi] [--enable-openmp] \
+#    [CXX=<path to non-default c++ compiler, mpic++ for example> ] \
+#    [CXXFLAGS=<non-default optimization flags, for example "-g -O0" for no optimization or "-O3" for heavy optimization ]\
+#    [CPPGLAGS=<non-default preprocessor flags, for example "-DDEB2" for extra debuging information]
+#
+#for example hybrid MPI/OpenMP:
+../../titan2d/configure --prefix=../titan2d-gccoptomp --enable-openmp CXXFLAGS="-g -O2 -mtune=generic" --enable-portable --with-titan2d-dep=$TITAN2D_DEP
+
+# Now compile it:
+make -j $CORES_TO_USE
+
+#we didn't fully automate linking step to titan executable for portable package so do it manually:
+cd src/main
+g++ -static-libgcc -static-libstdc++ -fpic -I../../../../titan2d/src/main/../gisapi -I/home/ccrub/titan_wsp/titan2d_dep/include/python2.7 \
+-std=c++11 -g -O2 -mtune=generic -I/home/ccrub/titan_wsp/titan2d_dep/include  -Wl,-rpath,'$ORIGIN/../lib:$ORIGIN/../lib/titan2d_dep/lib' \
+-L/home/ccrub/titan_wsp/titan2d_dep/lib -o titan titan-titan.o titan-cxxtitan_wrap.o titan-titan_simulation.o titan-delete_tab.o \
+titan-datread.o titan-hilbert.o titan-init_piles.o titan-update_topo.o titan-restart.o titan-properties.o titan-titan2d_utils.o \
+../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a ../datstr/libdatstr.a ../geoflow/libgeoflow.a \
+../useful/libuseful.a ../repartition/librepartition.a ../tecplot/libtecplot.a ../vectordatapreproc/libvectordatpreproc.a \
+-L/home/ccrub/titan_wsp/titan2d_dep/lib -lpython2.7 -L/home/ccrub/titan_wsp/titan2d_dep/lib -lgdal -Wl,-Bstatic   \
+/opt/rh/devtoolset-3/root/usr/lib/gcc/x86_64-redhat-linux/4.9.2/libgomp.a -Wl,-Bdynamic -lhdf5_cpp -lhdf5 -lz -pthread -ldl -lm
+cd ../..
+cd src/preproc
+g++ -static-libgcc -static-libstdc++ -I../../../../titan2d/src/preproc/../gisapi -I../../../../titan2d/src/preproc/../useful -std=c++11 -g -O2 -mtune=generic \
+-Wl,-rpath,'$ORIGIN/../lib:$ORIGIN/../lib/titan2d_dep/lib' -L/home/ccrub/titan_wsp/titan2d_dep/lib -o titan_materialnames \
+titan_materialnames-materialnames.o ../gisapi/libgisapi.a ../useful/libuseful.a  -L/home/ccrub/titan_wsp/titan2d_dep/lib -lgdal -Wl,-Bstatic   \
+/opt/rh/devtoolset-3/root/usr/lib/gcc/x86_64-redhat-linux/4.9.2/libgomp.a -Wl,-Bdynamic -lhdf5_cpp -lhdf5 -lz -pthread -ldl -lm
+cd ../..
+# And install it:
+make install
+
+#
+

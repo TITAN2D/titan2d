@@ -44,6 +44,21 @@ void xdmf_fclose(ofstream &);
 int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode, const char * output_prefix)
 {
+    int myid;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+
+    ofstream xdmf;
+    char xmlf_filename[256];
+    sprintf(xmlf_filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
+
+    if(mode == XDMF_ONLYCLOSE)
+    {
+        xdmf.open(xmlf_filename, ios::app);
+        xdmf_fclose(xdmf);
+        xdmf.close();
+        return 0;
+    }
+
     //if Need to have generic form, do vector of vectors
     vector<double> pheight, xmom, ymom, xcoord, ycoord, zcoord;
     vector<int> C1, C2, C3, C4;
@@ -99,8 +114,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
         }
     }
     
-    int myid;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+
     /* 
      * Write HDF5 File 
      */
@@ -153,66 +167,75 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     GH5_fclose(h5fid);
     
     /* generate XML file if required */
-    ofstream xmlf;
-    char filename[256];
-    sprintf(filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
     if(mode == XDMF_NEW)
-        xdmf_fopen(filename);
-    xmlf.open(filename, ios::app);
+        xdmf_fopen(xmlf_filename);
+    xdmf.open(xmlf_filename, ios::app);
     
-    /*xmlf <<  add comments about when the data was generated */
-    xmlf << "<Grid Name=\"" << mapnames->gis_map << "\">" << endl;
-    xmlf << "<Time Value=\"" << timeprops_ptr->timesec() << "\" />" << endl;
+    /*xmdf <<  add comments about when the data was generated */
+    xdmf << "<Grid Name=\"" << mapnames->gis_map << "\">" << endl;
+    xdmf << "<Time Value=\"" << timeprops_ptr->timesec() << "\" />" << endl;
     // connectivity data
-    xmlf << "<Topology Type=\"QUADRILATERAL\" Dimensions=\"" << num_elm << "\" Order=\"0 3 2 1\">" << endl;
-    xmlf << "<DataItem Name=\"Connections\" DataType=\"Int\" Precision=\"4\"" << endl;
-    xmlf << "Dimensions=\"" << num_elm << " 4\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Mesh/Connections" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Topology>" << endl;
+    xdmf << "<Topology Type=\"QUADRILATERAL\" Dimensions=\"" << num_elm << "\" Order=\"0 3 2 1\">" << endl;
+    xdmf << "<DataItem Name=\"Connections\" DataType=\"Int\" Precision=\"4\"" << endl;
+    xdmf << "Dimensions=\"" << num_elm << " 4\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Mesh/Connections" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Topology>" << endl;
     // grid-points
-    xmlf << "<Geometry Type=\"XYZ\">" << endl;
-    xmlf << "<DataItem Name=\"Coordinates\" DataType=\"Float\" Precision=\"8\"" << endl;
-    xmlf << "Dimensions=\"" << num_nodes << " 3\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Mesh/Points" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Geometry>" << endl;
+    xdmf << "<Geometry Type=\"XYZ\">" << endl;
+    xdmf << "<DataItem Name=\"Coordinates\" DataType=\"Float\" Precision=\"8\"" << endl;
+    xdmf << "Dimensions=\"" << num_nodes << " 3\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Mesh/Points" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Geometry>" << endl;
     // pile-height
-    xmlf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Pile Height\">" << endl;
-    xmlf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
-    xmlf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Properties/PILE_HEIGHT" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Attribute>" << endl;
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Pile Height\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/PILE_HEIGHT" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
     // x-momentum
-    xmlf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"X_Momentum\">" << endl;
-    xmlf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
-    xmlf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Properties/XMOMENTUM" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Attribute>" << endl;
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"X_Momentum\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/XMOMENTUM" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
     // y-momentum
-    xmlf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Y_Momentum\">" << endl;
-    xmlf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
-    xmlf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Properties/YMOMENTUM" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Attribute>" << endl;
-    xmlf << "</Grid>" << endl;
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Y_Momentum\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/YMOMENTUM" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
+    xdmf << "</Grid>" << endl;
     
     if(mode == XDMF_CLOSE)
     {
-        xmlf << "</Grid>" << endl;
-        xmlf << "</Domain>" << endl;
-        xmlf << "</Xdmf>" << endl;
+        xdmf_fclose(xdmf);
     }
-    xmlf.close();  // close till next output is written
+    xdmf.close();  // close till next output is written
     
     return 0;
 }
 int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTable, TimeProps *timeprops_ptr, MatProps *matprops_ptr,
                MapNames *mapnames, const int mode, const char * output_prefix)
 {
+    int myid;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    ofstream xdmf;
+    char xdmf_filename[256];
+    sprintf(xdmf_filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
+
+    if(mode == XDMF_ONLYCLOSE)
+    {
+        xdmf.open(xdmf_filename, ios::app);
+        xdmf_fclose(xdmf);
+        xdmf.close();
+        return 0;
+    }
+
     int i, j, k;
     double elevation;
     
@@ -222,14 +245,10 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     static double time_prev;
     
     /* generate XML file if required */
-    int myid;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    ofstream xmlf;
-    char filename[256];
-    sprintf(filename, "%s_xdmf_p%04d.xmf", output_prefix,myid);
+
     if(mode == XDMF_NEW)
-        xdmf_fopen(filename);
-    xmlf.open(filename, ios::app);
+        xdmf_fopen(xdmf_filename);
+    xdmf.open(xdmf_filename, ios::app);
     
     /* save time-value to compare at end */
     if(mode != XDMF_CLOSE)
@@ -239,8 +258,8 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     /* just close and return */
     if((mode == XDMF_CLOSE) && (timeprops_ptr->timesec() - time_prev < 0.0001))
     {
-        xdmf_fclose(xmlf);
-        xmlf.close();
+        xdmf_fclose(xdmf);
+        xdmf.close();
         return 0;
     }
     
@@ -365,50 +384,50 @@ int write_xdmf_single_phase(ElementsHashTable *El_Table, NodeHashTable *NodeTabl
     delete[] xmom;
     delete[] ymom;
     
-    /*xmlf <<  add comments about when the data was generated */
-    xmlf << "<Grid Name=\"" << mapnames->gis_map << "\">" << endl;
-    xmlf << "<Time Value=\"" << timeprops_ptr->timesec() << "\" />" << endl;
+    /*xdmf <<  add comments about when the data was generated */
+    xdmf << "<Grid Name=\"" << mapnames->gis_map << "\">" << endl;
+    xdmf << "<Time Value=\"" << timeprops_ptr->timesec() << "\" />" << endl;
     // connectivity data
-    xmlf << "<Topology Type=\"QUADRILATERAL\" Dimensions=\"" << num_elem << "\" Order=\"0 3 2 1\">" << endl;
-    xmlf << "<DataItem Name=\"Connections\" DataType=\"Int\" Precision=\"4\"" << endl;
-    xmlf << "Dimensions=\"" << num_elem << " 4\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Mesh/Connections" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Topology>" << endl;
+    xdmf << "<Topology Type=\"QUADRILATERAL\" Dimensions=\"" << num_elem << "\" Order=\"0 3 2 1\">" << endl;
+    xdmf << "<DataItem Name=\"Connections\" DataType=\"Int\" Precision=\"4\"" << endl;
+    xdmf << "Dimensions=\"" << num_elem << " 4\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Mesh/Connections" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Topology>" << endl;
     // grid-points
-    xmlf << "<Geometry Type=\"XYZ\">" << endl;
-    xmlf << "<DataItem Name=\"Coordinates\" DataType=\"Float\" Precision=\"8\"" << endl;
-    xmlf << "Dimensions=\"" << num_node << " 3\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Mesh/Points" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Geometry>" << endl;
+    xdmf << "<Geometry Type=\"XYZ\">" << endl;
+    xdmf << "<DataItem Name=\"Coordinates\" DataType=\"Float\" Precision=\"8\"" << endl;
+    xdmf << "Dimensions=\"" << num_node << " 3\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Mesh/Points" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Geometry>" << endl;
     // pile-height
-    xmlf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Pile Height\">" << endl;
-    xmlf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
-    xmlf << "Dimensions=\"" << num_elem << " 1\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Properties/PILE_HEIGHT" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Attribute>" << endl;
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Pile Height\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elem << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/PILE_HEIGHT" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
     // x-momentum
-    xmlf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"X_Momentum\">" << endl;
-    xmlf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
-    xmlf << "Dimensions=\"" << num_elem << " 1\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Properties/XMOMENTUM" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Attribute>" << endl;
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"X_Momentum\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elem << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/XMOMENTUM" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
     // y-momentum
-    xmlf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Y_Momentum\">" << endl;
-    xmlf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
-    xmlf << "Dimensions=\"" << num_elem << " 1\" Format=\"HDF\">" << endl;
-    xmlf << "\t\t" << hdf5file << ":/Properties/YMOMENTUM" << endl;
-    xmlf << "</DataItem>" << endl;
-    xmlf << "</Attribute>" << endl;
-    xmlf << "</Grid>" << endl;
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Y_Momentum\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elem << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/YMOMENTUM" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
+    xdmf << "</Grid>" << endl;
     
     if(mode == XDMF_CLOSE)
-        xdmf_fclose(xmlf);
+        xdmf_fclose(xdmf);
     
-    xmlf.close();  // close till next output is written
+    xdmf.close();  // close till next output is written
     
     return 0;
 }

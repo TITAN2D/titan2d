@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #*******************************************************************
 #* Copyright (C) 2003-2015 University at Buffalo
 #*
@@ -13,8 +13,8 @@
 #*
 #******************************************************************* 
 #*
-
-export TITAN_HOME=@prefix@
-
-export LD_LIBRARY_PATH=@PYTHON_ROOT@/lib:$LD_LIBRARY_PATH
+TITAN2D_HOME="$(readlink -f ${BASH_SOURCE})"
+TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
+export TITAN2D_HOME=$(dirname "$TITAN2D_HOME")
+export PATH=$TITAN2D_HOME/bin:$PATH
 

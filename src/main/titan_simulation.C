@@ -15,7 +15,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <titan_config.h>
 #endif
 
 #include <sstream>
@@ -843,19 +843,28 @@ void cxxTitanSimulation::load_restart(const std::string restartFilename, const s
 void cxxTitanSimulation::save_vizoutput_file(const int mode)
 {
     int savefileflag=1;
-    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    if(mode!=XDMF_ONLYCLOSE)
+    {
+        move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
-    output_discharge(matprops, &timeprops, &discharge_planes, myid);
+        output_discharge(matprops, &timeprops, &discharge_planes, myid);
 
-    if(myid == 0)
-        output_summary(&timeprops, statprops, savefileflag);
+        if(myid == 0)
+            output_summary(&timeprops, statprops, savefileflag);
 
-    if(vizoutput & 1)
-        tecplotter(elementType, ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar,vizoutput_prefix.c_str());
+        if(vizoutput & 1)
+            tecplotter(elementType, ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar,vizoutput_prefix.c_str());
 
-    if(vizoutput & 2)
-        meshplotter(ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar,vizoutput_prefix.c_str());
+        if(vizoutput & 2)
+            meshplotter(ElemTable, NodeTable, matprops, &timeprops, &mapnames, statprops->vstar,vizoutput_prefix.c_str());
 
+        if(vizoutput & 8)
+        {
+            if(myid == 0)
+                grass_sites_header_output(&timeprops,vizoutput_prefix.c_str());
+            grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops,vizoutput_prefix.c_str());
+        }
+    }
 #if HAVE_LIBHDF5
     if(vizoutput & 4)
     {
@@ -871,13 +880,6 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
         }
     }
 #endif
-
-    if(vizoutput & 8)
-    {
-        if(myid == 0)
-            grass_sites_header_output(&timeprops,vizoutput_prefix.c_str());
-        grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops,vizoutput_prefix.c_str());
-    }
 }
 
 void cxxTitanSimulation::run(bool start_from_restart)
@@ -885,6 +887,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
 
     int i; //-- counters
+    int current_state_is_good=true;
 
     //-- MPI
     IF_MPI(MPI_Status status);
@@ -1137,6 +1140,53 @@ void cxxTitanSimulation::run(bool start_from_restart)
         TIMING1_STOPADD(stepTime, t_start);
         PROFILING1_STOPADD_RESTART(tsim_iter_step,pt_start);
 
+        //check if current state is good
+        if(myid == 0)
+        {
+			if(statprops_ptr->statvolume==0.0){
+				current_state_is_good=false;
+
+				printf("\n###############################################################################\n");
+				printf("Volume is zero, nothing more to model!\n");
+				printf("Be careful with stats, some nans can meke it there!\n");
+				printf("###############################################################################\n\n");
+
+				break;
+			}
+			if(isnan(statprops_ptr->vmean) || isnan(statprops_ptr->vstar))
+			{
+				current_state_is_good=false;
+
+				printf("\n###############################################################################\n");
+				printf("Velocity is nan(not a number), something is wrong!\n");
+				printf("Do not forget about restarts, the last one should be without nan.\n");
+				printf("Be careful with stats, some nans can meke it there!\n");
+				printf("###############################################################################\n\n");
+
+				break;
+			}
+			if(isnan(statprops_ptr->statvolume))
+			{
+				current_state_is_good=false;
+
+				printf("\n###############################################################################\n");
+				printf("Volume is nan(not a number), something is wrong!\n");
+				printf("Do not forget about restarts, the last one should be without nan.\n");
+				printf("Be careful with stats, some nans can meke it there!\n");
+				printf("###############################################################################\n\n");
+
+				break;
+			}
+			MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD);
+        }
+        else
+        {
+        	MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD);
+        }
+        if(current_state_is_good==false)
+        {
+        	break;
+        }
         TIMING1_START(t_start);
         /*
          * save a restart file
@@ -1200,7 +1250,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     /*
      * save a restart file
      */
-    if(restart_enabled)
+    if(current_state_is_good&&restart_enabled)
     {
         save_restart_file();
     }
@@ -1209,7 +1259,10 @@ void cxxTitanSimulation::run(bool start_from_restart)
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
-    save_vizoutput_file(XDMF_CLOSE);
+    if(current_state_is_good)
+        save_vizoutput_file(XDMF_CLOSE);
+    else
+        save_vizoutput_file(XDMF_ONLYCLOSE);
 
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 

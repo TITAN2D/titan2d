@@ -4,7 +4,12 @@
 # $Id: Makefile.am 235 2012-03-29 07:04:35Z dkumar $
 #
 
-DIST_OTHER = config.h.in 
-EXTRA_DIST = install-titan.sh README.GRASS README.AUTOCONF README.GUI titan.1.gz titan_gui.1.gz
+SUBDIRS = src scripts gui doc tests share
 
-SUBDIRS = src scripts gui doc tests
+install-data-local:
+	@if [ "$(TITAN2D_PORTABLE)" = "yes" ]; then \
+		echo "Moving dependencies"; \
+		rsync -a $(TITAN2D_DEP) $(libdir); \
+		echo "Clean-up dependencies"; \
+		rm $(libdir)/titan2d_dep/lib/*.a; \
+	fi

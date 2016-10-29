@@ -16,7 +16,7 @@ titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/li
   ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
   ../repartition/librepartition.a ../tecplot/libtecplot.a \
   ../vectordatapreproc/libvectordatpreproc.a \
-  -L@PYTHON_ROOT@/lib -lpython@PYTHON_VERSION@
+  @PYTHON_LIBS@
 
 #titan_simulation_CXXFLAGS = -fpic
 

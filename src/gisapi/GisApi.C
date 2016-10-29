@@ -16,7 +16,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include <titan_config.h>
 #endif
 
 #include <stdio.h>
@@ -359,7 +359,7 @@ int load_GIS_data()
         binFile.setEndian("big");
         binFile.setDataSize(4);
         binFile.setIsInteger(false);
-        binFile.isCompressed(gis_grid.ghead.compressed == 1);
+        binFile.isCompressed(gis_grid.ghead.compressed);
         // 0 = uncompressed, 1 = compressed
         
         nrows = gis_grid.ghead.nrows;
@@ -879,7 +879,7 @@ int Get_slope(const double resolution, double x, double y, double &xslope, doubl
 {
     int status;
     
-    ASSERT3(gis_grid.xslope != 0 && gis_grid.yslope != 0);
+    ASSERT3(gis_grid.xslope || gis_grid.yslope);
     
     if(x >= gis_grid.ghead.xmin && x <= gis_grid.ghead.xmax && y >= gis_grid.ghead.ymin && y <= gis_grid.ghead.ymax)
     {
