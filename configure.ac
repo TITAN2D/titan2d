@@ -78,7 +78,7 @@ case $host in
     
     test_LDFLAGS=${LDFLAGS+set}
     if test "$test_LDFLAGS" != set; then
-    	LDFLAGS="-g -w -O2"
+    	LDFLAGS="-g -w -O2 -llapack -lblas"
     fi
     ;;
 esac
@@ -171,6 +171,11 @@ AC_CHECK_LIB([z], [gzread],,AC_MSG_FAILURE([Can not find libz]),)
 #-------------------------------------------------------------------------------------
 AC_CHECK_LIB(m,matherr,)
 
+# checks for lapack and blas
+#-------------------------------------------------------------------------------------
+AC_CHECK_LIB([lapack],[main],,AC_MSG_FAILURE([Can not find lapack]),)
+AC_CHECK_LIB([blas],[main],,AC_MSG_FAILURE([Can not find lapack]),)
+
 # checks for HDF5 installation
 #------------------------------------------------------------------------------------
 AC_ARG_WITH([hdf5],
@@ -237,31 +242,6 @@ AS_IF([test "x$GDAL_CONFIG" != xno],
         GDAL_LIBS=`$GDAL_CONFIG --libs`
         GDAL_PATH=with_gdal
         CPPFLAGS="$CPPFLAGS $GDAL_CFLAGS" 
-        LIBS="$GDAL_LIBS $LIBS"
-        AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"])
-        AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"])
-        ;;
-    no)
-        gdal_lib=
-        gdal_inc=
-        ;;
-    *)
-        CPPFLAGS="$CPPFLAGS -I$with_gdal/include"
-        LIBS="$GDAL_LIBS $LIBS"
-        AC_CHECK_LIB([gdal], [GDALOpen],[gdal_lib="yes"],
-                     [AC_MSG_FAILURE([couldn't find GDAL libraries])])
-        AC_CHECK_HEADERS([gdal_priv.h, ogr_spatialref.h],[gdal_inc="yes"],
-                     [AC_MSG_FAILURE([couldn't find GDAL headers])])
-        ;;
-esac
-AC_MSG_CHECKING([for GDAL availability])
-if test "x$gdal_inc" = "xyes" -a  "x$gdal_lib" = "xyes"; then
-    AC_DEFINE([HAVE_GDAL], [1], [If Gdal is available])
-    AC_MSG_RESULT([yes])
-else
-    AC_DEFINE([HAVE_GDAL], [0], [If Gdal is available])
-    AC_MSG_RESULT([no])
-fi
         LIBS="$GDAL_LIBS $LIBS"
         AC_DEFINE([HAVE_GDAL], [1], [If Gdal is available])
     	AC_MSG_RESULT([yes])
