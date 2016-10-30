@@ -798,6 +798,8 @@ class TitanSimulationBase(object):
     def setNumProp(self,**kwarg):
         self.ui_NumProp=self.chk_NumProp.process(kwarg)
     def setMatModel(self,**kwarg):
+        if self.ui_NumProp==None:
+            raise ValueError("setNumProp should be called before setMatModel!")
         self.ui_MatModel=self.chk_MatModel.process(kwarg)
     def setTimeProps(self,**kwarg):
         self.ui_TimeProps=self.chk_TimeProps.process(kwarg)
