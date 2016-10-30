@@ -940,8 +940,8 @@ void HAdapt::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_proc[0] = ElemTable->neigh_proc_[0][ndx];
 		neigh_proc[1] = myid;
 		neigh_proc[2] = myid;
-		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
-
+		neigh_proc[3] = (ElemTable->neigh_proc_[7][ndx] != -2) ? ElemTable->neigh_proc_[7][ndx] : ElemTable->neigh_proc_[3][ndx];
+		
 		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
 
 		neigh_gen[0] = ElemTable->neigh_gen_[0][ndx];
@@ -2156,7 +2156,7 @@ void HAdapt_LevelSet::refineElements(const vector<ti_ndx_t> &allRefinement)
 		neigh_proc[0] = ElemTable->neigh_proc_[0][ndx];
 		neigh_proc[1] = myid;
 		neigh_proc[2] = myid;
-		neigh_proc[3] = ElemTable->neigh_proc_[3][ndx];
+		neigh_proc[3] = (ElemTable->neigh_proc_[7][ndx] != -2) ? ElemTable->neigh_proc_[7][ndx] : ElemTable->neigh_proc_[3][ndx];
 
 		neigh_proc[4] = neigh_proc[5] = neigh_proc[6] = neigh_proc[7] = -2;
 
