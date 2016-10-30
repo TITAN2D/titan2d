@@ -61,7 +61,7 @@ void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement,
 				if((neigh_proc != -1) && (neigh_proc != -2))
 				{ //-- if there is a neighbor
 
-					ti_ndx_t neigh_ndx = ElemTable->neighbor_ndx_[i][ndx];//ElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);//ElemTable->neighbor_ndx_[i][ndx];
+					ti_ndx_t neigh_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);//ElemTable->neighbor_ndx_[i][ndx];
 
 					//assert(Neigh);
 					if(ti_ndx_not_negative(neigh_ndx) && neigh_proc == myid)
@@ -71,16 +71,14 @@ void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement,
 						{
 							//-- if the neighbor is bigger, then it must be refined
 
-							if(((ElemTable->adapted_[neigh_ndx] == NOTRECADAPTED) || (ElemTable->adapted_[neigh_ndx] == NEWFATHER)) &&
-                                ElemTable->neigh_proc_[0][neigh_ndx]!=-1 && ElemTable->neigh_proc_[1][neigh_ndx]!=-1 &&
-                                ElemTable->neigh_proc_[2][neigh_ndx]!=-1 && ElemTable->neigh_proc_[3][neigh_ndx]!=-1)
-                            {
-                                if(find(tempList.begin(), tempList.end(), neigh_ndx)==tempList.end() )
-                                { //-- if this neighbor has not yet been marked
-                                    tempList.push_back(neigh_ndx);
-                                    ++elem_to_refine;
-                                }
-                            }
+							if((ElemTable->adapted_[neigh_ndx] == NOTRECADAPTED) || (ElemTable->adapted_[neigh_ndx] == NEWFATHER))
+							{
+								if(find(tempList.begin(), tempList.end(), neigh_ndx)==tempList.end() )
+								{ //-- if this neighbor has not yet been marked
+									tempList.push_back(neigh_ndx);
+									++elem_to_refine;
+								}
+							}
 							else if(ElemTable->adapted_[neigh_ndx] != OLDFATHER)
 							{
 								ifg = 0;
