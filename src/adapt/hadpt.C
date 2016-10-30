@@ -1286,33 +1286,65 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                 
                 //refine where necessary and store the next buffer layer in TempList
                 TempList.trashlist();
-                //@ElementsBucketDoubleLoop
-                for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
-                {
-                    for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-                    {
-                        EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                        if(EmTemp->if_next_buffer_boundary_levelset(HT_Elem_Ptr, HT_Node_Ptr,
-                        REFINE_THRESHOLD)
-                           == 1)
-                        {
-                            
-                            if(EmTemp->generation() < REFINE_LEVEL)
-                                refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
-                            if(EmTemp->adapted_flag() == OLDFATHER)
-                                for(int ison = 0; ison < 4; ison++)
-                                {
-                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
-                                    TempList.add(EmSon);
-                                }
-                            else
-                            {
-                                TempList.add(EmTemp);
-                            }
-                            debug_ref_flag++;
-                        }
-                    }
-                }
+                if(HT_Elem_Ptr->interface_capturing_==Interface_Capturing_Type::Heuristic)
+				{
+					for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+					{
+						for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+						{
+							EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+							if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD) == 1)
+							{
+
+								if(EmTemp->generation() < REFINE_LEVEL)
+									refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
+								if(EmTemp->adapted_flag() == OLDFATHER)
+									for(int ison = 0; ison < 4; ison++)
+									{
+										Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
+										TempList.add(EmSon);
+									}
+								else
+								{
+									TempList.add(EmTemp);
+								}
+								debug_ref_flag++;
+							}
+						}
+					}
+				}
+				else if(HT_Elem_Ptr->interface_capturing_==Interface_Capturing_Type::LevelSet || HT_Elem_Ptr->interface_capturing_==Interface_Capturing_Type::PhaseField)
+				{
+					for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+					{
+						for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+						{
+							EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+							if(EmTemp->if_next_buffer_boundary_levelset(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD) == 1)
+							{
+
+								if(EmTemp->generation() < REFINE_LEVEL)
+									refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
+								if(EmTemp->adapted_flag() == OLDFATHER)
+									for(int ison = 0; ison < 4; ison++)
+									{
+										Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
+										TempList.add(EmSon);
+									}
+								else
+								{
+									TempList.add(EmTemp);
+								}
+								debug_ref_flag++;
+							}
+						}
+					}
+				}
+				else
+				{
+					printf("Unknown type of interface capturing!\n");
+					assert(0);
+				}
                 
                 //update_neighbor_info(HT_Elem_Ptr, &RefinedList, myid, numprocs, HT_Node_Ptr, h_count);
                 //refine_neigh_update() needs to know new sons are NEWSONs,
@@ -1563,31 +1595,65 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
                 //refine where necessary and store the next buffer layer in TempList
                 TempList.trashlist();
                 //@ElementsBucketDoubleLoop
-                for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+                if(HT_Elem_Ptr->interface_capturing_==Interface_Capturing_Type::Heuristic)
                 {
-                    for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
-                    {
-                        EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
-                        if(EmTemp->if_next_buffer_boundary_levelset(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD)== 1)
-                        {
-                            if(EmTemp->generation() < REFINE_LEVEL)
-                                refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
-                            if(EmTemp->adapted_flag() == OLDFATHER)
-                                for(int ison = 0; ison < 4; ison++)
-                                {
-                                    Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
-                                    TempList.add(EmSon);
-                                }
-                            else
-                            {
-                                TempList.add(EmTemp);
-                            }
-                            
-                            debug_ref_flag++;
-                        }
-                    }
+					for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+					{
+						for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+						{
+							EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+							if(EmTemp->if_next_buffer_boundary(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD)== 1)
+							{
+								if(EmTemp->generation() < REFINE_LEVEL)
+									refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
+								if(EmTemp->adapted_flag() == OLDFATHER)
+									for(int ison = 0; ison < 4; ison++)
+									{
+										Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
+										TempList.add(EmSon);
+									}
+								else
+								{
+									TempList.add(EmTemp);
+								}
+
+								debug_ref_flag++;
+							}
+						}
+					}
                 }
-                
+                else if(HT_Elem_Ptr->interface_capturing_==Interface_Capturing_Type::LevelSet || HT_Elem_Ptr->interface_capturing_==Interface_Capturing_Type::PhaseField)
+                {
+					for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+					{
+						for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+						{
+							EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+							if(EmTemp->if_next_buffer_boundary_levelset(HT_Elem_Ptr, HT_Node_Ptr,REFINE_THRESHOLD)== 1)
+							{
+								if(EmTemp->generation() < REFINE_LEVEL)
+									refinewrapper(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, &RefinedList, EmTemp);
+								if(EmTemp->adapted_flag() == OLDFATHER)
+									for(int ison = 0; ison < 4; ison++)
+									{
+										Element *EmSon = (Element *) HT_Elem_Ptr->lookup(EmTemp->son(ison));
+										TempList.add(EmSon);
+									}
+								else
+								{
+									TempList.add(EmTemp);
+								}
+
+								debug_ref_flag++;
+							}
+						}
+					}
+                }
+                else
+                {
+                	printf("Unknown type of interface capturing!\n");
+                	assert(0);
+                }
                 //if(myid==0) printf("initial_H_adapt %d\n",11); fflush(stdout)
                 
                 //update_neighbor_info(HT_Elem_Ptr, &RefinedList, myid, numprocs, HT_Node_Ptr, h_count);
