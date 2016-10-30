@@ -1108,11 +1108,11 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
 				break;
 			}
-			MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD);
+			IF_MPI(MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD));
         }
         else
         {
-        	MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD);
+        	IF_MPI(MPI_Bcast(&current_state_is_good,1,MPI_INT,0,MPI_COMM_WORLD));
         }
         if(current_state_is_good==false)
         {
