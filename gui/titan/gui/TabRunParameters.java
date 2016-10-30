@@ -22,6 +22,7 @@ public class TabRunParameters extends TitanTab {
 	private TextInput cellsAcross;
 	private RadioButtonGroup AMR;
 	private RadioButtonGroup orderMethod;
+	private RadioButtonGroup interfaceCapturingType;
 	private RadioButtonGroup scaleSim;
 	private TextInput lengthScale;
 	private TextInput gravityScale;
@@ -42,7 +43,7 @@ public class TabRunParameters extends TitanTab {
 		// General Parameters
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-		values = new NameValuePairComponent[21];
+		values = new NameValuePairComponent[22];
 
 		// Restart Enabled
 		restartEnabled = new RadioButtonGroup("Restart", TitanConstants.TrueFalse);
@@ -70,9 +71,13 @@ public class TabRunParameters extends TitanTab {
 		AMR = new RadioButtonGroup("AMR", TitanConstants.TrueFalse);
 		values[5] = new NameValuePairComponent(TitanConstants.AMR, AMR);
 
-		// first/second order method
+		// Order method, First or Second
 		orderMethod = new RadioButtonGroup("Order Method", TitanConstants.OrderMethod);
 		values[6] = new NameValuePairComponent(TitanConstants.ORDER_METHOD, orderMethod);
+
+		// Interface capturing type, Heuristic or LevelSet
+		interfaceCapturingType = new RadioButtonGroup("Interface Capturing Type", TitanConstants.InterfaceCapturingType);
+		values[7] = new NameValuePairComponent(TitanConstants.INTERFACE_CAPTURING_TYPE, interfaceCapturingType);
 
 		// Scale Simulation and Scale Length
 		JPanel scalePanel = new JPanel();
@@ -87,10 +92,10 @@ public class TabRunParameters extends TitanTab {
 		scalePanel.add(lengthScale.getPanel());
 		scalePanel.add(gravityScale.getPanel());
 		scalePanel.add(heightScale.getPanel());
-		values[7] = new NameValuePairComponent(TitanConstants.SCALE_SIM, scaleSim);
-		values[8] = new NameValuePairComponent(TitanConstants.LENGTH_SCALE, lengthScale);
-		values[9] = new NameValuePairComponent(TitanConstants.GRAVITY_SCALE, gravityScale);
-		values[10] = new NameValuePairComponent(TitanConstants.HEIGHT_SCALE, heightScale);
+		values[8] = new NameValuePairComponent(TitanConstants.SCALE_SIM, scaleSim);
+		values[9] = new NameValuePairComponent(TitanConstants.LENGTH_SCALE, lengthScale);
+		values[10] = new NameValuePairComponent(TitanConstants.GRAVITY_SCALE, gravityScale);
+		values[11] = new NameValuePairComponent(TitanConstants.HEIGHT_SCALE, heightScale);
 
 		// Stat Props
 		JPanel statPropsPanel = new JPanel();
@@ -98,25 +103,25 @@ public class TabRunParameters extends TitanTab {
 		statPropsPanel.setBorder(new TitledBorder("Stat Props"));
 
 		runID = new TextInput("Run ID");
-		values[11] = new NameValuePairComponent(TitanConstants.RUN_ID, runID);
+		values[12] = new NameValuePairComponent(TitanConstants.RUN_ID, runID);
 
 		flowOutlineHgt = new TextInput("Height used to define flow outline (>0) [m]");
-		values[12] = new NameValuePairComponent(TitanConstants.FLOW_OUTLINE_HGT, flowOutlineHgt);
+		values[13] = new NameValuePairComponent(TitanConstants.FLOW_OUTLINE_HGT, flowOutlineHgt);
 
 		// test if flow reaches height
 		testFlowHgt = new TextInput("Test if flow Reaches Height [m]");
-		values[13] = new NameValuePairComponent(TitanConstants.TEST_FLOW_HEIGHT_MIN, testFlowHgt);
+		values[14] = new NameValuePairComponent(TitanConstants.TEST_FLOW_HEIGHT_MIN, testFlowHgt);
 		
 		// at test point x
 		testX = new TextInput("Flow Height Test Point X Location [UTM E]");
-		values[14] = new NameValuePairComponent(TitanConstants.TEST_FLOW_X_LOC, testX);
+		values[15] = new NameValuePairComponent(TitanConstants.TEST_FLOW_X_LOC, testX);
 
 		// at test point y
 		testY = new TextInput("Flow Height Test Point Y Location [UTM N]");
-		values[15] = new NameValuePairComponent(TitanConstants.TEST_FLOW_Y_LOC, testY);
+		values[16] = new NameValuePairComponent(TitanConstants.TEST_FLOW_Y_LOC, testY);
 
 		statPropsPrefix = new TextInput("Stat Props Prefix");
-		values[16] = new NameValuePairComponent(TitanConstants.STAT_PROPS_PREFIX, statPropsPrefix);
+		values[17] = new NameValuePairComponent(TitanConstants.STAT_PROPS_PREFIX, statPropsPrefix);
 
 		statPropsPanel.add(runID.getPanel());
 		statPropsPanel.add(flowOutlineHgt.getPanel());
@@ -132,18 +137,18 @@ public class TabRunParameters extends TitanTab {
 
 	    // Enabled?
 		outlinePropsEnabled = new RadioButtonGroup("Outline Props Enabled", TitanConstants.TrueFalse);
-		values[17] = new NameValuePairComponent(TitanConstants.OUTLINE_PROPS_ENABLED, outlinePropsEnabled);
+		values[18] = new NameValuePairComponent(TitanConstants.OUTLINE_PROPS_ENABLED, outlinePropsEnabled);
 
 		// Max linear size
 		maxLinearSize = new TextInput("Max Linear Size");
-		values[18] = new NameValuePairComponent(TitanConstants.MAX_LINEAR_SIZE, maxLinearSize);
+		values[19] = new NameValuePairComponent(TitanConstants.MAX_LINEAR_SIZE, maxLinearSize);
 
 		// Init Size
 		initSize = new RadioButtonGroup("Init Size", TitanConstants.InitSizes, RadioButtonGroup.SINGLE_SELECTION);
-		values[19] = new NameValuePairComponent(TitanConstants.INIT_SIZE, initSize);
+		values[20] = new NameValuePairComponent(TitanConstants.INIT_SIZE, initSize);
 
 		outlinePropsPrefix = new TextInput("Outline Props Prefix");
-		values[20] = new NameValuePairComponent(TitanConstants.OUTLINE_PROPS_PREFIX, outlinePropsPrefix);
+		values[21] = new NameValuePairComponent(TitanConstants.OUTLINE_PROPS_PREFIX, outlinePropsPrefix);
 
 		outlinePropsPanel.add(outlinePropsEnabled.getPanel());
 		outlinePropsPanel.add(maxLinearSize.getPanel());
@@ -158,6 +163,7 @@ public class TabRunParameters extends TitanTab {
 		add(cellsAcross.getPanel());
 		add(AMR.getPanel());
 		add(orderMethod.getPanel());
+		add(interfaceCapturingType.getPanel());
 		add(scalePanel);
 		add(statPropsPanel);
 		add(outlinePropsPanel);

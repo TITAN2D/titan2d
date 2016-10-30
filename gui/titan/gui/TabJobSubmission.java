@@ -836,6 +836,13 @@ public class TabJobSubmission extends JPanel {
                 else if (methodOrder.compareTo(TitanConstants.OrderMethod[TitanConstants.ORDER_METHOD_SECOND]) == 0)
                     data.secondOrder = true;
 
+                // Interface capturing type
+                String interfaceCapturingType = mainData.getValue(TitanConstants.INTERFACE_CAPTURING_TYPE);
+                if (interfaceCapturingType.compareTo(TitanConstants.InterfaceCapturingType[TitanConstants.INTERFACE_CAPTURING_TYPE_HEURISTIC]) == 0)
+                    data.heuristicInterfaceCapturingType = true;
+                else if (interfaceCapturingType.compareTo(TitanConstants.InterfaceCapturingType[TitanConstants.INTERFACE_CAPTURING_TYPE_LEVELSET]) == 0)
+                    data.levelSetInterfaceCapturingType = true;
+
                 TitanScaleData scaleData = simWriter.new TitanScaleData();
 
                 scaleData.scaleSim = Boolean.valueOf(mainData.getValue(TitanConstants.SCALE_SIM)).booleanValue();

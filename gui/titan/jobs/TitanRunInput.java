@@ -113,8 +113,8 @@ public class TitanRunInput {
                     || (data.max_x_loc == TitanSimulationData.BLANK_FIELD) || (data.max_y_loc == TitanSimulationData.BLANK_FIELD)) {
                 writer.write(tab + "region_limits=" + "None" + "\n");
             } else {
-                writer.write(tab + "region_limits==(" + data.min_x_loc + ", " + data.min_y_loc +
-                        ", " + data.max_x_loc + ", " + data.max_y_loc + ")\n");
+                writer.write(tab + "region_limits=[" + data.min_x_loc + ", " + data.min_y_loc +
+                        ", " + data.max_x_loc + ", " + data.max_y_loc + "]\n");
             }
             writer.write(")\n\n");
         } catch (IOException ex) {
@@ -169,7 +169,7 @@ public class TitanRunInput {
 
             String AMR = "";
             String methodOrder = "";
-            String shortSpeed = "";
+            String interfaceCapturingType = "";
 
             // Check flags
 
@@ -183,13 +183,22 @@ public class TitanRunInput {
                 methodOrder = new String("First");
             }
 
+            if (data.heuristicInterfaceCapturingType) interfaceCapturingType = new String("Heuristic");
+            else if (data.levelSetInterfaceCapturingType) interfaceCapturingType = new String("LevelSet");
+            else {
+                System.out.println("Interface Capturing Type error.  Using Heuristic");
+                interfaceCapturingType = new String("Heuristic");
+            }
+
             writer.write("sim.setNumProp(\n");
 
             writer.write(tab + "AMR=" + AMR + ",\n");
 
             writer.write(tab + "number_of_cells_across_axis=" + data.cellsAcross + ",\n");
 
-            writer.write(tab + "order='" + methodOrder + "'\n");
+            writer.write(tab + "order='" + methodOrder + "',\n");
+
+            writer.write(tab + "interface_capturing_type='" + interfaceCapturingType + "'\n");
 
             writer.write(")\n\n");
         } catch (IOException ex) {
@@ -646,6 +655,9 @@ public class TitanRunInput {
         // Method order
         public boolean firstOrder = false;
         public boolean secondOrder = false;
+        // Interface capturing type
+        public boolean heuristicInterfaceCapturingType = false;
+        public boolean levelSetInterfaceCapturingType = false;
 
         // Stat Props
         public int runID = BLANK_FIELD;

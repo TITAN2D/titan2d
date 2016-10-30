@@ -61,6 +61,7 @@ public abstract class TitanConstants {
 	public static final String MAX_TIME = "MAX_TIME";
 	public static final String AMR = "AMR";
 	public static final String ORDER_METHOD = "ORDER_METHOD";
+	public static final String INTERFACE_CAPTURING_TYPE = "INTERFACE_CAPTURING_TYPE";
 	public static final String SCALE_SIM = "SCALE_SIM";
 	public static final String LENGTH_SCALE = "LENGTH_SCALE";
 	public static final String GRAVITY_SCALE = "GRAVITY_SCALE";
@@ -79,6 +80,10 @@ public abstract class TitanConstants {
 	public static final String[] OrderMethod = {"First", "Second"};
 	public static final int ORDER_METHOD_FIRST = 0;
 	public static final int ORDER_METHOD_SECOND = 1;
+
+	public static final String[] InterfaceCapturingType = {"Heuristic", "LevelSet"};
+	public static final int INTERFACE_CAPTURING_TYPE_HEURISTIC = 0;
+	public static final int INTERFACE_CAPTURING_TYPE_LEVELSET = 1;
 
 	public static final String[] InitSizes = {"AMR", "DEM"};
 	public static final int INIT_SIZE_AMR = 0;
@@ -210,7 +215,8 @@ public abstract class TitanConstants {
 			SIM_DIR, ZONEOVERRIDE, HEMISPHERE, EMAIL_ADDRESS,
 			GIS_FORMAT,GIS_INFO_DIRECTORY, GIS_SUBDIR, GIS_MAPSET, GIS_MAP, GIS_VECTOR,
 			MIN_X_LOC, MIN_Y_LOC, MAX_X_LOC, MAX_Y_LOC,
-	        RESTART_ENABLED, RESTART_FILE, MAX_NUM_TIME_STEPS, MAX_TIME, NUM_CELLS_ACROSS, AMR, ORDER_METHOD,
+	        RESTART_ENABLED, RESTART_FILE, MAX_NUM_TIME_STEPS, MAX_TIME, NUM_CELLS_ACROSS,
+			AMR, ORDER_METHOD, INTERFACE_CAPTURING_TYPE,
 			SCALE_SIM, LENGTH_SCALE, GRAVITY_SCALE, HEIGHT_SCALE,
 			RUN_ID, FLOW_OUTLINE_HGT, TEST_FLOW_HEIGHT_MIN, TEST_FLOW_X_LOC, TEST_FLOW_Y_LOC, STAT_PROPS_PREFIX,
 			OUTLINE_PROPS_ENABLED, MAX_LINEAR_SIZE, INIT_SIZE, OUTLINE_PROPS_PREFIX,
@@ -225,7 +231,8 @@ public abstract class TitanConstants {
 			"","",HemisphereHalves[0],"",
 		    GisFormats[GIS_FORMAT_GIS_GRASS], "", "", "", "", "",
 			"", "", "", "",
-		    FALSE, "", "", "", "20", TRUE, OrderMethod[ORDER_METHOD_FIRST],
+		    FALSE, "", "", "", "20",
+			TRUE, OrderMethod[ORDER_METHOD_FIRST], InterfaceCapturingType[INTERFACE_CAPTURING_TYPE_HEURISTIC],
 			FALSE, "", "9.8", "",
 			"", "", "", "", "","",
 			TRUE, "1024", InitSizes[INIT_SIZE_AMR], "",
