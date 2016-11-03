@@ -1,0 +1,108 @@
+The code currently simulates granular flows.  It runs in parallel with mesh refinement and unrefinement.  The maximum refinement level is set by the user when specifying the Number of Computational Cells Across Smallest Pile/Flux-Source.  Mesh repartitioning is also used to maintain a good load-balance.  A python script is included to organize the preprocessing and launching of jobs on different computers, including all available computers at the Center for Computational Research (CCR) at UB.  GRASS is now used as the GIS.  The python script can also be run directly from GRASS.  Instructions for this are in the README.GRASS file.
+  
+The python script is located in the bin directory and is run by 
+the command: python titan_gui.py
+  
+A GUI will come up and ask for certain info.  There are several pop-up
+windows that will open, depending on the information you provide.  The information 
+that the GUI asks for is:
+
+Main Data Entry Window:
+  
+1) GIS Information Main Directory -- The main directory where the GIS information is stored.  The Region button can be used to view elevation contours for the region specified if the GRASS interface is used.  All GIS input data must be in GRASS format to be used.
+  
+2) GIS Sub-Directory -- The sub-directory where the GIS information is stored.
+  
+3) GIS Map Set -- The name of the GIS map set. The Mapsets button can be used to find the desired mapset through the GRASS interface.
+  
+4) GIS Map -- The name of the GIS map.  The Maps button can be used to find the desired map through the GRASS interface.
+
+5) Use GIS Material Map? -- *NOTE: The next feature is available only to users who have a specific material map (file ends in _Mat)*.  The Use GIS Material Map? check box enables the input of a GIS-based surficial material map that matches the area covered by the DEM.  This map is used to define the zones in the region where changes in the surface morphology results in a change in the basal friction angle.  When this function is enabled, pop-up windows (appearing after the ``run'' button is clicked) will ask for the internal and basal friction angles for each material represented on the material map.  
+  
+6) Simulation Directory Location -- The location from where the job will be submitted.  All of the information (except for the GIS information) needed to run the simulation will be stored in this directory.  If this specified directory already exists, then the pre-existing directory will not be modified and no job will be submitted.
+  
+7) Number of Processors -- The number of processors that will be used during the simulation.  The code only allows a power of 2 (i.e. 2^n) amounts of processors and the amount of processors must be less than or equal to 2056. 
+  
+8) Number of Computational Cells Across Smallest Pile/Flux-Source Diameter --  The number entered in this box is used by Titan to determine the maximum level of grid-cell refinement allowed throughout the simulation.  The default value is 20, meaning that the dimensions of the smallest cell size on the map will correspond to a length that is at most 1/20th that of the smallest pile or flux-source diameter - that is, 1/20th of the smallest value entered in the ``Major and Minor Extent, majorR, minorR (m,m)'' field on the Pile or Flux-Source Information Forms. When an adaptive grid is selected, only a small portion of the total map area will be maximally refined; without adaptation however, the entire map will consist of maximally refined cells - which, if small, can be computationally expensive.
+
+9) Number of Piles -- Insert a value corresponding to the number of fixed-mass debris piles that you would like to simulate at a given time. Pile attributes, such as dimensions, orientation and location are specified when this first stage is completed.
+
+10) Number of Flux Sources -- Indicate the number of locations where you would like to simulate material that actively extrudes from the ground. For each flux-source specified, an additional window will later open, enabling the user to define specific properties of each source.
+
+11) Number of Discharge Planes -- This feature has been added to give Titan the capability to calculate the amount of material that crosses any line (i.e. vertically-oriented plane) on the DEM map by specifying its two end-points.  For each discharge-plane that is specified, another window is opened for the user to enter the coordinates of these points.  As the simulation progresses, the amount (cubic meters) of material passing through the plane is recorded in the simulation directory (./bin/Test1 for example) under the file named discharge.out
+  
+12) Scale Simulation ? -- Activate the ``Yes'' button to scale the governing equations by the pile height, a length scale and a gravity scale (activated button appears as a red color).  The pile height scale is taken as the cubed root of the total volume of material to appear on the map.  Thus, the scaled simulation calculates the pile height as a fraction of this value.  The gravity scale is 9.80 ms^-2.  The length scale is a user-specified number.
+  
+13) If Scaled, Length Scale [m] -- A scale that will usually correspond to the expected runout length of the flow.  This is only used if the simulation is scaled.
+  
+14) Maximum Number of Time Steps -- A maximum amount of time steps that the simulation should run.  For most simulations, this should be in the 1,000s range.
+  
+15) Maximum Time [sec] -- The maximum amount of time that the simulation will approximate.
+  
+16) Time [sec] Between Results Output -- This corresponds to how often results will be saved to file for later analysis.  These files can become very large and the user may not need to see results for every time step since some time steps may have little change in the results from the previous time step.  For example, a user may wish to only save a timestep every 5 seconds of simulated time.  If desired, the user may choose to use a fraction of a second. 
+  
+17) Time [sec] Between Saves -- specify the frequency at which the configuration of the simulation is saved to a restart0000.x file.  To continue a given simulation, rename the most recent restart0000.x file to restart0000.this and run titan again as usual. (Note that additional restart0001.x, restart0002.x, etc. files will exist - and will also have to be renamed - for multi-processor runs)
+
+18) Adapt the Grid ? -- Activate the ``Yes'' button to adapt the grid during the simulation (activated button appears as a red color).  Adapting the grid should result in reduced computational cost while maintaining a high simulation accuracy, but can also introduce instabilities into the computation.
+  
+19) Visualization Output -- Choose Formats (tecplotxxxx.plt, mshplotxxxx.plt, GMFG Viz, XDMF/Paraview, Web Viz, or grass\_sites) - Activate the buttons corresponding to the visualization outputs that are desired.  tecplotxxxx.plt and mshplotxxxx.plt are tecplot files. GMFG Viz is for the TITAN2D visualizer.  XDMF/Paraview generates xdmfxxxx.h5 and xdmfxxxx.xmf files used with the paraview visualization application. Web Viz is for the web visualization output.  Note that the user can have multiple visualization output formats with each simulation run.
+  
+20) First/Second Order Method -- Activate the "Second" button to assume a linear variation (instead of constant values) of the conserved quantities (pile height, momentum) across each cell. The second order method should give more accurate results but increases computation time. % and is less stable.  
+  
+21) Minimum x and y location (UTM E, UTM N) -- If a computational region that is smaller than the GIS region is desired, the user can input the minimum x and y location of the desired computational region.
+  
+22) Maximum x and y location (UTM E, UTM N) -- If a computational region that is smaller than the GIS region is desired, the user can input the maximum x and y location of the desired computational region.
+
+23) Height used to define flow outline (>0) [m] -- Used to set the ``boundary'' of the mass flow.    The user is required to enter a greater than zero height, which will be used to, among other things, compute the spread of the pile in the x and y directions. If no value is entered it defaults to $\frac{1}{50}{\rm th}$ of the maximum initial pile height.
+
+24) Test if flow reaches height [m] ...: and ... at test point (x and y location): -- Set the criteria to determine if the flow reaches a particular point, namely did flow of this depth reach this point at any time during the calculation.
+  
+25) Email Address -- The email address to send the notification of completion for the run to.  Email will be sent to user@buffalo.edu if not set.  An email address is not needed if you are doing the run on a PC.
+
+RUN button -- Sets up and runs the simulation.
+  
+QUIT button -- exits the script.
+ 
+? button -- Help button which displays the README file.
+
+
+Friction Angles - Data Entry Window
+
+Internal Friction Angle (deg), Bed Friction Angle (deg) -- These two friction angles must be entered into the pop-up window that appears after clicking the ``run'' button.  Both angles are to be input in degrees. They represent the internal resistive forces that occur within a pile and the resistive force between a pile and the basal surface respectively.
+
+
+Pile Parameters - Data Entry Window
+    
+After entering the two friction angles, and clicking on ``done'' then ``quit'', a new window 
+will appear to input the geometry and coordinates of each pile.  The first line will show which pile number 
+the user is inputting data for.  The geometry for each pile is a paraboloid given by: P*(1-((x-xc)/xr)^2 -((y-yc)/yr)^2) (assuming an orientation angle of zero). The data to be entered is: Maximum Initial Thickness, P 
+(in meters), Center of Initial Volume,xc,yc (in UTM coordinates), the Major and Minor Extent, majorR, minorR of the initial pile (in meters), the Orientation (angle [degrees] from X axis to major axis, and its Initial speed [m/s] 
+and Initial direction ([degrees] from X axis). (Note: The x-axis is defined as UTM E; y-axis is 
+defined as UTM N).  In order to allow anyone to easily specify an initial pile geometry that can vary, the pile is assumed to have a shape of a paraboloid.  The equation for the pile height is listed (a negative pile height calculated from this equation will be set to zero).  These equations are for the non-scaled pile.  If two or more piles overlap, the highest height of the pile is used as the pile height at that point.
+
+The buttons in this window are:
+  
+DONE button - After the values for the pile geometry are entered, hit the \emph{Done} button to enter them into the script.
+  
+QUIT button - After hitting the Done button, hit the Quit button to exit out of this window. If there are more pile geometries to input, another window will pop up.  Otherwise, the script will run the job.
+  
+Calculate Volume button - From the Maximum Initial Thickness and X and Y Extent of the initial volume, this will calculate and display the actual volume (in cubic meters) resulting from the inputted values.  This volume is only for this pile geometry and assumes that no other piles are overlapping this region.
+  
+Map button -- If you are using the Grass interface, the pile center can be specified from the elevation contour map by using the Map button.
+
+In order to figure out the proper values to input for the pile equation, run the simulation once for a couple of time steps in order to get some results files.  Examine the results files for the proper location and values for the pile height equation.
+
+
+Flux Sources - Data Entry Window
+
+The following information is required for each flux source that is specified: Extrusion flux rate -- the rate at which material extrudes vertically from the ground, Active Time -- the user can specify a starting and ending time for the flux source that can encompass either part or all of the simulation, Center of Source, xc, yc -- given in UTM coordinates, Major and Minor Extent, majorR, minorR -- required because the flux source is elliptically shaped, Orientation (angle [degrees] from X axis to major axis), Initial Speed -- referring to the initial horizontal speed (i.e. tangential to the terrain) of the material as it leaves the flux-source (the flux-source itself, remains stationary), and the Initial Direction of material -- measured in degrees from the x-axis.
+
+
+Discharge Planes - Data Entry Window
+
+This window lets the user enter the coordinates of the two endpoints of a vertically-oriented discharge-plane.  The user may enter or, if running Titan through GRASS, select the two points directly using the mouse cursor on the map.  Each point is identified by a UTM E and UTM N coordinate.
+
+
+Notes on Python Software
+
+The latest version of Python can be downloaded for free from:\\ http://www.python.org/download/

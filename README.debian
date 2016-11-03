@@ -1,0 +1,16 @@
+<titan root>/debian directory contains files required to create .deb package. Somehow it is not building the source package. Please follow the following steps
+to create a *.deb package
+
+PREPRATION:
+ 1 -- Make sure you are on a DEBIAN or DEBIAN based system
+ 2 -- make sure your computer has installed packages 'dh-make' and 'fakeroot' 
+ 3 -- make changes to 'debian/rules' and 'debian/control' if required
+
+PACKAGING:
+don't run dpkg-buildpackage -rfakeroot. it will try to run all kinds of default scripts, which we don't need
+
+ 1 -- fakeroot debian/rules clean
+ 2 -- debian/rules build
+ 3 -- fakeroot debian/rules binary
+
+thats it. It should create a *.deb installer in a dir one level above <titan root>. If it doesn't work (you are out of luck). Read documentation "Debian New Maintainers' Guide" at <http://www.debian.org/doc/manuals/maint-guide/> chapters 4-5-6

@@ -1,0 +1,85 @@
+README file for r.gmfg.titan
+
+$Id: README.GRASS 7 2003-08-14 00:08:57Z acbauer $
+
+Alex Sorokine <sorokine@buffalo.edu>
+
+_Preparation_
+
+1.  Start grass GIS with the command 
+
+grass5
+
+2.  Specify the location of the GRASS dataset
+
+3.  Change you working directory to titan/bin
+
+4.  Make sure that the following files are present in you current
+directory:
+
+_pilehelper
+_regionhelper
+r.gmfg.titan
+runit.py
+
+_Command-line operation_
+
+1. Specify simulation parameters on the command line for
+./r.gmfg.titan, to get a list of available options and parameters
+run r.gmfg.titan -h
+
+2.  After python GUI shows up continue using the model as usual
+
+Example of the model command line:
+
+./r.gmfg.titan -a -s map=Tahoma30 dir=tempe mp=1 mesh=100 iang=30 bang=15 length=8000 maxts=1000 maxtime=100 outts=100 outfmt=tecplot,mshplot,HDF piles=1 pileh=50
+
+_Specifying the region for the simulation_
+
+1.  Start GRASS monitor either from GRASS GUI or using GRASS command
+
+d.mon start=x0
+
+2.  Display any map on the monitor with the command
+
+d.rast map_name
+
+3.  Specify the region interactively using command
+
+d.zoom
+
+_Interactive Operation of The Model_
+
+1.  Start the model from within GRASS using the command:
+
+./r.gmfg.titan
+
+Optionally you can specify any command line options for the model and
+they will be reflected in the GUI
+
+2.  Specify a mapset either by typing its name into the text field on
+the GUI or by clicking on the button "Mapsets" and selecting from the
+drop down menu
+
+3.  Specify a DEM either by typing its name into the text field on the
+GUI or by clicking on the button "Mapsets" and selecting from the drop
+down menu
+
+4.  Press the "Region" button on the on the GUI.  You can untoggle
+"New Monitor" button if you want to reuse your active GRASS monitor.
+Specify the region using the following sequence of the mouse clicks:
+
+1) left button: 1-st region conner
+2) middle button: 2-nd region corner
+3) right button: accept the region
+
+
+
+5.  Fill in the model parameters and press the run button.  After that
+you will be present with a pile dialog.
+
+6.  To specify pile location interactively press the "Map" button on
+the dialog.  You can untoggle "New Monitor" button if you want to
+reuse your active GRASS monitor.  After a map screen appears click on
+the supposed pile location using left mouse button.  The coordinate of
+the click will appear in the dialog box.

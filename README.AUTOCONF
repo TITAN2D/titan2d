@@ -1,0 +1,28 @@
+Use of autoconf and automake scripts
+
++ New make system
+
+- All compilation logic goes into Makefile.am files 
+
+- Makefiles are generated out of Makefile.in's, Makefile.in's are
+generated out of Makefile.am's, edit nothing except for Makefile.am's
+
+* Normal operation:
+
+./configure
+make
+make install
+
+change source files and Makefile.am's if needed, run make, all
+targets and Makefiles will be updated automatically
+
+* If configure.ac was changed:
+
+run autoconf before configure
+
+if autoconf complains run:
+
+automake && aclocal && autoconf
+
+
+$Id: README.AUTOCONF 171 2007-08-10 21:09:21Z dkumar $

@@ -1,0 +1,14 @@
+TODO list
+
+5.  Include viewer with the installation
+6.  Figure out a way how to add -lmpi flag automatically in configure on computers that do not use mpi compilers
+
+Done:
+
+1.  Remove code that is not used in the model
+2.  Reorganize sources into clearly distinguishable modules
+3.  Add short description for each file
+4.  Put restructured version under CVS
+
+$Id: TODO 82 2004-07-05 17:49:25Z sorokine $
+

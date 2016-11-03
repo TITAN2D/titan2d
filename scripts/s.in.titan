@@ -1,0 +1,182 @@
+#!/usr/bin/perl -w
+#*******************************************************************
+#* Copyright (C) 2003 University at Buffalo
+#*
+#* This software can be redistributed free of charge.  See COPYING
+#* file in the top distribution directory for more details.
+#*
+#* This software is distributed in the hope that it will be useful,
+#* but WITHOUT ANY WARRANTY; without even the implied warranty of
+#* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#*
+#* Author: Alex Sorokine <sorokine@buffalo.edu>
+#* Description: A script that converts Pady's viz format into GRASS GIS sites format
+#*
+#*******************************************************************
+#* $Id: s.in.titan 2 2003-08-13 19:26:11Z sorokine $ 
+#*
+
+# TODO
+#
+# 5. Separation by timestep
+# 6. Ledger file support
+# 7. Full format processing
+
+use strict;
+
+use FileHandle;
+use File::Basename;
+use Getopt::Long;
+use Pod::Usage;
+
+# list of fields to for output
+my @ofields = qw/pile_height pile_velocity processor/;
+
+# processing options
+my ($help, $verbose, $ph, $ts) = ();
+
+GetOptions(
+           'h+' => \$help,
+           'v+' => \$verbose,
+           'ph=s'  => \$ph
+          ) || pod2usage( -exitval => 1, -verbose => 1 );
+@ARGV == 2 || pod2usage( -exitval => 1, -verbose => 1 );
+pod2usage( -exitval => 0, -verbose => $help) if $help;
+
+# open ledger file
+my $vizdir = dirname($ARGV[0]) || '.';
+my $ledg = new FileHandle($ARGV[0], "r") or
+  die "Unable to open ledger $ARGV[0] for reading ($!)";
+
+<$ledg> =~ /^\s*(\d+)/o;
+print STDERR "$1 viz files will be processed.\n";
+
+# prepare output file name
+# adjust file name if run from within GRASS
+my $ofname = $ARGV[1];
+if (exists $ENV{GISDBASE}) {
+  my $odir = "$ENV{GISDBASE}/$ENV{LOCATION_NAME}/$ENV{MAPSET}/site_lists";
+  -d $odir || `mkdirhier $odir`;
+  $ofname = $odir.'/'.$ofname;
+  print STDERR "Running from GRASS, sites file will be saved in ${ofname}0000\n";
+}
+
+# open all input files
+my @fin = ();
+my $fi = 0;
+while (<$ledg>) {
+  chomp;
+  $fin[$fi++] = new FileHandle( "$vizdir/$_", "r") or
+    die "Unable to open input file $vizdir/$_ for reading ($!)";
+}
+$ledg->close();
+
+print STDERR "Fields to be used in the output: ", join(', ', @ofields), "\n";
+unshift @ofields, 'coordinate';
+
+# read header data
+my (@labels, @delims, @fieldnams, @seq) = ();
+my ($stime, $nconst, $npoints, $ntypes, $ncols); # defined in file format
+my $time_step = -1;
+my ($fout, $done);
+do {
+
+  $done = 1;
+  foreach my $fh (@fin) {
+
+    next if $fh->eof();
+    undef $done;
+
+    my $line = 0;
+    my $time_step1;
+    while(<$fh>) {
+      $line++;
+
+      last if (/^\s*$/);
+
+      if ($line == 1) {
+	($stime, $nconst, $npoints, $ntypes, $ncols) =
+	  (m/^(\d+\.\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/o) 
+	    unless defined $nconst;
+	next;
+      } elsif ($line == 2) {
+	unless (@labels) {
+	  while (m/\"(\w+)\s(\w+)\[(\d+)\]\"/go) {
+	    foreach (1..$3) {
+	      push @fieldnams, $1;
+	      push @labels, $1.$_;
+	      push @delims, ($1 eq 'coordinate')?'|':'%';
+	    }
+	  }
+	  foreach my $ofield (@ofields) {
+	    for (my $i=0; $i<$#fieldnams; $i++) {
+	      push @seq, $i if $ofield eq $fieldnams[$i];
+	    }
+	  }
+	}
+	next;
+      } elsif ($line <= $nconst + 2) {
+
+	$time_step1 = $1 if /^time_step\sint\[\d\]\s(\d+)/o;
+
+	if ($line == $nconst + 2) {
+	  defined $time_step1 or die "Unable to find time step in header";
+	  if ($time_step != $time_step1) { # new time step
+	    $time_step = $time_step1;
+
+	    my $ofname1 = sprintf( "$ofname%04i", $time_step);
+	    $fout = new FileHandle($ofname1, "w") or
+	      die "Unable to open $ofname1 for writing ($!)";
+
+	    # printout sites header
+	    print $fout "# Created with $0\n";
+	    print $fout "name| $ARGV[0], time step $time_step\n";
+	    #print $fout "time| ", scalar localtime(time), "\n";
+	    print $fout "labels|",join (" ", @labels[@seq]), "\n";
+	    print $fout "forms|",join ('', @delims[@seq]), "\n";
+	  }
+	}
+	next;
+
+      } else {
+	my @F = split /\s+/;
+	next if $ph && $ph > $F[7];
+	foreach my $i (@seq) {
+	  if ($delims[$i] eq '|') {
+	    print $fout "$F[$i]| ";
+	  } else {
+	    print $fout " %", $F[$i];
+	  }
+	}
+	print $fout "\n"
+     }
+    }
+
+  }
+
+} until ($done);
+
+__END__
+
+=head1 NAME
+
+    Calculates stats for a set of model runs
+
+=head1 SYNOPSIS
+
+    pady2sites [options] viz_filenames.out grass_sites_stem
+
+=head1 OPTIONS
+
+    [options]
+      -h this message, more h more help you get
+      -v verbosity level, more v more verbose the output
+
+      --ph number
+        output only sites with pile height > number
+
+=head1 ENVIRONMENT
+
+    Will check for GRASS environmental variables.  If run from within
+    GRASS will place site file into
+    $GISDBASE/$LOCATION_NAME/$MAPSET/site_lists/sites

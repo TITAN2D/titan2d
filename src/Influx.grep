@@ -1,0 +1,10 @@
+geoflow/get_coef_and_eigen.C:  if((maxinflux=fluxprops_ptr->MaxInfluxNow(matprops_ptr,timeprops_ptr)*
+geoflow/flux_srcs.C:  if(fluxprops->MaxInfluxNow(matprops,timeprops)>0.0) {
+geoflow/flux_srcs.C:  Influx[0]=Influx[1]=Influx[2]=0.0;
+geoflow/flux_srcs.C:      Influx[0]+=temp_coef2;
+geoflow/flux_srcs.C:	Influx[1]+=sum_flux_xmom_ymom[1]*temp_coef2/sum_flux_xmom_ymom[0];
+geoflow/flux_srcs.C:	Influx[2]+=sum_flux_xmom_ymom[2]*temp_coef2/sum_flux_xmom_ymom[0];
+geoflow/flux_srcs.C:  if(!(Influx[0]>=0.0)){
+geoflow/flux_srcs.C:    printf("error in Influx[0] assignment\n");
+geoflow/flux_srcs.C:    assert(Influx[0]>=0.0);
+geoflow/flux_srcs.C:  Awet=(Influx[0]>0.0)?1.0:0.0;

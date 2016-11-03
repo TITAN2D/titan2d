@@ -1,0 +1,10 @@
+#!/bin/csh
+#PBS -l nodes=2:ppn=2
+#PBS -l walltime=0:59:00
+#PBS -M your@email.address.here
+#PBS -m e
+#PBS -j oe
+#PBS -o pbslhs.out
+#
+cd $PBS_O_WORKDIR
+perl dist-stats.pl --ctlfile stat_ctl.bed 

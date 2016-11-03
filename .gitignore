@@ -1,0 +1,69 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.Po
+bin/
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Eclipse and other IDE
+.autotools
+.cproject
+.project
+.settings
+.idea
+/.pydevproject
+/nbproject
+
+#autotols generated files
+autom4te.cache
+Makefile.in
+/compile
+/config.guess
+/config.sub
+/configure
+/depcomp
+/install-sh
+/missing
+/config.h.in~
+/config.h.in
+/aclocal.m4
+/config.log
+/ltmain.sh
+/src/header/titan_config.h.in
+/src/header/titan_config.h.in~
+#configure generated file, for thouse who like to compile in source
+Makefile
+
+#swig generated
+/src/main/cxxtitan.py
+/src/main/cxxtitan_wrap.cxx
+
+#binaries
+/bin
+src/vectordatapreproc/VecDataPreproc
+src/stochastic/lhsvol
+src/stochastic/lhstitanstats
+src/stochastic/lhsbed
+src/stochastic/gentitanteststats
+src/preproc/titan_preprocess
+src/preproc/titan_materialnames
+src/main/titan
+src/tests/tivector_test
+
