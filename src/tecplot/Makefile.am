@@ -9,4 +9,4 @@ noinst_LIBRARIES = libtecplot.a
 libtecplot_a_SOURCES = outsum.C tecplot.C grassout.C \
                        xdfm_write.C GMFG_hdfconstants.h hd5calls.c
 
-INCLUDES=-I../header/
+AM_CPPFLAGS=-I$(srcdir)/../header/ -I$(srcdir)/../gisapi
