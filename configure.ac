@@ -130,7 +130,6 @@ AS_IF([test "x$with_titan2d_dep" != xno],
 		CPPFLAGS="$CPPFLAGS  -I$with_titan2d_dep/include"
 	    LDFLAGS="$LDFLAGS -L$with_titan2d_dep/lib"
 	],
-	[]
 )
 
 ## checks for libraries
@@ -193,24 +192,6 @@ AC_CHECK_LIB([hdf5_cpp],[H5open],,
 )
 AC_SUBST([HDF5_PATH],[$with_hdf5])
 
-## checks for GRASS
-#------------------------------------------------------------------------------------
-AC_ARG_WITH([grass],
-            [AS_HELP_STRING([--with-grass],[grass is needed for grass sites output.
-                            Provide absolute grass location --with-grass=/path/to/grass
-                            (default: without])],
-            [],
-            [with_grass=no]
-)
-AS_IF([test "x$with_grass" != xno],
-	[
-		CPPFLAGS="$CPPFLAGS  -I$with_grass/include"
-    	LDFLAGS="$LDFLAGS -L$with_grass/lib"
-    	AC_CHECK_LIB([gis],[G_gisinit],[])
-	],
-	[]
-)
-
 ## checks for GDAL
 #-------------------------------------------------------------------------------------
 AC_ARG_WITH(gdal,
@@ -227,8 +208,7 @@ AS_IF([test "x$with_gdal" != xno],
 		AC_PATH_PROG([GDAL_CONFIG],[gdal-config],[no],[$with_gdal/bin:$with_titan2d_dep/bin:$PATH])
 		with_gdal=`dirname $GDAL_CONFIG`
 		with_gdal=`readlink -f $with_gdal/..`
-	],
-	[]
+	]
 )
 AC_MSG_CHECKING([for GDAL availability])
 AS_IF([test "x$GDAL_CONFIG" != xno],
@@ -280,7 +260,7 @@ AS_IF([test "x$with_swig" != xno],
 	AS_IF([test "x$with_titan2d_dep" != xno],
 	[
 		SWIG="SWIG_LIB=$with_titan2d_dep/share/swig/3.0.5 $SWIG"
-	],[]
+	]
 	) 
 	
 	AC_MSG_NOTICE([swig: $SWIG])
