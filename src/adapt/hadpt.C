@@ -76,33 +76,38 @@ void PrimaryRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seedRefinem
     tisize_t N=ElemTable->size();
     //tisize_t elementsToRefine=0;
     PROFILING1_START(pt_start);
-    #pragma omp parallel
-    {
-        int ithread=omp_get_thread_num();
-        loc_SeedRefinement[ithread].resize(0);
-        //ti_ndx_t ndx_start=ithread*N/threads_number;
-        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
 
-        //@ElementsSingleLoop
-        //for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=0;ndx<N;++ndx)
-        {
-            //-- this requirement is used to exclude the new elements
-            if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
-            {
-                if((el_error[ndx] > geo_target)
-                    || (ElemProp->if_pile_boundary(ndx, GEOFLOW_TINY) > 0)
-                    || (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD1) > 0)
-                    || (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD2) > 0)
-                    || (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD) > 0)
-                    || (ElemProp->if_source_boundary(ndx) > 0) )
-                {
-                    loc_SeedRefinement[ithread].push_back(ndx);
-                }
-            }
-        }
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::Heuristic)
+    {
+		#pragma omp parallel
+		{
+			int ithread=omp_get_thread_num();
+			loc_SeedRefinement[ithread].resize(0);
+			//ti_ndx_t ndx_start=ithread*N/threads_number;
+			//ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+
+			//@ElementsSingleLoop
+			//for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+			#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+			for(ti_ndx_t ndx=0;ndx<N;++ndx)
+			{
+				//-- this requirement is used to exclude the new elements
+				if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
+				{
+					if((el_error[ndx] > geo_target)
+						|| (ElemProp->if_pile_boundary(ndx, GEOFLOW_TINY) > 0)
+						|| (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD1) > 0)
+						|| (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD2) > 0)
+						|| (ElemProp->if_pile_boundary(ndx, REFINE_THRESHOLD) > 0)
+						|| (ElemProp->if_source_boundary(ndx) > 0) )
+					{
+						loc_SeedRefinement[ithread].push_back(ndx);
+					}
+				}
+			}
+		}
     }
+
     PROFILING1_STOPADD(PrimaryRefinementsFinder_findSeedRefinements_loop,pt_start);
 
     PROFILING1_START(pt_start);
@@ -120,28 +125,32 @@ void BuferFirstLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &see
     PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
     PROFILING1_START(pt_start);
-    #pragma omp parallel
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::Heuristic)
     {
-        int ithread=omp_get_thread_num();
-        loc_SeedRefinement[ithread].resize(0);
-        //ti_ndx_t ndx_start=ithread*N/threads_number;
-        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
-        //@ElementsSingleLoop
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=0;ndx<N;++ndx)
-        {
-            if(status[ndx]>=0)
-            {
-                if(   (ElemProp->if_first_buffer_boundary(ndx, GEOFLOW_TINY) == 1)
-                   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD1)== 1)
-                   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD2) == 1)
-                   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD) == 1))
-                {
-                    loc_SeedRefinement[ithread].push_back(ndx);
-                }
-            }
-        }
+		#pragma omp parallel
+		{
+			int ithread=omp_get_thread_num();
+			loc_SeedRefinement[ithread].resize(0);
+			//ti_ndx_t ndx_start=ithread*N/threads_number;
+			//ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+			//@ElementsSingleLoop
+			#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+			for(ti_ndx_t ndx=0;ndx<N;++ndx)
+			{
+				if(status[ndx]>=0)
+				{
+					if(   (ElemProp->if_first_buffer_boundary(ndx, GEOFLOW_TINY) == 1)
+					   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD1)== 1)
+					   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD2) == 1)
+					   || (ElemProp->if_first_buffer_boundary(ndx, REFINE_THRESHOLD) == 1))
+					{
+						loc_SeedRefinement[ithread].push_back(ndx);
+					}
+				}
+			}
+		}
     }
+
     PROFILING1_STOPADD(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
 
     PROFILING1_START(pt_start);
@@ -183,29 +192,6 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
         }
     }
 
-    if(ElemTable->interface_capturing_==Interface_Capturing_Type::LevelSet || ElemTable->interface_capturing_==Interface_Capturing_Type::PhaseField)
-    {
-        #pragma omp parallel
-        {
-            int ithread=omp_get_thread_num();
-            loc_SeedRefinement[ithread].resize(0);
-            //ti_ndx_t ndx_start=ithread*N/threads_number;
-            //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
-            //@ElementsSingleLoop
-            #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-            for(ti_ndx_t ndx=0;ndx<N;++ndx)
-            {
-                if(status[ndx]>=0)
-                {
-                    if(ElemProp->if_next_buffer_boundary_levelset(ndx, REFINE_THRESHOLD) == 1)
-                    {
-                        loc_SeedRefinement[ithread].push_back(ndx);
-                    }
-                }
-            }
-        }
-    }
-
     PROFILING1_STOPADD(BuferNextLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
 
     PROFILING1_START(pt_start);
@@ -229,35 +215,35 @@ void PrimaryRefinementsFinderLevelSet::findSeedRefinements(vector<ti_ndx_t> &see
     tisize_t N=ElemTable->size();
     //tisize_t elementsToRefine=0;
     PROFILING1_START(pt_start);
-    #pragma omp parallel
-    {
-        int ithread=omp_get_thread_num();
-        loc_SeedRefinement[ithread].resize(0);
-        //ti_ndx_t ndx_start=ithread*N/threads_number;
-        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
 
-        //@ElementsSingleLoop
-        //for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=0;ndx<N;++ndx)
-        {
-            //-- this requirement is used to exclude the new elements
-            if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
-            {
-                if( (el_error[ndx] > geo_target)
-                    || (ElemProp->if_pile_boundary_levelset(ndx, PHI_ZERO) > 0)
-                    || (ElemProp->if_source_boundary_levelset(ndx) > 0) )
-                {
-                    //check that it is not boundary
-                    if( ti_ndx_not_negative(ElemTable->neighbor_ndx_[0][ndx]) &&
-                        ti_ndx_not_negative(ElemTable->neighbor_ndx_[1][ndx]) &&
-                        ti_ndx_not_negative(ElemTable->neighbor_ndx_[2][ndx]) &&
-                        ti_ndx_not_negative(ElemTable->neighbor_ndx_[3][ndx]))
-                        loc_SeedRefinement[ithread].push_back(ndx);
-                }
-            }
-        }
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::LevelSet || ElemTable->interface_capturing_==Interface_Capturing_Type::PhaseField)
+    {
+		#pragma omp parallel
+		{
+			int ithread=omp_get_thread_num();
+			loc_SeedRefinement[ithread].resize(0);
+			//ti_ndx_t ndx_start=ithread*N/threads_number;
+			//ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+
+			//@ElementsSingleLoop
+			//for(ti_ndx_t ndx=ndx_start;ndx<ndx_end;++ndx)
+			#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+			for(ti_ndx_t ndx=0;ndx<N;++ndx)
+			{
+				//-- this requirement is used to exclude the new elements
+				if((status[ndx]>=0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
+				{
+					if( (el_error[ndx] > geo_target)
+						|| (ElemProp->if_pile_boundary_levelset(ndx, PHI_ZERO) > 0)
+						|| (ElemProp->if_source_boundary_levelset(ndx) > 0) )
+					{
+							loc_SeedRefinement[ithread].push_back(ndx);
+					}
+				}
+			}
+		}
     }
+
     PROFILING1_STOPADD(PrimaryRefinementsFinder_findSeedRefinements_loop,pt_start);
 
     PROFILING1_START(pt_start);
@@ -275,25 +261,29 @@ void BuferFirstLayerRefinementsFinderLevelSet::findSeedRefinements(vector<ti_ndx
     PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
     PROFILING1_START(pt_start);
-    #pragma omp parallel
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::LevelSet || ElemTable->interface_capturing_==Interface_Capturing_Type::PhaseField)
     {
-        int ithread=omp_get_thread_num();
-        loc_SeedRefinement[ithread].resize(0);
-        //ti_ndx_t ndx_start=ithread*N/threads_number;
-        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
-        //@ElementsSingleLoop
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=0;ndx<N;++ndx)
-        {
-            if(status[ndx]>=0)
-            {
-                if((ElemProp->if_first_buffer_boundary_levelset(ndx, PHI_ZERO) == 1))
-                {
-                    loc_SeedRefinement[ithread].push_back(ndx);
-                }
-            }
-        }
+		#pragma omp parallel
+		{
+			int ithread=omp_get_thread_num();
+			loc_SeedRefinement[ithread].resize(0);
+			//ti_ndx_t ndx_start=ithread*N/threads_number;
+			//ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+			//@ElementsSingleLoop
+			#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+			for(ti_ndx_t ndx=0;ndx<N;++ndx)
+			{
+				if(status[ndx]>=0)
+				{
+					if((ElemProp->if_first_buffer_boundary_levelset(ndx, PHI_ZERO) == 1))
+					{
+						loc_SeedRefinement[ithread].push_back(ndx);
+					}
+				}
+			}
+		}
     }
+
     PROFILING1_STOPADD(BuferFirstLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
 
     PROFILING1_START(pt_start);
@@ -311,24 +301,28 @@ void BuferNextLayerRefinementsFinderLevelSet::findSeedRefinements(vector<ti_ndx_
     PROFILING1_DEFINE(pt_start);
     tisize_t N=ElemTable->size();
     PROFILING1_START(pt_start);
-    #pragma omp parallel
+
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::LevelSet || ElemTable->interface_capturing_==Interface_Capturing_Type::PhaseField)
     {
-        int ithread=omp_get_thread_num();
-        loc_SeedRefinement[ithread].resize(0);
-        //ti_ndx_t ndx_start=ithread*N/threads_number;
-        //ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
-        //@ElementsSingleLoop
-        #pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-        for(ti_ndx_t ndx=0;ndx<N;++ndx)
-        {
-            if(status[ndx]>=0)
-            {
-                if(ElemProp->if_next_buffer_boundary_levelset(ndx, PHI_ZERO) == 1)
-                {
-                    loc_SeedRefinement[ithread].push_back(ndx);
-                }
-            }
-        }
+		#pragma omp parallel
+    	{
+    		int ithread=omp_get_thread_num();
+    		loc_SeedRefinement[ithread].resize(0);
+    		//ti_ndx_t ndx_start=ithread*N/threads_number;
+    		//ti_ndx_t ndx_end=(ithread==threads_number-1)?N:(ithread+1)*N/threads_number;
+    		//@ElementsSingleLoop
+        	#pragma omp for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    		for(ti_ndx_t ndx=0;ndx<N;++ndx)
+    		{
+    			if(status[ndx]>=0)
+    			{
+    				if(ElemProp->if_next_buffer_boundary_levelset(ndx, PHI_ZERO) == 1)
+    				{
+    					loc_SeedRefinement[ithread].push_back(ndx);
+    				}
+    			}
+    		}
+    	}
     }
     PROFILING1_STOPADD(BuferNextLayerRefinementsFinder_findSeedRefinements_loop,pt_start);
 

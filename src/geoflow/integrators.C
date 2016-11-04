@@ -1262,7 +1262,7 @@ void Integrator_SinglePhase_LevelSet_Coulomb::corrector()
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx]=0.0;
+                	state_vars_[k][ndx]=0.0;
     }
     forceint = m_forceint;
     forcebed = m_forcebed;

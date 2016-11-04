@@ -71,7 +71,7 @@ public:
             printf("%s\n", title);
         }
         printf("  Total execution time:................... %10.3f\n", totalTime);
-        printf("    Mesh adoption time:................... %10.3f (%5.2f %%)\n", meshAdaptionTime, 100.0 * meshAdaptionTime / totalTime);
+        printf("    Mesh adaptation time:................. %10.3f (%5.2f %%)\n", meshAdaptionTime, 100.0 * meshAdaptionTime / totalTime);
         printf("      Refinement time:.................... %10.3f (%5.2f %%, %5.2f %%)\n", refinementTime,
                100.0 * refinementTime / totalTime, 100.0 * refinementTime / meshAdaptionTime);
         IF_DEF_TIMING3(
