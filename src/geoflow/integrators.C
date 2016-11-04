@@ -1731,8 +1731,6 @@ void Integrator_SinglePhase_LevelSet_Voellmy_Salm::corrector()
             VxVy[0] = VxVy[1] = 0.0;
         }
 
-//        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
-
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //corrector itself
@@ -1875,7 +1873,7 @@ void Integrator_SinglePhase_LevelSet_Voellmy_Salm::corrector()
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx]=0.0;
+                	if(k<3) state_vars_[k][ndx]=0.0;
     }
     forceint = m_forceint;
     forcebed = m_forcebed;
@@ -2404,8 +2402,6 @@ void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::corrector()
             VxVy[0] = VxVy[1] = 0.0;
         }
 
-//        elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
-
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //corrector itself
@@ -2588,7 +2584,7 @@ void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::corrector()
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx]=0.0;
+                	if(k<3) state_vars_[k][ndx]=0.0;
     }
     forceint = m_forceint;
     forcebed = m_forcebed;
