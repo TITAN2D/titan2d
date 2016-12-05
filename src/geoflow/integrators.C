@@ -1635,7 +1635,7 @@ bool Integrator_SinglePhase_LevelSet_Voellmy_Salm::unscale()
 }
 void Integrator_SinglePhase_LevelSet_Voellmy_Salm::print0(int spaces)
 {
-    printf("%*cIntegrator: single phase, Heuristic Interface Capturing Method, Voellmy_Salm model, first order\n", spaces,' ');
+    printf("%*cIntegrator: single phase, Level Set Interface Capturing Method, Voellmy_Salm model, first order\n", spaces,' ');
     printf("%*cmu:%.3f\n", spaces+4,' ',mu);
     printf("%*cxi:%.3f\n", spaces+4,' ',scaled?xi*scale_.gravity:xi);
     Integrator_SinglePhase::print0(spaces+4);
@@ -1763,8 +1763,8 @@ void Integrator_SinglePhase_LevelSet_Voellmy_Salm::corrector()
                 + dt * Influx_[2][ndx];
 
         Ustore[3] = prev_state_vars_[3][ndx]
-                - dtdx * (fluxxp[3] + fluxxm[6])
-                - dtdy * (fluxyp[3] + fluxym[6]);
+                - dtdx * (fluxxp[3] + fluxxm[4])
+                - dtdy * (fluxyp[3] + fluxym[4]);
 
         // initialize to zero
         forceintx = 0.0;
@@ -2439,8 +2439,8 @@ void Integrator_SinglePhase_LevelSet_Pouliquen_Forterre::corrector()
                 + dt * Influx_[2][ndx];
 
         Ustore[3] = prev_state_vars_[3][ndx]
-                - dtdx * (fluxxp[3] + fluxxm[6])
-                - dtdy * (fluxyp[3] + fluxym[6]);
+                - dtdx * (fluxxp[3] + fluxxm[4])
+                - dtdy * (fluxyp[3] + fluxym[4]);
 
         // initialize to zero
         forcegravx = 0.0;
