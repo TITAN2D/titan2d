@@ -147,8 +147,10 @@ void HAdaptUnrefine::unrefine(const double target)
     ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts,pt_start);
 
-    ElemProp->calc_wet_dry_orient2();
-    PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_calc_wet_dry_orient,pt_start);
+    if(ElemTable->interface_capturing_==Interface_Capturing_Type::Heuristic) {
+        ElemProp->calc_wet_dry_orient2();
+        PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_calc_wet_dry_orient,pt_start);
+    }
     return;
 }
 
