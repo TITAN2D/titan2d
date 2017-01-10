@@ -146,7 +146,7 @@ void HAdaptUnrefine::unrefine(const double target)
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts(true);
     ASSERT2(ElemTable->checkPointersToNeighbours("HAdaptUnrefine::unrefine After move_data",false)==0);
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_update_neighbours_ndx_on_ghosts,pt_start);
-    
+
     ElemProp->calc_wet_dry_orient2();
     PROFILING3_STOPADD_RESTART(HAdaptUnrefine_unrefine_calc_wet_dry_orient,pt_start);
     return;

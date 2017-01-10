@@ -245,19 +245,19 @@ int ElementsProperties::if_source_boundary_levelset(ti_ndx_t ndx)
 {
 //    ASSERT3(Influx_[0][ndx] >= 0.0); //currently mass sinks are not allowed
 
-    if(Influx_[1][ndx] > 0.0)
+    if(Influx_[0][ndx] > 0.0)
     {
         for(int ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc_[ineigh][ndx] >= 0)
             {
                 //don't check outside map boundary or duplicate neighbor
                 ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
-                if(Influx_[1][ neighbor_ndx_[ineigh][ndx] ] <= 0.0)
+                if(Influx_[0][ neighbor_ndx_[ineigh][ndx] ] <= 0.0)
                     return 2; //inside of line bounding area with a mass source
             }
     }
 
-    else if(Influx_[1][ndx] == 0.0)
+    else if(Influx_[0][ndx] == 0.0)
     {
         for(int ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc_[ineigh][ndx] >= 0.0)
@@ -265,18 +265,18 @@ int ElementsProperties::if_source_boundary_levelset(ti_ndx_t ndx)
                 //don't check outside map boundary or duplicate neighbor
                 ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
                 ASSERT3(ElemTable->Influx_[0][ ElemTable->neighbor_ndx_[ineigh][ndx] ] >= 0.0);
-                if(Influx_[1][ neighbor_ndx_[ineigh][ndx] ] != 0.0)
+                if(Influx_[0][ neighbor_ndx_[ineigh][ndx] ] != 0.0)
                     return 1; //outside of line bounding area with a mass source/sink
             }
     }
-    else if(Influx_[1][ndx] < 0.0)
+    else if(Influx_[0][ndx] < 0.0)
     {
         for(int ineigh = 0; ineigh < 8; ineigh++)
             if(neigh_proc_[ineigh][ndx] >= 0.0)
             {
                 //don't check outside map boundary or duplicate neighbor
                 ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
-                if(Influx_[1][ neighbor_ndx_[ineigh][ndx] ] >= 0.0)
+                if(Influx_[0][ neighbor_ndx_[ineigh][ndx] ] >= 0.0)
                     return -1; //inside of line bounding area with a mass sink
             }
     }
@@ -296,7 +296,7 @@ int ElementsProperties::if_first_buffer_boundary_levelset(ti_ndx_t ndx, double c
 //    ASSERT3(ElemTable->state_vars_[0][ndx] >= 0.0);
 //    ASSERT3(ElemTable->Influx_[0][ndx] >= 0.0);
 
-    if((ElemTable->state_vars_[3][ndx] < contour_phi) && (ElemTable->Influx_[1][ndx] == 0.0))
+    if((ElemTable->state_vars_[3][ndx] < contour_phi) && (ElemTable->Influx_[0][ndx] == 0.0))
     {
         for(ineigh = 0; ineigh < 8; ineigh++)
             if(ElemTable->neigh_proc_[ineigh][ndx]  >= 0)
@@ -305,7 +305,7 @@ int ElementsProperties::if_first_buffer_boundary_levelset(ti_ndx_t ndx, double c
                 neig_ndx=ElemTable->neighbor_ndx_[ineigh][ndx];
                 ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
 
-                if((ElemTable->state_vars_[3][neig_ndx] >= contour_phi) || (ElemTable->Influx_[1][neig_ndx] > 0.0))
+                if((ElemTable->state_vars_[3][neig_ndx] >= contour_phi) || (ElemTable->Influx_[0][neig_ndx] > 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -321,7 +321,7 @@ int ElementsProperties::if_first_buffer_boundary_levelset(ti_ndx_t ndx, double c
                 neig_ndx=ElemTable->neighbor_ndx_[ineigh][ndx];
                 ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
 
-                if((ElemTable->state_vars_[3][neig_ndx] < contour_phi) && (ElemTable->Influx_[1][neig_ndx] == 0.0))
+                if((ElemTable->state_vars_[3][neig_ndx] <= contour_phi) && (ElemTable->Influx_[1][neig_ndx] == 0.0))
                 {
                     iffirstbuffer = 1;
                     break;
@@ -362,7 +362,7 @@ int ElementsProperties::if_next_buffer_boundary_levelset(ti_ndx_t ndx,  double c
                 ASSERT3(ti_ndx_not_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])));
                 neigh_ndx=neighbor_ndx_[ineigh][ndx];
 
-                if((abs(adapted_[neigh_ndx]) == BUFFER) && (state_vars_[3][ndx]
+                if((abs(adapted_[neigh_ndx]) == BUFFER) && (fabs(state_vars_[3][ndx])
                         >= state_vars_[3][neigh_ndx]))
                 { //this element is next to a member of the old buffer layer
                     ifnextbuffer = 1; //which means this element is a member of the next outer boundary of the buffer layer
