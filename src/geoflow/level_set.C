@@ -667,9 +667,6 @@ void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* e
 
 				double phi = Curr_El->state_vars(3);
 				double phi_0 = Curr_El->state_vars(4);
-				double updated_phi = Curr_El->state_vars(5);
-
-				double prev_phi = Curr_El->prev_state_vars(3);
 
 				double flux_phi, a_p, a_m, b_p, b_m, c_p, c_m, d_p, d_m;
 				const double CFL = 0.5;
@@ -677,7 +674,8 @@ void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* e
 
 				// based on Sussman Smerka 1994
 
-				prev_phi = phi;
+				double prev_phi = phi;
+				Curr_El->prev_state_vars(3,prev_phi);
 
 				a_p = max(Dphi_Dx_p, 0.0);
 				a_m = min(Dphi_Dx_p, 0.0);
@@ -696,11 +694,12 @@ void update_phi(ElementsHashTable* El_Table, double min_dx, double* norm, int* e
 					flux_phi = 0.0;
 
 				phi = phi - dt * sign(phi_0) * flux_phi;
+				Curr_El->state_vars(3,phi);
 
 				*norm += (phi - prev_phi) * (phi - prev_phi);
 
 				// this is just to see which elements are updating
-				updated_phi = 1.0;
+				Curr_El->state_vars(5,1.0);
 
 			}
 		}
