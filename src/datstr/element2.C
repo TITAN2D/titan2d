@@ -2303,7 +2303,7 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 			    if(NodeTable->info_[ndtemp] == S_C_CON)
 			    {
 			        ep2 = El_Table->neighbor_ndx_[xp + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
-			        assert(El_Table->neigh_proc_[xp + 4][ndx_] >= 0 && ti_ndx_not_negative(ep2));
+			    	assert(El_Table->neigh_proc_[xp + 4][ndx_] >= 0 && ti_ndx_not_negative(ep2));
 			    }
 			    dxp = El_Table->coord_[0][ep] - El_Table->coord_[0][ndx_];
 			    dp = (El_Table->state_vars_[3][ep] - El_Table->state_vars_[3][ndx_]) / dxp;
@@ -2323,7 +2323,7 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 			        assert(El_Table->neigh_proc_[xm + 4][ndx_] >= 0 && ti_ndx_not_negative(em2));
 			    }
 			    dxm = El_Table->coord_[0][ndx_] - El_Table->coord_[0][em];
-			    dm = (El_Table->state_vars_[3][em] - El_Table->state_vars_[3][ndx_]) / dxm;
+			    dm = (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em]) / dxm;
 		        if(ti_ndx_not_negative(em2))
 		            dm = .5 * (dm + (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em2]) / dxm);
 		        El_Table->phi_slope_[0][ndx_] = dm;
@@ -2356,10 +2356,10 @@ void Element::calc_phi_slope(ElementsHashTable* El_Table, NodeHashTable* NodeTab
 			        em2 = El_Table->neighbor_ndx_[ym + 4][ndx_]; //(Element*) (ElemTable->lookup(&neighbor[xp + 4][0]));
 			        assert(El_Table->neigh_proc_[ym + 4][ndx_] >= 0 && ti_ndx_not_negative(em2));
 			    }
-			    dxm = El_Table->coord_[1][em] - El_Table->coord_[1][ndx_];
+			    dxm = El_Table->coord_[1][ndx_] - El_Table->coord_[1][em];
 			    dm = (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em]) / dxm;
 		        if(ti_ndx_not_negative(em2))
-		            dm = .5 * (dp + (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em2]) / dxm);
+		            dm = .5 * (dm + (El_Table->state_vars_[3][ndx_] - El_Table->state_vars_[3][em2]) / dxm);
 		        El_Table->phi_slope_[2][ndx_] = dm;
 		    }
 
