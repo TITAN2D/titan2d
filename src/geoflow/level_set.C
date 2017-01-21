@@ -557,10 +557,6 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 					if (Curr_El->neigh_proc(ineigh) >= 0) {
 						// this condition is to avoid elements on the boundary, or duplicated neighbors
 
-//						SFC_Key neigh_key = Curr_El->neighbor(ineigh * KEYLENGTH);
-//						// input "neigh_key + ineigh * KEYLENGTH" for lookup function should be asked
-//						Element* ElemNeigh = (Element*) El_Table->lookup(neigh_key);
-
 						Element* ElemNeigh = (Element*) El_Table->lookup(Curr_El->neighbor(ineigh));
 
 						double neighb_phi = ElemNeigh->state_vars(3);
@@ -574,15 +570,10 @@ void adjacent_to_interface(ElementsHashTable* El_Table,EdgeList& accepted) {
 
 							int orientation = abs(ineigh - xp);
 
-							if (orientation % 4 == 0
-									|| orientation % 4 == 1)
+							if (orientation % 4 == 0 || orientation % 4 == 1)
 								accepted.insert(Edge(Curr_El, ElemNeigh, ineigh));
-							else {
-//								SFC_Key c_key = Curr_El->key(); // I'm not sure about what I did here instead of "Curr_El->key()"
-//								accepted.insert(Edge(ElemNeigh, Curr_El,ElemNeigh->which_neighbor(c_key)));
-
+							else
 								accepted.insert(Edge(ElemNeigh, Curr_El,ElemNeigh->which_neighbor(Curr_El->key())));
-							}
 						}
 					}
 			}
@@ -732,7 +723,7 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 
 	for (EdgeList::iterator it = accepted.begin(); it != accepted.end(); ++it) {
 		debug++;
-		//		cout<<debug<<endl;
+//		cout<<debug<<endl;
 
 		if (it->elem[0]->adapted_flag() > 0) {
 			elem[0] = it->elem[0];
@@ -741,42 +732,25 @@ void make_quad_trangle(ElementsHashTable* El_Table, EdgeList& accepted, QuadList
 		} else {
 			elem[0] = it->elem[1];
 			elem[1] = it->elem[0];
-
-//			SFC_Key& c_key = elem[1]->key(); // I'm not sure about what I did here instead of "Curr_El->key()"
-//			neigh_num = elem[0]->which_neighbor(c_key);			//= (it->neigh_num + 2) % 8;
-
-			neigh_num = elem[0]->which_neighbor(elem[1]->key());
+			neigh_num = elem[0]->which_neighbor(elem[1]->key());	//= (it->neigh_num + 2) % 8;
 		}
 
 		// given the neighbor number, we can build 2 Quads, but we do not care.
 		// what we need to do is to find 4 points for making approximated surface
 		// from the bilinear map, and then computing the distance to the interface
 
-//		SFC_Key& elem_key = elem[0]->neighbor(((neigh_num + 1) % 8) * KEYLENGTH);
-//		elem[2] = (Element*) El_Table->lookup(elem_key);
-
 		elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num + 1) % 8)));
-
-//		SFC_Key& neigh_key;
 
 		if (elem[2] && elem[2]->adapted_flag() > 0) {
 			// first condition is to avoid the case that elem[2] is not available
-
-//			neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
 			elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num));
 
 		} else {
 			// this means that this proc has not access to this direction, so we have to change the direction
-//			elem_key = elem[0]->neighbor(((neigh_num - 1 + 8) % 8) * KEYLENGTH);
-//			elem[2] = (Element*) El_Table->lookup(elem_key);
-
 			elem[2] = (Element*) El_Table->lookup(elem[0]->neighbor(((neigh_num - 1 + 8) % 8)));
 
 			if (elem[2]) {
-				// the condition is to avoid the case that elem[2] is not available
-//				neigh_key = elem[2]->neighbor(neigh_num * KEYLENGTH);
-//				elem[3] = (Element*) El_Table->lookup(neigh_key);
-
+				// the condition is to avoid the case that elem[2] is not availa
 				elem[3] = (Element*) El_Table->lookup(elem[2]->neighbor(neigh_num));
 			}
 		}
