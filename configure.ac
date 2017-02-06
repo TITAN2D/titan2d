@@ -317,8 +317,8 @@ AS_IF([test "x$enable_java_gui" != xno],
 		AS_IF([test "x$JAVAC" == xno], [AC_MSG_FAILURE([Can not find javac, set JAVAC variable or --disable-java-gui])])
 		AS_IF([test "x$JAR" == xno], [AC_MSG_FAILURE([Can not find jar, set JAR variable or --disable-java-gui])])
 		
-		JAVA_VERSION1=`$JAVA -version 2>&1 |grep 'java version'|cut -d '"' -f 2|cut -d '.' -f 1`
-		JAVA_VERSION2=`$JAVA -version 2>&1 |grep 'java version'|cut -d '"' -f 2|cut -d '.' -f 2`
+		JAVA_VERSION1=`$JAVA -version 2>&1 |grep 'openjdk\|java version'|cut -d '"' -f 2|cut -d '.' -f 1`
+		JAVA_VERSION2=`$JAVA -version 2>&1 |grep 'openjdk\|java version'|cut -d '"' -f 2|cut -d '.' -f 2`
 		
 		AS_IF([test "x$JAVA_VERSION1" == x1], [], [AC_MSG_ERROR([Java should be 1.7 or 1.8!])])
 		AS_IF([test "x$JAVA_VERSION2" == x7 || test "x$JAVA_VERSION2" == x8], [], [AC_MSG_ERROR([Java should be 1.7 or 1.8!])])
