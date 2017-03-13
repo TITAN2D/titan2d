@@ -287,7 +287,7 @@ AS_IF([test "x$with_titan2d_dep" == xno],
 	[
 		RPATH=$PYTHON_ROOT/lib
 		AS_IF([test "x$with_hdf5" != xno],
-			[RPATH=$RPATH:$with_hdf5/lib]
+			[RPATH=$with_hdf5/lib:$RPATH]
 		)
 		AS_IF([test "x$with_gdal" != xno],
 			[RPATH=$RPATH:$with_gdal/lib]
