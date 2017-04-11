@@ -307,6 +307,41 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="PileProps");
 };
 
+//! the PilePropsPoreFluid is PileProps for Pore-Fluid model
+class PilePropsPoreFluid: public PileProps
+{
+public:
+    //! array of volume -fractions
+    std::vector<double> vol_fract;
+
+    PilePropsPoreFluid();
+    virtual ~PilePropsPoreFluid();
+
+    virtual void allocpiles(int numpiles_in);
+#ifndef SWIG
+    virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type);
+#endif
+    virtual void addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                         double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type,
+                         double volfract);
+    virtual void print_pile(int i);
+    /**
+     * assign height to point of an elliptical (in (x,y)) shaped pile,
+     * the pile can be either parabolic (in the z direction) or be
+     * cylindrical (have uniform pile height)
+     */
+    virtual void set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *EmTemp, MatProps* matprops);
+    virtual PileProps::PileType get_default_piletype()
+    {
+        return PARABALOID;
+    }
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="PileProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="PileProps");
+};
+
 /*************************************************************************/
 /* the gis map properties                                                */
 /*************************************************************************/
@@ -789,6 +824,63 @@ public:
 
         double diameter = 0.005;
         v_terminal = pow(diameter, 2.) * (den_solid - den_fluid) * scale.gravity / (18. * viscosity);
+    }
+    virtual inline void set_scale(const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
+    virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="MatProps") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="MatProps");
+};
+
+class MatPropsPoreFluid: public MatProps
+{
+public:
+    MatPropsPoreFluid(TiScale &_scale) :
+            MatProps(_scale)
+    {
+        mu = 0.01;
+        den_fluid = 1200.0;
+        den_solid = 2700.0;
+        k0 = 1.0e-11;
+        a_const = 0.05;
+        sigma0 = 1000.0;
+        m_crit = 0.6;
+        delta = 0.001;
+
+        flow_type = 0;
+    }
+    virtual ~MatPropsPoreFluid()
+    {
+    }
+
+    //! fluid density
+    double den_fluid;
+
+    //! solid density
+    double den_solid;
+
+    //! reference hydraulic permeability of the debris (m^2)
+    double k0;
+
+    //! constant for elastic compressibility of debris
+    double a_const;
+
+    //!
+    double sigma0;
+
+    //! lithostatic critical-state solid volume fraction
+    double m_crit;
+
+    //! grain collisions length scale (m)
+    double delta;
+
+    //! Flow type flag
+    int flow_type;
+
+    virtual void process_input()
+    {
+        MatProps::process_input();
     }
     virtual inline void set_scale(const PileProps *pileprops_ptr = NULL, const FluxProps *fluxprops_ptr = NULL);
     virtual inline void calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
@@ -1612,6 +1704,47 @@ inline void MatPropsTwoPhases::calc_Vslump(const PileProps *pileprops_ptr, const
     Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
 }
 
+inline void MatPropsPoreFluid::set_scale(const PileProps *pileprops1_ptr,
+                                         const FluxProps *fluxprops_ptr)
+{
+    MatProps::set_scale(pileprops1_ptr, fluxprops_ptr);
+
+    PilePropsPoreFluid *pileprops_ptr = (PilePropsPoreFluid*) pileprops1_ptr;
+
+    int isrc;
+    double maxphi = 0.;
+    double minphi = HUGE_VAL;
+    for(isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+    {
+        // search for min-max phi
+        if(pileprops_ptr->vol_fract[isrc] > maxphi)
+            maxphi = pileprops_ptr->vol_fract[isrc];
+        if(pileprops_ptr->vol_fract[isrc] < minphi)
+            minphi = pileprops_ptr->vol_fract[isrc];
+    }
+    // cut-off extremes
+    //assert(minphi <= maxphi);
+    if(minphi < 0.2)
+        flow_type = FLUID_FLOW;
+    else if(maxphi > 0.9)
+        flow_type = DRY_FLOW;
+    else
+        flow_type = TWOPHASE;
+}
+inline void MatPropsPoreFluid::calc_Vslump(const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
+{
+    /*************************************************************************/
+    /* the non-dimensional velocity stopping criteria is an idea that
+     didn't work for anything other than a slumping pile on a horizontal
+     surface, it's only still here because I didn't want to bother
+     with removing it.  --Keith Dalbey 2005.10.28
+
+     kappa is a to be determined constant, calculation stops when
+     v*=v_ave/v_slump<kappa (or perhaps v* < kappa/tan(intfrict)) */
+    double kappa = 1.0;   //should eventually move to a header file
+    double gravity = 9.8; //[m/s^2]
+    Vslump = 1.0; //kappa*sqrt(gravity*max_init_height);
+}
 
 
 

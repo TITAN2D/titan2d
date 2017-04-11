@@ -32,6 +32,7 @@ H5::EnumType datatypeOutLineInitSize;
 vector<string> coord_names;
 vector<string> SinglePhaseVarNames;
 vector<string> TwoPhasesVarNames;
+vector<string> PoreFluidVarNames;
 
 void init_TiH5()
 {
@@ -45,6 +46,8 @@ void init_TiH5()
     datatypeElementType.insert("SinglePhase",&val);
     val=ElementType::TwoPhases;
     datatypeElementType.insert("TwoPhases",&val);
+    val=ElementType::PoreFluid;
+    datatypeElementType.insert("PoreFluid",&val);
 
     datatypePileType=H5::EnumType(sizeof(PileProps::PileType));
     PileProps::PileType pile_type;
@@ -85,6 +88,13 @@ void init_TiH5()
     TwoPhasesVarNames.push_back("hVy_sol");
     TwoPhasesVarNames.push_back("hVx_liq");
     TwoPhasesVarNames.push_back("hVy_liq");
+
+    PoreFluidVarNames.push_back("h");
+    PoreFluidVarNames.push_back("hVx");
+    PoreFluidVarNames.push_back("hVy");
+    PoreFluidVarNames.push_back("hm");
+    PoreFluidVarNames.push_back("pb");
+    PoreFluidVarNames.push_back("seg");
 }
 
 bool ti_dir_exists(const char *filename)

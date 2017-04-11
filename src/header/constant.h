@@ -89,7 +89,7 @@ const int DIMENSION__MAX_NUM_STATE_VARS = MAX_NUM_STATE_VARS*DIMENSION;
 extern int NUM_STATE_VARS;
 extern bool SHORTSPEED;
 
-enum class ElementType {UnknownElementType=0, SinglePhase=1, TwoPhases=2 };
+enum class ElementType {UnknownElementType=0, SinglePhase=1, TwoPhases=2, PoreFluid=3 };
 
 extern double GEOFLOW_TINY;
 #define GEOFLOW_SHORT 0.01

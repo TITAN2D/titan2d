@@ -590,4 +590,190 @@ protected:
         }
     }
 };
+
+/**
+ * Base class for Pore Fluid model Integrators
+ */
+class Integrator_PoreFluid:public Integrator
+{
+public:
+    Integrator_PoreFluid(cxxTitanSimulation *_titanSimulation);
+
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+    //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
+    //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
+    //! allowable timestep for this iteration.
+    virtual double get_coef_and_eigen(int ghost_flag);
+
+protected:
+    //!properly named references
+    tivector<double> &h;
+    tivector<double> &h_liq;
+    tivector<double> &hVx_sol;
+    tivector<double> &hVy_sol;
+    tivector<double> &hVx_liq;
+    tivector<double> &hVy_liq;
+
+    tivector<double> &dh_dx;
+    tivector<double> &dh_dy;
+    tivector<double> &dh_liq_dx;
+    tivector<double> &dh_liq_dy;
+    tivector<double> &dhVx_sol_dx;
+    tivector<double> &dhVx_sol_dy;
+    tivector<double> &dhVy_sol_dx;
+    tivector<double> &dhVy_sol_dy;
+    tivector<double> &dhVx_liq_dx;
+    tivector<double> &dhVx_liq_dy;
+    tivector<double> &dhVy_liq_dx;
+    tivector<double> &dhVy_liq_dy;
+protected:
+    void gmfggetcoefPoreF(const double h_liq,const double hVx_sol,const double hVy_sol,
+            const double dh_dx_liq,const double dhVx_dx_sol,
+            const double dh_dy_liq,const double dhVy_dy_sol,
+            const double bedfrictang, const double intfrictang,
+            double &Kactx, double &Kacty, const double tiny,
+        const double epsilon)
+    {
+        //vel is used to determine if velocity gradients are converging or diverging
+        double vel;
+
+        //COEFFICIENTS
+        double h_liqSQ=h_liq*h_liq;
+        double cosphiSQ = cos(intfrictang);
+        double tandelSQ = tan(bedfrictang);
+        cosphiSQ*=cosphiSQ;
+        tandelSQ*=tandelSQ;
+
+        if(h_liq > tiny)
+        {
+             vel=dhVx_dx_sol/h_liq - hVx_sol*dh_dx_liq/h_liqSQ+
+                 dhVy_dy_sol/h_liq - hVy_sol*dh_dy_liq/h_liqSQ;
+             Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+             Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
+                 sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+
+             //if there is no yielding...
+             if(fabs(hVx_sol/h_liq) < tiny && fabs(hVy_sol/h_liq) < tiny)
+             {
+                Kactx = 1.0;
+                Kacty = 1.0;
+             }
+        }
+        else
+        {
+        vel = 0.0;
+        Kactx = 1.0;
+        Kacty = 1.0;
+        }
+        Kactx = epsilon * Kactx;
+        Kacty = epsilon * Kacty;
+    }
+
+    //@TODO is it really h2
+    void eigenPoreF( const double h_sol, const double h_liq, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z,
+            const double *v_solid, const double *v_fluid, const int flowtype)
+
+    {
+        double sound_speed;
+        if (h_sol > tiny) {
+            //iverson and denlinger
+            if (kactx < 0.0) {
+                kactx = -kactx;
+            }
+
+            if (flowtype == 1)
+                sound_speed = sqrt(h_sol * kactx * gravity_z);
+            else if (flowtype == 2)
+                sound_speed = sqrt(h_sol * gravity_z);
+            else
+                sound_speed = sqrt(h_liq * gravity_z * kactx+(h_sol - h_liq) * gravity_z);
+
+            //x-direction
+            eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
+
+            //y-direction
+            eigenvymax = c_dmax1(fabs(v_solid[1] + sound_speed), fabs(v_fluid[1] + sound_speed));
+        }
+        else {
+            eigenvxmax = tiny;
+            eigenvymax = tiny;
+        }
+        evalue = c_dmax1(eigenvxmax, eigenvymax);
+    }
+};
+
+/**
+ * class for Pore Fluid Integrator
+ */
+class Integrator_PoreFluid_IversonGeorge:public Integrator_PoreFluid
+{
+public:
+    Integrator_PoreFluid_IversonGeorge(cxxTitanSimulation *_titanSimulation);
+
+    virtual bool scale();
+    virtual bool unscale();
+    virtual void print0(int spaces=0);
+    //! Dump object content to hdf5 file
+    virtual void h5write(H5::CommonFG *parent, string group_name="Integrator") const;
+    //! Load object content from hdf5 file
+    virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
+
+protected:
+    /**
+     * Predictor step for second order of nothing for first order
+     */
+    virtual void predictor();
+    /**
+     * Corrector step for second order of whole step for first order
+     */
+    virtual void corrector();
+
+//    void calc_drag_force(const ti_ndx_t ndx, const double *vsolid, const double *vfluid,
+//            const double den_solid, const double den_fluid, const double vterminal,
+//            double *drag)
+//    {
+//        double temp, volf, denfrac;
+//        double delv[2];
+//        const double exponant = 3.0;
+//
+//        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//        //!     model in pitman-le paper
+//        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//        volf = h_liq[ndx] / h[ndx];
+//        temp = h_liq[ndx] * pow(1. - volf, 1.0 - exponant) / vterminal;
+//        denfrac = den_fluid / den_solid;
+//
+//        for (int i = 0; i < 4; ++i)
+//            drag[i] = 0.0;
+//
+//        //fluid vel - solid vel
+//        if (h_liq[ndx] > tiny)
+//        {
+//            for (int i = 0; i < 2; ++i)
+//                delv[i] = vfluid[i] - vsolid[i];
+//
+//            //compute individual drag-forces
+//            drag[0] = (1.0 - denfrac) * temp * delv[0];
+//            drag[1] = (1.0 - denfrac) * temp * delv[1];
+//            drag[2] = (1.0 - denfrac) * temp * delv[0] / denfrac;
+//            drag[3] = (1.0 - denfrac) * temp * delv[1] / denfrac;
+//        }
+//    }
+};
 #endif

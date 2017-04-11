@@ -121,6 +121,8 @@ public:
             elementType(ElementType::SinglePhase);
         else if (NUM_STATE_VARS == 6)
             elementType(ElementType::TwoPhases);
+        else if (NUM_STATE_VARS == 6)
+            elementType(ElementType::PoreFluid);
         else
             elementType(ElementType::UnknownElementType);
 

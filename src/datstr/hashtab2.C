@@ -2367,6 +2367,8 @@ void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
         ElementTypesVarNames=&SinglePhaseVarNames;
     else if(elementType_==ElementType::TwoPhases)
         ElementTypesVarNames=&TwoPhasesVarNames;
+    else if(elementType_==ElementType::PoreFluid)
+        ElementTypesVarNames=&PoreFluidVarNames;
 
     TiH5_writeTiVectorArray(group,node_key_ndx_,8,dims);
     TiH5_writeTiVector(group,node_bubble_ndx_,dims);
@@ -2440,6 +2442,8 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
         ElementTypesVarNames=&SinglePhaseVarNames;
     else if(elementType_==ElementType::TwoPhases)
         ElementTypesVarNames=&TwoPhasesVarNames;
+    else if(elementType_==ElementType::PoreFluid)
+        ElementTypesVarNames=&PoreFluidVarNames;
     NUM_STATE_VARS=ElementTypesVarNames->size();
 
 

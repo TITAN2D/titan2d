@@ -127,6 +127,10 @@ void cxxTitanSimulation::set_element_type(const ElementType m_elementType)
     {
         NUM_STATE_VARS = 6;
     }
+    else if(elementType==ElementType::PoreFluid)
+    {
+        NUM_STATE_VARS = 6;
+    }
     else
     {
         printf("Unknown type of element!\n");

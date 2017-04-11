@@ -409,6 +409,10 @@ PileProps* PileProps::createPileProps(const H5::CommonFG *parent, const  string 
     {
         pileProps = new PilePropsTwoPhases();
     }
+    else if (PilePropsType == "PilePropsPoreFluid")
+    {
+        pileProps = new PilePropsPoreFluid();
+    }
     else
     {
         cout << "ERROR: Unknown type of PileProps:" << PilePropsType << "\n";
@@ -471,6 +475,63 @@ void PilePropsTwoPhases::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleVectorAttribute(group, vol_fract, numpiles);
 }
 void PilePropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    PileProps::h5read(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_readDoubleVectorAttribute(group, vol_fract, numpiles);
+}
+PilePropsPoreFluid::PilePropsPoreFluid() :
+        PileProps()
+{
+}
+PilePropsPoreFluid::~PilePropsPoreFluid()
+{
+}
+
+void PilePropsPoreFluid::allocpiles(int numpiles_in)
+{
+    PileProps::allocpiles(numpiles_in);
+    vol_fract.resize(numpiles);
+}
+void PilePropsPoreFluid::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                                 double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type)
+{
+    addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, m_pile_type, 1.0);
+}
+void PilePropsPoreFluid::addPile(double hight, double xcenter, double ycenter, double majradius, double minradius,
+                                 double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type, double volfract)
+{
+    PileProps::addPile(hight, xcenter, ycenter, majradius, minradius, orientation, Vmagnitude, Vdirection, m_pile_type);
+    vol_fract.push_back(volfract);
+}
+void PilePropsPoreFluid::print_pile(int i)
+{
+    PileProps::print_pile(i);
+    printf("\t\tInitial solid-volume fraction,(0:1.): %f\n", vol_fract[i]);
+}
+void PilePropsPoreFluid::set_element_height_to_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element *m_EmTemp, MatProps* matprops)
+{
+    double pileheight;
+    double xmom, ymom;
+    pileheight=get_elliptical_pile_height(HT_Node_Ptr, m_EmTemp, matprops, &xmom,&ymom);
+
+    int ipile;
+    double vfract = 0.;
+    for(ipile = 0; ipile < numpiles; ipile++)
+    {
+        if(vol_fract[ipile] > vfract)
+        vfract = vol_fract[ipile];
+    }
+    m_EmTemp->put_height_mom(pileheight, vfract, xmom, ymom);
+}
+void PilePropsPoreFluid::h5write(H5::CommonFG *parent, string group_name) const
+{
+    PileProps::h5write(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"PilePropsPoreFluid","Type");
+    TiH5_writeDoubleVectorAttribute(group, vol_fract, numpiles);
+}
+void PilePropsPoreFluid::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     PileProps::h5read(parent, group_name);
     H5::Group group(parent->openGroup(group_name));
@@ -620,6 +681,37 @@ void MatPropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readDoubleAttribute(group, den_fluid);
     TiH5_readDoubleAttribute(group, viscosity);
     TiH5_readDoubleAttribute(group, v_terminal);
+    TiH5_readIntAttribute(group, flow_type);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MatPropsPoreFluid::h5write(H5::CommonFG *parent, string group_name) const
+{
+    MatProps::h5write(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"MatPropsPoreFluid","Type");
+
+    TiH5_writeDoubleAttribute(group, den_solid);
+    TiH5_writeDoubleAttribute(group, den_fluid);
+    TiH5_writeDoubleAttribute(group, mu);
+    TiH5_writeDoubleAttribute(group, sigma0);
+    TiH5_writeDoubleAttribute(group, m_crit);
+    TiH5_writeDoubleAttribute(group, delta);
+    TiH5_writeIntAttribute(group, flow_type);
+}
+void MatPropsPoreFluid::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    MatProps::h5read(parent, group_name);
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readDoubleAttribute(group, den_solid);
+    TiH5_readDoubleAttribute(group, den_fluid);
+    TiH5_readDoubleAttribute(group, mu);
+    TiH5_readDoubleAttribute(group, k0);
+    TiH5_readDoubleAttribute(group, a_const);
+    TiH5_readDoubleAttribute(group, sigma0);
+    TiH5_readDoubleAttribute(group, m_crit);
+    TiH5_readDoubleAttribute(group, delta);
     TiH5_readIntAttribute(group, flow_type);
 }
 

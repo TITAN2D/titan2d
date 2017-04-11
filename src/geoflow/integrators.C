@@ -282,6 +282,10 @@ Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSim
     {
         integrator = new Integrator_TwoPhases_Coulomb(_titanSimulation);
     }
+    else if (integratorType == "Integrator_PoreFluid")
+    {
+        integrator = new Integrator_PoreFluid(_titanSimulation);
+    }
     else
     {
         cout << "ERROR: Unknown type of integrator:" << integratorType << "\n";
@@ -2010,6 +2014,428 @@ void Integrator_TwoPhases_Coulomb::h5write(H5::CommonFG *parent, string group_na
 void Integrator_TwoPhases_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_TwoPhases::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Integrator_PoreFluid::Integrator_PoreFluid(cxxTitanSimulation *_titanSimulation):
+        Integrator(_titanSimulation),
+        h(state_vars_[0]),
+        h_liq(state_vars_[1]),
+        hVx_sol(state_vars_[2]),
+        hVy_sol(state_vars_[3]),
+        hVx_liq(state_vars_[4]),
+        hVy_liq(state_vars_[5]),
+        dh_dx(d_state_vars_[0]),
+        dh_dy(d_state_vars_[NUM_STATE_VARS]),
+        dh_liq_dx(d_state_vars_[1]),
+        dh_liq_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVx_sol_dx(d_state_vars_[2]),
+        dhVx_sol_dy(d_state_vars_[NUM_STATE_VARS+2]),
+        dhVy_sol_dx(d_state_vars_[3]),
+        dhVy_sol_dy(d_state_vars_[NUM_STATE_VARS+3]),
+        dhVx_liq_dx(d_state_vars_[4]),
+        dhVx_liq_dy(d_state_vars_[NUM_STATE_VARS+4]),
+        dhVy_liq_dx(d_state_vars_[5]),
+        dhVy_liq_dy(d_state_vars_[NUM_STATE_VARS+5])
+{
+    assert(elementType==ElementType::PoreFluid);
+}
+
+void Integrator_PoreFluid::predictor()
+{
+}
+
+void Integrator_PoreFluid::corrector()
+{
+
+}
+void Integrator_PoreFluid::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_PoreFluid","Type");
+}
+void Integrator_PoreFluid::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator::h5read(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Integrator_PoreFluid_IversonGeorge::Integrator_PoreFluid_IversonGeorge(cxxTitanSimulation *_titanSimulation):
+        Integrator_PoreFluid(_titanSimulation)
+{
+    assert(elementType==ElementType::PoreFluid);
+    assert(order==1);
+
+
+}
+bool Integrator_PoreFluid_IversonGeorge::scale()
+{
+    if(Integrator_PoreFluid::scale())
+    {
+        //anything to scale?
+        return true;
+    }
+    return false;
+}
+bool Integrator_PoreFluid_IversonGeorge::unscale()
+{
+    if(Integrator_PoreFluid::unscale())
+    {
+        //anything to unscale?
+        return true;
+    }
+    return false;
+}
+void Integrator_PoreFluid_IversonGeorge::print0(int spaces)
+{
+    printf("%*cIntegrator: Pore Fluid Iverson-George model\n", spaces,' ');
+    Integrator_PoreFluid::print0(spaces+4);
+}
+void Integrator_PoreFluid_IversonGeorge::predictor()
+{
+
+}
+void Integrator_PoreFluid_IversonGeorge::corrector()
+{
+    MatPropsPoreFluid* matprops2_ptr=static_cast<MatPropsPoreFluid*>(matprops_ptr);
+
+    double den_solid = matprops2_ptr->den_solid;
+    double den_fluid = matprops2_ptr->den_fluid;
+//    double terminal_vel = matprops2_ptr->v_terminal;
+
+    //for comparison of magnitudes of forces in slumping piles
+    double m_forceint = 0.0;
+    double m_forcebed = 0.0;
+    double m_eroded = 0.0;
+    double m_deposited = 0.0;
+    double m_realvolume = 0.0;
+
+
+    //intfrictang=matprops_ptr->intfrict;
+    //frict_tiny=matprops_ptr->frict_tiny;
+    double sin_intfrictang=sin(int_frict);
+    double epsilon=scale_.epsilon;
+
+    //convinience ref
+    //tivector<double> *g=gravity_;
+    //tivector<double> *dgdx=d_gravity_;
+    //tivector<double> &kactxy=effect_kactxy_[0];
+    //tivector<double> &bedfrictang=effect_bedfrict_;
+
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+        //if first order states was not updated as there is no predictor
+        if(order==1)
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double elem_forceint;
+        double elem_forcebed;
+        double elem_eroded;
+        double elem_deposited;
+
+        double dxdy = dx_[0][ndx] * dx_[1][ndx];
+        double dtdx = dt / dx_[0][ndx];
+        double dtdy = dt / dx_[1][ndx];
+
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        int ivar, j, k;
+
+        double fluxxp[NUM_STATE_VARS], fluxyp[NUM_STATE_VARS];
+        double fluxxm[NUM_STATE_VARS], fluxym[NUM_STATE_VARS];
+
+
+        ti_ndx_t nxp = node_key_ndx_[xp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxp[ivar] = node_flux_[ivar][nxp];
+
+        ti_ndx_t nyp = node_key_ndx_[yp + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxyp[ivar] = node_flux_[ivar][nyp];
+
+        ti_ndx_t nxm = node_key_ndx_[xm + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxxm[ivar] = node_flux_[ivar][nxm];
+
+        ti_ndx_t nym = node_key_ndx_[ym + 4][ndx];
+        for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
+            fluxym[ivar] = node_flux_[ivar][nym];
+
+
+        /* the values being passed to correct are for a SINGLE element, NOT a
+         region, as such the only change that having variable bedfriction
+         requires is to pass the bedfriction angle for the current element
+         rather than the only bedfriction
+         I wonder if this is legacy code, it seems odd that it is only called
+         for the SUN Operating System zee ../geoflow/correct.f */
+
+//#ifdef STOPPED_FLOWS
+    #ifdef STOPCRIT_CHANGE_SOURCE
+        int IF_STOPPED=stoppedflags_[ndx];
+    #else
+        int IF_STOPPED = !(!stoppedflags_[ndx]);
+    #endif
+//#endif
+        double g[3]{gravity_[0][ndx],gravity_[1][ndx],gravity_[2][ndx]};
+        double d_g[3]{d_gravity_[0][ndx],d_gravity_[1][ndx],d_gravity_[2][ndx]};
+
+
+        int i;
+        double kactxy[DIMENSION];
+        double bedfrict = effect_bedfrict_[ndx];
+        double Vfluid[DIMENSION];
+        double volf;
+
+
+        if(h[ndx] > GEOFLOW_TINY)
+        {
+            for(i = 0; i < DIMENSION; i++)
+                kactxy[i] = effect_kactxy_[i][ndx];
+
+            // fluid velocities
+            Vfluid[0] = hVx_liq[ndx] / h[ndx];
+            Vfluid[1] = hVy_liq[ndx] / h[ndx];
+
+            // volume fractions
+            volf = h_liq[ndx] / h[ndx];
+        }
+        else
+        {
+            for(i = 0; i < DIMENSION; i++)
+            {
+                kactxy[i] = matprops2_ptr->scale.epsilon;
+                Vfluid[i] = 0.;
+            }
+            volf = 1.;
+            bedfrict = matprops2_ptr->bedfrict[material_[ndx]];
+        }
+
+        double Vsolid[DIMENSION];
+        if(h_liq[ndx] > GEOFLOW_TINY)
+        {
+            Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
+            Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
+        }
+        else
+        {
+            Vsolid[0] = Vsolid[1] = 0.0;
+        }
+
+        double V_avg[DIMENSION];
+        V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
+        V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
+        elements_[ndx].convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
+
+        double curv_x=curvature_[0][ndx];
+        double curv_y=curvature_[1][ndx];
+        double xslope=zeta_[0][ndx];
+        double yslope=zeta_[1][ndx];
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //corrector
+        double speed;
+        double forceintx, forceinty;
+        double forcebedx, forcebedy;
+        double forcebedmax, forcebedequil, forcegrav;
+        double unitvx, unitvy;
+        double den_frac;
+        double alphaxx, alphayy, alphaxy, alphaxz, alphayz;
+        double tanbed;
+
+        double Ustore[6];
+        double h_inv, hphi_inv;
+        double sgn_dudy, sgn_dvdx, tmp;
+        double slope;
+        double t1, t2, t3, t4, t5;
+        double es, totalShear;
+        double drag[4];
+
+        // initialize to zero
+        forceintx = 0.0;
+        forcebedx = 0.0;
+        forceinty = 0.0;
+        forcebedy = 0.0;
+        unitvx = 0.0;
+        unitvy = 0.0;
+        elem_eroded = 0.0;
+
+        slope = sqrt(xslope * xslope + yslope * yslope);
+        den_frac = den_fluid / den_solid;
+        for (i = 0; i < 6; ++i)
+            Ustore[i] = prev_state_vars_[i][ndx] + dt * Influx_[i][ndx]
+                    - dtdx * (fluxxp[i] - fluxxm[i])
+                    - dtdy * (fluxyp[i] - fluxym[i]);
+
+        if (Ustore[0] > tiny)
+        {
+            // Source terms ...
+            // here speed is speed squared
+            speed = Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1];
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = Vsolid[0] / speed;
+                unitvy = Vsolid[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            tanbed = tan(bedfrict);
+            h_inv = 1.0 / h[ndx];
+            hphi_inv = 1.0 / h_liq[ndx];
+            alphaxx = kactxy[0];
+            alphayy = kactxy[0];
+            den_frac = den_fluid / den_solid;
+//            calc_drag_force(ndx, Vsolid, Vfluid, den_solid, den_fluid,terminal_vel, drag);
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    solid fraction x-direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    alphaxy -- see pitman-le (2005)
+            tmp = hphi_inv * (dhVx_sol_dy[ndx] - Vsolid[0] * dh_liq_dy[ndx]);
+            sgn_dudy = sgn_tiny(tmp, frict_tiny);
+            alphaxy = sgn_dudy * sin_intfrictang * kactxy[0];
+
+            //    alphaxz (includes centrifugal effects)
+            alphaxz = -unitvx * tanbed
+                    * (1.0 + (Vsolid[0] * Vsolid[0]) * curv_x / g[2]);
+
+            //    evaluate t1
+            t1 = (1.0 - den_frac)
+                    * (-alphaxx * xslope - alphaxy * yslope + alphaxz)
+                    * h_liq[ndx] * g[2];
+            //    evaluate t2
+            t2 = epsilon * den_frac * h_liq[ndx] * g[2] * dh_dx[ndx];
+            //    evaluate t3
+            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * xslope;
+            //    evaluate t4
+            t4 = h_liq[ndx] * g[0];
+            //    evaluate drag
+            t5 = drag[0];
+            //    update Ustore
+            Ustore[2] = Ustore[2] + dt * (t1 - t2 - t3 + t4 + t5);
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // solid fraction y-direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    alphaxy -- see pitman-le (2005) for definitions
+            tmp = hphi_inv * (dhVy_sol_dx[ndx] - Vsolid[1] * dh_liq_dx[ndx]);
+            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
+            alphaxy = sgn_dvdx * sin_intfrictang * kactxy[0];
+
+            //    alphayz
+            alphayz = -unitvy * tanbed
+                    * (1.0 + (Vsolid[1] * Vsolid[1]) * curv_y / g[2]);
+
+            //    evaluate t1
+            t1 = (1.0 - den_frac)
+                    * (-alphaxy * xslope - alphayy * yslope + alphayz)
+                    * h_liq[ndx] * g[2];
+            //    evaluate t2
+            t2 = epsilon * den_frac * h_liq[ndx] * dh_dy[ndx];
+            //    evaluate t3
+            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * yslope;
+            //    evaluate t4 ( gravity along y-dir )
+            t4 = h_liq[ndx] * g[1];
+            //    drag term
+            t5 = drag[1];
+            Ustore[3] = Ustore[3] + dt * (t1 - t2 - t3 + t4 + t5);
+
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    fluid fraction x-direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    gravity on fluid
+            t4 = h[ndx] * g[0];
+            //    drag force on fluid
+            t5 = drag[2];
+            Ustore[4] = Ustore[4] + dt * (t4 - t5);
+
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    fluid fraction y-direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            //    gravity on fluid
+            t4 = h[ndx] * g[1];
+            //    drag force on fluid
+            t5 = drag[3];
+            Ustore[5] = Ustore[5] + dt * (t4 - t5);
+        }
+
+        // computation of magnitude of friction forces for statistics
+        elem_forceint = unitvx * forceintx + unitvy * forceinty;
+        elem_forcebed = unitvx * forcebedx + unitvy * forcebedy;
+
+        // update the state variables
+        for (i = 0; i < 6; ++i)
+            state_vars_[i][ndx]=Ustore[i];
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        elem_forceint *= dxdy;
+        elem_forcebed *= dxdy;
+        elem_eroded *= dxdy;
+
+
+        if(stoppedflags_[ndx] == 2)
+            elem_deposited = h[ndx] * dxdy;
+        else
+            elem_deposited = 0.0;
+
+        if(stoppedflags_[ndx])
+            elem_eroded = 0.0;
+
+        elements_[ndx].calc_shortspeed(1.0 / dt);
+
+
+        //correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, this, Curr_El_out, &elemforceint,
+        //        &elemforcebed, &elemeroded, &elemdeposited);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+        m_forceint += fabs(elem_forceint);
+        m_forcebed += fabs(elem_forcebed);
+        m_realvolume += dxdy * h[ndx];
+        m_eroded += elem_eroded;
+        m_deposited += elem_deposited;
+
+        // apply bc's
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+    }
+    forceint = m_forceint;
+    forcebed = m_forcebed;
+    eroded = m_eroded;
+    deposited = m_deposited;
+    realvolume = m_realvolume;
+}
+void Integrator_PoreFluid_IversonGeorge::h5write(H5::CommonFG *parent, string group_name) const
+{
+    Integrator_PoreFluid::h5write(parent,group_name);
+    H5::Group group(parent->openGroup(group_name));
+    TiH5_writeStringAttribute__(group,"Integrator_PoreFluid","Type");
+}
+void Integrator_PoreFluid_IversonGeorge::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    Integrator_PoreFluid::h5read(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -485,3 +485,132 @@ double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
     
     return dt[0];
 }
+double Integrator_PoreFluid::get_coef_and_eigen(int ghost_flag)
+{
+    MatPropsPoreFluid* matprops2_ptr=static_cast<MatPropsPoreFluid*>(matprops_ptr);
+    int myid;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+
+    int ierr;
+    double min_dx_dy_evalue = 10000000, hmax = 0;
+    //might need to change this
+    //-------------------go through all the elements of the subdomain and get
+    //-------------------the coefficients and eigenvalues and calculate the time step
+    double global_dt[3], dt[3] = { 0.0, 0.0, HUGE_VAL };
+
+
+    //beginning of section that SHOULD ____NOT___ be openmp'd
+    //why the first element is good enough?
+    double maxinflux = 0.0;
+    if((maxinflux = fluxprops_ptr->MaxInfluxNow(matprops_ptr, timeprops_ptr) * (matprops_ptr->scale.epsilon)) > 0.0)
+    {
+        double mindx = -1.0;
+
+        for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+        {
+            if(adapted_[ndx]!=0)
+            {
+                mindx = (dx_[0][ndx] < dx_[1][ndx]) ? dx_[0][ndx] : dx_[1][ndx]
+                        * pow(0.5, REFINE_LEVEL - generation_[ndx]);
+                break;
+            }
+        }
+
+        double dttemp = mindx / maxinflux; //equivalent to dx/eigen_speed
+
+        //equivalent to 0.9*sqrt(hmax/g) where hmax=maxinflux*dt when xVel and yVel =0
+        double dttemp2 = 0.81 * maxinflux * (scale_.gravity) / 9.8;
+
+        dt[2] = c_dmin1(dttemp, dttemp2);
+    } //end of section that SHOULD ____NOT___ be openmp'd
+
+
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))
+        {
+            //if this element does not belong on this processor don't involve!!!
+
+            if(h[ndx] > GEOFLOW_TINY)
+            {
+                double Vsolid[2], Vfluid[2];
+                double evalue;
+                /* calculate hmax */
+                if(hmax < h[ndx])
+                    hmax = h[ndx];
+
+
+                gmfggetcoefPoreF(h_liq[ndx],hVx_sol[ndx],hVy_sol[ndx],
+                        dh_liq_dx[ndx],dhVx_sol_dx[ndx],
+                        dh_liq_dy[ndx],dhVy_sol_dy[ndx],
+                        matprops_ptr->bedfrict[material_[ndx]], int_frict,
+                        kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
+
+                elements_[ndx].calc_stop_crit(matprops_ptr, this);
+
+                if((stoppedflags_[ndx] < 0) || (stoppedflags_[ndx] > 2))
+                    printf("get_coef_and_eigen stopped flag=%d\n", stoppedflags_[ndx]);
+
+                //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
+                //rule speed if it is smaller) because underestimating speed (which
+                //results in over estimating the timestep) is fatal to stability...
+                Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
+                Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
+
+                Vfluid[0] = hVx_liq[ndx] / h[ndx];
+                Vfluid[1] = hVy_liq[ndx] / h[ndx];
+
+                //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                eigenPoreF(h[ndx], h_liq[ndx], eigenvxymax_[0][ndx],
+                          eigenvxymax_[1][ndx], evalue, tiny, kactxy_[0][ndx],
+                          gravity_[2][ndx], Vsolid, Vfluid,
+                          matprops2_ptr->flow_type);
+
+                // ***********************************************************
+                // !!!!!!!!!!!!!!!!!!!!!check dx & dy!!!!!!!!!!!!!!!!!!!!!!!!
+                // ***********************************************************
+                if(evalue > 1000000000.)
+                {
+                    double maxcurve = (dabs(curvature_[0][ndx]) > dabs(curvature_[1][ndx]) ? curvature_[0][ndx] : curvature_[1][ndx]);
+                    fprintf(stderr,
+                            "eigenvalue is %e for procd %d momentums are:\n \
+             solid :(%e, %e) \n \
+             fluid :(%e, %e) \n \
+             for pile height %e curvature=%e (x,y)=(%e,%e)\n",
+                            evalue, myid, hVx_sol[ndx],hVy_sol[ndx],
+                            hVx_liq[ndx],hVy_liq[ndx],
+                            h[ndx], maxcurve, coord_[0][ndx], coord_[1][ndx]);
+                    assert(0);
+                }
+
+                min_dx_dy_evalue = min( min(dx_[0][ndx], dx_[1][ndx]) / evalue, min_dx_dy_evalue);
+            }
+            else
+            {
+                elements_[ndx].calc_stop_crit(matprops2_ptr, this); // ensure decent values of kactxy
+            }
+
+        }
+    }
+
+    dt[0] = 0.5 * min_dx_dy_evalue;
+
+    dt[1] = -0.9 * sqrt(hmax * scale_.epsilon * scale_.gravity / 9.8); //find the negative of the max not the positive min
+
+#ifdef USE_MPI
+    ierr = MPI_Allreduce(dt, global_dt, 3, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else //USE_MPI
+    global_dt[0]=dt[0];
+    global_dt[1]=dt[1];
+    global_dt[2]=dt[2];
+#endif //USE_MPI
+
+    dt[0] = 0.5 * c_dmin1(global_dt[0], -global_dt[1]);
+    if(dt[0] == 0.0)
+        dt[0] = 0.5 * global_dt[2];
+
+
+    return dt[0];
+}

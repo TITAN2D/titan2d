@@ -613,6 +613,7 @@ void merge_vectors_from_threads_to0_omp(vector< vector<T> > &vec)
 extern vector<string> coord_names;
 extern vector<string> SinglePhaseVarNames;
 extern vector<string> TwoPhasesVarNames;
+extern vector<string> PoreFluidVarNames;
 
 //!file system
 bool ti_dir_exists(const char *filename);
