@@ -622,28 +622,28 @@ protected:
 protected:
     //!properly named references
     tivector<double> &h;
-    tivector<double> &h_liq;
-    tivector<double> &hVx_sol;
-    tivector<double> &hVy_sol;
-    tivector<double> &hVx_liq;
-    tivector<double> &hVy_liq;
+    tivector<double> &hVx;
+    tivector<double> &hVy;
+    tivector<double> &hm;
+    tivector<double> &pb;
+    tivector<double> &seg;
 
     tivector<double> &dh_dx;
     tivector<double> &dh_dy;
-    tivector<double> &dh_liq_dx;
-    tivector<double> &dh_liq_dy;
-    tivector<double> &dhVx_sol_dx;
-    tivector<double> &dhVx_sol_dy;
-    tivector<double> &dhVy_sol_dx;
-    tivector<double> &dhVy_sol_dy;
-    tivector<double> &dhVx_liq_dx;
-    tivector<double> &dhVx_liq_dy;
-    tivector<double> &dhVy_liq_dx;
-    tivector<double> &dhVy_liq_dy;
+    tivector<double> &dhVx_dx;
+    tivector<double> &dhVx_dy;
+    tivector<double> &dhVy_dx;
+    tivector<double> &dhVy_dy;
+    tivector<double> &dhm_dx;
+    tivector<double> &dhm_dy;
+    tivector<double> &dpb_dx;
+    tivector<double> &dpb_dy;
+    tivector<double> &dseg_dx;
+    tivector<double> &dseg_dy;
 protected:
-    void gmfggetcoefPoreF(const double h_liq,const double hVx_sol,const double hVy_sol,
-            const double dh_dx_liq,const double dhVx_dx_sol,
-            const double dh_dy_liq,const double dhVy_dy_sol,
+    void gmfggetcoefPoreF(const double h,const double hVx,const double hVy,
+            const double dh_dx,const double dhVx_dx,
+            const double dh_dy,const double dhVy_dy,
             const double bedfrictang, const double intfrictang,
             double &Kactx, double &Kacty, const double tiny,
         const double epsilon)
@@ -652,23 +652,25 @@ protected:
         double vel;
 
         //COEFFICIENTS
-        double h_liqSQ=h_liq*h_liq;
+        double hSQ=h*h;
         double cosphiSQ = cos(intfrictang);
         double tandelSQ = tan(bedfrictang);
         cosphiSQ*=cosphiSQ;
         tandelSQ*=tandelSQ;
 
-        if(h_liq > tiny)
+
+
+        if(h > tiny)
         {
-             vel=dhVx_dx_sol/h_liq - hVx_sol*dh_dx_liq/h_liqSQ+
-                 dhVy_dy_sol/h_liq - hVy_sol*dh_dy_liq/h_liqSQ;
+             vel=dhVx_dx/h - hVx*dh_dx/hSQ+
+                 dhVy_dy/h - hVy*dh_dy/hSQ;
              Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
                  sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
              Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
                  sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
 
              //if there is no yielding...
-             if(fabs(hVx_sol/h_liq) < tiny && fabs(hVy_sol/h_liq) < tiny)
+             if(fabs(hVx/h) < tiny && fabs(hVy/h) < tiny)
              {
                 Kactx = 1.0;
                 Kacty = 1.0;
@@ -685,35 +687,27 @@ protected:
     }
 
     //@TODO is it really h2
-    void eigenPoreF( const double h_sol, const double h_liq, double &eigenvxmax, double &eigenvymax, double &evalue,
-            const double tiny, double &kactx, const double gravity_z,
-            const double *v_solid, const double *v_fluid, const int flowtype)
-
+    void eigenPoreF( const double h, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z, const double *VxVy)
     {
-        double sound_speed;
-        if (h_sol > tiny) {
-            //iverson and denlinger
-            if (kactx < 0.0) {
+        if (h > tiny)
+        {
+            //     iverson and denlinger
+            if (kactx < 0.0)
+            {
+                //negative kactxy
                 kactx = -kactx;
             }
+            eigenvxmax = fabs(VxVy[0]) + sqrt(kactx * gravity_z * h);
+            eigenvymax = fabs(VxVy[1]) + sqrt(kactx * gravity_z * h);
 
-            if (flowtype == 1)
-                sound_speed = sqrt(h_sol * kactx * gravity_z);
-            else if (flowtype == 2)
-                sound_speed = sqrt(h_sol * gravity_z);
-            else
-                sound_speed = sqrt(h_liq * gravity_z * kactx+(h_sol - h_liq) * gravity_z);
-
-            //x-direction
-            eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
-
-            //y-direction
-            eigenvymax = c_dmax1(fabs(v_solid[1] + sound_speed), fabs(v_fluid[1] + sound_speed));
         }
-        else {
+        else
+        {
             eigenvxmax = tiny;
             eigenvymax = tiny;
         }
+
         evalue = c_dmax1(eigenvxmax, eigenvymax);
     }
 };

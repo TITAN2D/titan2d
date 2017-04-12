@@ -2021,23 +2021,23 @@ void Integrator_TwoPhases_Coulomb::h5read(const H5::CommonFG *parent, const  str
 Integrator_PoreFluid::Integrator_PoreFluid(cxxTitanSimulation *_titanSimulation):
         Integrator(_titanSimulation),
         h(state_vars_[0]),
-        h_liq(state_vars_[1]),
-        hVx_sol(state_vars_[2]),
-        hVy_sol(state_vars_[3]),
-        hVx_liq(state_vars_[4]),
-        hVy_liq(state_vars_[5]),
+        hVx(state_vars_[1]),
+        hVy(state_vars_[2]),
+        hm(state_vars_[3]),
+        pb(state_vars_[4]),
+        seg(state_vars_[5]),
         dh_dx(d_state_vars_[0]),
         dh_dy(d_state_vars_[NUM_STATE_VARS]),
-        dh_liq_dx(d_state_vars_[1]),
-        dh_liq_dy(d_state_vars_[NUM_STATE_VARS+1]),
-        dhVx_sol_dx(d_state_vars_[2]),
-        dhVx_sol_dy(d_state_vars_[NUM_STATE_VARS+2]),
-        dhVy_sol_dx(d_state_vars_[3]),
-        dhVy_sol_dy(d_state_vars_[NUM_STATE_VARS+3]),
-        dhVx_liq_dx(d_state_vars_[4]),
-        dhVx_liq_dy(d_state_vars_[NUM_STATE_VARS+4]),
-        dhVy_liq_dx(d_state_vars_[5]),
-        dhVy_liq_dy(d_state_vars_[NUM_STATE_VARS+5])
+        dhVx_dx(d_state_vars_[1]),
+        dhVx_dy(d_state_vars_[NUM_STATE_VARS+1]),
+        dhVy_dx(d_state_vars_[2]),
+        dhVy_dy(d_state_vars_[NUM_STATE_VARS+2]),
+        dhm_dx(d_state_vars_[3]),
+        dhm_dy(d_state_vars_[NUM_STATE_VARS+3]),
+        dpb_dx(d_state_vars_[4]),
+        dpb_dy(d_state_vars_[NUM_STATE_VARS+4]),
+        dseg_dx(d_state_vars_[5]),
+        dseg_dy(d_state_vars_[NUM_STATE_VARS+5])
 {
     assert(elementType==ElementType::PoreFluid);
 }
@@ -2103,7 +2103,6 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
 
     double den_solid = matprops2_ptr->den_solid;
     double den_fluid = matprops2_ptr->den_fluid;
-//    double terminal_vel = matprops2_ptr->v_terminal;
 
     //for comparison of magnitudes of forces in slumping piles
     double m_forceint = 0.0;
@@ -2124,9 +2123,6 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
     //tivector<double> &kactxy=effect_kactxy_[0];
     //tivector<double> &bedfrictang=effect_bedfrict_;
 
-    // mdj 2007-04 this loop has pretty much defeated me - there is
-    //             a dependency in the Element class that causes incorrect
-    //             results
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
@@ -2177,13 +2173,6 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
             fluxym[ivar] = node_flux_[ivar][nym];
 
 
-        /* the values being passed to correct are for a SINGLE element, NOT a
-         region, as such the only change that having variable bedfriction
-         requires is to pass the bedfriction angle for the current element
-         rather than the only bedfriction
-         I wonder if this is legacy code, it seems odd that it is only called
-         for the SUN Operating System zee ../geoflow/correct.f */
-
 //#ifdef STOPPED_FLOWS
     #ifdef STOPCRIT_CHANGE_SOURCE
         int IF_STOPPED=stoppedflags_[ndx];
@@ -2198,7 +2187,7 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
         int i;
         double kactxy[DIMENSION];
         double bedfrict = effect_bedfrict_[ndx];
-        double Vfluid[DIMENSION];
+        double VxVy[DIMENSION];
         double volf;
 
 
@@ -2208,38 +2197,27 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
                 kactxy[i] = effect_kactxy_[i][ndx];
 
             // fluid velocities
-            Vfluid[0] = hVx_liq[ndx] / h[ndx];
-            Vfluid[1] = hVy_liq[ndx] / h[ndx];
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
 
             // volume fractions
-            volf = h_liq[ndx] / h[ndx];
+            volf = hm[ndx] / h[ndx];
         }
         else
         {
             for(i = 0; i < DIMENSION; i++)
             {
                 kactxy[i] = matprops2_ptr->scale.epsilon;
-                Vfluid[i] = 0.;
+                VxVy[i] = 0.;
             }
             volf = 1.;
             bedfrict = matprops2_ptr->bedfrict[material_[ndx]];
         }
 
-        double Vsolid[DIMENSION];
-        if(h_liq[ndx] > GEOFLOW_TINY)
-        {
-            Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
-            Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
-        }
-        else
-        {
-            Vsolid[0] = Vsolid[1] = 0.0;
-        }
 
-        double V_avg[DIMENSION];
-        V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
-        V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
-        elements_[ndx].convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
+        double den;
+        den = den_solid * volf + den_fluid * (1.0 - volf);
+//        elements_[ndx].convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
 
         double curv_x=curvature_[0][ndx];
         double curv_y=curvature_[1][ndx];
@@ -2285,13 +2263,13 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
         {
             // Source terms ...
             // here speed is speed squared
-            speed = Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1];
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
             if (speed > 0.0)
             {
                 // here speed is speed
                 speed = sqrt(speed);
-                unitvx = Vsolid[0] / speed;
-                unitvy = Vsolid[1] / speed;
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
             }
             else
             {
@@ -2300,7 +2278,7 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
             }
             tanbed = tan(bedfrict);
             h_inv = 1.0 / h[ndx];
-            hphi_inv = 1.0 / h_liq[ndx];
+            hphi_inv = 1.0 / h[ndx];
             alphaxx = kactxy[0];
             alphayy = kactxy[0];
             den_frac = den_fluid / den_solid;
@@ -2309,25 +2287,25 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             //    solid fraction x-direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    alphaxy -- see pitman-le (2005)
-            tmp = hphi_inv * (dhVx_sol_dy[ndx] - Vsolid[0] * dh_liq_dy[ndx]);
+
+            tmp = hphi_inv * (dhVx_dy[ndx] - VxVy[0] * dh_dy[ndx]);
             sgn_dudy = sgn_tiny(tmp, frict_tiny);
             alphaxy = sgn_dudy * sin_intfrictang * kactxy[0];
 
             //    alphaxz (includes centrifugal effects)
             alphaxz = -unitvx * tanbed
-                    * (1.0 + (Vsolid[0] * Vsolid[0]) * curv_x / g[2]);
+                    * (1.0 + (VxVy[0] * VxVy[0]) * curv_x / g[2]);
 
             //    evaluate t1
             t1 = (1.0 - den_frac)
                     * (-alphaxx * xslope - alphaxy * yslope + alphaxz)
-                    * h_liq[ndx] * g[2];
+                    * h[ndx] * g[2];
             //    evaluate t2
-            t2 = epsilon * den_frac * h_liq[ndx] * g[2] * dh_dx[ndx];
+            t2 = epsilon * den_frac * h[ndx] * g[2] * dh_dx[ndx];
             //    evaluate t3
-            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * xslope;
+            t3 = epsilon * den_frac * h[ndx] * g[2] * xslope;
             //    evaluate t4
-            t4 = h_liq[ndx] * g[0];
+            t4 = h[ndx] * g[0];
             //    evaluate drag
             t5 = drag[0];
             //    update Ustore
@@ -2336,25 +2314,25 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // solid fraction y-direction source terms
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    alphaxy -- see pitman-le (2005) for definitions
-            tmp = hphi_inv * (dhVy_sol_dx[ndx] - Vsolid[1] * dh_liq_dx[ndx]);
+
+            tmp = hphi_inv * (dhVy_dx[ndx] - VxVy[1] * dh_dx[ndx]);
             sgn_dvdx = sgn_tiny(tmp, frict_tiny);
             alphaxy = sgn_dvdx * sin_intfrictang * kactxy[0];
 
             //    alphayz
             alphayz = -unitvy * tanbed
-                    * (1.0 + (Vsolid[1] * Vsolid[1]) * curv_y / g[2]);
+                    * (1.0 + (VxVy[1] * VxVy[1]) * curv_y / g[2]);
 
             //    evaluate t1
             t1 = (1.0 - den_frac)
                     * (-alphaxy * xslope - alphayy * yslope + alphayz)
-                    * h_liq[ndx] * g[2];
+                    * h[ndx] * g[2];
             //    evaluate t2
-            t2 = epsilon * den_frac * h_liq[ndx] * dh_dy[ndx];
+            t2 = epsilon * den_frac * h[ndx] * dh_dy[ndx];
             //    evaluate t3
-            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * yslope;
+            t3 = epsilon * den_frac * h[ndx] * g[2] * yslope;
             //    evaluate t4 ( gravity along y-dir )
-            t4 = h_liq[ndx] * g[1];
+            t4 = h[ndx] * g[1];
             //    drag term
             t5 = drag[1];
             Ustore[3] = Ustore[3] + dt * (t1 - t2 - t3 + t4 + t5);
@@ -2404,8 +2382,6 @@ void Integrator_PoreFluid_IversonGeorge::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
 
 
-        //correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, this, Curr_El_out, &elemforceint,
-        //        &elemforcebed, &elemeroded, &elemdeposited);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -2495,7 +2471,7 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
                         v_ave += temp * dx * dy;
                         temp /= Curr_El->state_vars(1);
                     }
-                    if(elementType == ElementType::SinglePhase)
+                    if(elementType == ElementType::SinglePhase || elementType == ElementType::PoreFluid)
                     {
                         temp = sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2));
                         v_ave += temp * dx * dy;
@@ -2623,7 +2599,7 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
                     {
                         mom2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3));
                     }
-                    if(elementType == ElementType::SinglePhase)
+                    if(elementType == ElementType::SinglePhase || elementType == ElementType::PoreFluid)
                     {
                         mom2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2));
                     }
@@ -2730,7 +2706,7 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
                         velocity2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3))
                             / (EmTemp->state_vars(1) * EmTemp->state_vars(1));
                     }
-                    if(elementType == ElementType::SinglePhase)
+                    if(elementType == ElementType::SinglePhase || elementType == ElementType::PoreFluid)
                     {
                         velocity2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2))
                             / (EmTemp->state_vars(0) * EmTemp->state_vars(0));
