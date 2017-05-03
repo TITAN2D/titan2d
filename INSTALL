@@ -32,12 +32,12 @@ cd bld
 
 # Download, untar and compile python:
 cd $TITAN_WSP/bld
-wget https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tar.xz
-tar -xJf Python-2.7.9.tar.xz
-cd Python-2.7.9
-export TITAN_PYTHON=$TITAN_WSP/Python-2.7.9
+wget https://www.python.org/ftp/python/2.7.13/Python-2.7.13.tar.xz
+tar -xJf Python-2.7.13.tar.xz
+cd Python-2.7.13
+export TITAN_PYTHON=$TITAN_WSP/Python-2.7.13
 ./configure --prefix=$TITAN_PYTHON --enable-shared
-make -j 8
+make -j <number of proccesses to use>
 
 # after that stage python can complain that some of the modules was not 
 # successfully compiled, usually thouse modules are not needed for titan
@@ -61,7 +61,7 @@ tar xvzf pcre-8.37.tar.gz
 cd pcre-8.37
 export TITAN_PCRE=$TITAN_WSP/pcre-8.37
 ./configure --prefix=$TITAN_PCRE --disable-shared
-make -j 8
+make -j <number of proccesses to use>
 make install
 
 # ====================================================================
@@ -77,7 +77,7 @@ tar xvzf swig-3.0.5.tar.gz
 cd swig-3.0.5
 export TITAN_SWIG=$TITAN_WSP/swig-3.0.5 
 ./configure --prefix=$TITAN_SWIG  --with-python=$TITAN_PYTHON/bin/python --with-pcre-prefix=$TITAN_PCRE
-make -j 8
+make -j <number of proccesses to use>
 make install
 
 # ====================================================================
@@ -86,11 +86,24 @@ make install
 # serial version of hdf5 with C++ support needed to be installed 
 cd $TITAN_WSP
 export TITAN_HDF5=$TITAN_WSP/hdf5
-wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.16.tar
-tar xvzf hdf5-1.8.16.tar
-cd hdf5-1.8.16
+wget http://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar
+tar xvzf hdf5-1.8.18.tar
+cd hdf5-1.8.18
 ./configure --prefix=$TITAN_HDF5 --enable-cxx
-make -j 8
+make -j <number of proccesses to use>
+make install
+
+# ====================================================================
+# GDAL installation
+# ====================================================================
+# gdal needed to be installed
+cd $TITAN_WSP
+export TITAN_GDAL=$TITAN_WSP/gdal-2.1.0
+wget http://download.osgeo.org/gdal/2.1.0/gdal-2.1.0.tar.gz
+tar xvzf gdal-2.1.0.tar.gz
+cd gdal-2.1.0
+./configure --prefix=$TITAN_GDAL --with-png=internal --with-jpeg=internal --without-curl --without-pg --without-mysql --without-sqlite3 --without-pcre --without-xml2
+make -j <number of proccesses to use>
 make install
 
 # ====================================================================
@@ -117,21 +130,24 @@ mkdir iccoptompmpi
 cd iccoptompmpi
 
 #
-#../../titan2d/configure --without-gdal \
+#../../titan2d/configure --with-gdal=<path_to_top_dir_of_gdal> \
 #    --with-hdf5=<path_to_top_dir_of_hdf5> --prefix=<where_to_install>  \
-#    PYTHON=<path to python2.7> SWIG=<path to swig>\
+#    PYTHON=<path to python2.7> --with-swig=<path to swig>\
 #    [--enable-mpi] [--enable-openmp] \
 #    [CXX=<path to non-default c++ compiler, mpic++ for example> ] \
 #    [CXXFLAGS=<non-default optimization flags, for example "-g -O0" for no optimization or "-O3" for heavy optimization ]\
 #    [CPPGLAGS=<non-default preprocessor flags, for example "-DDEB2" for extra debuging information]
 #
+#
 #for example hybrid MPI/OpenMP:
-../../titan2d/configure --with-grass=$TITAN_GRASS --without-gdal \
---with-hdf5=$TITAN_HDF5 --prefix=`pwd`  \
---enable-mpi --enable-openmp \
-CXX=mpic++ \
-PYTHON=$TITAN_PYTHON/bin/python2.7 \
-SWIG=$TITAN_SWIG/bin/swig CXXFLAGS=-O3
+../../titan2d/configure --prefix=`pwd` --with-gdal=$TITAN_GDAL --with-hdf5=$TITAN_HDF5 \
+--with-swig=$TITAN_SWIG PYTHON=$TITAN_PYTHON/bin/python2.7\
+--enable-mpi --enable-openmp CXX=mpic++ CXXFLAGS=-O3 --disable-java-gui
+
+#for OpenMP mode:
+../../titan2d/configure --prefix=`pwd` --with-gdal=$TITAN_GDAL --with-hdf5=$TITAN_HDF5 \
+--with-swig=$TITAN_SWIG PYTHON=$TITAN_PYTHON/bin/python2.7\
+--enable-openmp CXX=g++ CXXFLAGS=-O3 --disable-java-gui
 
 # Now compile it:
 make -j <number of proccesses to use>
