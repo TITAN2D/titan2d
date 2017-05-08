@@ -1316,8 +1316,8 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
         for(iy = 0; iy < Ny; iy++)
         {
             for(ix = 0; ix < Nx - 1; ix++)
-                fprintf(fp, "%g ", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
-            fprintf(fp, "%g\n", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.length);
+                fprintf(fp, "%g ", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.height);
+            fprintf(fp, "%g\n", max_dynamic_pressure[iy*stride+ix] * ENERGY_SCALE/matprops_ptr->scale.height);
         }
         fclose(fp);
     }
