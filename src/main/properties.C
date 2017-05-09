@@ -774,24 +774,24 @@ void OutLine::init_DEM_resolution(double resx, double resy, double *XRange, doub
     Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
 
     if(myid==0 && enabled)
-        printf("Outline init: will try to use resoulution of DEM: %.5g %.5g \n", dx*scale->length, dy*scale->length);
+        printf("Outline init: will try to use resolution of DEM: %.5g %.5g \n", dx*scale->length, dy*scale->length);
 
-    while (Nx > max_linear_size && Ny > max_linear_size)
-    {
-        if(myid==0 && enabled)
-            printf("Outline init: resolution is too high, scaling down...\n");
-        dx *= 2.0;
-        dy *= 2.0;
-
-        Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
-        Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
-    }
+//    while (Nx > max_linear_size && Ny > max_linear_size)
+//    {
+//        if(myid==0 && enabled)
+//            printf("Outline init: resolution is too high, scaling down...\n");
+//        dx *= 2.0;
+//        dy *= 2.0;
+//
+//        Nx = (int) ((XRange[1] - XRange[0]) / dx + 0.5); //round to nearest integer
+//        Ny = (int) ((YRange[1] - YRange[0]) / dy + 0.5); //round to nearest integer
+//    }
     //Nx * Ny should be less then 65536x65536
     assert((float)Nx * (float)Ny <65536.0*65536.0*0.5);
     stride=Nx;
     if(myid==0 && enabled)
     {
-        printf("Outline init: Nx=%d Ny=%d dx=%.5g dy=%.5g\n", Nx, Ny, dx*scale->length, dy*scale->length);
+//        printf("Outline init: Nx=%d Ny=%d dx=%.5g dy=%.5g\n", Nx, Ny, dx*scale->length, dy*scale->length);
         printf("Outline init: temporary arrays for %d threads\n", threads_number);
     }
 
