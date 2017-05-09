@@ -1025,8 +1025,12 @@ void OutLine::update_single_phase()
             if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
 
             //update the record of maximum pileheight in the area covered by this element
-            double ke = (h[ndx] > 1.0E-04) * 0.5 * (hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
-            double dp = ke / h[ndx];
+            double ke = 0.0;
+            double dp = 0.0;
+            if (h[ndx] > 1.0E-04){
+            	ke = 0.5 * (hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+            	dp = ke / h[ndx];
+            }
 
             m_cum_kinergy_by_elm[ndx] += ke;
             m_pileheight_by_elm[ndx] = max(m_pileheight_by_elm[ndx], h[ndx]);
@@ -1040,8 +1044,12 @@ void OutLine::update_single_phase()
         for(ti_ndx_t ndx = 0; ndx < N; ndx++)
         {
             //update the record of maximum pileheight in the area covered by this element
-            double ke = (h[ndx] > 1.0E-04) * 0.5 * (hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
-            double dp = ke / h[ndx];
+            double ke = 0.0;
+            double dp = 0.0;
+            if (h[ndx] > 1.0E-04){
+            	ke = 0.5 * (hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) / h[ndx];
+            	dp = ke / h[ndx];
+            }
 
             m_cum_kinergy_by_elm[ndx] += ke;
             m_pileheight_by_elm[ndx] = max(m_pileheight_by_elm[ndx], h[ndx]);
@@ -1168,8 +1176,13 @@ void OutLine::update_two_phases()
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
 
         //@TODO check ke for two phases
-        double ke = (h[ndx] > 1.0E-04) * 0.5 * (hVx_sol[ndx] * hVx_sol[ndx] + hVy_sol[ndx] * hVy_sol[ndx] + hVx_liq[ndx] * hVx_liq[ndx] + hVy_liq[ndx] * hVy_liq[ndx]) / h[ndx];
-        double dp = ke / h[ndx];
+        double ke = 0.0;
+        double dp = 0.0;
+        if (h[ndx] > 1.0E-04){
+        	ke = 0.5 * (hVx_sol[ndx] * hVx_sol[ndx] + hVy_sol[ndx] * hVy_sol[ndx] + hVx_liq[ndx] * hVx_liq[ndx] + hVy_liq[ndx] * hVy_liq[ndx]) / h[ndx];
+        	dp = ke / h[ndx];
+        }
+
         m_cum_kinergy_by_elm[ndx] += ke;
         if(h[ndx] > m_pileheight_by_elm[ndx])
             m_pileheight_by_elm[ndx] = h[ndx];
