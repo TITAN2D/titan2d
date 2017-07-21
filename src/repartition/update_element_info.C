@@ -217,12 +217,12 @@ void construct_el(Element* newelement, ElemPack* elem2, NodeHashTable* HT_Node_P
     //and the node info -- ignore some info if this is just getting a parent from another processor...
     for(i = 0; i < 8; i++)
     {
-        if(elem2->n_coord[i][0] * elem2->n_coord[i][1] == 0)
-        {
-            printf("myid=%d elem2->key={%u,%u} elem2->coord=(%20g,%20g) inode=%d node->key={%u,%u} node->coord=(%20g,%20g)\n",
-                   myid, elem2->key[0], elem2->key[1], elem2->n_coord[8][0], elem2->n_coord[8][1], i,
-                   elem2->node_key[i][0], elem2->node_key[i][1], elem2->n_coord[i][0], elem2->n_coord[i][1]);
-        }
+//        if(elem2->n_coord[i][0] * elem2->n_coord[i][1] == 0)
+//        {
+//            printf("myid=%d elem2->key={%u,%u} elem2->coord=(%20g,%20g) inode=%d node->key={%u,%u} node->coord=(%20g,%20g)\n",
+//                   myid, elem2->key[0], elem2->key[1], elem2->n_coord[8][0], elem2->n_coord[8][1], i,
+//                   elem2->node_key[i][0], elem2->node_key[i][1], elem2->n_coord[i][0], elem2->n_coord[i][1]);
+//        }
         
         node = (Node*) HT_Node_Ptr->lookup(sfc_key_from_oldkey(elem2->node_key[i]));
         if(!node)
