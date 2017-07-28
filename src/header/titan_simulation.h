@@ -109,6 +109,7 @@ public:
     TimeProps timeprops;
     MapNames mapnames;
     OutLine outline;
+    LocalQuants localquants;
 
     NodeHashTable* NodeTable;
     ElementsHashTable* ElemTable;
@@ -131,6 +132,7 @@ public:
     TimeProps* get_timeprops(){return &timeprops;}
     MapNames* get_mapnames(){return &mapnames;}
     OutLine* get_outline(){return &outline;}
+    LocalQuants* get_local_quants(){return &localquants;}
 
     NodeHashTable* get_HT_Node(){return NodeTable;}
     ElementsHashTable* get_HT_Elem(){return ElemTable;}

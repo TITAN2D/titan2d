@@ -1239,6 +1239,31 @@ public:
     void h5read(const H5::CommonFG *parent, const  string group_name="DischargePlanes");
 };
 
+class LocalQuants
+{
+public:
+	// number of locations
+	int no_locations;
+
+	// array containing Easting coordinates (X)
+	std::vector<double> X;
+
+	// array containing Northing coordinates (Y)
+	std::vector<double> Y;
+
+	LocalQuants();
+	~LocalQuants();
+	void allocate(int m_no_locations);
+	void addLocation(double x_in, double y_in);
+
+protected:
+	// array holding flow height time-history in the specified location
+	std::vector<std::vector<double> > Height;
+
+	// array holding flow velocity time-history in the specified location
+	std::vector<std::vector<double> > Velocity;
+};
+
 //! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance.
 class FluxProps
 {

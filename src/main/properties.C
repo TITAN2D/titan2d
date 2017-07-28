@@ -1509,4 +1509,31 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
         update_on_changed_geometry();
     }
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+LocalQuants::LocalQuants()
+{
+	no_locations = 0;
+	return;
+}
+LocalQuants::~LocalQuants()
+{
+	return;
+}
+void LocalQuants::allocate(int m_no_locations)
+{
+	no_locations = m_no_locations;
+	X.resize(no_locations);
+	Y.resize(no_locations);
+	Height.resize(no_locations);
+	Velocity.resize(no_locations);
+}
+void LocalQuants::addLocation(double x_in, double y_in)
+{
+	no_locations++;
+	X.push_back(x_in);
+	Y.push_back(y_in);
+
+	Height.resize(no_locations);
+	Velocity.resize(no_locations);
+}
