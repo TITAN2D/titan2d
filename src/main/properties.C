@@ -1514,6 +1514,7 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
 LocalQuants::LocalQuants()
 {
 	no_locations = 0;
+	threshold = 0.05;
 	return;
 }
 LocalQuants::~LocalQuants()
@@ -1527,6 +1528,8 @@ void LocalQuants::allocate(int m_no_locations)
 	Y.resize(no_locations);
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
+	Time.resize(no_locations);
+	temps.resize(no_locations);
 }
 void LocalQuants::addLocation(double x_in, double y_in)
 {
@@ -1536,4 +1539,81 @@ void LocalQuants::addLocation(double x_in, double y_in)
 
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
+	Time.resize(no_locations);
+}
+
+void LocalQuants::scale(double length_scale, double height_scale)
+{
+    for(int i = 0; i < no_locations; i++)
+    {
+        X[i] /= length_scale;
+        Y[i] /= length_scale;
+        threshold /= height_scale;
+    }
+}
+
+void LocalQuants::print_local_quants(int i)
+{
+    printf("\tTime-history of QoIs are requested at location %d:\n", i);
+    printf("\t\t(UTM E, UTM N): %f, %f\n", X[i], Y[i]);
+}
+
+void LocalQuants::print0()
+{
+    int i;
+    if(no_locations > 0)
+    {
+        printf("Time-History of Local QoIs:    (Number of locations: %d)\n", no_locations);
+        for(i = 0; i < no_locations; i++)
+            print_local_quants(i);
+    }
+    else
+    {
+        printf("Time-History of Local QoIs:    there is no specified location\n");
+    }
+}
+
+void LocalQuants::FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy)
+{
+	for (int i = 0; i < no_locations; i++) {
+
+		if ((fabs(X[i]-xEl) <= 0.5*dx) && (fabs(Y[i]-yEl) <= 0.5*dy) && (h >= threshold)) {
+
+			temps[i].push_back(h);
+			temps[i].push_back(hVx);
+			temps[i].push_back(hVy);
+			temps[i].push_back(sqrt((X[i]-xEl)*(X[i]-xEl) + (Y[i]-yEl)*(Y[i]-yEl)));
+		}
+	}
+}
+
+void LocalQuants::StoreQuant(TimeProps* timeprops)
+{
+	for (int i = 0; i < no_locations; i++) {
+
+		if (temps[i].size() == 1) {
+
+			Height[i].push_back(temps[i][0]);
+			Velocity[i].push_back(sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0]);
+			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
+		}
+		else if (temps[i].size() > 1) {
+
+			std::vector<double> W(temps[i].size()/4.0);
+
+			double numH = 0.0, numV=0.0, den = 0.0;
+
+			for (int j = 0; j < W.size(); j++) {
+
+				W[j] = 1.0 / temps[i][4*j+3];
+				numH += W[j] * temps[i][4*j];
+				numV += W[j] * sqrt(temps[i][4*j+1]*temps[i][4*j+1] + temps[i][4*j+2]*temps[i][4*j+2]) / temps[i][4*j];
+				den += W[j];
+			}
+
+			Height[i].push_back(numH/den);
+			Velocity[i].push_back(numV/den);
+			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
+		}
+	}
 }

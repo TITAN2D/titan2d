@@ -38,6 +38,7 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     statprops_ptr(_titanSimulation->get_statprops()),
     outline_ptr(_titanSimulation->get_outline()),
     discharge_ptr(_titanSimulation->get_discharge_planes()),
+	localquants_ptr(_titanSimulation->get_local_quants()),
     elementType(_titanSimulation->get_element_type()),
     adapt(_titanSimulation->adapt),
     TiScalableObject(_titanSimulation->scale_),
@@ -210,7 +211,7 @@ void Integrator::step()
 
     /* finished corrector step */
 
-    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, dt);
+    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, localquants_ptr, dt);
 
     double tempin[6], tempout[6];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration

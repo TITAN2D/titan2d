@@ -1244,6 +1244,7 @@ class LocalQuants
 public:
 	// number of locations
 	int no_locations;
+	double threshold;
 
 	// array containing Easting coordinates (X)
 	std::vector<double> X;
@@ -1251,10 +1252,18 @@ public:
 	// array containing Northing coordinates (Y)
 	std::vector<double> Y;
 
+	// temporary arrays holding the local values of state vars and their distance to the specified location
+	std::vector<std::vector<double> > temps;
+
 	LocalQuants();
 	~LocalQuants();
 	void allocate(int m_no_locations);
 	void addLocation(double x_in, double y_in);
+	void scale(double length_scale, double height_scale);
+	void print_local_quants(int i);
+	void print0();
+	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy);
+	void StoreQuant(TimeProps* timeprops);
 
 protected:
 	// array holding flow height time-history in the specified location
@@ -1262,6 +1271,9 @@ protected:
 
 	// array holding flow velocity time-history in the specified location
 	std::vector<std::vector<double> > Velocity;
+
+	// array holding associated time for Height and Velocity vectors
+	std::vector<std::vector<double> > Time;
 };
 
 //! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance.

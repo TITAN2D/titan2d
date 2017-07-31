@@ -128,7 +128,7 @@ public:
      *  to replace calc_volume()
      */
     void calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
-            DischargePlanes* discharge, double d_time);
+            DischargePlanes* discharge, LocalQuants* localQ, double d_time);
     //! Dump object content to hdf5 file
     void h5write(H5::CommonFG *parent, string group_name="StatProps") const;
     //! Load object content from hdf5 file

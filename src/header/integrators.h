@@ -96,6 +96,7 @@ protected:
     StatProps *statprops_ptr;
     OutLine *outline_ptr;
     DischargePlanes *discharge_ptr;
+    LocalQuants *localquants_ptr;
 
     int &adapt;
 

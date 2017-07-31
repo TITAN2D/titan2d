@@ -114,7 +114,7 @@ void StatProps::scale(const MatProps* matprops_ptr)
 }
 
 void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
-                DischargePlanes* discharge, double d_time)
+                DischargePlanes* discharge, LocalQuants* localQ, double d_time)
 {
     assert(ElemTable->all_elenodes_are_permanent);
 
@@ -352,8 +352,13 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                     m_slopevolume += dVol;
                 }*/
             }
+
+			localQ->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
         }
     }
+
+    localQ->StoreQuant(timeprops);
+
     //ANNOTATE_TASK_END(StatProps_calc_stats_loop);
     //ANNOTATE_SITE_END(StatProps_calc_stats);
 #ifdef USE_MPI

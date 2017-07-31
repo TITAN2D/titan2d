@@ -359,6 +359,7 @@ void cxxTitanSimulation::process_input(bool start_from_restart)
 
         //the discharge plane section ends here
         /*************************************************************************/
+        localquants.scale(scale_.length, scale_.height);
     }
 
 
@@ -954,7 +955,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     }
 
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
-    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, 0.0);
+    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
@@ -1275,6 +1276,7 @@ void cxxTitanSimulation::input_summary()
         get_pileprops()->print0();
         get_fluxprops()->print0();
         get_discharge_planes()->print0();
+        get_local_quants()->print0();
         get_integrator()->print0();
         get_matprops()->print0();
     }
