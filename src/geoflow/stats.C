@@ -352,12 +352,13 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                     m_slopevolume += dVol;
                 }*/
             }
-
-			localQ->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
+            if (localQ->no_locations > 0)
+            	localQ->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
         }
     }
 
-    localQ->StoreQuant(timeprops);
+    if (localQ->no_locations > 0)
+    	localQ->StoreQuant(timeprops);
 
     //ANNOTATE_TASK_END(StatProps_calc_stats_loop);
     //ANNOTATE_SITE_END(StatProps_calc_stats);

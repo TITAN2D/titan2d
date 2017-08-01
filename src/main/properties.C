@@ -1531,15 +1531,11 @@ void LocalQuants::allocate(int m_no_locations)
 	Time.resize(no_locations);
 	temps.resize(no_locations);
 }
-void LocalQuants::addLocation(double x_in, double y_in)
+void LocalQuants::addLocation(const double x_in, const double y_in)
 {
-	no_locations++;
 	X.push_back(x_in);
 	Y.push_back(y_in);
-
-	Height.resize(no_locations);
-	Velocity.resize(no_locations);
-	Time.resize(no_locations);
+	no_locations = X.size();
 }
 
 void LocalQuants::scale(double length_scale, double height_scale)
@@ -1573,7 +1569,7 @@ void LocalQuants::print0()
     }
 }
 
-void LocalQuants::FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy)
+void LocalQuants::FindElement(const double dx, const double dy, const double xEl, const double yEl, const double h, const double hVx, const double hVy)
 {
 	for (int i = 0; i < no_locations; i++) {
 
@@ -1642,8 +1638,8 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleVectorAttribute(group, X, X.size());
     TiH5_readDoubleVectorAttribute(group, Y, Y.size());
     for (int i = 0; i < no_locations; i++) {
-        TiH5_writeDoubleVectorAttribute(group, Height[i], Height[i].size());
-        TiH5_writeDoubleVectorAttribute(group, Velocity[i], Velocity[i].size());
-        TiH5_writeDoubleVectorAttribute(group, Time[i], Time[i].size());
+        TiH5_readDoubleVectorAttribute(group, Height[i], Height[i].size());
+        TiH5_readDoubleVectorAttribute(group, Velocity[i], Velocity[i].size());
+        TiH5_readDoubleVectorAttribute(group, Time[i], Time[i].size());
     }
 }

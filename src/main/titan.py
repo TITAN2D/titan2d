@@ -1131,7 +1131,7 @@ class TitanSimulation(TitanSimulationBase):
         #######################################################################
         # ui_LocalQuants
         for locQuant in ui_LocalQuants:
-            self.sim.local_quants.addLocalQuants(locQuant['x'],locQuant['y'])
+            self.sim.localquants.addLocalQuants(locQuant['x'],locQuant['y'])
         #######################################################################
         # ui_loadRestart
         if ui_loadRestart !=None:
