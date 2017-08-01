@@ -680,6 +680,19 @@ class TitanSimulationBase(object):
                 },
             }
         )
+        #addLocalQuants
+        self.ui_LocalQuants=[]
+        self.chk_LocalQuants=TiArgCheckerAndSetter(
+            sectionName="addLocalQuants",
+            levelZeroParameters={
+                'x':{'desc':'',
+                    'validator':VarType(float).chk
+                }, 
+                'y':{'desc':'',
+                    'validator':VarType(float).chk
+                },
+            }
+        )
         #loadRestart
         self.ui_loadRestart=None
         self.chk_loadRestart=TiArgCheckerAndSetter(
@@ -800,6 +813,10 @@ class TitanSimulationBase(object):
         args={'x_a':x_a,'y_a':y_a,'x_b':x_b,'y_b':y_b}
         self.ui_DischargePlane.append(self.chk_DischargePlane.process(args))
         
+    def addLocalQuants(self,x,y):
+        args={'x':x,'y':y}
+        self.ui_LocalQuants.append(self.chk_LocalQuants.process(args))
+        
     def loadRestart(self,**kwarg):
         self.ui_loadRestart=self.chk_loadRestart.process(kwarg)
         
@@ -814,6 +831,8 @@ class TitanSimulationBase(object):
                 raise NotImplementedError("TitanSimulation:addFluxSource: FluxSources are not imlemented for TwoPhases-Pitman-Le model!")
             if len(self.ui_DischargePlane)>0:
                 raise NotImplementedError("TitanSimulation:addDischargePlane: DischargePlanes are not imlemented for TwoPhases-Pitman-Le model!")
+            if len(self.ui_LocalQuants)>0:
+                raise NotImplementedError("TitanSimulation:addLocalQuants: LocalQuants are not imlemented for TwoPhases-Pitman-Le model!")
         else:
             for pile in self.ui_Pile:
                 if 'vol_fract' in pile:
@@ -863,6 +882,7 @@ class TitanSimulation(TitanSimulationBase):
             print self.ui_Pile
             print self.ui_FluxSource
             print self.ui_DischargePlane
+            print self.ui_LocalQuants
             print self.ui_loadRestart
         #convinience references
         ui_GIS=self.ui_GIS
@@ -877,6 +897,7 @@ class TitanSimulation(TitanSimulationBase):
         ui_Pile=self.ui_Pile
         ui_FluxSource=self.ui_FluxSource
         ui_DischargePlane=self.ui_DischargePlane
+        ui_LocalQuants=self.ui_LocalQuants
         ui_loadRestart=self.ui_loadRestart
         
         model=self.ui_MatModel['model']
@@ -1107,6 +1128,10 @@ class TitanSimulation(TitanSimulationBase):
         # ui_DischargePlane
         for disPlane in ui_DischargePlane:
             self.sim.discharge_planes.addDischargePlane(disPlane['x_a'],disPlane['y_a'],disPlane['x_b'],disPlane['y_b'])
+        #######################################################################
+        # ui_LocalQuants
+        for locQuant in ui_LocalQuants:
+            self.sim.local_quants.addLocalQuants(locQuant['x'],locQuant['y'])
         #######################################################################
         # ui_loadRestart
         if ui_loadRestart !=None:
