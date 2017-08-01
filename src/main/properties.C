@@ -1617,3 +1617,33 @@ void LocalQuants::StoreQuant(TimeProps* timeprops)
 		}
 	}
 }
+
+void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
+{
+    H5::Group group(parent->createGroup(group_name));
+
+    TiH5_writeIntAttribute(group, no_locations);
+    TiH5_writeDoubleAttribute(group, threshold);
+    TiH5_writeDoubleVectorAttribute(group, X, X.size());
+    TiH5_writeDoubleVectorAttribute(group, Y, Y.size());
+    for (int i = 0; i < no_locations; i++) {
+        TiH5_writeDoubleVectorAttribute(group, Height[i], Height[i].size());
+        TiH5_writeDoubleVectorAttribute(group, Velocity[i], Velocity[i].size());
+        TiH5_writeDoubleVectorAttribute(group, Time[i], Time[i].size());
+    }
+
+}
+void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
+{
+    H5::Group group(parent->openGroup(group_name));
+
+    TiH5_readIntAttribute(group, no_locations);
+    TiH5_readDoubleAttribute(group, threshold);
+    TiH5_readDoubleVectorAttribute(group, X, X.size());
+    TiH5_readDoubleVectorAttribute(group, Y, Y.size());
+    for (int i = 0; i < no_locations; i++) {
+        TiH5_writeDoubleVectorAttribute(group, Height[i], Height[i].size());
+        TiH5_writeDoubleVectorAttribute(group, Velocity[i], Velocity[i].size());
+        TiH5_writeDoubleVectorAttribute(group, Time[i], Time[i].size());
+    }
+}

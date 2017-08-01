@@ -458,6 +458,7 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent)
     statprops->h5write(parent);
     mapnames.h5write(parent);
     outline.h5write(parent);
+    localquants.h5write(parent);
 
 
 }
@@ -498,6 +499,7 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
     mapnames.h5read(parent);
     outline.setElemNodeTable(ElemTable,NodeTable);
     outline.h5read(parent);
+    localquants.h5read(parent);
 
     integrator=Integrator::createIntegrator(parent,this);
 

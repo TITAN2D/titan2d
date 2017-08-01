@@ -1255,6 +1255,15 @@ public:
 	// temporary arrays holding the local values of state vars and their distance to the specified location
 	std::vector<std::vector<double> > temps;
 
+	// array holding flow height time-history in the specified location
+	std::vector<std::vector<double> > Height;
+
+	// array holding flow velocity time-history in the specified location
+	std::vector<std::vector<double> > Velocity;
+
+	// array holding associated time for Height and Velocity vectors
+	std::vector<std::vector<double> > Time;
+
 	LocalQuants();
 	~LocalQuants();
 	void allocate(int m_no_locations);
@@ -1264,16 +1273,10 @@ public:
 	void print0();
 	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy);
 	void StoreQuant(TimeProps* timeprops);
-
-protected:
-	// array holding flow height time-history in the specified location
-	std::vector<std::vector<double> > Height;
-
-	// array holding flow velocity time-history in the specified location
-	std::vector<std::vector<double> > Velocity;
-
-	// array holding associated time for Height and Velocity vectors
-	std::vector<std::vector<double> > Time;
+    //! Dump object content to hdf5 file
+    void h5write(H5::CommonFG *parent, string group_name="LocalQuants") const;
+    //! Load object content from hdf5 file
+    void h5read(const H5::CommonFG *parent, const  string group_name="LocalQuants");
 };
 
 //! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance.
