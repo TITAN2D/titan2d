@@ -1275,7 +1275,7 @@ public:
 	void allocate(int m_no_locations);
 	void addLocalQuants(const double x_in, const double y_in);
 	void init(int no_locations_in, double *XX, double *YY);
-	void scale(double m_length_scale, double m_height_scale, double m_gravity_scale);
+	void scale(double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
 	void print_local_quants(int i);
 	void print0();
 	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy);

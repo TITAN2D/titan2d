@@ -359,7 +359,7 @@ void cxxTitanSimulation::process_input(bool start_from_restart)
 
         //the discharge plane section ends here
         /*************************************************************************/
-        localquants.scale(scale_.length, scale_.height, scale_.gravity);
+        localquants.scale(scale_.length, scale_.height, scale_.gravity, pileprops_ptr, &fluxprops);
     }
 
 

@@ -1554,17 +1554,28 @@ void LocalQuants::init(int no_locations_in, double *XX, double *YY)
 			addLocalQuants(XX[iloc],YY[iloc]);
 	}
 }
-void LocalQuants::scale(double m_length_scale, double m_height_scale, double m_gravity_scale)
+void LocalQuants::scale(double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
 	length_scale = m_length_scale;
 	height_scale = m_height_scale;
 	velocity_scale = sqrt(m_gravity_scale * length_scale);
 
+    double totalvolume = 0.0;
+
+    if(pileprops_ptr != NULL)
+        for(int isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
+            totalvolume += pileprops_ptr->get_volume(isrc);
+    if(fluxprops_ptr != NULL)
+        for(int isrc = 0; isrc < fluxprops_ptr->no_of_sources; isrc++)
+            totalvolume += fluxprops_ptr->get_volume(isrc);
+
+    totalvolume *= height_scale * length_scale * length_scale;
+    threshold = GEOFLOW_TINY * pow(totalvolume, 1.0 / 3.0) / height_scale;
+
     for(int i = 0; i < no_locations; i++)
     {
         X[i] /= m_length_scale;
         Y[i] /= m_length_scale;
-        threshold /= m_height_scale;
     }
 }
 
@@ -1580,6 +1591,7 @@ void LocalQuants::print0()
     if(no_locations > 0)
     {
         printf("Time-History of Local QoIs:    (Number of locations: %d)\n", no_locations);
+        printf("\tThe flow height threshold [m] is: %f\n", threshold * height_scale);
         for(i = 0; i < no_locations; i++)
             print_local_quants(i);
     }
@@ -1609,8 +1621,8 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 
 		if (temps[i].size() == 1) {
 
-			Height[i].push_back(temps[i][0] * matprops_ptr->scale.height);
-			Velocity[i].push_back(sqrt(matprops_ptr->scale.gravity * matprops_ptr->scale.length * (temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2])) / temps[i][0]);
+			Height[i].push_back(temps[i][0] * height_scale);
+			Velocity[i].push_back(velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0]);
 			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
 		}
 		else if (temps[i].size() > 1) {
@@ -1623,12 +1635,12 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 
 				W[j] = 1.0 / temps[i][4*j+3];
 				numH += W[j] * temps[i][4*j];
-				numV += W[j] * sqrt(matprops_ptr->scale.gravity * matprops_ptr->scale.length * (temps[i][4*j+1]*temps[i][4*j+1] + temps[i][4*j+2]*temps[i][4*j+2])) / temps[i][4*j];
+				numV += W[j] * sqrt(temps[i][4*j+1]*temps[i][4*j+1] + temps[i][4*j+2]*temps[i][4*j+2]) / temps[i][4*j];
 				den += W[j];
 			}
 
-			Height[i].push_back(matprops_ptr->scale.height * numH/den);
-			Velocity[i].push_back(numV/den);
+			Height[i].push_back(height_scale * numH/den);
+			Velocity[i].push_back(velocity_scale * numV/den);
 			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
 		}
 	}
