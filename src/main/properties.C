@@ -1515,6 +1515,9 @@ LocalQuants::LocalQuants()
 {
 	no_locations = 0;
 	threshold = 0.05;
+	length_scale = 1.0;
+	height_scale = 1.0;
+	velocity_scale = 1.0;
 
 	return;
 }
@@ -1551,20 +1554,24 @@ void LocalQuants::init(int no_locations_in, double *XX, double *YY)
 			addLocalQuants(XX[iloc],YY[iloc]);
 	}
 }
-void LocalQuants::scale(double length_scale, double height_scale)
+void LocalQuants::scale(double m_length_scale, double m_height_scale, double m_gravity_scale)
 {
+	length_scale = m_length_scale;
+	height_scale = m_height_scale;
+	velocity_scale = sqrt(m_gravity_scale * length_scale);
+
     for(int i = 0; i < no_locations; i++)
     {
-        X[i] /= length_scale;
-        Y[i] /= length_scale;
-        threshold /= height_scale;
+        X[i] /= m_length_scale;
+        Y[i] /= m_length_scale;
+        threshold /= m_height_scale;
     }
 }
 
 void LocalQuants::print_local_quants(int i)
 {
     printf("\tTime-history of QoIs are requested at location %d:\n", i);
-    printf("\t\t(UTM E, UTM N): %f, %f\n", X[i], Y[i]);
+    printf("\t\t(UTM E, UTM N): %f, %f\n", length_scale * X[i], length_scale * Y[i]);
 }
 
 void LocalQuants::print0()

@@ -1246,6 +1246,12 @@ public:
 	int no_locations;
 	double threshold;
 
+protected:
+    double height_scale;
+    double length_scale;
+    double velocity_scale;
+
+public:
 	// array containing Easting coordinates (X)
 	std::vector<double> X;
 
@@ -1269,7 +1275,7 @@ public:
 	void allocate(int m_no_locations);
 	void addLocalQuants(const double x_in, const double y_in);
 	void init(int no_locations_in, double *XX, double *YY);
-	void scale(double length_scale, double height_scale);
+	void scale(double m_length_scale, double m_height_scale, double m_gravity_scale);
 	void print_local_quants(int i);
 	void print0();
 	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy);
