@@ -1267,12 +1267,13 @@ public:
 	LocalQuants();
 	~LocalQuants();
 	void allocate(int m_no_locations);
-	void addLocation(double x_in, double y_in);
+	void addLocalQuants(const double x_in, const double y_in);
+	void init(int no_locations_in, double *XX, double *YY);
 	void scale(double length_scale, double height_scale);
 	void print_local_quants(int i);
 	void print0();
 	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy);
-	void StoreQuant(TimeProps* timeprops);
+	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
     //! Dump object content to hdf5 file
     void h5write(H5::CommonFG *parent, string group_name="LocalQuants") const;
     //! Load object content from hdf5 file

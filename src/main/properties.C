@@ -1515,6 +1515,7 @@ LocalQuants::LocalQuants()
 {
 	no_locations = 0;
 	threshold = 0.05;
+
 	return;
 }
 LocalQuants::~LocalQuants()
@@ -1531,13 +1532,25 @@ void LocalQuants::allocate(int m_no_locations)
 	Time.resize(no_locations);
 	temps.resize(no_locations);
 }
-void LocalQuants::addLocation(const double x_in, const double y_in)
+void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 {
 	X.push_back(x_in);
 	Y.push_back(y_in);
 	no_locations = X.size();
+	Height.resize(no_locations);
+	Velocity.resize(no_locations);
+	Time.resize(no_locations);
+	temps.resize(no_locations);
 }
-
+void LocalQuants::init(int no_locations_in, double *XX, double *YY)
+{
+	allocate(0);
+	if (no_locations_in > 0)
+	{
+		for (int iloc = 0; iloc < no_locations_in; iloc++)
+			addLocalQuants(XX[iloc],YY[iloc]);
+	}
+}
 void LocalQuants::scale(double length_scale, double height_scale)
 {
     for(int i = 0; i < no_locations; i++)
@@ -1583,14 +1596,14 @@ void LocalQuants::FindElement(const double dx, const double dy, const double xEl
 	}
 }
 
-void LocalQuants::StoreQuant(TimeProps* timeprops)
+void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 {
 	for (int i = 0; i < no_locations; i++) {
 
 		if (temps[i].size() == 1) {
 
-			Height[i].push_back(temps[i][0]);
-			Velocity[i].push_back(sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0]);
+			Height[i].push_back(temps[i][0] * matprops_ptr->scale.height);
+			Velocity[i].push_back(sqrt(matprops_ptr->scale.gravity * matprops_ptr->scale.length * (temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2])) / temps[i][0]);
 			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
 		}
 		else if (temps[i].size() > 1) {
@@ -1603,11 +1616,11 @@ void LocalQuants::StoreQuant(TimeProps* timeprops)
 
 				W[j] = 1.0 / temps[i][4*j+3];
 				numH += W[j] * temps[i][4*j];
-				numV += W[j] * sqrt(temps[i][4*j+1]*temps[i][4*j+1] + temps[i][4*j+2]*temps[i][4*j+2]) / temps[i][4*j];
+				numV += W[j] * sqrt(matprops_ptr->scale.gravity * matprops_ptr->scale.length * (temps[i][4*j+1]*temps[i][4*j+1] + temps[i][4*j+2]*temps[i][4*j+2])) / temps[i][4*j];
 				den += W[j];
 			}
 
-			Height[i].push_back(numH/den);
+			Height[i].push_back(matprops_ptr->scale.height * numH/den);
 			Velocity[i].push_back(numV/den);
 			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
 		}
