@@ -1532,7 +1532,6 @@ void LocalQuants::allocate(int m_no_locations)
 	Y.resize(no_locations);
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
-	Time.resize(no_locations);
 	temps.resize(no_locations);
 }
 void LocalQuants::addLocalQuants(const double x_in, const double y_in)
@@ -1542,7 +1541,6 @@ void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 	no_locations = X.size();
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
-	Time.resize(no_locations);
 	temps.resize(no_locations);
 }
 void LocalQuants::init(int no_locations_in, double *XX, double *YY)
@@ -1619,15 +1617,14 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 {
 	for (int i = 0; i < no_locations; i++) {
 
-		if (temps[i].size() == 1) {
+		if (temps[i].size() == 4) {
 
-			Height[i].push_back(temps[i][0] * height_scale);
-			Velocity[i].push_back(velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0]);
-			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
+			Height[i] = temps[i][0] * height_scale;
+			Velocity[i] = velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0];
 		}
-		else if (temps[i].size() > 1) {
+		else if (temps[i].size() > 4) {
 
-			std::vector<double> W(temps[i].size()/4.0);
+			std::vector<double> W(temps[i].size()/4);
 
 			double numH = 0.0, numV=0.0, den = 0.0;
 
@@ -1639,9 +1636,8 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 				den += W[j];
 			}
 
-			Height[i].push_back(height_scale * numH/den);
-			Velocity[i].push_back(velocity_scale * numV/den);
-			Time[i].push_back(timeprops->cur_time * timeprops->TIME_SCALE);
+			Height[i] = height_scale * numH/den;
+			Velocity[i] = velocity_scale * numV/den;
 		}
 	}
 }
@@ -1654,12 +1650,8 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleAttribute(group, threshold);
     TiH5_writeDoubleVectorAttribute(group, X, X.size());
     TiH5_writeDoubleVectorAttribute(group, Y, Y.size());
-    for (int i = 0; i < no_locations; i++) {
-        TiH5_writeDoubleVectorAttribute(group, Height[i], Height[i].size());
-        TiH5_writeDoubleVectorAttribute(group, Velocity[i], Velocity[i].size());
-        TiH5_writeDoubleVectorAttribute(group, Time[i], Time[i].size());
-    }
-
+    TiH5_writeDoubleVectorAttribute(group, Height, Height.size());
+    TiH5_writeDoubleVectorAttribute(group, Velocity, Velocity.size());
 }
 void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1669,9 +1661,6 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleAttribute(group, threshold);
     TiH5_readDoubleVectorAttribute(group, X, X.size());
     TiH5_readDoubleVectorAttribute(group, Y, Y.size());
-    for (int i = 0; i < no_locations; i++) {
-        TiH5_readDoubleVectorAttribute(group, Height[i], Height[i].size());
-        TiH5_readDoubleVectorAttribute(group, Velocity[i], Velocity[i].size());
-        TiH5_readDoubleVectorAttribute(group, Time[i], Time[i].size());
-    }
+    TiH5_readDoubleVectorAttribute(group, Height, Height.size());
+    TiH5_readDoubleVectorAttribute(group, Velocity, Velocity.size());
 }

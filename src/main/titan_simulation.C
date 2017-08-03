@@ -960,6 +960,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
+    output_localquants(&timeprops, &localquants, myid);
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
     save_vizoutput_file(XDMF_NEW);
@@ -1176,6 +1177,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
             titanTimingsAlongSimulation.totalTime = MPI_Wtime();
         }
         PROFILING1_STOPADD_RESTART(tsim_iter_post,pt_start);
+        output_localquants(&timeprops, &localquants, myid);
     }
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
@@ -1191,6 +1193,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
+    output_localquants(&timeprops, &localquants, myid);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     if(current_state_is_good)

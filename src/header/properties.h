@@ -1245,13 +1245,10 @@ public:
 	// number of locations
 	int no_locations;
 	double threshold;
-
-protected:
     double height_scale;
     double length_scale;
     double velocity_scale;
 
-public:
 	// array containing Easting coordinates (X)
 	std::vector<double> X;
 
@@ -1262,13 +1259,10 @@ public:
 	std::vector<std::vector<double> > temps;
 
 	// array holding flow height time-history in the specified location
-	std::vector<std::vector<double> > Height;
+	std::vector<double> Height;
 
 	// array holding flow velocity time-history in the specified location
-	std::vector<std::vector<double> > Velocity;
-
-	// array holding associated time for Height and Velocity vectors
-	std::vector<std::vector<double> > Time;
+	std::vector<double> Velocity;
 
 	LocalQuants();
 	~LocalQuants();
