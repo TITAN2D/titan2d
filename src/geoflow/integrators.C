@@ -704,7 +704,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
         double speed;
         double forceintx, forceinty;
         double forcebedx, forcebedy;
-        double forcebedmax, forcebedequil, forcegrav;
+        double forcebedmax, forcebedequil, forcegravx , forcegravy;
         double unitvx, unitvy;
         double tanbed;
         double Ustore[3];
@@ -765,7 +765,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
             // x direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // the gravity force in the x direction
-            forcegrav = g[0][ndx] * h[ndx];
+            forcegravx = g[0][ndx] * h[ndx];
 
             // the internal friction force
             tmp = h_inv * (dhVx_dy[ndx] - VxVy[0] * dh_dy[ndx]);
@@ -802,11 +802,11 @@ void Integrator_SinglePhase_Coulomb::corrector()
             }
 #endif
 
-            Ustore[1] = Ustore[1] + dt * (forcegrav - forcebedx - forceintx);
+            Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forceintx);
             //STOPPING CRITERIA
             if(stopping_criteria==1)
             {
-                inertial_x = fabs(Ustore[1] + dt * forcegrav);
+                inertial_x = fabs(Ustore[1] + dt * forcegravx);
                 drag_x = fabs(dt * (forcebedx + forceintx) );
 
                 if (inertial_x <= drag_x)
@@ -817,7 +817,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
             // y direction source terms
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // the gravity force in the y direction
-            forcegrav = g[1][ndx] * h[ndx];
+            forcegravy = g[1][ndx] * h[ndx];
 
             // the internal friction force
             tmp = h_inv * (dhVy_dx[ndx] - VxVy[1] * dh_dx[ndx]);
@@ -844,11 +844,11 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 //    else
             }
 #endif
-            Ustore[2] = Ustore[2] + dt * (forcegrav - forcebedy - forceinty);
+            Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forceinty);
             //STOPPING CRITERIA
             if(stopping_criteria==1)
             {
-                inertial_y = fabs(Ustore[2] + dt * forcegrav);
+                inertial_y = fabs(Ustore[2] + dt * forcegravy);
                 drag_y = fabs(dt * (forcebedy + forceinty) );
 
                 if (inertial_y <= drag_y)
@@ -925,7 +925,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
                     state_vars_[k][ndx]=0.0;
 
         if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
     }
 
     if (localquants_ptr->no_locations > 0)
@@ -1241,7 +1241,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
                     state_vars_[k][ndx]=0.0;
 
         if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
     }
 
     if (localquants_ptr->no_locations > 0)
@@ -1597,7 +1597,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                     state_vars_[k][ndx]=0.0;
 
         if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
     }
 
     if (localquants_ptr->no_locations > 0)

@@ -1518,6 +1518,7 @@ LocalQuants::LocalQuants()
 	length_scale = 1.0;
 	height_scale = 1.0;
 	velocity_scale = 1.0;
+	st_scale = 1.0;
 
 	return;
 }
@@ -1532,6 +1533,12 @@ void LocalQuants::allocate(int m_no_locations)
 	Y.resize(no_locations);
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
+	Fgx.resize(no_locations);
+	Fgy.resize(no_locations);
+	Fbx.resize(no_locations);
+	Fby.resize(no_locations);
+	Fix.resize(no_locations);
+	Fiy.resize(no_locations);
 	temps.resize(no_locations);
 }
 void LocalQuants::addLocalQuants(const double x_in, const double y_in)
@@ -1541,6 +1548,12 @@ void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 	no_locations = X.size();
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
+	Fgx.resize(no_locations);
+	Fgy.resize(no_locations);
+	Fbx.resize(no_locations);
+	Fby.resize(no_locations);
+	Fix.resize(no_locations);
+	Fiy.resize(no_locations);
 	temps.resize(no_locations);
 }
 void LocalQuants::init(int no_locations_in, double *XX, double *YY)
@@ -1557,6 +1570,7 @@ void LocalQuants::scale(double m_length_scale, double m_height_scale, double m_g
 	length_scale = m_length_scale;
 	height_scale = m_height_scale;
 	velocity_scale = sqrt(m_gravity_scale * length_scale);
+	st_scale = m_gravity_scale * height_scale;
 
     double totalvolume = 0.0;
 
@@ -1599,7 +1613,7 @@ void LocalQuants::print0()
     }
 }
 
-void LocalQuants::FindElement(const double dx, const double dy, const double xEl, const double yEl, const double h, const double hVx, const double hVy)
+void LocalQuants::FindElement(const double dx, const double dy, const double xEl, const double yEl, const double h, const double hVx, const double hVy, const double Fgravx, const double Fgravy, const double Fbedx, const double Fbedy, const double Fintx, const double Finty)
 {
 	for (int i = 0; i < no_locations; i++) {
 
@@ -1608,6 +1622,12 @@ void LocalQuants::FindElement(const double dx, const double dy, const double xEl
 			temps[i].push_back(h);
 			temps[i].push_back(hVx);
 			temps[i].push_back(hVy);
+			temps[i].push_back(Fgravx);
+			temps[i].push_back(Fgravy);
+			temps[i].push_back(Fbedx);
+			temps[i].push_back(Fbedy);
+			temps[i].push_back(Fintx);
+			temps[i].push_back(Finty);
 			temps[i].push_back(sqrt((X[i]-xEl)*(X[i]-xEl) + (Y[i]-yEl)*(Y[i]-yEl)));
 		}
 	}
@@ -1617,27 +1637,45 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 {
 	for (int i = 0; i < no_locations; i++) {
 
-		if (temps[i].size() == 4) {
+		if (temps[i].size() == 10) {
 
 			Height[i] = temps[i][0] * height_scale;
 			Velocity[i] = velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0];
+			Fgx[i] = st_scale * temps[i][3];
+			Fgy[i] = st_scale * temps[i][4];
+			Fbx[i] = st_scale * temps[i][5];
+			Fby[i] = st_scale * temps[i][6];
+			Fix[i] = st_scale * temps[i][7];
+			Fiy[i] = st_scale * temps[i][8];
 		}
-		else if (temps[i].size() > 4) {
+		else if (temps[i].size() > 10) {
 
 			std::vector<double> W(temps[i].size()/4);
 
-			double numH = 0.0, numV=0.0, den = 0.0;
+			double numH = 0.0, numV=0.0, numFgx = 0.0, numFgy = 0.0, numFbx = 0.0, numFby = 0.0, numFix = 0.0, numFiy = 0.0, den = 0.0;
 
 			for (int j = 0; j < W.size(); j++) {
 
-				W[j] = 1.0 / temps[i][4*j+3];
-				numH += W[j] * temps[i][4*j];
-				numV += W[j] * sqrt(temps[i][4*j+1]*temps[i][4*j+1] + temps[i][4*j+2]*temps[i][4*j+2]) / temps[i][4*j];
+				W[j] = 1.0 / temps[i][10*j+9];
+				numH += W[j] * temps[i][10*j];
+				numV += W[j] * sqrt(temps[i][10*j+1]*temps[i][10*j+1] + temps[i][10*j+2]*temps[i][10*j+2]) / temps[i][10*j];
+				numFgx += W[j] * temps[i][10*j+3];
+				numFgy += W[j] * temps[i][10*j+4];
+				numFbx += W[j] * temps[i][10*j+5];
+				numFby += W[j] * temps[i][10*j+6];
+				numFix += W[j] * temps[i][10*j+7];
+				numFiy += W[j] * temps[i][10*j+8];
 				den += W[j];
 			}
 
-			Height[i] = height_scale * numH/den;
-			Velocity[i] = velocity_scale * numV/den;
+			Height[i] = height_scale * numH / den;
+			Velocity[i] = velocity_scale * numV / den;
+			Fgx[i] = st_scale * numFgx / den;
+			Fgy[i] = st_scale * numFgy / den;
+			Fbx[i] = st_scale * numFbx / den;
+			Fby[i] = st_scale * numFby / den;
+			Fix[i] = st_scale * numFix / den;
+			Fiy[i] = st_scale * numFiy / den;
 		}
 	}
 }
@@ -1652,6 +1690,12 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleVectorAttribute(group, Y, Y.size());
     TiH5_writeDoubleVectorAttribute(group, Height, Height.size());
     TiH5_writeDoubleVectorAttribute(group, Velocity, Velocity.size());
+    TiH5_writeDoubleVectorAttribute(group, Fgx, Fgx.size());
+    TiH5_writeDoubleVectorAttribute(group, Fgy, Fgy.size());
+    TiH5_writeDoubleVectorAttribute(group, Fbx, Fbx.size());
+    TiH5_writeDoubleVectorAttribute(group, Fby, Fby.size());
+    TiH5_writeDoubleVectorAttribute(group, Fix, Fix.size());
+    TiH5_writeDoubleVectorAttribute(group, Fiy, Fiy.size());
 }
 void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1663,4 +1707,10 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleVectorAttribute(group, Y, Y.size());
     TiH5_readDoubleVectorAttribute(group, Height, Height.size());
     TiH5_readDoubleVectorAttribute(group, Velocity, Velocity.size());
+    TiH5_readDoubleVectorAttribute(group, Fgx, Fgx.size());
+    TiH5_readDoubleVectorAttribute(group, Fgy, Fgy.size());
+    TiH5_readDoubleVectorAttribute(group, Fbx, Fbx.size());
+    TiH5_readDoubleVectorAttribute(group, Fby, Fby.size());
+    TiH5_readDoubleVectorAttribute(group, Fix, Fix.size());
+    TiH5_readDoubleVectorAttribute(group, Fiy, Fiy.size());
 }
