@@ -604,6 +604,12 @@ void Integrator_SinglePhase_Coulomb::corrector()
     tivector<double> &kactxy=effect_kactxy_[0];
     tivector<double> &bedfrictang=effect_bedfrict_;
 
+    if (localquants_ptr->no_locations > 0)
+    {
+    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    		localquants_ptr->temps[iloc].resize(0);
+    }
+
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
@@ -917,7 +923,14 @@ void Integrator_SinglePhase_Coulomb::corrector()
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
+
+        if (localquants_ptr->no_locations > 0)
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
     }
+
+    if (localquants_ptr->no_locations > 0)
+    	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
+
     forceint = m_forceint;
     forcebed = m_forcebed;
     eroded = m_eroded;
@@ -992,6 +1005,12 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     //convinience ref
     tivector<double> *g=gravity_;
     tivector<double> &kactxy=effect_kactxy_[0];
+
+    if (localquants_ptr->no_locations > 0)
+    {
+    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    		localquants_ptr->temps[iloc].resize(0);
+    }
 
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
@@ -1220,7 +1239,14 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
+
+        if (localquants_ptr->no_locations > 0)
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
     }
+
+    if (localquants_ptr->no_locations > 0)
+    	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
+
     forceint = m_forceint;
     forcebed = m_forcebed;
     eroded = m_eroded;
@@ -1312,6 +1338,11 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     tivector<double> *g=gravity_;
     tivector<double> &kactxy=effect_kactxy_[0];
 
+    if (localquants_ptr->no_locations > 0)
+    {
+    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    		localquants_ptr->temps[iloc].resize(0);
+    }
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
@@ -1564,7 +1595,14 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
+
+        if (localquants_ptr->no_locations > 0)
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
     }
+
+    if (localquants_ptr->no_locations > 0)
+    	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
+
     forceint = m_forceint;
     forcebed = m_forcebed;
     eroded = m_eroded;

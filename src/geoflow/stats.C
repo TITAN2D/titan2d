@@ -211,11 +211,11 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     int state_vars_bad_values=0;
     //ANNOTATE_SITE_BEGIN(StatProps_calc_stats);
     //ANNOTATE_TASK_BEGIN(StatProps_calc_stats_loop);
-    if (localQ->no_locations > 0)
-    {
-    	for (int iloc = 0; iloc < localQ->no_locations; iloc++)
-    		localQ->temps[iloc].resize(0);
-    }
+//    if (localQ->no_locations > 0)
+//    {
+//    	for (int iloc = 0; iloc < localQ->no_locations; iloc++)
+//    		localQ->temps[iloc].resize(0);
+//    }
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(min:m_x_min,m_y_min,testpointmindist2) \
         reduction(max:m_x_max,m_y_max,m_v_max,testpointreach) \
@@ -357,13 +357,13 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                     m_slopevolume += dVol;
                 }*/
             }
-            if (localQ->no_locations > 0)
-            	localQ->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
+//            if (localQ->no_locations > 0)
+//            	localQ->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
         }
     }
 
-    if (localQ->no_locations > 0)
-    	localQ->StoreQuant(matprops, timeprops);
+//    if (localQ->no_locations > 0)
+//    	localQ->StoreQuant(matprops, timeprops);
 
     //ANNOTATE_TASK_END(StatProps_calc_stats_loop);
     //ANNOTATE_SITE_END(StatProps_calc_stats);
