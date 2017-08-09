@@ -126,7 +126,7 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid)
 		{
 			if(timeprops->iter == 0)
 			{
-				sprintf(filename, "Location-%03d.dat", iloc);
+				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
 				fprintf(fp, "Time-history of QoIs are requested at location %d:\n", iloc);
 				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n", localq->length_scale * localq->X[iloc], localq->length_scale * localq->Y[iloc]);

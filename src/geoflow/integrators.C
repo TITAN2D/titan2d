@@ -196,6 +196,9 @@ void Integrator::step()
     PROFILING3_STOPADD_RESTART(step_corrector,pt_start);
 
 
+    if (localquants_ptr->no_locations > 0)
+     	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
+
     //statistics, etc.
     TIMING1_START(t_start2);
     if(outline_ptr->enabled)outline_ptr->update();
@@ -928,9 +931,6 @@ void Integrator_SinglePhase_Coulomb::corrector()
         	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
     }
 
-    if (localquants_ptr->no_locations > 0)
-    	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
-
     forceint = m_forceint;
     forcebed = m_forcebed;
     eroded = m_eroded;
@@ -1243,9 +1243,6 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         if (localquants_ptr->no_locations > 0)
         	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
     }
-
-    if (localquants_ptr->no_locations > 0)
-    	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
 
     forceint = m_forceint;
     forcebed = m_forcebed;
@@ -1599,9 +1596,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
         if (localquants_ptr->no_locations > 0)
         	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
     }
-
-    if (localquants_ptr->no_locations > 0)
-    	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
 
     forceint = m_forceint;
     forcebed = m_forcebed;

@@ -810,6 +810,8 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
 
         output_discharge(matprops, &timeprops, &discharge_planes, myid);
 
+        output_localquants(&timeprops, &localquants, myid);
+
         if(myid == 0)
             output_summary(&timeprops, statprops, savefileflag);
 
@@ -1138,7 +1140,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
          * output results to file
          */
         if(timeprops.ifTimeForTimeSeriesOutput())
-            save_vizoutput_file(XDMF_OLD);
+        	save_vizoutput_file(XDMF_OLD);
         PROFILING1_STOPADD_RESTART(tsim_iter_output,pt_start);
 #ifdef PERFTEST
         int countedvalue=timeprops.iter%2+1;
@@ -1177,7 +1179,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
             titanTimingsAlongSimulation.totalTime = MPI_Wtime();
         }
         PROFILING1_STOPADD_RESTART(tsim_iter_post,pt_start);
-        output_localquants(&timeprops, &localquants, myid);
+//        output_localquants(&timeprops, &localquants, myid);
     }
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
@@ -1193,7 +1195,6 @@ void cxxTitanSimulation::run(bool start_from_restart)
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
-    output_localquants(&timeprops, &localquants, myid);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     if(current_state_is_good)
