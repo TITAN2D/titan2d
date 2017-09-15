@@ -1286,7 +1286,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
         phi1*=PI/180.0;
         phi2*=PI/180.0;
         phi3*=PI/180.0;
-        L_material = L_material/scale_.length;
+        L_material = L_material/scale_.height;
         return true;
     }
     return false;
@@ -1298,7 +1298,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::unscale()
         phi1*=180.0/PI;
         phi2*=180.0/PI;
         phi3*=180.0/PI;
-        L_material = L_material*scale_.length;
+        L_material = L_material*scale_.height;
         return true;
     }
     return false;
@@ -1310,7 +1310,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::print0(int spaces)
     printf("%*cphi2:%.3f\n", spaces+4,' ',scaled?phi2*180.0/PI:phi2);
     printf("%*cphi3:%.3f\n", spaces+4,' ',scaled?phi3*180.0/PI:phi3);
     printf("%*cBeta:%.3f\n", spaces+4,' ',Beta);
-    printf("%*cL_material:%.3e\n", spaces+4,' ',scaled?L_material*scale_.length:L_material);
+    printf("%*cL_material:%.3e\n", spaces+4,' ',scaled?L_material*scale_.height:L_material);
     Integrator_SinglePhase::print0(spaces+4);
 }
 
@@ -1487,7 +1487,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                 unitvx = 0.0;
                 unitvy = 0.0;
             }
-            Local_Fr = sqrt(scale_.epsilon) * speed / sqrt( g[2][ndx] * h[ndx] );
+            Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] * scale_.epsilon);
 
             mu_1 = tan(phi1);
             mu_2 = tan(phi2);
@@ -1497,15 +1497,15 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
             //Dynamic flow regime
 			if ( Local_Fr >= Beta )
-				mu_bed = mu_1 + ( mu_2 - mu_1 ) / ( 1.0 + kactxy[ndx] * h[ndx] * Beta / ( L_material * Local_Fr ) );
+				mu_bed = mu_1 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] * Beta / ( L_material * Local_Fr ) );
 
             //Intermediate flow regime
 			else if ( ( Local_Fr < Beta ) && ( Local_Fr > 0.0 ) )
-				mu_bed = mu_3 + pow( ( Local_Fr / Beta ), 0.001 ) * ( mu_1 - mu_3 ) + ( mu_2 - mu_1 ) / ( 1.0 + scale_.epsilon * h[ndx] / L_material );
+				mu_bed = mu_3 + pow( ( Local_Fr / Beta ), 0.001 ) * ( mu_1 - mu_3 ) + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material );
 
             //Static regime
 			else if ( Local_Fr == 0.0 )
-				mu_bed = mu_3 + ( mu_2 - mu_1 ) / ( 1.0 + scale_.epsilon * h[ndx] / L_material);
+				mu_bed = mu_3 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material);
 
 			//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 			// x direction source terms
