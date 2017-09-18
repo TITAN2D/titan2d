@@ -1277,6 +1277,12 @@ public:
 	// array holding S_bedy time-history in the specified location
 	std::vector<double> Fby;
 
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> Fbcx;
+
+	// array holding S_bedcurvy time-history in the specified location
+	std::vector<double> Fbcy;
+
 	// array holding S_otherx time-history in the specified location
 	std::vector<double> Fix;
 
@@ -1291,7 +1297,7 @@ public:
 	void scale(double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
 	void print_local_quants(int i);
 	void print0();
-	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy, const double Fgravx, const double Fgravy, const double Fbedx, const double Fbedy, const double Fintx, const double Finty);
+	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy, double Fgravx, double Fgravy, double Fbedx, double Fbedy, double Fbedcx, double Fbedcy, double Fintx, double Finty);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
     //! Dump object content to hdf5 file
     void h5write(H5::CommonFG *parent, string group_name="LocalQuants") const;

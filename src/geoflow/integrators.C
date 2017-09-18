@@ -62,7 +62,10 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     force_bcy = 0.0;
     force_rx = 0.0;
     force_ry = 0.0;
-    Area = 0.0;
+    power_g = 0.0;
+    power_b = 0.0;
+    power_bc = 0.0;
+    power_r = 0.0;
 
 
     int_frict = 37.0;
@@ -225,7 +228,7 @@ void Integrator::step()
 
     statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, localquants_ptr, dt);
 
-    double tempin[14], tempout[14];
+    double tempin[18], tempout[18];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
     tempin[1] = eroded;     //volume that was eroded this iteration
     tempin[2] = deposited;  //volume that is currently deposited
@@ -240,11 +243,15 @@ void Integrator::step()
     tempin[11] = force_bcy;
     tempin[12] = force_rx;
     tempin[13] = force_ry;
+    tempin[14] = power_g;
+    tempin[15] = power_b;
+    tempin[16] = power_bc;
+    tempin[17] = power_r;
 
 #ifdef USE_MPI
-    MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(tempin, tempout, 18, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-    for(int i=0;i<14;++i)tempout[i]=tempin[i];
+    for(int i=0;i<18;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
     statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
@@ -376,6 +383,7 @@ Integrator_SinglePhase_Coulomb::Integrator_SinglePhase_Coulomb(cxxTitanSimulatio
     assert(order==1);
 
     stopping_criteria=0;
+    thr=0.05;
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
 }
@@ -635,6 +643,10 @@ void Integrator_SinglePhase_Coulomb::corrector()
     double m_force_bcy = 0.0;
     double m_force_rx = 0.0;
     double m_force_ry = 0.0;
+    double m_power_g = 0.0;
+    double m_power_b = 0.0;
+    double m_power_bc = 0.0;
+    double m_power_r = 0.0;
 
     const double sin_intfrictang=sin(int_frict);
 
@@ -656,7 +668,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         //ANNOTATE_ITERATION_TASK(ISPC_cor_iter);
@@ -969,14 +981,22 @@ void Integrator_SinglePhase_Coulomb::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-        m_force_gx += (forcegravx * dxdy);
-        m_force_gy += (forcegravy * dxdy);
-        m_force_bx -= (forcebedx * dxdy);
-        m_force_by -= (forcebedy * dxdy);
-        m_force_bcx -= (forcebedx_curv * dxdy);
-        m_force_bcy -= (forcebedy_curv * dxdy);
-        m_force_rx -= (forceintx * dxdy);
-        m_force_ry -= (forceinty * dxdy);
+        if (h[ndx] >= thr/scale_.height)
+        {
+            m_force_gx += (forcegravx * dxdy);
+            m_force_gy += (forcegravy * dxdy);
+            m_force_bx -= (forcebedx * dxdy);
+            m_force_by -= (forcebedy * dxdy);
+            m_force_bcx -= (forcebedx_curv * dxdy);
+            m_force_bcy -= (forcebedy_curv * dxdy);
+            m_force_rx -= (forceintx * dxdy);
+            m_force_ry -= (forceinty * dxdy);
+
+            m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
+            m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
+            m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
+            m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+        }
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -985,7 +1005,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
                     state_vars_[k][ndx]=0.0;
 
         if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy,  -forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
     }
 
     forceint = m_forceint;
@@ -1002,6 +1022,11 @@ void Integrator_SinglePhase_Coulomb::corrector()
     force_bcy = m_force_bcy;
     force_rx = m_force_rx;
     force_ry = m_force_ry;
+    power_g = m_power_g;
+    power_b = m_power_b;
+    power_bc = m_power_bc;
+    power_r = m_power_r;
+
     //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
 
@@ -1027,12 +1052,14 @@ Integrator_SinglePhase_Voellmy_Salm::Integrator_SinglePhase_Voellmy_Salm(cxxTita
 
     mu = 0.5;
     xi = 120.0;
+    thr = 0.05;
 }
 bool Integrator_SinglePhase_Voellmy_Salm::scale()
 {
     if(Integrator_SinglePhase::scale())
     {
         xi = xi/scale_.gravity;
+        thr = thr/scale_.height;
         return true;
     }
     return false;
@@ -1042,6 +1069,7 @@ bool Integrator_SinglePhase_Voellmy_Salm::unscale()
     if(Integrator_SinglePhase::unscale())
     {
         xi = xi*scale_.gravity;
+        thr = thr*scale_.height;
         return true;
     }
     return false;
@@ -1073,6 +1101,10 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     double m_force_bcy = 0.0;
     double m_force_rx = 0.0;
     double m_force_ry = 0.0;
+    double m_power_g = 0.0;
+    double m_power_b = 0.0;
+    double m_power_bc = 0.0;
+    double m_power_r = 0.0;
 
     double inv_xi= 1.0/xi;
 
@@ -1090,7 +1122,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     //             a dependency in the Element class that causes incorrect
     //             results
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1319,14 +1351,22 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-        m_force_gx += (forcegravx * dxdy);
-        m_force_gy += (forcegravy * dxdy);
-        m_force_bx -= (forcebedx * dxdy);
-        m_force_by -= (forcebedy * dxdy);
-        m_force_bcx -= (forcebedx_curv * dxdy);
-        m_force_bcy -= (forcebedy_curv * dxdy);
-        m_force_rx -= (forceintx * dxdy);
-        m_force_ry -= (forceinty * dxdy);
+        if (h[ndx] >= thr)
+        {
+            m_force_gx += (forcegravx * dxdy);
+            m_force_gy += (forcegravy * dxdy);
+            m_force_bx -= (forcebedx * dxdy);
+            m_force_by -= (forcebedy * dxdy);
+            m_force_bcx -= (forcebedx_curv * dxdy);
+            m_force_bcy -= (forcebedy_curv * dxdy);
+            m_force_rx -= (forceintx * dxdy);
+            m_force_ry -= (forceinty * dxdy);
+
+            m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
+            m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
+            m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
+            m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+        }
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -1335,7 +1375,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
                     state_vars_[k][ndx]=0.0;
 
         if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy,  -forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
     }
 
     forceint = m_forceint;
@@ -1352,6 +1392,10 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     force_bcy = m_force_bcy;
     force_rx = m_force_rx;
     force_ry = m_force_ry;
+    power_g = m_power_g;
+    power_b = m_power_b;
+    power_bc = m_power_bc;
+    power_r = m_power_r;
 }
 void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1360,6 +1404,7 @@ void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string g
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Voellmy_Salm","Type");
     TiH5_writeDoubleAttribute(group, mu);
     TiH5_writeDoubleAttribute(group, xi);
+    TiH5_writeDoubleAttribute(group, thr);
 }
 void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1367,6 +1412,7 @@ void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, con
     H5::Group group(parent->openGroup(group_name));
     TiH5_readDoubleAttribute(group, mu);
     TiH5_readDoubleAttribute(group, xi);
+    TiH5_readDoubleAttribute(group, thr);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation):
@@ -1380,6 +1426,7 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     phi3=33.9;
     Beta=0.65;
     L_material=1.0E-3;
+    thr=0.05;
 }
 
 bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
@@ -1390,6 +1437,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
         phi2*=PI/180.0;
         phi3*=PI/180.0;
         L_material = L_material/scale_.height;
+        thr = thr/scale_.height;
         return true;
     }
     return false;
@@ -1402,6 +1450,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::unscale()
         phi2*=180.0/PI;
         phi3*=180.0/PI;
         L_material = L_material*scale_.height;
+        thr = thr*scale_.height;
         return true;
     }
     return false;
@@ -1441,6 +1490,10 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     double m_force_bcy = 0.0;
     double m_force_rx = 0.0;
     double m_force_ry = 0.0;
+    double m_power_g = 0.0;
+    double m_power_b = 0.0;
+    double m_power_bc = 0.0;
+    double m_power_r = 0.0;
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -1453,7 +1506,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     }
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1702,14 +1755,22 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-        m_force_gx += (forcegravx * dxdy);
-        m_force_gy += (forcegravy * dxdy);
-        m_force_bx -= (forcebedx * dxdy);
-        m_force_by -= (forcebedy * dxdy);
-        m_force_bcx -= (forcebedx_curv * dxdy);
-        m_force_bcy -= (forcebedy_curv * dxdy);
-        m_force_rx -= (forceintx * dxdy);
-        m_force_ry -= (forceinty * dxdy);
+        if (h[ndx] >= thr)
+        {
+            m_force_gx += (forcegravx * dxdy);
+            m_force_gy += (forcegravy * dxdy);
+            m_force_bx -= (forcebedx * dxdy);
+            m_force_by -= (forcebedy * dxdy);
+            m_force_bcx -= (forcebedx_curv * dxdy);
+            m_force_bcy -= (forcebedy_curv * dxdy);
+            m_force_rx -= (forceintx * dxdy);
+            m_force_ry -= (forceinty * dxdy);
+
+            m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
+            m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
+            m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
+            m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+        }
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -1718,7 +1779,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                     state_vars_[k][ndx]=0.0;
 
         if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy, -forceintx, -forceinty);
+        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy,  -forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
     }
 
     forceint = m_forceint;
@@ -1735,6 +1796,10 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     force_bcy = m_force_bcy;
     force_rx = m_force_rx;
     force_ry = m_force_ry;
+    power_g = m_power_g;
+    power_b = m_power_b;
+    power_bc = m_power_bc;
+    power_r = m_power_r;
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1746,6 +1811,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, st
     TiH5_writeDoubleAttribute(group, phi3);
     TiH5_writeDoubleAttribute(group, Beta);
     TiH5_writeDoubleAttribute(group, L_material);
+    TiH5_writeDoubleAttribute(group, thr);
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1756,6 +1822,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *paren
     TiH5_readDoubleAttribute(group, phi3);
     TiH5_readDoubleAttribute(group, Beta);
     TiH5_readDoubleAttribute(group, L_material);
+    TiH5_readDoubleAttribute(group, thr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

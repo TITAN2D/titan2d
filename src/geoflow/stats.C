@@ -42,6 +42,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
     piler = hmax = vmax = forceint = forcebed = 0.0;
     force_gx = force_gy = force_bx = force_by = force_bcx = force_bcy = force_rx = force_ry = 0.0;
+    power_g = power_b = power_bc = power_r = 0.0;
     heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
@@ -56,6 +57,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, c
     realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
     piler = hmax = vmax = forceint = forcebed = 0.0;
     force_gx = force_gy = force_bx = force_by = force_bcx = force_bcy = force_rx = force_ry = 0.0;
+    power_g = power_b = power_bc = power_r = 0.0;
     heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;

@@ -121,6 +121,10 @@ protected:
     double force_bcy;
     double force_rx;
     double force_ry;
+    double power_g;
+    double power_b;
+    double power_bc;
+    double power_r;
 
 };
 
@@ -182,6 +186,7 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
     int stopping_criteria;
+    double thr;
 protected:
 
     /**
@@ -308,6 +313,7 @@ protected:
 public:
     double mu;
     double xi;
+    double thr;
 
 protected:
     //! calculation of k active passive
@@ -383,6 +389,7 @@ public:
     double phi3;
     double Beta;
     double L_material;
+    double thr;
 
 protected:
     //! calculation of k active passive

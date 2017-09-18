@@ -118,6 +118,10 @@ public:
     double force_bcy;
     double force_rx;
     double force_ry;
+    double power_g;
+    double power_b;
+    double power_bc;
+    double power_r;
 
     //! the latin hypercube sampling specific stats
     LHS_Props lhs;

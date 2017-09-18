@@ -131,13 +131,13 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid)
 				fprintf(fp, "Time-history of QoIs are requested at location %d:\n", iloc);
 				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n", localq->length_scale * localq->X[iloc], localq->length_scale * localq->Y[iloc]);
 				fprintf(fp, "\tThe flow height threshold [m] is: %g\n\n", localq->threshold * localq->height_scale);
-				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_otherx      S_othery\n\n");
+				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty\n\n");
 
 				if (localq->temps[iloc].size() == 0)
 					fclose(fp);
 				else
 				{
-					fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n", localq->Height[iloc], localq->Velocity[iloc], localq->Fgx[iloc], localq->Fgy[iloc],  localq->Fbx[iloc],  localq->Fby[iloc],  localq->Fix[iloc],  localq->Fiy[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
+					fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n", localq->Height[iloc], localq->Velocity[iloc], localq->Fgx[iloc], localq->Fgy[iloc],  localq->Fbx[iloc],  localq->Fby[iloc],  localq->Fbcx[iloc],  localq->Fbcy[iloc],  localq->Fix[iloc],  localq->Fiy[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
 					fclose(fp);
 				}
 			}
@@ -145,7 +145,7 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid)
 			{
 				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
-				fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n", localq->Height[iloc], localq->Velocity[iloc], localq->Fgx[iloc], localq->Fgy[iloc],  localq->Fbx[iloc],  localq->Fby[iloc],  localq->Fix[iloc],  localq->Fiy[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
+				fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n", localq->Height[iloc], localq->Velocity[iloc], localq->Fgx[iloc], localq->Fgy[iloc],  localq->Fbx[iloc],  localq->Fby[iloc],  localq->Fbcx[iloc],  localq->Fbcy[iloc],  localq->Fix[iloc],  localq->Fiy[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
 				fclose(fp);
 			}
 		}

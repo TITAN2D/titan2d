@@ -270,7 +270,7 @@ class TitanSimulationBase(object):
     #defaultParameters can be removed
     possible_internal_mat_models={
         'Coulomb':{
-            'allParameters':('order','int_frict','stopping_criteria'),
+            'allParameters':('order','int_frict','stopping_criteria','Threshold'),
             'defaultParameters':{'order':'First','int_frict':37.0,'stopping_criteria':None},
             'elementType':ElementType_SinglePhase,
             'integrators':[
@@ -281,11 +281,12 @@ class TitanSimulationBase(object):
             ]
         },
         'Voellmy-Salm':{
-            'allParameters':('order','mu','xi'), 
+            'allParameters':('order','mu','xi','Threshold'), 
             'defaultParameters':{
                 'order':'First',
                 'mu' : 0.5,
                 'xi' : 120.0,
+                'Threshold' : 0.05
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
@@ -294,14 +295,15 @@ class TitanSimulationBase(object):
             }]
         },
         'Pouliquen-Forterre':{
-            'allParameters':('order','phi1','phi2','phi3','Beta','L_material'), 
+            'allParameters':('order','phi1','phi2','phi3','Beta','L_material','Threshold'), 
             'defaultParameters':{
                 'order':'First',
                 'phi1':32.9,
                 'phi2':42.0,
                 'phi3':33.9,
                 'Beta':0.65,
-                'L_material':1.0E-3
+                'L_material':1.0E-3,
+                'Threshold' : 0.05
             },
             'elementType':ElementType_SinglePhase,
             'integrators':[{
@@ -430,6 +432,7 @@ class TitanSimulationBase(object):
                             levelZeroParameters={
                                 'int_frict':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'stopping_criteria':{'validator':VarTypeDictConvert(TitanSimulationBase.possible_stopping_criteria,NoneToStringNone=True).chk,'desc':''},
+                                'Threshold':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                             },
                             defaultParameters={'use_gis_matmap':False,'stopping_criteria':None},
                             switchArguments={
@@ -461,6 +464,7 @@ class TitanSimulationBase(object):
                             levelZeroParameters={
                                 'mu':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'xi':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'Threshold':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                             }
                         ),
                         'Pouliquen-Forterre':TiArgCheckerAndSetter(
@@ -469,7 +473,8 @@ class TitanSimulationBase(object):
                                 'phi2':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'phi3':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                                 'Beta':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
-                                'L_material':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''}
+                                'L_material':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
+                                'Threshold':{'validator':VarType(float,conditions=[{'f':lambda v: v > 0,'msg':'should be positive!'}]).chk,'desc':''},
                             }
                         ),
                         'TwoPhases-Pitman-Le':TiArgCheckerAndSetter(
