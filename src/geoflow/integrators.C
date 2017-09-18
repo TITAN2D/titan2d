@@ -54,6 +54,15 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     eroded = 0.0;
     deposited = 0.0;
     realvolume = 0.0;
+    force_gx = 0.0;
+    force_gy = 0.0;
+    force_bx = 0.0;
+    force_by = 0.0;
+    force_bcx = 0.0;
+    force_bcy = 0.0;
+    force_rx = 0.0;
+    force_ry = 0.0;
+    Area = 0.0;
 
 
     int_frict = 37.0;
@@ -216,18 +225,26 @@ void Integrator::step()
 
     statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, localquants_ptr, dt);
 
-    double tempin[6], tempout[6];
+    double tempin[14], tempout[14];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
     tempin[1] = eroded;     //volume that was eroded this iteration
     tempin[2] = deposited;  //volume that is currently deposited
     tempin[3] = realvolume; //"actual" volume within boundaries
     tempin[4] = forceint;   //internal friction force
     tempin[5] = forcebed;   //bed friction force
+    tempin[6] = force_gx;
+    tempin[7] = force_gy;
+    tempin[8] = force_bx;
+    tempin[9] = force_by;
+    tempin[10] = force_bcx;
+    tempin[11] = force_bcy;
+    tempin[12] = force_rx;
+    tempin[13] = force_ry;
 
 #ifdef USE_MPI
-    MPI_Reduce(tempin, tempout, 6, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-    for(int i=0;i<6;++i)tempout[i]=tempin[i];
+    for(int i=0;i<14;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
     statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
@@ -241,6 +258,18 @@ void Integrator::step()
 
     statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->scale.gravity;
     statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->scale.gravity;
+
+	double F_SCALE = matprops_ptr->scale.gravity * (matprops_ptr->scale.height)
+			* (matprops_ptr->scale.length) * (matprops_ptr->scale.length);
+
+	statprops_ptr->force_gx = tempout[6] * F_SCALE;
+	statprops_ptr->force_gy = tempout[7] * F_SCALE;
+	statprops_ptr->force_bx = tempout[8] * F_SCALE;
+	statprops_ptr->force_by = tempout[9] * F_SCALE;
+	statprops_ptr->force_bcx = tempout[10] * F_SCALE;
+	statprops_ptr->force_bcy = tempout[11] * F_SCALE;
+	statprops_ptr->force_rx = tempout[12] * F_SCALE;
+	statprops_ptr->force_ry = tempout[13] * F_SCALE;
 
     PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
 
@@ -598,6 +627,14 @@ void Integrator_SinglePhase_Coulomb::corrector()
     double m_eroded = 0.0;
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
+    double m_force_gx = 0.0;
+    double m_force_gy = 0.0;
+    double m_force_bx = 0.0;
+    double m_force_by = 0.0;
+    double m_force_bcx = 0.0;
+    double m_force_bcy = 0.0;
+    double m_force_rx = 0.0;
+    double m_force_ry = 0.0;
 
     const double sin_intfrictang=sin(int_frict);
 
@@ -619,7 +656,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         //ANNOTATE_ITERATION_TASK(ISPC_cor_iter);
@@ -707,6 +744,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
         double speed;
         double forceintx, forceinty;
         double forcebedx, forcebedy;
+        double forcebedx_curv, forcebedy_curv;
         double forcebedmax, forcebedequil, forcegravx , forcegravy;
         double unitvx, unitvy;
         double tanbed;
@@ -737,6 +775,8 @@ void Integrator_SinglePhase_Coulomb::corrector()
         // initialize to zero
         forceintx = 0.0;
         forcebedx = 0.0;
+        forcebedx_curv = 0.0;
+        forcebedy_curv = 0.0;
         forceinty = 0.0;
         forcebedy = 0.0;
         unitvx = 0.0;
@@ -776,7 +816,11 @@ void Integrator_SinglePhase_Coulomb::corrector()
             forceintx = sgn_dudy * h[ndx]* kactxy[ndx] * (g[2][ndx] * dh_dy[ndx] + dgdx[1][ndx] * h[ndx]) * sin_intfrictang;
 
             // the bed friction force for fast moving flow
-            forcebedx = unitvx * c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0) * tanbed;
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedx = unitvx * tanbed * g[2][ndx] * h[ndx];
+            	forcebedx_curv = unitvx * tanbed * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
+            }
 #ifdef STOPPED_FLOWS
             if (IF_STOPPED == 2 && 1 == 0) {
                 // the bed friction force for stopped or nearly stopped flow
@@ -805,12 +849,12 @@ void Integrator_SinglePhase_Coulomb::corrector()
             }
 #endif
 
-            Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forceintx);
+            Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forcebedx_curv - forceintx);
             //STOPPING CRITERIA
             if(stopping_criteria==1)
             {
                 inertial_x = fabs(Ustore[1] + dt * forcegravx);
-                drag_x = fabs(dt * (forcebedx + forceintx) );
+                drag_x = fabs(dt * (forcebedx + forcebedx_curv + forceintx) );
 
                 if (inertial_x <= drag_x)
                     Ustore[1] = 0.0;
@@ -828,7 +872,11 @@ void Integrator_SinglePhase_Coulomb::corrector()
             forceinty = sgn_dvdx * h[ndx] * kactxy[ndx] * (g[2][ndx] * dh_dx[ndx] + dgdx[0][ndx] * h[ndx]) * sin_intfrictang;
 
             // the bed friction force for fast moving flow
-            forcebedy = unitvy * c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0) * tanbed;
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedy = unitvy * tanbed * g[2][ndx] * h[ndx];
+            	forcebedy_curv = unitvy * tanbed * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
+            }
 #ifdef STOPPED_FLOWS
             if (IF_STOPPED == 2 && 1 == 0) {
                 // the bed friction force for stopped or nearly stopped flow
@@ -847,12 +895,12 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 //    else
             }
 #endif
-            Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forceinty);
+            Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forcebedy_curv - forceinty);
             //STOPPING CRITERIA
             if(stopping_criteria==1)
             {
                 inertial_y = fabs(Ustore[2] + dt * forcegravy);
-                drag_y = fabs(dt * (forcebedy + forceinty) );
+                drag_y = fabs(dt * (forcebedy + forcebedy_curv + forceinty) );
 
                 if (inertial_y <= drag_y)
                     Ustore[2] = 0.0;
@@ -917,9 +965,18 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
         m_forceint += fabs(elem_forceint);
         m_forcebed += fabs(elem_forcebed);
-        m_realvolume += dxdy * h[ndx];
+        m_realvolume += dxdy * h[ndx];;
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
+
+        m_force_gx += (forcegravx * dxdy);
+        m_force_gy += (forcegravy * dxdy);
+        m_force_bx -= (forcebedx * dxdy);
+        m_force_by -= (forcebedy * dxdy);
+        m_force_bcx -= (forcebedx_curv * dxdy);
+        m_force_bcy -= (forcebedy_curv * dxdy);
+        m_force_rx -= (forceintx * dxdy);
+        m_force_ry -= (forceinty * dxdy);
 
         // apply bc's
         for(int j = 0; j < 4; j++)
@@ -936,6 +993,15 @@ void Integrator_SinglePhase_Coulomb::corrector()
     eroded = m_eroded;
     deposited = m_deposited;
     realvolume = m_realvolume;
+
+    force_gx = m_force_gx;
+    force_gy = m_force_gy;
+    force_bx = m_force_bx;
+    force_by = m_force_by;
+    force_bcx = m_force_bcx;
+    force_bcy = m_force_bcy;
+    force_rx = m_force_rx;
+    force_ry = m_force_ry;
     //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
 
@@ -999,6 +1065,14 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     double m_eroded = 0.0;
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
+    double m_force_gx = 0.0;
+    double m_force_gy = 0.0;
+    double m_force_bx = 0.0;
+    double m_force_by = 0.0;
+    double m_force_bcx = 0.0;
+    double m_force_bcy = 0.0;
+    double m_force_rx = 0.0;
+    double m_force_ry = 0.0;
 
     double inv_xi= 1.0/xi;
 
@@ -1016,7 +1090,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     //             a dependency in the Element class that causes incorrect
     //             results
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1100,8 +1174,9 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         double speed, speed_squared;
         double forceintx, forceinty;
         double forcebedx, forcebedy;
+        double forcebedx_curv, forcebedy_curv;
         double forcegravx,forcegravy;
-        double unitvx, unitvy;
+        double unitvx, unitvy, tmp;
         double Ustore[3];
         double inertial_x, inertial_y;
         double drag_x, drag_y;
@@ -1127,6 +1202,8 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         // initialize to zero
         forceintx = 0.0;
         forcebedx = 0.0;
+        forcebedx_curv = 0.0;
+        forcebedy_curv = 0.0;
         forceinty = 0.0;
         forcebedy = 0.0;
         unitvx = 0.0;
@@ -1161,7 +1238,11 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             forcegravx = g[0][ndx] * h[ndx];
 
             //the Coulomb type friction force in x direction
-            forcebedx = unitvx * mu * c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedx = unitvx * mu * g[2][ndx] * h[ndx];
+            	forcebedx_curv = unitvx * mu * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
+            }
 
             //the Turbulent type force for fast moving flow in x direction
             forceintx = unitvx * speed_squared * inv_xi / scale_.epsilon;
@@ -1169,10 +1250,10 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             //STOPPING CRITERIA
             inertial_x = fabs( Ustore[1] + dt * forcegravx );
 
-            drag_x = fabs( dt * ( forceintx + forcebedx ) );
+            drag_x = fabs( dt * ( forceintx + forcebedx + forcebedx_curv) );
 
             if ( inertial_x > drag_x )
-            	Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forceintx);
+            	Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forcebedx_curv - forceintx);
             else
             	Ustore[1] = 0.0;
              //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1183,7 +1264,11 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             forcegravy = g[1][ndx] * h[ndx];
 
             // the Coulomb type friction force  in y direction
-            forcebedy = unitvy * mu * c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedy = unitvy * mu * g[2][ndx] * h[ndx];
+            	forcebedy_curv = unitvy * mu * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
+            }
 
             // the Turbulent type force for fast moving flow in y direction
             forceinty = unitvy * speed_squared * inv_xi / scale_.epsilon;
@@ -1191,12 +1276,12 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             //STOPPING CRITERIA
             inertial_y = fabs( Ustore[2] + dt * forcegravy );
 
-            drag_y = fabs( dt * ( forceinty + forcebedy ) );
+            drag_y = fabs( dt * ( forceinty + forcebedy + forcebedy_curv) );
 
             if ( inertial_y > drag_y )
-            	Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forceinty);
+            	Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forcebedy_curv - forceinty);
     	    else
-    		Ustore[2] = 0.0;
+    	    	Ustore[2] = 0.0;
 
         }
 
@@ -1234,6 +1319,15 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
+        m_force_gx += (forcegravx * dxdy);
+        m_force_gy += (forcegravy * dxdy);
+        m_force_bx -= (forcebedx * dxdy);
+        m_force_by -= (forcebedy * dxdy);
+        m_force_bcx -= (forcebedx_curv * dxdy);
+        m_force_bcy -= (forcebedy_curv * dxdy);
+        m_force_rx -= (forceintx * dxdy);
+        m_force_ry -= (forceinty * dxdy);
+
         // apply bc's
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
@@ -1249,6 +1343,15 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     eroded = m_eroded;
     deposited = m_deposited;
     realvolume = m_realvolume;
+
+    force_gx = m_force_gx;
+    force_gy = m_force_gy;
+    force_bx = m_force_bx;
+    force_by = m_force_by;
+    force_bcx = m_force_bcx;
+    force_bcy = m_force_bcy;
+    force_rx = m_force_rx;
+    force_ry = m_force_ry;
 }
 void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1330,6 +1433,14 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     double m_eroded = 0.0;
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
+    double m_force_gx = 0.0;
+    double m_force_gy = 0.0;
+    double m_force_bx = 0.0;
+    double m_force_by = 0.0;
+    double m_force_bcx = 0.0;
+    double m_force_bcy = 0.0;
+    double m_force_rx = 0.0;
+    double m_force_ry = 0.0;
 
     //convinience ref
     tivector<double> *g=gravity_;
@@ -1342,7 +1453,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     }
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1429,12 +1540,11 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
         double speed;
         double forceintx, forceinty;
         double forcebedx, forcebedy;
+        double forcebedx_curv, forcebedy_curv;
         double forcegravx, forcegravy;
-        double unitvx, unitvy;
+        double unitvx, unitvy, tmp;
         double Ustore[3];
         double mu_bed, mu_1, mu_2, mu_3, Local_Fr;
-        double inertial_x,inertial_y,drag_x, drag_y;
-
 
         double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
 
@@ -1455,23 +1565,20 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                 + dt * Influx_[2][ndx];
 
         // initialize to zero
-        forcegravx = 0.0;
-        forcegravy = 0.0;
         forceintx = 0.0;
         forcebedx = 0.0;
+        forcebedx_curv = 0.0;
+        forcebedy_curv = 0.0;
         forceinty = 0.0;
         forcebedy = 0.0;
         unitvx = 0.0;
         unitvy = 0.0;
-        inertial_x = 0.0;
-        inertial_y = 0.0;
-        drag_x = 0.0;
-        drag_y = 0.0;
         elem_eroded = 0.0;
         mu_bed = 0.0;
         
         if(h[ndx] > tiny)
         {
+        	double inertial_x,inertial_y,drag_x, drag_y;
             // S terms
             // here speed is speed squared
             speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
@@ -1515,17 +1622,21 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			forcegravx = g[0][ndx] * h[ndx];
 
 			// the bed friction forces for fast moving flow in x direction
-			forcebedx = unitvx * mu_bed * c_dmax1(h[ndx] * g[2][ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedx = unitvx * mu_bed * g[2][ndx] * h[ndx];
+            	forcebedx_curv = unitvx * mu_bed * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
+            }
 
 			forceintx = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
 
 			//STOPPING CRITERIA
 			inertial_x = fabs( Ustore[1] + dt * forcegravx );
 
-			drag_x = fabs( dt * ( forcebedx + forceintx ) );
+			drag_x = fabs( dt * ( forcebedx + forcebedx_curv + forceintx ) );
 
 			if ( inertial_x > drag_x )
-				Ustore[1] = Ustore[1] + dt * ( forcegravx - forcebedx - forceintx );
+				Ustore[1] = Ustore[1] + dt * ( forcegravx - forcebedx - forcebedx_curv - forceintx );
 			else
 				Ustore[1] = 0.0;
 
@@ -1538,17 +1649,21 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			forcegravy = g[1][ndx] * h[ndx];
 
 			// the bed friction forces for fast moving flow in y direction
-			forcebedy = unitvy * mu_bed * c_dmax1(h[ndx] * g[2][ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedy = unitvy * mu_bed * g[2][ndx] * h[ndx];
+            	forcebedy_curv = unitvy * mu_bed * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
+            }
 
 			forceinty = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
 
 			//STOPPING CRITERIA
 			inertial_y = fabs( Ustore[2] + dt * forcegravy );
 
-			drag_y = fabs( dt * ( forcebedy + forceinty ) );
+			drag_y = fabs( dt * ( forcebedy + forcebedy_curv + forceinty ) );
 
 			if ( inertial_y > drag_y )
-				Ustore[2] = Ustore[2] + dt * ( forcegravy - forcebedy - forceinty );
+				Ustore[2] = Ustore[2] + dt * ( forcegravy - forcebedy - forcebedy_curv - forceinty );
 			else
 				Ustore[2] = 0.0;
         }
@@ -1587,6 +1702,15 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
+        m_force_gx += (forcegravx * dxdy);
+        m_force_gy += (forcegravy * dxdy);
+        m_force_bx -= (forcebedx * dxdy);
+        m_force_by -= (forcebedy * dxdy);
+        m_force_bcx -= (forcebedx_curv * dxdy);
+        m_force_bcy -= (forcebedy_curv * dxdy);
+        m_force_rx -= (forceintx * dxdy);
+        m_force_ry -= (forceinty * dxdy);
+
         // apply bc's
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
@@ -1602,6 +1726,15 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     eroded = m_eroded;
     deposited = m_deposited;
     realvolume = m_realvolume;
+
+    force_gx = m_force_gx;
+    force_gy = m_force_gy;
+    force_bx = m_force_bx;
+    force_by = m_force_by;
+    force_bcx = m_force_bcx;
+    force_bcy = m_force_bcy;
+    force_rx = m_force_rx;
+    force_ry = m_force_ry;
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
 {

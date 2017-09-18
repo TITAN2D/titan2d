@@ -113,6 +113,14 @@ protected:
     double eroded;
     double deposited;
     double realvolume;
+    double force_gx;
+    double force_gy;
+    double force_bx;
+    double force_by;
+    double force_bcx;
+    double force_bcy;
+    double force_rx;
+    double force_ry;
 
 };
 

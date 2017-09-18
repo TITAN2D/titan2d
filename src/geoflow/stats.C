@@ -41,6 +41,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     xcen = ycen = xvar = yvar = rmean = area = vmean = vxmean = vymean = slopemean = vstar = 0.0;
     realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
     piler = hmax = vmax = forceint = forcebed = 0.0;
+    force_gx = force_gy = force_bx = force_by = force_bcx = force_bcy = force_rx = force_ry = 0.0;
     heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
@@ -54,6 +55,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, c
     xcen = ycen = xvar = yvar = rmean = area = vmean = vxmean = vymean = slopemean = vstar = 0.0;
     realvolume = statvolume = outflowvol = erodedvol = depositedvol = cutoffheight = 0.0;
     piler = hmax = vmax = forceint = forcebed = 0.0;
+    force_gx = force_gy = force_bx = force_by = force_bcx = force_bcy = force_rx = force_ry = 0.0;
     heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
@@ -357,13 +359,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                     m_slopevolume += dVol;
                 }*/
             }
-//            if (localQ->no_locations > 0)
-//            	localQ->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx],state_vars_[2][ndx]);
         }
     }
-
-//    if (localQ->no_locations > 0)
-//    	localQ->StoreQuant(matprops, timeprops);
 
     //ANNOTATE_TASK_END(StatProps_calc_stats_loop);
     //ANNOTATE_SITE_END(StatProps_calc_stats);
