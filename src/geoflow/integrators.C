@@ -264,23 +264,6 @@ void Integrator::step()
     statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->scale.gravity;
     statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->scale.gravity;
 
-//	double F_SCALE = matprops_ptr->scale.gravity * (matprops_ptr->scale.height)
-//			* (matprops_ptr->scale.length) * (matprops_ptr->scale.length);
-//	double P_SCALE = F_SCALE * sqrt(matprops_ptr->scale.gravity *  matprops_ptr->scale.length);
-//
-//	statprops_ptr->force_gx = tempout[6] * F_SCALE;
-//	statprops_ptr->force_gy = tempout[7] * F_SCALE;
-//	statprops_ptr->force_bx = tempout[8] * F_SCALE;
-//	statprops_ptr->force_by = tempout[9] * F_SCALE;
-//	statprops_ptr->force_bcx = tempout[10] * F_SCALE;
-//	statprops_ptr->force_bcy = tempout[11] * F_SCALE;
-//	statprops_ptr->force_rx = tempout[12] * F_SCALE;
-//	statprops_ptr->force_ry = tempout[13] * F_SCALE;
-//	statprops_ptr->power_g = tempout[14] * P_SCALE;
-//	statprops_ptr->power_b = tempout[15] * P_SCALE;
-//	statprops_ptr->power_bc = tempout[16] * P_SCALE;
-//	statprops_ptr->power_r = tempout[17] * P_SCALE;
-
     PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
 
     return;
@@ -978,11 +961,12 @@ void Integrator_SinglePhase_Coulomb::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        m_forceint += fabs(elem_forceint);
-        m_forcebed += fabs(elem_forcebed);
-        m_realvolume += dxdy * h[ndx];;
-        m_eroded += elem_eroded;
-        m_deposited += elem_deposited;
+		m_forceint += fabs(elem_forceint);
+		m_forcebed += fabs(elem_forcebed);
+		m_realvolume += dxdy * h[ndx];
+		;
+		m_eroded += elem_eroded;
+		m_deposited += elem_deposited;
 
 		if (h[ndx] >= thr / scale_.height) {
 			m_force_gx += (forcegravx * dxdy);
@@ -996,8 +980,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
 			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
-			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1])
-					* dxdy;
+			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
 		}
 
@@ -1009,10 +992,9 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
 		if (localquants_ptr->no_locations > 0)
 			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
-					coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx],
-					state_vars_[1][ndx], state_vars_[2][ndx], forcegravx,
-					forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
-					-forcebedy_curv, -forceintx, -forceinty);
+					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
+					forcegravx, forcegravy, -forcebedx, -forcebedy,
+					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
 	}
 
 	forceint = m_forceint;
@@ -1379,8 +1361,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 
 			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
-			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1])
-					* dxdy;
+			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
 		}
 
@@ -1392,10 +1373,9 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 
 		if (localquants_ptr->no_locations > 0)
 			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
-					coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx],
-					state_vars_[1][ndx], state_vars_[2][ndx], forcegravx,
-					forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
-					-forcebedy_curv, -forceintx, -forceinty);
+					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
+					forcegravx, forcegravy, -forcebedx, -forcebedy,
+					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
 	}
 
 	forceint = m_forceint;
@@ -1796,8 +1776,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
 			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
-			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1])
-					* dxdy;
+			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
 		}
 
@@ -1809,10 +1788,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
 		if (localquants_ptr->no_locations > 0)
 			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
-					coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx],
-					state_vars_[1][ndx], state_vars_[2][ndx], forcegravx,
-					forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
-					-forcebedy_curv, -forceintx, -forceinty);
+					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
+					forcegravx, forcegravy, -forcebedx, -forcebedy,
+					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
 	}
 
 	forceint = m_forceint;

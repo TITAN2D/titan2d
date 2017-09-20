@@ -962,7 +962,6 @@ void cxxTitanSimulation::run(bool start_from_restart)
     statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
-    output_localquants(&timeprops, &localquants, myid);
 
     move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
     save_vizoutput_file(XDMF_NEW);
@@ -1003,6 +1002,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     PROFILING1_DEFINE(pt_start);
     PROFILING1_START(pt_start);
 
+    output_localquants(&timeprops, &localquants, myid);
     titanTimingsAlongSimulation.totalTime = MPI_Wtime();
     while (!(timeprops.ifend(0)) && !ifstop)
     {

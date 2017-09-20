@@ -1249,7 +1249,9 @@ public:
     double length_scale;
     double velocity_scale;
     double st_scale;
+    double p_scale;
     double Tst_scale;
+    double Tp_scale;
 
 	// array containing Easting coordinates (X)
 	std::vector<double> X;
@@ -1294,6 +1296,18 @@ public:
 	std::vector<double> Fiy;
 
 	// array holding S_gy time-history in the specified location
+	std::vector<double> Pg;
+
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> Pb;
+
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> Pbc;
+
+	// array holding S_othery time-history in the specified location
+	std::vector<double> Pi;
+
+	// array holding S_gy time-history in the specified location
 	std::vector<double> T_Fg;
 
 	// array holding S_bedcurvx time-history in the specified location
@@ -1304,6 +1318,18 @@ public:
 
 	// array holding S_othery time-history in the specified location
 	std::vector<double> T_Fi;
+
+	// array holding S_gy time-history in the specified location
+	std::vector<double> T_Pg;
+
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> T_Pb;
+
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> T_Pbc;
+
+	// array holding S_othery time-history in the specified location
+	std::vector<double> T_Pi;
 
 	LocalQuants();
 	~LocalQuants();
