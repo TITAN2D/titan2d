@@ -1249,6 +1249,7 @@ public:
     double length_scale;
     double velocity_scale;
     double st_scale;
+    double Tst_scale;
 
 	// array containing Easting coordinates (X)
 	std::vector<double> X;
@@ -1258,6 +1259,9 @@ public:
 
 	// temporary arrays holding the local values of state vars and their distance to the specified location
 	std::vector<std::vector<double> > temps;
+
+	// temporary arrays holding the local values of state vars and their distance to the specified location
+	std::vector<std::vector<double> > TimeInts;
 
 	// array holding flow height time-history in the specified location
 	std::vector<double> Height;
@@ -1289,15 +1293,27 @@ public:
 	// array holding S_othery time-history in the specified location
 	std::vector<double> Fiy;
 
+	// array holding S_gy time-history in the specified location
+	std::vector<double> T_Fg;
+
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> T_Fb;
+
+	// array holding S_bedcurvx time-history in the specified location
+	std::vector<double> T_Fbc;
+
+	// array holding S_othery time-history in the specified location
+	std::vector<double> T_Fi;
+
 	LocalQuants();
 	~LocalQuants();
 	void allocate(int m_no_locations);
 	void addLocalQuants(const double x_in, const double y_in);
 	void init(int no_locations_in, double *XX, double *YY);
-	void scale(double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
+	void scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
 	void print_local_quants(int i);
 	void print0();
-	void FindElement(double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy, double Fgravx, double Fgravy, double Fbedx, double Fbedy, double Fbedcx, double Fbedcy, double Fintx, double Finty);
+	void FindElement(double dt, double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy, double Fgravx, double Fgravy, double Fbedx, double Fbedy, double Fbedcx, double Fbedcy, double Fintx, double Finty);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
     //! Dump object content to hdf5 file
     void h5write(H5::CommonFG *parent, string group_name="LocalQuants") const;

@@ -27,7 +27,7 @@
 #include "../header/titan_simulation.h"
 #include "../header/outline.h"
 
-//#include <advisor-annotate.h>
+//#include <advisor-annotate.h>double
 
 Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
@@ -54,18 +54,28 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     eroded = 0.0;
     deposited = 0.0;
     realvolume = 0.0;
-    force_gx = 0.0;
-    force_gy = 0.0;
-    force_bx = 0.0;
-    force_by = 0.0;
-    force_bcx = 0.0;
-    force_bcy = 0.0;
-    force_rx = 0.0;
-    force_ry = 0.0;
-    power_g = 0.0;
-    power_b = 0.0;
-    power_bc = 0.0;
-    power_r = 0.0;
+
+	force_gx = 0.0;
+	force_gy = 0.0;
+	force_bx = 0.0;
+	force_by = 0.0;
+	force_bcx = 0.0;
+	force_bcy = 0.0;
+	force_rx = 0.0;
+	force_ry = 0.0;
+	power_g = 0.0;
+	power_b = 0.0;
+	power_bc = 0.0;
+	power_r = 0.0;
+
+	Tforce_g = 0.0;
+	Tforce_b = 0.0;
+	Tforce_bc = 0.0;
+	Tforce_r = 0.0;
+	Tpower_g = 0.0;
+	Tpower_b = 0.0;
+	Tpower_bc = 0.0;
+	Tpower_r = 0.0;
 
 
     int_frict = 37.0;
@@ -228,30 +238,18 @@ void Integrator::step()
 
     statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, localquants_ptr, dt);
 
-    double tempin[18], tempout[18];
+    double tempin[5], tempout[5];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
     tempin[1] = eroded;     //volume that was eroded this iteration
     tempin[2] = deposited;  //volume that is currently deposited
     tempin[3] = realvolume; //"actual" volume within boundaries
     tempin[4] = forceint;   //internal friction force
     tempin[5] = forcebed;   //bed friction force
-    tempin[6] = force_gx;
-    tempin[7] = force_gy;
-    tempin[8] = force_bx;
-    tempin[9] = force_by;
-    tempin[10] = force_bcx;
-    tempin[11] = force_bcy;
-    tempin[12] = force_rx;
-    tempin[13] = force_ry;
-    tempin[14] = power_g;
-    tempin[15] = power_b;
-    tempin[16] = power_bc;
-    tempin[17] = power_r;
 
 #ifdef USE_MPI
-    MPI_Reduce(tempin, tempout, 18, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(tempin, tempout, 6, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-    for(int i=0;i<18;++i)tempout[i]=tempin[i];
+    for(int i=0;i<6;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
     statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
@@ -266,17 +264,22 @@ void Integrator::step()
     statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->scale.gravity;
     statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->scale.gravity;
 
-	double F_SCALE = matprops_ptr->scale.gravity * (matprops_ptr->scale.height)
-			* (matprops_ptr->scale.length) * (matprops_ptr->scale.length);
-
-	statprops_ptr->force_gx = tempout[6] * F_SCALE;
-	statprops_ptr->force_gy = tempout[7] * F_SCALE;
-	statprops_ptr->force_bx = tempout[8] * F_SCALE;
-	statprops_ptr->force_by = tempout[9] * F_SCALE;
-	statprops_ptr->force_bcx = tempout[10] * F_SCALE;
-	statprops_ptr->force_bcy = tempout[11] * F_SCALE;
-	statprops_ptr->force_rx = tempout[12] * F_SCALE;
-	statprops_ptr->force_ry = tempout[13] * F_SCALE;
+//	double F_SCALE = matprops_ptr->scale.gravity * (matprops_ptr->scale.height)
+//			* (matprops_ptr->scale.length) * (matprops_ptr->scale.length);
+//	double P_SCALE = F_SCALE * sqrt(matprops_ptr->scale.gravity *  matprops_ptr->scale.length);
+//
+//	statprops_ptr->force_gx = tempout[6] * F_SCALE;
+//	statprops_ptr->force_gy = tempout[7] * F_SCALE;
+//	statprops_ptr->force_bx = tempout[8] * F_SCALE;
+//	statprops_ptr->force_by = tempout[9] * F_SCALE;
+//	statprops_ptr->force_bcx = tempout[10] * F_SCALE;
+//	statprops_ptr->force_bcy = tempout[11] * F_SCALE;
+//	statprops_ptr->force_rx = tempout[12] * F_SCALE;
+//	statprops_ptr->force_ry = tempout[13] * F_SCALE;
+//	statprops_ptr->power_g = tempout[14] * P_SCALE;
+//	statprops_ptr->power_b = tempout[15] * P_SCALE;
+//	statprops_ptr->power_bc = tempout[16] * P_SCALE;
+//	statprops_ptr->power_r = tempout[17] * P_SCALE;
 
     PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
 
@@ -981,51 +984,64 @@ void Integrator_SinglePhase_Coulomb::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-        if (h[ndx] >= thr/scale_.height)
-        {
-            m_force_gx += (forcegravx * dxdy);
-            m_force_gy += (forcegravy * dxdy);
-            m_force_bx -= (forcebedx * dxdy);
-            m_force_by -= (forcebedy * dxdy);
-            m_force_bcx -= (forcebedx_curv * dxdy);
-            m_force_bcy -= (forcebedy_curv * dxdy);
-            m_force_rx -= (forceintx * dxdy);
-            m_force_ry -= (forceinty * dxdy);
+		if (h[ndx] >= thr / scale_.height) {
+			m_force_gx += (forcegravx * dxdy);
+			m_force_gy += (forcegravy * dxdy);
+			m_force_bx -= (forcebedx * dxdy);
+			m_force_by -= (forcebedy * dxdy);
+			m_force_bcx -= (forcebedx_curv * dxdy);
+			m_force_bcy -= (forcebedy_curv * dxdy);
+			m_force_rx -= (forceintx * dxdy);
+			m_force_ry -= (forceinty * dxdy);
 
-            m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
-            m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
-            m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
-            m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
-        }
+			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
+			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
+			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1])
+					* dxdy;
+			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+		}
 
-        // apply bc's
-        for(int j = 0; j < 4; j++)
-            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
-                for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx]=0.0;
+		// apply bc's
+		for (int j = 0; j < 4; j++)
+			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+				for (int k = 0; k < NUM_STATE_VARS; k++)
+					state_vars_[k][ndx] = 0.0;
 
-        if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy,  -forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
-    }
+		if (localquants_ptr->no_locations > 0)
+			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+					coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx],
+					state_vars_[1][ndx], state_vars_[2][ndx], forcegravx,
+					forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
+					-forcebedy_curv, -forceintx, -forceinty);
+	}
 
-    forceint = m_forceint;
-    forcebed = m_forcebed;
-    eroded = m_eroded;
-    deposited = m_deposited;
-    realvolume = m_realvolume;
+	forceint = m_forceint;
+	forcebed = m_forcebed;
+	eroded = m_eroded;
+	deposited = m_deposited;
+	realvolume = m_realvolume;
 
-    force_gx = m_force_gx;
-    force_gy = m_force_gy;
-    force_bx = m_force_bx;
-    force_by = m_force_by;
-    force_bcx = m_force_bcx;
-    force_bcy = m_force_bcy;
-    force_rx = m_force_rx;
-    force_ry = m_force_ry;
-    power_g = m_power_g;
-    power_b = m_power_b;
-    power_bc = m_power_bc;
-    power_r = m_power_r;
+	force_gx = m_force_gx;
+	force_gy = m_force_gy;
+	force_bx = m_force_bx;
+	force_by = m_force_by;
+	force_bcx = m_force_bcx;
+	force_bcy = m_force_bcy;
+	force_rx = m_force_rx;
+	force_ry = m_force_ry;
+	power_g = m_power_g;
+	power_b = m_power_b;
+	power_bc = m_power_bc;
+	power_r = m_power_r;
+
+	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
+	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
+	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
+	Tforce_r += sqrt(m_force_rx * m_force_rx + m_force_ry * m_force_ry) * dt;
+	Tpower_g += m_power_g * dt;
+	Tpower_b += m_power_b * dt;
+	Tpower_bc += m_power_bc * dt;
+	Tpower_r += m_power_r * dt;
 
     //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
@@ -1351,51 +1367,64 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-        if (h[ndx] >= thr)
-        {
-            m_force_gx += (forcegravx * dxdy);
-            m_force_gy += (forcegravy * dxdy);
-            m_force_bx -= (forcebedx * dxdy);
-            m_force_by -= (forcebedy * dxdy);
-            m_force_bcx -= (forcebedx_curv * dxdy);
-            m_force_bcy -= (forcebedy_curv * dxdy);
-            m_force_rx -= (forceintx * dxdy);
-            m_force_ry -= (forceinty * dxdy);
+		if (h[ndx] >= thr / scale_.height) {
+			m_force_gx += (forcegravx * dxdy);
+			m_force_gy += (forcegravy * dxdy);
+			m_force_bx -= (forcebedx * dxdy);
+			m_force_by -= (forcebedy * dxdy);
+			m_force_bcx -= (forcebedx_curv * dxdy);
+			m_force_bcy -= (forcebedy_curv * dxdy);
+			m_force_rx -= (forceintx * dxdy);
+			m_force_ry -= (forceinty * dxdy);
 
-            m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
-            m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
-            m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
-            m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
-        }
+			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
+			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
+			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1])
+					* dxdy;
+			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+		}
 
-        // apply bc's
-        for(int j = 0; j < 4; j++)
-            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
-                for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx]=0.0;
+		// apply bc's
+		for (int j = 0; j < 4; j++)
+			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+				for (int k = 0; k < NUM_STATE_VARS; k++)
+					state_vars_[k][ndx] = 0.0;
 
-        if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy,  -forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
-    }
+		if (localquants_ptr->no_locations > 0)
+			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+					coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx],
+					state_vars_[1][ndx], state_vars_[2][ndx], forcegravx,
+					forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
+					-forcebedy_curv, -forceintx, -forceinty);
+	}
 
-    forceint = m_forceint;
-    forcebed = m_forcebed;
-    eroded = m_eroded;
-    deposited = m_deposited;
-    realvolume = m_realvolume;
+	forceint = m_forceint;
+	forcebed = m_forcebed;
+	eroded = m_eroded;
+	deposited = m_deposited;
+	realvolume = m_realvolume;
 
-    force_gx = m_force_gx;
-    force_gy = m_force_gy;
-    force_bx = m_force_bx;
-    force_by = m_force_by;
-    force_bcx = m_force_bcx;
-    force_bcy = m_force_bcy;
-    force_rx = m_force_rx;
-    force_ry = m_force_ry;
-    power_g = m_power_g;
-    power_b = m_power_b;
-    power_bc = m_power_bc;
-    power_r = m_power_r;
+	force_gx = m_force_gx;
+	force_gy = m_force_gy;
+	force_bx = m_force_bx;
+	force_by = m_force_by;
+	force_bcx = m_force_bcx;
+	force_bcy = m_force_bcy;
+	force_rx = m_force_rx;
+	force_ry = m_force_ry;
+	power_g = m_power_g;
+	power_b = m_power_b;
+	power_bc = m_power_bc;
+	power_r = m_power_r;
+
+	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
+	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
+	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
+	Tforce_r += sqrt(m_force_rx * m_force_rx + m_force_ry * m_force_ry) * dt;
+	Tpower_g += m_power_g * dt;
+	Tpower_b += m_power_b * dt;
+	Tpower_bc += m_power_bc * dt;
+	Tpower_r += m_power_r * dt;
 }
 void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1749,57 +1778,70 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
         elements_[ndx].calc_shortspeed(1.0 / dt);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        m_forceint += fabs(elem_forceint);
-        m_forcebed += fabs(elem_forcebed);
-        m_realvolume += dxdy * h[ndx];
-        m_eroded += elem_eroded;
-        m_deposited += elem_deposited;
+		m_forceint += fabs(elem_forceint);
+		m_forcebed += fabs(elem_forcebed);
+		m_realvolume += dxdy * h[ndx];
+		m_eroded += elem_eroded;
+		m_deposited += elem_deposited;
 
-        if (h[ndx] >= thr)
-        {
-            m_force_gx += (forcegravx * dxdy);
-            m_force_gy += (forcegravy * dxdy);
-            m_force_bx -= (forcebedx * dxdy);
-            m_force_by -= (forcebedy * dxdy);
-            m_force_bcx -= (forcebedx_curv * dxdy);
-            m_force_bcy -= (forcebedy_curv * dxdy);
-            m_force_rx -= (forceintx * dxdy);
-            m_force_ry -= (forceinty * dxdy);
+		if (h[ndx] >= thr / scale_.height) {
+			m_force_gx += (forcegravx * dxdy);
+			m_force_gy += (forcegravy * dxdy);
+			m_force_bx -= (forcebedx * dxdy);
+			m_force_by -= (forcebedy * dxdy);
+			m_force_bcx -= (forcebedx_curv * dxdy);
+			m_force_bcy -= (forcebedy_curv * dxdy);
+			m_force_rx -= (forceintx * dxdy);
+			m_force_ry -= (forceinty * dxdy);
 
-            m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
-            m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
-            m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
-            m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
-        }
+			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
+			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
+			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1])
+					* dxdy;
+			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+		}
 
-        // apply bc's
-        for(int j = 0; j < 4; j++)
-            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
-                for(int k = 0; k < NUM_STATE_VARS; k++)
-                    state_vars_[k][ndx]=0.0;
+		// apply bc's
+		for (int j = 0; j < 4; j++)
+			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+				for (int k = 0; k < NUM_STATE_VARS; k++)
+					state_vars_[k][ndx] = 0.0;
 
-        if (localquants_ptr->no_locations > 0)
-        	localquants_ptr->FindElement(dx_[0][ndx], dx_[1][ndx], coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx], forcegravx, forcegravy, -forcebedx, -forcebedy,  -forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
-    }
+		if (localquants_ptr->no_locations > 0)
+			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+					coord_[0][ndx], coord_[1][ndx], state_vars_[0][ndx],
+					state_vars_[1][ndx], state_vars_[2][ndx], forcegravx,
+					forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
+					-forcebedy_curv, -forceintx, -forceinty);
+	}
 
-    forceint = m_forceint;
-    forcebed = m_forcebed;
-    eroded = m_eroded;
-    deposited = m_deposited;
-    realvolume = m_realvolume;
+	forceint = m_forceint;
+	forcebed = m_forcebed;
+	eroded = m_eroded;
+	deposited = m_deposited;
+	realvolume = m_realvolume;
 
-    force_gx = m_force_gx;
-    force_gy = m_force_gy;
-    force_bx = m_force_bx;
-    force_by = m_force_by;
-    force_bcx = m_force_bcx;
-    force_bcy = m_force_bcy;
-    force_rx = m_force_rx;
-    force_ry = m_force_ry;
-    power_g = m_power_g;
-    power_b = m_power_b;
-    power_bc = m_power_bc;
-    power_r = m_power_r;
+	force_gx = m_force_gx;
+	force_gy = m_force_gy;
+	force_bx = m_force_bx;
+	force_by = m_force_by;
+	force_bcx = m_force_bcx;
+	force_bcy = m_force_bcy;
+	force_rx = m_force_rx;
+	force_ry = m_force_ry;
+	power_g = m_power_g;
+	power_b = m_power_b;
+	power_bc = m_power_bc;
+	power_r = m_power_r;
+
+	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
+	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
+	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
+	Tforce_r += sqrt(m_force_rx * m_force_rx + m_force_ry * m_force_ry) * dt;
+	Tpower_g += m_power_g * dt;
+	Tpower_b += m_power_b * dt;
+	Tpower_bc += m_power_bc * dt;
+	Tpower_r += m_power_r * dt;
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
 {

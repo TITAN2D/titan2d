@@ -1519,6 +1519,7 @@ LocalQuants::LocalQuants()
 	height_scale = 1.0;
 	velocity_scale = 1.0;
 	st_scale = 1.0;
+	Tst_scale = 1.0;
 
 	return;
 }
@@ -1541,7 +1542,13 @@ void LocalQuants::allocate(int m_no_locations)
 	Fbcy.resize(no_locations);
 	Fix.resize(no_locations);
 	Fiy.resize(no_locations);
+	T_Fg.resize(no_locations);
+	T_Fb.resize(no_locations);
+	T_Fbc.resize(no_locations);
+	T_Fi.resize(no_locations);
 	temps.resize(no_locations);
+	TimeInts.resize(no_locations);
+
 }
 void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 {
@@ -1558,7 +1565,12 @@ void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 	Fbcy.resize(no_locations);
 	Fix.resize(no_locations);
 	Fiy.resize(no_locations);
+	T_Fg.resize(no_locations);
+	T_Fb.resize(no_locations);
+	T_Fbc.resize(no_locations);
+	T_Fi.resize(no_locations);
 	temps.resize(no_locations);
+	TimeInts.resize(no_locations);
 }
 void LocalQuants::init(int no_locations_in, double *XX, double *YY)
 {
@@ -1569,12 +1581,13 @@ void LocalQuants::init(int no_locations_in, double *XX, double *YY)
 			addLocalQuants(XX[iloc],YY[iloc]);
 	}
 }
-void LocalQuants::scale(double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
+void LocalQuants::scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
 {
 	length_scale = m_length_scale;
 	height_scale = m_height_scale;
 	velocity_scale = sqrt(m_gravity_scale * length_scale);
-	st_scale = m_gravity_scale * height_scale;
+	st_scale = m_gravity_scale * height_scale * length_scale * length_scale;
+	Tst_scale = m_time_scale * st_scale;
 
     double totalvolume = 0.0;
 
@@ -1617,7 +1630,7 @@ void LocalQuants::print0()
     }
 }
 
-void LocalQuants::FindElement(const double dx, const double dy, const double xEl, const double yEl, const double h, const double hVx, const double hVy, const double Fgravx, const double Fgravy, const double Fbedx, const double Fbedy, const double Fbedcx, const double Fbedcy, const double Fintx, const double Finty)
+void LocalQuants::FindElement(const double dt, const double dx, const double dy, const double xEl, const double yEl, const double h, const double hVx, const double hVy, const double Fgravx, const double Fgravy, const double Fbedx, const double Fbedy, const double Fbedcx, const double Fbedcy, const double Fintx, const double Finty)
 {
 	for (int i = 0; i < no_locations; i++) {
 
@@ -1635,6 +1648,11 @@ void LocalQuants::FindElement(const double dx, const double dy, const double xEl
 			temps[i].push_back(Fintx);
 			temps[i].push_back(Finty);
 			temps[i].push_back(sqrt((X[i]-xEl)*(X[i]-xEl) + (Y[i]-yEl)*(Y[i]-yEl)));
+
+			TimeInts[i].push_back(sqrt(Fgravx * Fgravx + Fgravy * Fgravy) * dt);
+			TimeInts[i].push_back(sqrt(Fbedx * Fbedx + Fbedy * Fbedy) * dt);
+			TimeInts[i].push_back(sqrt(Fbedcx * Fbedcx + Fbedcy * Fbedcy) * dt);
+			TimeInts[i].push_back(sqrt(Fintx * Fintx + Finty * Finty) * dt);
 		}
 	}
 }
@@ -1655,12 +1673,19 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			Fbcy[i] = st_scale * temps[i][8];
 			Fix[i] = st_scale * temps[i][9];
 			Fiy[i] = st_scale * temps[i][10];
+
+			T_Fg[i] += Tst_scale * TimeInts[i][0];
+			T_Fb[i] += Tst_scale * TimeInts[i][1];
+			T_Fbc[i] += Tst_scale * TimeInts[i][2];
+			T_Fi[i] += Tst_scale * TimeInts[i][3];
+
 		}
 		else if (temps[i].size() > 12) {
 
 			std::vector<double> W(temps[i].size()/4);
 
 			double numH = 0.0, numV=0.0, numFgx = 0.0, numFgy = 0.0, numFbx = 0.0, numFby = 0.0, numFbcx = 0.0, numFbcy = 0.0, numFix = 0.0, numFiy = 0.0, den = 0.0;
+			double numTFg = 0.0, numTFb = 0.0, numTFbc = 0.0, numTFi = 0.0;
 
 			for (int j = 0; j < W.size(); j++) {
 
@@ -1675,6 +1700,12 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 				numFbcy += W[j] * temps[i][12*j+8];
 				numFix += W[j] * temps[i][12*j+9];
 				numFiy += W[j] * temps[i][12*j+10];
+
+				numTFg += W[j] * TimeInts[i][4*j];
+				numTFb += W[j] * TimeInts[i][4*j+1];
+				numTFbc += W[j] * TimeInts[i][4*j+2];
+				numTFi += W[j] * TimeInts[i][4*j+3];
+
 				den += W[j];
 			}
 
@@ -1688,6 +1719,11 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			Fbcy[i] = st_scale * numFbcy / den;
 			Fix[i] = st_scale * numFix / den;
 			Fiy[i] = st_scale * numFiy / den;
+
+			T_Fg[i] += Tst_scale * numTFg / den;
+			T_Fb[i] += Tst_scale * numTFb / den;
+			T_Fbc[i] += Tst_scale * numTFbc / den;
+			T_Fi[i] += Tst_scale * numTFi / den;
 		}
 	}
 }
@@ -1709,7 +1745,10 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleVectorAttribute(group, Fbcx, Fbcx.size());
     TiH5_writeDoubleVectorAttribute(group, Fbcy, Fbcy.size());
     TiH5_writeDoubleVectorAttribute(group, Fix, Fix.size());
-    TiH5_writeDoubleVectorAttribute(group, Fiy, Fiy.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Fg, T_Fg.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Fb, T_Fb.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Fbc, T_Fbc.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Fi, T_Fi.size());
 }
 void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1729,4 +1768,8 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleVectorAttribute(group, Fbcy, Fbcy.size());
     TiH5_readDoubleVectorAttribute(group, Fix, Fix.size());
     TiH5_readDoubleVectorAttribute(group, Fiy, Fiy.size());
+    TiH5_readDoubleVectorAttribute(group, T_Fg, T_Fg.size());
+    TiH5_readDoubleVectorAttribute(group, T_Fb, T_Fb.size());
+    TiH5_readDoubleVectorAttribute(group, T_Fbc, T_Fbc.size());
+    TiH5_readDoubleVectorAttribute(group, T_Fi, T_Fi.size());
 }
