@@ -1002,7 +1002,6 @@ void cxxTitanSimulation::run(bool start_from_restart)
     PROFILING1_DEFINE(pt_start);
     PROFILING1_START(pt_start);
 
-    output_localquants(&timeprops, &localquants, myid);
     titanTimingsAlongSimulation.totalTime = MPI_Wtime();
     while (!(timeprops.ifend(0)) && !ifstop)
     {

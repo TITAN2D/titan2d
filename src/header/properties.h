@@ -246,7 +246,10 @@ public:
                          double orientation, double Vmagnitude, double Vdirection, PileProps::PileType m_pile_type);
     virtual double get_volume(int i) const
     {
-        return PI * pileheight[i] * majorrad[i] * minorrad[i] / 2.0;
+    	if (pile_type[i] == PileProps::CYLINDER)
+    		return PI * pileheight[i] * majorrad[i] * minorrad[i];
+    	else if (pile_type[i] == PileProps::PARABALOID)
+    		return PI * pileheight[i] * majorrad[i] * minorrad[i] / 2.0;
     }
     virtual void scale(double length_scale, double height_scale, double gravity_scale);
     double get_smallest_pile_radius();
