@@ -43,6 +43,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable):
     piler = hmax = vmax = forceint = forcebed = 0.0;
     force_gx = force_gy = force_bx = force_by = force_bcx = force_bcy = force_rx = force_ry = 0.0;
     power_g = power_b = power_bc = power_r = 0.0;
+    Vol_ = Area_ = Velmean_ = 0.0;
     heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
@@ -58,6 +59,7 @@ StatProps::StatProps(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable, c
     piler = hmax = vmax = forceint = forcebed = 0.0;
     force_gx = force_gy = force_bx = force_by = force_bcx = force_bcy = force_rx = force_ry = 0.0;
     power_g = power_b = power_bc = power_r = 0.0;
+    Vol_ = Area_ = Velmean_ = 0.0;
     heightifreach = xyifreach[0] = xyifreach[1] = timereached = 0.0;
     xyminmax[0] = xyminmax[1] = xyminmax[2] = xyminmax[3] = hxyminmax = 0.0;
     lhs.refnum = lhs.runid = -1;
@@ -118,7 +120,7 @@ void StatProps::scale(const MatProps* matprops_ptr)
 }
 
 void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
-                DischargePlanes* discharge, LocalQuants* localQ, double d_time)
+                DischargePlanes* discharge, double d_time)
 {
     assert(ElemTable->all_elenodes_are_permanent);
 
@@ -159,6 +161,7 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
 
     double xC = 0.0, yC = 0.0, rC = 0.0, m_piler2 = 0.0;
     double m_xVar = 0.0, m_yVar = 0.0;
+    double m_Vol_ = 0.0, m_Area_ = 0.0, m_Velmean_ = 0.0, dA_ = 0.0;
     //assume that mean starting location is at (x,y) = (1,1)
     const double m_xCen = 1.2; //0; //1.0/(matprops->scale.length);
     const double m_yCen = 0.3; //0; //1.0/(matprops->scale.length);
@@ -215,16 +218,13 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     int state_vars_bad_values=0;
     //ANNOTATE_SITE_BEGIN(StatProps_calc_stats);
     //ANNOTATE_TASK_BEGIN(StatProps_calc_stats_loop);
-//    if (localQ->no_locations > 0)
-//    {
-//    	for (int iloc = 0; iloc < localQ->no_locations; iloc++)
-//    		localQ->temps[iloc].resize(0);
-//    }
+
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(min:m_x_min,m_y_min,testpointmindist2) \
         reduction(max:m_x_max,m_y_max,m_v_max,testpointreach) \
         reduction(max:m_max_height) \
         reduction(+:xC,yC,rC,m_area,m_v_ave,m_vx_ave,m_vy_ave)\
+		reduction(+:m_Vol_,m_Area_,m_Velmean_) \
         reduction(+:m_piler2,testvolume,m_xVar,m_yVar) /*m_slope_ave,m_slopevolume*/
     for(ti_ndx_t ndx = 0; ndx < N; ndx++)
     {
@@ -361,6 +361,14 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                     m_slopevolume += dVol;
                 }*/
             }
+
+            if (h[ndx] > GEOFLOW_TINY)
+            {
+            	dA_ = dx_[0][ndx] * dx_[1][ndx];
+            	m_Area_ += dA_;
+            	m_Vol_ += h[ndx] * dA_;
+            	m_Velmean_ += sqrt(hVx[ndx] * hVx[ndx] + hVy[ndx] * hVy[ndx]) * dA_;
+            }
         }
     }
 
@@ -386,7 +394,7 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     }
 
     int inttempout;
-    double tempin[14], tempout[14], temp2in[2], temp2out[2];
+    double tempin[17], tempout[17], temp2in[2], temp2out[2];
 
     //find the minimum distance (squared) to the test point
 #ifdef USE_MPI
@@ -420,11 +428,14 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     tempin[11] = m_xVar;
     tempin[12] = m_yVar;
     tempin[13] = ElemTable->get_no_of_entries();
+    tempin[14] = m_Vol_;
+    tempin[15] = m_Area_;
+    tempin[16] = m_Velmean_;
 
 #ifdef USE_MPI
-    i = MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    i = MPI_Reduce(tempin, tempout, 16, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-    for(int i=0;i<14;++i)tempout[i]=tempin[i];
+    for(int i=0;i<17;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
     temp2in[0] = m_max_height;
     temp2in[1] = m_v_max;
@@ -439,28 +450,26 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
         if(testpointreach && (timereached < 0.0))
             timereached = timeprops->timesec();
 
+        double AREA_SCALE = (matprops->scale.length) * (matprops->scale.length);
+        double VOL_SCALE = AREA_SCALE * (matprops->scale.height);
         double VELOCITY_SCALE = sqrt(matprops->scale.length * matprops->scale.gravity);
         //dimensionalize
         xcen = tempout[0] * (matprops->scale.length) / tempout[10];
         ycen = tempout[1] * (matprops->scale.length) / tempout[10];
-        xvar = tempout[11] * (matprops->scale.length) * (matprops->scale.length) / tempout[10]
-                - (xcen) * (xcen);
-        yvar = tempout[12] * (matprops->scale.length) * (matprops->scale.length) / tempout[10]
-                - (ycen) * (ycen);
+        xvar = tempout[11] * AREA_SCALE / tempout[10] - (xcen) * (xcen);
+        yvar = tempout[12] * AREA_SCALE / tempout[10] - (ycen) * (ycen);
         rmean = tempout[2] * (matprops->scale.length) / tempout[10];
-        area = tempout[3] * (matprops->scale.length) * (matprops->scale.length);
+        area = tempout[3] * AREA_SCALE;
         vmean = tempout[4] * VELOCITY_SCALE / tempout[10];
         vxmean = tempout[5] * VELOCITY_SCALE / tempout[10];
         vymean = tempout[6] * VELOCITY_SCALE / tempout[10];
 
         //slopemean = (tempout[9] > 0) ? tempout[7] / tempout[9] : 0.0;
 
-        realvolume = m_realvolume * (matprops->scale.length) * (matprops->scale.length)
-                                * (matprops->scale.height);
+        realvolume = m_realvolume * VOL_SCALE;
 
         //statvolume is really testvolume which is statvolume if it's not disabled
-        statvolume = tempout[10] * (matprops->scale.length) * (matprops->scale.length)
-                                * (matprops->scale.height);
+        statvolume = tempout[10] * VOL_SCALE;
 
         cutoffheight = m_cutoffheight * (matprops->scale.height);//@TODO m_cutoffheight is not init
         testvolume = tempout[10] / m_statvolume;//@TODO m_statvolume is not init
@@ -479,6 +488,10 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
          the calculation will terminate when v_star reaches 1 */
         vstar = vmean / matprops->Vslump;
 
+        Vol_ = tempout[14] * VOL_SCALE;
+        Area_ = tempout[15] * AREA_SCALE;
+        Velmean_ = VELOCITY_SCALE * tempout[16] / tempout[14];
+
         /******************/
         /* output section */
         /******************/
@@ -488,9 +501,20 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
         if(elementType == ElementType::SinglePhase)
         {
             FILE* fp2 = fopen("com.up", "w");
-            fprintf(fp2, "%d %g %g %g %g %g %g\n", timeprops->iter, timeprops->timesec(), xcen, ycen,
+            fprintf(fp2, "%d, %g, %g, %g, %g, %g, %g\n", timeprops->iter, timeprops->timesec(), xcen, ycen,
                     vxmean, vymean, piler);
             fclose(fp2);
+
+            if(timeprops->iter % 5 == 4)
+            {
+                FILE* fp3 = fopen("Elements.info", "a");
+                fprintf(fp3, "%.0f, %g\n", tempout[13], timeprops->cur_time * timeprops->TIME_SCALE);
+                fclose(fp3);
+            }
+
+            FILE* fp4 = fopen("TemporalSpatial.info", "a");
+            fprintf(fp4, "%g, %g, %g, %g\n", Area_, Vol_, Velmean_, timeprops->cur_time * timeprops->TIME_SCALE);
+            fclose(fp4);
         }
         /* standard to screen output */
         d_time *= timeprops->TIME_SCALE;

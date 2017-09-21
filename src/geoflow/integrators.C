@@ -236,7 +236,7 @@ void Integrator::step()
 
     /* finished corrector step */
 
-    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, localquants_ptr, dt);
+    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, dt);
 
     double tempin[5], tempout[5];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
@@ -654,7 +654,8 @@ void Integrator_SinglePhase_Coulomb::corrector()
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume) \
+		reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         //ANNOTATE_ITERATION_TASK(ISPC_cor_iter);
@@ -1120,7 +1121,8 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     //             a dependency in the Element class that causes incorrect
     //             results
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume) \
+		reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1515,7 +1517,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     }
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume) \
+		reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!

@@ -959,7 +959,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     }
 
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
-    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
+    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
@@ -970,7 +970,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-     Time Stepping Loop
+						Time Stepping Loop
 
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1000,9 +1000,9 @@ void cxxTitanSimulation::run(bool start_from_restart)
     PROFILING1_DEFINE(pt_start1);
     PROFILING1_START(pt_start0);
     PROFILING1_DEFINE(pt_start);
-    PROFILING1_START(pt_start);
-
+    PROFILING1_START(pt_start)
     titanTimingsAlongSimulation.totalTime = MPI_Wtime();
+
     while (!(timeprops.ifend(0)) && !ifstop)
     {
         /*
@@ -1269,7 +1269,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
         titanProfiling.print();
 
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
-    
+
     return;
 }
 
