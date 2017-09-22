@@ -512,9 +512,9 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                 fclose(fp3);
             }
 
-            FILE* fp4 = fopen("TemporalSpatial.info", "a");
-            fprintf(fp4, "%g, %g, %g, %g\n", Area_, Vol_, Velmean_, timeprops->cur_time * timeprops->TIME_SCALE);
-            fclose(fp4);
+//            FILE* fp4 = fopen("TemporalSpatial.info", "a");
+//            fprintf(fp4, "%g, %g, %g, %g\n", Area_, Vol_, Velmean_, timeprops->cur_time * timeprops->TIME_SCALE);
+//            fclose(fp4);
         }
         /* standard to screen output */
         d_time *= timeprops->TIME_SCALE;

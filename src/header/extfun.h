@@ -136,8 +136,11 @@ void OUTPUT_ADAM_STATS(ElementsHashTable* El_Table, MatProps* matprops_ptr, Time
 //! titan now has the capability to caclulate the flux through discharge planes, the sign of the flux follows a righthand rule convention, net v cross ds is non negative for a series os segments "ds" drawn counter clockwise surrounding the pile(s) (out of the box is positive into the box in negative), Keith wrote this
 extern void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes* discharge, int myid);
 
-//! titan now has the capability to store the time-record of QoIs, Ali wrote this
+//! titan now has the capability to store the time-record of local QoIs, Ali wrote this
 extern void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid);
+
+//! titan now has the capability to store the time-record of global QoIs, Ali wrote this
+extern void output_globalquants(TimeProps* timeprops, StatProps* statprops, int myid);
 
 //! this function outputs statistics for with a collection of probabilistic runs, this output should probably be combined with the finalstats.###### file, Keith wrote this
 extern void output_stoch_stats(MatProps* matprops, StatProps* statprops);

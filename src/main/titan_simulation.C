@@ -812,6 +812,8 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
 
         output_localquants(&timeprops, &localquants, myid);
 
+        output_globalquants(&timeprops, statprops, myid);
+
         if(myid == 0)
             output_summary(&timeprops, statprops, savefileflag);
 
@@ -1217,6 +1219,38 @@ void cxxTitanSimulation::run(bool start_from_restart)
     if(myid == 0)
         output_stoch_stats(matprops_ptr, statprops);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
+
+    double tempin[8], tempout[8];
+    tempin[0] = integrator->Tforce_g;
+    tempin[1] = integrator->Tforce_b;
+    tempin[2] = integrator->Tforce_bc;
+    tempin[3] = integrator->Tforce_r;
+    tempin[4] = integrator->Tpower_g;
+    tempin[5] = integrator->Tpower_b;
+    tempin[6] = integrator->Tpower_bc;
+    tempin[7] = integrator->Tpower_r;
+
+#ifdef USE_MPI
+    MPI_Reduce(tempin, tempout, 8, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+    for(int i=0;i<8;++i)tempout[i]=tempin[i];
+#endif //USE_MPI
+
+    double FORCE_SCALE = scale_.gravity * scale_.height * scale_.length * scale_.length * timeprops.TIME_SCALE;
+    double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
+
+    tempout[0] *= FORCE_SCALE;
+	tempout[1] *= FORCE_SCALE;
+	tempout[2] *= FORCE_SCALE;
+	tempout[3] *= FORCE_SCALE;
+	tempout[4] *= POWER_SCALE;
+	tempout[5] *= POWER_SCALE;
+	tempout[6] *= POWER_SCALE;
+	tempout[7] *= POWER_SCALE;
+
+	FILE* fp = fopen("TemporalIntegrals.info", "w");
+	fprintf(fp, "%g, %g, %g, %g, %g, %g, %g, %g\n", tempout[0], tempout[1], tempout[2], tempout[3], tempout[4], tempout[5], tempout[6], tempout[7]);
+	fclose(fp);
 
     //output maximum flow depth a.k.a. flow outline
     PROFILING3_START(pt_start1);

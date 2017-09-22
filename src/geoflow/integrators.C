@@ -238,18 +238,33 @@ void Integrator::step()
 
     statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, dt);
 
-    double tempin[5], tempout[5];
+    double FORCE_SCALE = scale_.gravity * scale_.height * scale_.length * scale_.length;
+    double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
+
+    double tempin[18], tempout[18];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
     tempin[1] = eroded;     //volume that was eroded this iteration
     tempin[2] = deposited;  //volume that is currently deposited
     tempin[3] = realvolume; //"actual" volume within boundaries
     tempin[4] = forceint;   //internal friction force
     tempin[5] = forcebed;   //bed friction force
+    tempin[6] = force_gx;
+    tempin[7] = force_gy;
+    tempin[8] = force_bx;
+    tempin[9] = force_by;
+    tempin[10] = force_bcx;
+    tempin[11] = force_bcy;
+    tempin[12] = force_rx;
+    tempin[13] = force_ry;
+    tempin[14] = power_g;
+    tempin[15] = power_b;
+    tempin[16] = power_bc;
+    tempin[17] = power_r;
 
 #ifdef USE_MPI
-    MPI_Reduce(tempin, tempout, 6, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(tempin, tempout, 18, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-    for(int i=0;i<6;++i)tempout[i]=tempin[i];
+    for(int i=0;i<18;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
     statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
@@ -263,6 +278,19 @@ void Integrator::step()
 
     statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->scale.gravity;
     statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->scale.gravity;
+
+    statprops_ptr->force_gx = tempout[6] * FORCE_SCALE;
+    statprops_ptr->force_gy = tempout[7] * FORCE_SCALE;
+    statprops_ptr->force_bx = tempout[8] * FORCE_SCALE;
+    statprops_ptr->force_by = tempout[9] * FORCE_SCALE;
+    statprops_ptr->force_bcx = tempout[10] * FORCE_SCALE;
+    statprops_ptr->force_bcy = tempout[11] * FORCE_SCALE;
+    statprops_ptr->force_rx = tempout[12] * FORCE_SCALE;
+    statprops_ptr->force_ry = tempout[13] * FORCE_SCALE;
+    statprops_ptr->power_g = tempout[14] * POWER_SCALE;
+    statprops_ptr->power_b = tempout[15] * POWER_SCALE;
+    statprops_ptr->power_bc = tempout[16] * POWER_SCALE;
+    statprops_ptr->power_r = tempout[17] * POWER_SCALE;
 
     PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
 

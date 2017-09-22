@@ -115,43 +115,70 @@ void output_discharge(MatProps* matprops, TimeProps* timeprops, DischargePlanes*
     return;
 }
 
-void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid)
-{
+void output_globalquants(TimeProps* timeprops, StatProps* statprops, int myid) {
+
+	if (myid == 0) {
+		FILE* fp = fopen("TemporalSpatial.info", "a");
+		fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+				statprops->force_gx, statprops->force_gy, statprops->force_bx,
+				statprops->force_by, statprops->force_bcx, statprops->force_bcy,
+				statprops->force_rx, statprops->force_ry, statprops->power_g,
+				statprops->power_b, statprops->power_bc, statprops->power_r,
+				statprops->Vol_, statprops->Area_, statprops->Velmean_,
+				timeprops->cur_time * timeprops->TIME_SCALE);
+		fclose(fp);
+	}
+}
+
+void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 	int iloc, num_locs = localq->no_locations;
 	char filename[50];
 
-	if (num_locs > 0 && myid == 0)
-	{
-		for(iloc = 0; iloc < num_locs; iloc++)
-		{
-			if(timeprops->iter == 0)
-			{
+	if (num_locs > 0 && myid == 0) {
+		for (iloc = 0; iloc < num_locs; iloc++) {
+			if (timeprops->iter == 0) {
 				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
-				fprintf(fp, "Time-history of QoIs are requested at location %d:\n", iloc);
-				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n", localq->length_scale * localq->X[iloc], localq->length_scale * localq->Y[iloc]);
-				fprintf(fp, "\tThe flow height threshold [m] is: %g\n\n", localq->threshold * localq->height_scale);
-				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty\n\n");
+				fprintf(fp,
+						"Time-history of QoIs are requested at location %d:\n",
+						iloc);
+				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n",
+						localq->length_scale * localq->X[iloc],
+						localq->length_scale * localq->Y[iloc]);
+				fprintf(fp, "\tThe flow height threshold [m] is: %g\n\n",
+						localq->threshold * localq->height_scale);
+				fprintf(fp,
+						"\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty\n\n");
 
 				if (localq->temps[iloc].size() == 0)
 					fclose(fp);
-				else
-				{
-					fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n", localq->Height[iloc], localq->Velocity[iloc], localq->Fgx[iloc], localq->Fgy[iloc],  localq->Fbx[iloc],  localq->Fby[iloc],  localq->Fbcx[iloc],  localq->Fbcy[iloc],  localq->Fix[iloc],  localq->Fiy[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
+				else {
+					fprintf(fp,
+							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+							localq->Height[iloc], localq->Velocity[iloc],
+							localq->Fgx[iloc], localq->Fgy[iloc],
+							localq->Fbx[iloc], localq->Fby[iloc],
+							localq->Fbcx[iloc], localq->Fbcy[iloc],
+							localq->Fix[iloc], localq->Fiy[iloc],
+							timeprops->cur_time * timeprops->TIME_SCALE);
 					fclose(fp);
 				}
-			}
-			else if (localq->temps[iloc].size() > 0)
-			{
+			} else if (localq->temps[iloc].size() > 0) {
 				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
-				fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n", localq->Height[iloc], localq->Velocity[iloc], localq->Fgx[iloc], localq->Fgy[iloc],  localq->Fbx[iloc],  localq->Fby[iloc],  localq->Fbcx[iloc],  localq->Fbcy[iloc],  localq->Fix[iloc],  localq->Fiy[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
+				fprintf(fp,
+						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+						localq->Height[iloc], localq->Velocity[iloc],
+						localq->Fgx[iloc], localq->Fgy[iloc], localq->Fbx[iloc],
+						localq->Fby[iloc], localq->Fbcx[iloc],
+						localq->Fbcy[iloc], localq->Fix[iloc],
+						localq->Fiy[iloc],
+						timeprops->cur_time * timeprops->TIME_SCALE);
 				fclose(fp);
 			}
 		}
 	}
 }
-
 /*************************************/
 /* adam's function: written by keith */
 /*************************************/
