@@ -830,7 +830,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
             grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops,vizoutput_prefix.c_str());
         }
     }
-/*#if HAVE_LIBHDF5
+#if HAVE_LIBHDF5
     if(vizoutput & 4)
     {
         if(elementType == ElementType::TwoPhases)
@@ -844,7 +844,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
                     matprops, &mapnames, mode,vizoutput_prefix.c_str());
         }
     }
-#endif*/
+#endif
 }
 
 void cxxTitanSimulation::run(bool start_from_restart)
