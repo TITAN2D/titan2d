@@ -1514,7 +1514,6 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
 LocalQuants::LocalQuants()
 {
 	no_locations = 0;
-	threshold = 0.05;
 	length_scale = 1.0;
 	height_scale = 1.0;
 	velocity_scale = 1.0;
@@ -1600,7 +1599,7 @@ void LocalQuants::init(int no_locations_in, double *XX, double *YY)
 			addLocalQuants(XX[iloc],YY[iloc]);
 	}
 }
-void LocalQuants::scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr)
+void LocalQuants::scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale)
 {
 	length_scale = m_length_scale;
 	height_scale = m_height_scale;
@@ -1609,18 +1608,6 @@ void LocalQuants::scale(double m_time_scale, double m_length_scale, double m_hei
 	p_scale = velocity_scale * st_scale;
 	Tst_scale = m_time_scale * st_scale;
 	Tp_scale = m_time_scale * p_scale;
-
-    double totalvolume = 0.0;
-
-    if(pileprops_ptr != NULL)
-        for(int isrc = 0; isrc < pileprops_ptr->numpiles; isrc++)
-            totalvolume += pileprops_ptr->get_volume(isrc);
-    if(fluxprops_ptr != NULL)
-        for(int isrc = 0; isrc < fluxprops_ptr->no_of_sources; isrc++)
-            totalvolume += fluxprops_ptr->get_volume(isrc);
-
-    totalvolume *= height_scale * length_scale * length_scale;
-    threshold = GEOFLOW_TINY * pow(totalvolume, 1.0 / 3.0) / height_scale;
 
     for(int i = 0; i < no_locations; i++)
     {
@@ -1641,7 +1628,6 @@ void LocalQuants::print0()
     if(no_locations > 0)
     {
         printf("Time-History of Local QoIs:    (Number of locations: %d)\n", no_locations);
-        printf("\tThe flow height threshold [m] is: %f\n", threshold * height_scale);
         for(i = 0; i < no_locations; i++)
             print_local_quants(i);
     }
@@ -1651,11 +1637,15 @@ void LocalQuants::print0()
     }
 }
 
-void LocalQuants::FindElement(const double dt, const double dx, const double dy, const double xEl, const double yEl, const double h, const double hVx, const double hVy, const double Fgravx, const double Fgravy, const double Fbedx, const double Fbedy, const double Fbedcx, const double Fbedcy, const double Fintx, const double Finty)
-{
+void LocalQuants::FindElement(const double threshold, const double dt,
+		const double dx, const double dy, const double xEl, const double yEl,
+		const double h, const double hVx, const double hVy, const double Fgravx,
+		const double Fgravy, const double Fbedx, const double Fbedy,
+		const double Fbedcx, const double Fbedcy, const double Fintx,
+		const double Finty) {
 	for (int i = 0; i < no_locations; i++) {
 
-		if ((fabs(X[i]-xEl) <= 0.5*dx) && (fabs(Y[i]-yEl) <= 0.5*dy) && (h >= threshold)) {
+		if ((fabs(X[i] - xEl) <= 0.5 * dx) && (fabs(Y[i] - yEl) <= 0.5 * dy) && (h >= threshold)) {
 
 			temps[i].push_back(h);
 			temps[i].push_back(hVx);
@@ -1668,7 +1658,7 @@ void LocalQuants::FindElement(const double dt, const double dx, const double dy,
 			temps[i].push_back(Fbedcy);
 			temps[i].push_back(Fintx);
 			temps[i].push_back(Finty);
-			temps[i].push_back(sqrt((X[i]-xEl)*(X[i]-xEl) + (Y[i]-yEl)*(Y[i]-yEl)));
+			temps[i].push_back(sqrt((X[i] - xEl) * (X[i] - xEl) + (Y[i] - yEl) * (Y[i] - yEl)));
 
 			TimeInts[i].push_back(sqrt(Fgravx * Fgravx + Fgravy * Fgravy) * dt);
 			TimeInts[i].push_back(sqrt(Fbedx * Fbedx + Fbedy * Fbedy) * dt);
@@ -1703,14 +1693,14 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			Pbc[i] = p_scale * (temps[i][7]*temps[i][1] + temps[i][8]*temps[i][2]);
 			Pi[i] = p_scale * (temps[i][9]*temps[i][1] + temps[i][10]*temps[i][2]);
 
-			T_Fg[i] += Tst_scale * TimeInts[i][0];
-			T_Fb[i] += Tst_scale * TimeInts[i][1];
-			T_Fbc[i] += Tst_scale * TimeInts[i][2];
-			T_Fi[i] += Tst_scale * TimeInts[i][3];
-			T_Pg[i] += Tp_scale * TimeInts[i][4];
-			T_Pb[i] += Tp_scale * TimeInts[i][5];
-			T_Pbc[i] += Tp_scale * TimeInts[i][6];
-			T_Pi[i] += Tp_scale * TimeInts[i][7];
+			T_Fg[i] += TimeInts[i][0];
+			T_Fb[i] += TimeInts[i][1];
+			T_Fbc[i] += TimeInts[i][2];
+			T_Fi[i] += TimeInts[i][3];
+			T_Pg[i] += TimeInts[i][4];
+			T_Pb[i] += TimeInts[i][5];
+			T_Pbc[i] += TimeInts[i][6];
+			T_Pi[i] += TimeInts[i][7];
 
 		}
 		else if (temps[i].size() > 12) {
@@ -1767,14 +1757,14 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			Pbc[i] = p_scale * numPbc / den;
 			Pi[i] = p_scale * numPi / den;
 
-			T_Fg[i] += Tst_scale * numTFg / den;
-			T_Fb[i] += Tst_scale * numTFb / den;
-			T_Fbc[i] += Tst_scale * numTFbc / den;
-			T_Fi[i] += Tst_scale * numTFi / den;
-			T_Pg[i] += Tp_scale * numTPg / den;
-			T_Pb[i] += Tp_scale * numTPb / den;
-			T_Pbc[i] += Tp_scale * numTPbc / den;
-			T_Pi[i] += Tp_scale * numTPi / den;
+			T_Fg[i] += numTFg / den;
+			T_Fb[i] += numTFb / den;
+			T_Fbc[i] += numTFbc / den;
+			T_Fi[i] += numTFi / den;
+			T_Pg[i] += numTPg / den;
+			T_Pb[i] += numTPb / den;
+			T_Pbc[i] += numTPbc / den;
+			T_Pi[i] += numTPi / den;
 		}
 	}
 }
@@ -1784,7 +1774,6 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
     H5::Group group(parent->createGroup(group_name));
 
     TiH5_writeIntAttribute(group, no_locations);
-    TiH5_writeDoubleAttribute(group, threshold);
     TiH5_writeDoubleVectorAttribute(group, X, X.size());
     TiH5_writeDoubleVectorAttribute(group, Y, Y.size());
     TiH5_writeDoubleVectorAttribute(group, Height, Height.size());
@@ -1814,7 +1803,6 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     H5::Group group(parent->openGroup(group_name));
 
     TiH5_readIntAttribute(group, no_locations);
-    TiH5_readDoubleAttribute(group, threshold);
     TiH5_readDoubleVectorAttribute(group, X, X.size());
     TiH5_readDoubleVectorAttribute(group, Y, Y.size());
     TiH5_readDoubleVectorAttribute(group, Height, Height.size());

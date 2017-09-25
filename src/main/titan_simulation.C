@@ -359,7 +359,7 @@ void cxxTitanSimulation::process_input(bool start_from_restart)
 
         //the discharge plane section ends here
         /*************************************************************************/
-        localquants.scale(timeprops_ptr->TIME_SCALE, scale_.length, scale_.height, scale_.gravity, pileprops_ptr, &fluxprops);
+        localquants.scale(timeprops_ptr->TIME_SCALE, scale_.length, scale_.height, scale_.gravity);
     }
 
 
@@ -830,7 +830,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
             grass_sites_proc_output(ElemTable, NodeTable, myid, matprops, &timeprops,vizoutput_prefix.c_str());
         }
     }
-#if HAVE_LIBHDF5
+/*#if HAVE_LIBHDF5
     if(vizoutput & 4)
     {
         if(elementType == ElementType::TwoPhases)
@@ -844,7 +844,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
                     matprops, &mapnames, mode,vizoutput_prefix.c_str());
         }
     }
-#endif
+#endif*/
 }
 
 void cxxTitanSimulation::run(bool start_from_restart)
@@ -972,7 +972,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-						Time Stepping Loop
+			Time Stepping Loop
 
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1220,6 +1220,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
         output_stoch_stats(matprops_ptr, statprops);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
+    //write out temporal integral values of global quantities computed in integrators class
     double tempin[8], tempout[8];
     tempin[0] = integrator->Tforce_g;
     tempin[1] = integrator->Tforce_b;
@@ -1236,21 +1237,21 @@ void cxxTitanSimulation::run(bool start_from_restart)
     for(int i=0;i<8;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
-    double FORCE_SCALE = scale_.gravity * scale_.height * scale_.length * scale_.length * timeprops.TIME_SCALE;
-    double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
+    if(myid == 0){
+    	double FORCE_SCALE = scale_.gravity * scale_.height * scale_.length * scale_.length * timeprops.TIME_SCALE;
+    	double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
 
-    tempout[0] *= FORCE_SCALE;
-	tempout[1] *= FORCE_SCALE;
-	tempout[2] *= FORCE_SCALE;
-	tempout[3] *= FORCE_SCALE;
-	tempout[4] *= POWER_SCALE;
-	tempout[5] *= POWER_SCALE;
-	tempout[6] *= POWER_SCALE;
-	tempout[7] *= POWER_SCALE;
+    	for(int i=0;i<4;++i){
+    		tempout[i] *= FORCE_SCALE;
+    		tempout[i+4] *= POWER_SCALE;
+    	}
+    	FILE* fp = fopen("TemporalIntegrals.info", "w");
+    	fprintf(fp, "%g, %g, %g, %g, %g, %g, %g, %g\n", tempout[0], tempout[1], tempout[2], tempout[3], tempout[4], tempout[5], tempout[6], tempout[7]);
+    	fclose(fp);
+    }
 
-	FILE* fp = fopen("TemporalIntegrals.info", "w");
-	fprintf(fp, "%g, %g, %g, %g, %g, %g, %g, %g\n", tempout[0], tempout[1], tempout[2], tempout[3], tempout[4], tempout[5], tempout[6], tempout[7]);
-	fclose(fp);
+    //write out temporal integral values of local quantities computed in LocalQuants class
+    output_localquantsTimeIntegrals(&timeprops, &localquants, myid);
 
     //output maximum flow depth a.k.a. flow outline
     PROFILING3_START(pt_start1);

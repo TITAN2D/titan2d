@@ -1242,19 +1242,17 @@ public:
     void h5read(const H5::CommonFG *parent, const  string group_name="DischargePlanes");
 };
 
-class LocalQuants
-{
+class LocalQuants {
 public:
 	// number of locations
 	int no_locations;
-	double threshold;
-    double height_scale;
-    double length_scale;
-    double velocity_scale;
-    double st_scale;
-    double p_scale;
-    double Tst_scale;
-    double Tp_scale;
+	double height_scale;
+	double length_scale;
+	double velocity_scale;
+	double st_scale;
+	double p_scale;
+	double Tst_scale;
+	double Tp_scale;
 
 	// array containing Easting coordinates (X)
 	std::vector<double> X;
@@ -1339,15 +1337,19 @@ public:
 	void allocate(int m_no_locations);
 	void addLocalQuants(const double x_in, const double y_in);
 	void init(int no_locations_in, double *XX, double *YY);
-	void scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale, const PileProps *pileprops_ptr, const FluxProps *fluxprops_ptr);
+	void scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale);
 	void print_local_quants(int i);
 	void print0();
-	void FindElement(double dt, double dx, double dy, double xEl, double yEl, double h, double hVx, double hVy, double Fgravx, double Fgravy, double Fbedx, double Fbedy, double Fbedcx, double Fbedcy, double Fintx, double Finty);
+	void FindElement(const double threshold, const double dt, const double dx,
+			const double dy, const double xEl, const double yEl, const double h,
+			const double hVx, const double hVy, const double Fgravx, const double Fgravy,
+			const double Fbedx, const double Fbedy, const double Fbedcx, const double Fbedcy,
+			const double Fintx, const double Finty);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
-    //! Dump object content to hdf5 file
-    void h5write(H5::CommonFG *parent, string group_name="LocalQuants") const;
-    //! Load object content from hdf5 file
-    void h5read(const H5::CommonFG *parent, const  string group_name="LocalQuants");
+	//! Dump object content to hdf5 file
+	void h5write(H5::CommonFG *parent, string group_name = "LocalQuants") const;
+	//! Load object content from hdf5 file
+	void h5read(const H5::CommonFG *parent, const string group_name = "LocalQuants");
 };
 
 //! The FluxProps Structure holds all the data about extrusion flux sources (material flowing out of the ground) they can become active and later deactivate at any time during the simulation.  There must be at least 1 initial pile or one flux source that is active at time zero, otherwise the timestep will be set to zero and the simulation will never advance.

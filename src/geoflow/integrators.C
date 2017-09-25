@@ -401,6 +401,24 @@ Integrator_SinglePhase_Coulomb::Integrator_SinglePhase_Coulomb(cxxTitanSimulatio
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
 }
+bool Integrator_SinglePhase_Coulomb::scale()
+{
+    if(Integrator_SinglePhase::scale())
+    {
+        thr = thr/scale_.height;
+        return true;
+    }
+    return false;
+}
+bool Integrator_SinglePhase_Coulomb::unscale()
+{
+    if(Integrator_SinglePhase::unscale())
+    {
+        thr = thr*scale_.height;
+        return true;
+    }
+    return false;
+}
 void Integrator_SinglePhase_Coulomb::print0(int spaces)
 {
     printf("%*cIntegrator: single phase, Coulomb model\n", spaces,' ');
@@ -997,7 +1015,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
 		m_eroded += elem_eroded;
 		m_deposited += elem_deposited;
 
-		if (h[ndx] >= thr / scale_.height) {
+		if (h[ndx] >= thr) {
 			m_force_gx += (forcegravx * dxdy);
 			m_force_gy += (forcegravy * dxdy);
 			m_force_bx -= (forcebedx * dxdy);
@@ -1020,7 +1038,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
 					state_vars_[k][ndx] = 0.0;
 
 		if (localquants_ptr->no_locations > 0)
-			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
 					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
 					forcegravx, forcegravy, -forcebedx, -forcebedy,
 					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
@@ -1379,7 +1397,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-		if (h[ndx] >= thr / scale_.height) {
+		if (h[ndx] >= thr) {
 			m_force_gx += (forcegravx * dxdy);
 			m_force_gy += (forcegravy * dxdy);
 			m_force_bx -= (forcebedx * dxdy);
@@ -1402,7 +1420,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 					state_vars_[k][ndx] = 0.0;
 
 		if (localquants_ptr->no_locations > 0)
-			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
 					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
 					forcegravx, forcegravy, -forcebedx, -forcebedy,
 					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
@@ -1795,7 +1813,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 		m_eroded += elem_eroded;
 		m_deposited += elem_deposited;
 
-		if (h[ndx] >= thr / scale_.height) {
+		if (h[ndx] >= thr) {
 			m_force_gx += (forcegravx * dxdy);
 			m_force_gy += (forcegravy * dxdy);
 			m_force_bx -= (forcebedx * dxdy);
@@ -1818,7 +1836,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 					state_vars_[k][ndx] = 0.0;
 
 		if (localquants_ptr->no_locations > 0)
-			localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
 					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
 					forcegravx, forcegravy, -forcebedx, -forcebedy,
 					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);

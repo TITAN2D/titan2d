@@ -139,6 +139,9 @@ extern void output_discharge(MatProps* matprops, TimeProps* timeprops, Discharge
 //! titan now has the capability to store the time-record of local QoIs, Ali wrote this
 extern void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid);
 
+//! titan now has the capability to store the time-record of local QoIs, Ali wrote this
+extern void output_localquantsTimeIntegrals(TimeProps* timeprops, LocalQuants* localq, int myid);
+
 //! titan now has the capability to store the time-record of global QoIs, Ali wrote this
 extern void output_globalquants(TimeProps* timeprops, StatProps* statprops, int myid);
 

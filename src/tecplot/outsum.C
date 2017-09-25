@@ -145,21 +145,20 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n",
 						localq->length_scale * localq->X[iloc],
 						localq->length_scale * localq->Y[iloc]);
-				fprintf(fp, "\tThe flow height threshold [m] is: %g\n\n",
-						localq->threshold * localq->height_scale);
-				fprintf(fp,
-						"\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty\n\n");
+				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty      Power_g      Power_bed      Power_bedcurv      Power_resist      Time\n\n");
 
 				if (localq->temps[iloc].size() == 0)
 					fclose(fp);
 				else {
 					fprintf(fp,
-							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 							localq->Height[iloc], localq->Velocity[iloc],
 							localq->Fgx[iloc], localq->Fgy[iloc],
 							localq->Fbx[iloc], localq->Fby[iloc],
 							localq->Fbcx[iloc], localq->Fbcy[iloc],
 							localq->Fix[iloc], localq->Fiy[iloc],
+							localq->Pg[iloc], localq->Pb[iloc],
+							localq->Pbc[iloc], localq->Pi[iloc],
 							timeprops->cur_time * timeprops->TIME_SCALE);
 					fclose(fp);
 				}
@@ -167,15 +166,53 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
 				fprintf(fp,
-						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 						localq->Height[iloc], localq->Velocity[iloc],
-						localq->Fgx[iloc], localq->Fgy[iloc], localq->Fbx[iloc],
-						localq->Fby[iloc], localq->Fbcx[iloc],
-						localq->Fbcy[iloc], localq->Fix[iloc],
-						localq->Fiy[iloc],
+						localq->Fgx[iloc], localq->Fgy[iloc],
+						localq->Fbx[iloc], localq->Fby[iloc],
+						localq->Fbcx[iloc], localq->Fbcy[iloc],
+						localq->Fix[iloc], localq->Fiy[iloc],
+						localq->Pg[iloc], localq->Pb[iloc],
+						localq->Pbc[iloc], localq->Pi[iloc],
 						timeprops->cur_time * timeprops->TIME_SCALE);
 				fclose(fp);
 			}
+		}
+	}
+}
+
+void output_localquantsTimeIntegrals(TimeProps* timeprops, LocalQuants* localq, int myid) {
+
+	int iloc, num_locs = localq->no_locations;
+
+	if (num_locs > 0) {
+		double tempin[8], tempout[8];
+		for (iloc = 0; iloc < num_locs; iloc++) {
+
+		    tempin[0] = localq->T_Fg[iloc];
+		    tempin[1] = localq->T_Fb[iloc];
+		    tempin[2] = localq->T_Fbc[iloc];
+		    tempin[3] = localq->T_Fi[iloc];
+		    tempin[4] = localq->T_Pg[iloc];
+		    tempin[5] = localq->T_Pb[iloc];
+		    tempin[6] = localq->T_Pbc[iloc];
+		    tempin[7] = localq->T_Pi[iloc];
+
+#ifdef USE_MPI
+		    	MPI_Reduce(tempin, tempout, 8, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+#else //USE_MPI
+		    	for(int i=0;i<8;++i)tempout[i]=tempin[i];
+#endif //USE_MPI
+
+		    if (myid == 0) {
+		    	FILE* fp = fopen("TimeIntegraredLocalQuants.info", "a");
+		    	fprintf(fp,"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+					localq->Tst_scale * tempout[0],localq->Tst_scale * tempout[1],
+					localq->Tst_scale * tempout[2],localq->Tst_scale * tempout[3],
+					localq->Tp_scale * tempout[4],localq->Tp_scale * tempout[5],
+					localq->Tp_scale * tempout[6],localq->Tp_scale * tempout[7]);
+				fclose(fp);
+		    }
 		}
 	}
 }

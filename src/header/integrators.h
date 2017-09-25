@@ -187,6 +187,8 @@ class Integrator_SinglePhase_Coulomb:public Integrator_SinglePhase
 public:
     Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation);
 
+    virtual bool scale();
+    virtual bool unscale();
     virtual void print0(int spaces=0);
 
     //! Dump object content to hdf5 file
