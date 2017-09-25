@@ -1041,7 +1041,8 @@ void Integrator_SinglePhase_Coulomb::corrector()
 			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
 					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
 					forcegravx, forcegravy, -forcebedx, -forcebedy,
-					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
+					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
+					zeta_[0][ndx], zeta_[1][ndx]);
 	}
 
 	forceint = m_forceint;
@@ -1423,7 +1424,8 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
 					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
 					forcegravx, forcegravy, -forcebedx, -forcebedy,
-					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
+					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
+					zeta_[0][ndx], zeta_[1][ndx]);
 	}
 
 	forceint = m_forceint;
@@ -1839,7 +1841,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
 					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
 					forcegravx, forcegravy, -forcebedx, -forcebedy,
-					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty);
+					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
+					zeta_[0][ndx], zeta_[1][ndx]);
 	}
 
 	forceint = m_forceint;

@@ -1260,6 +1260,12 @@ public:
 	// array containing Northing coordinates (Y)
 	std::vector<double> Y;
 
+	// array containing Easting slopes (X)
+	std::vector<double> zetax;
+
+	// array containing Northing slopes (Y)
+	std::vector<double> zetay;
+
 	// temporary arrays holding the local values of state vars and their distance to the specified location
 	std::vector<std::vector<double> > temps;
 
@@ -1344,7 +1350,7 @@ public:
 			const double dy, const double xEl, const double yEl, const double h,
 			const double hVx, const double hVy, const double Fgravx, const double Fgravy,
 			const double Fbedx, const double Fbedy, const double Fbedcx, const double Fbedcy,
-			const double Fintx, const double Finty);
+			const double Fintx, const double Finty, const double zeta_x, const double zeta_y);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
 	//! Dump object content to hdf5 file
 	void h5write(H5::CommonFG *parent, string group_name = "LocalQuants") const;

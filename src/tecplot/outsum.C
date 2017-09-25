@@ -145,13 +145,13 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n",
 						localq->length_scale * localq->X[iloc],
 						localq->length_scale * localq->Y[iloc]);
-				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty      Power_g      Power_bed      Power_bedcurv      Power_resist      Time\n\n");
+				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty      Power_g      Power_bed      Power_bedcurv      Power_resist      Slope_x      Slope_y      Time\n\n");
 
 				if (localq->temps[iloc].size() == 0)
 					fclose(fp);
 				else {
 					fprintf(fp,
-							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 							localq->Height[iloc], localq->Velocity[iloc],
 							localq->Fgx[iloc], localq->Fgy[iloc],
 							localq->Fbx[iloc], localq->Fby[iloc],
@@ -159,6 +159,7 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 							localq->Fix[iloc], localq->Fiy[iloc],
 							localq->Pg[iloc], localq->Pb[iloc],
 							localq->Pbc[iloc], localq->Pi[iloc],
+							localq->zetax[iloc], localq->zetay[iloc],
 							timeprops->cur_time * timeprops->TIME_SCALE);
 					fclose(fp);
 				}
@@ -166,7 +167,7 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
 				fprintf(fp,
-						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 						localq->Height[iloc], localq->Velocity[iloc],
 						localq->Fgx[iloc], localq->Fgy[iloc],
 						localq->Fbx[iloc], localq->Fby[iloc],
@@ -174,6 +175,7 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 						localq->Fix[iloc], localq->Fiy[iloc],
 						localq->Pg[iloc], localq->Pb[iloc],
 						localq->Pbc[iloc], localq->Pi[iloc],
+						localq->zetax[iloc], localq->zetay[iloc],
 						timeprops->cur_time * timeprops->TIME_SCALE);
 				fclose(fp);
 			}
