@@ -894,7 +894,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
             }
 #endif
 
-            Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forcebedx_curv - forceintx);
+            tmp = Ustore[1] + dt * (forcegravx - forcebedx - forcebedx_curv - forceintx);
             //STOPPING CRITERIA
             if(stopping_criteria==1)
             {
@@ -902,8 +902,9 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 drag_x = fabs(dt * (forcebedx + forcebedx_curv + forceintx) );
 
                 if (inertial_x <= drag_x)
-                    Ustore[1] = 0.0;
+                    tmp = 0.0;
             }
+            Ustore[1] = tmp;
 
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // y direction source terms
@@ -940,7 +941,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 //    else
             }
 #endif
-            Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forcebedy_curv - forceinty);
+            tmp = Ustore[2] + dt * (forcegravy - forcebedy - forcebedy_curv - forceinty);
             //STOPPING CRITERIA
             if(stopping_criteria==1)
             {
@@ -948,8 +949,9 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 drag_y = fabs(dt * (forcebedy + forcebedy_curv + forceinty) );
 
                 if (inertial_y <= drag_y)
-                    Ustore[2] = 0.0;
+                    tmp = 0.0;
             }
+            Ustore[2];
 
 
 #ifdef STOPPED_FLOWS
@@ -1011,7 +1013,6 @@ void Integrator_SinglePhase_Coulomb::corrector()
 		m_forceint += fabs(elem_forceint);
 		m_forcebed += fabs(elem_forcebed);
 		m_realvolume += dxdy * h[ndx];
-		;
 		m_eroded += elem_eroded;
 		m_deposited += elem_deposited;
 
