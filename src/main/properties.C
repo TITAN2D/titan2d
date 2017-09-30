@@ -1641,19 +1641,19 @@ void LocalQuants::print0()
     }
 }
 
-void LocalQuants::FindElement(const double threshold, const double dt,
+void LocalQuants::FindElement(const double dt,
 		const double dx, const double dy, const double xEl, const double yEl,
-		const double h, const double hVx, const double hVy, const double Fgravx,
+		const double h, const double Vx, const double Vy, const double Fgravx,
 		const double Fgravy, const double Fbedx, const double Fbedy,
 		const double Fbedcx, const double Fbedcy, const double Fintx,
 		const double Finty, const double zeta_x, const double zeta_y) {
 	for (int i = 0; i < no_locations; i++) {
 
-		if ((fabs(X[i] - xEl) <= 0.5 * dx) && (fabs(Y[i] - yEl) <= 0.5 * dy) && (h >= threshold)) {
+		if ((fabs(X[i] - xEl) <= 0.5 * dx) && (fabs(Y[i] - yEl) <= 0.5 * dy)) {
 
 			temps[i].push_back(h);
-			temps[i].push_back(hVx);
-			temps[i].push_back(hVy);
+			temps[i].push_back(Vx);
+			temps[i].push_back(Vy);
 			temps[i].push_back(Fgravx);
 			temps[i].push_back(Fgravy);
 			temps[i].push_back(Fbedx);
@@ -1670,10 +1670,10 @@ void LocalQuants::FindElement(const double threshold, const double dt,
 			TimeInts[i].push_back(sqrt(Fbedx * Fbedx + Fbedy * Fbedy) * dt);
 			TimeInts[i].push_back(sqrt(Fbedcx * Fbedcx + Fbedcy * Fbedcy) * dt);
 			TimeInts[i].push_back(sqrt(Fintx * Fintx + Finty * Finty) * dt);
-			TimeInts[i].push_back((hVx * Fgravx + hVy * Fgravy) * dt / h);
-			TimeInts[i].push_back((hVx * Fbedx + hVy * Fbedy) * dt / h);
-			TimeInts[i].push_back((hVx * Fbedcx + hVy * Fbedcy) * dt / h);
-			TimeInts[i].push_back((hVx * Fintx + hVy * Finty) * dt / h);
+			TimeInts[i].push_back((Vx * Fgravx + Vy * Fgravy) * dt);
+			TimeInts[i].push_back((Vx * Fbedx + Vy * Fbedy) * dt);
+			TimeInts[i].push_back((Vx * Fbedcx + Vy * Fbedcy) * dt);
+			TimeInts[i].push_back((Vx * Fintx + Vy * Finty) * dt);
 		}
 	}
 }
@@ -1684,8 +1684,8 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 
 		if (temps[i].size() == 14) {
 
-			Height[i] = temps[i][0] * height_scale;
-			Velocity[i] = velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]) / temps[i][0];
+			Height[i] = height_scale * temps[i][0];
+			Velocity[i] = velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]);
 			Fgx[i] = st_scale * temps[i][3];
 			Fgy[i] = st_scale * temps[i][4];
 			Fbx[i] = st_scale * temps[i][5];
@@ -1724,7 +1724,7 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 
 				W[j] = 1.0 / temps[i][14*j+13];
 				numH += W[j] * temps[i][14*j];
-				numV += W[j] * sqrt(temps[i][14*j+1]*temps[i][14*j+1] + temps[i][14*j+2]*temps[i][14*j+2]) / temps[i][14*j];
+				numV += W[j] * sqrt(temps[i][14*j+1]*temps[i][14*j+1] + temps[i][14*j+2]*temps[i][14*j+2]);
 				numFgx += W[j] * temps[i][14*j+3];
 				numFgy += W[j] * temps[i][14*j+4];
 				numFbx += W[j] * temps[i][14*j+5];

@@ -1346,11 +1346,12 @@ public:
 	void scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale);
 	void print_local_quants(int i);
 	void print0();
-	void FindElement(const double threshold, const double dt, const double dx,
-			const double dy, const double xEl, const double yEl, const double h,
-			const double hVx, const double hVy, const double Fgravx, const double Fgravy,
-			const double Fbedx, const double Fbedy, const double Fbedcx, const double Fbedcy,
-			const double Fintx, const double Finty, const double zeta_x, const double zeta_y);
+	void FindElement(const double dt, const double dx, const double dy,
+			const double xEl, const double yEl, const double h,
+			const double hVx, const double hVy, const double Fgravx,
+			const double Fgravy, const double Fbedx, const double Fbedy,
+			const double Fbedcx, const double Fbedcy, const double Fintx,
+			const double Finty, const double zeta_x, const double zeta_y);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
 	//! Dump object content to hdf5 file
 	void h5write(H5::CommonFG *parent, string group_name = "LocalQuants") const;

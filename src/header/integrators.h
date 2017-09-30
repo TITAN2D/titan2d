@@ -81,6 +81,9 @@ protected:
     //! should be implemented in derivative class
     virtual double get_coef_and_eigen(int ghost_flag)=0;
 
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords()=0;
+
 
 protected:
     //!references to members of other classes
@@ -159,6 +162,8 @@ protected:
      */
     virtual void corrector();
 
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords();
 
 public:
     double threshold;
@@ -211,6 +216,9 @@ protected:
      * Corrector step for second order of whole step for first order
      */
     virtual void corrector();
+
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords();
 
     //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
@@ -316,6 +324,9 @@ protected:
      */
     virtual void corrector();
 
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords();
+
     //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
@@ -389,6 +400,9 @@ protected:
      */
     virtual void corrector();
 
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords();
+
     //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
@@ -454,6 +468,9 @@ protected:
      * Corrector step for second order of whole step for first order
      */
     virtual void corrector();
+
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords();
 
     //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
@@ -584,6 +601,9 @@ protected:
      * Corrector step for second order of whole step for first order
      */
     virtual void corrector();
+
+    // This method is used when we need to get the records of flow characteristics such as forces.
+    virtual void flowrecords();
 
     void calc_drag_force(const ti_ndx_t ndx, const double *vsolid, const double *vfluid,
             const double den_solid, const double den_fluid, const double vterminal,

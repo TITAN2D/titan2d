@@ -218,8 +218,8 @@ void Integrator::step()
     PROFILING3_STOPADD_RESTART(step_corrector,pt_start);
 
 
-    if (localquants_ptr->no_locations > 0)
-     	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
+    // Recording Local and Global flow characteristics
+    flowrecords();
 
     //statistics, etc.
     TIMING1_START(t_start2);
@@ -372,6 +372,12 @@ void Integrator_SinglePhase::corrector()
 {
 
 }
+
+void Integrator_SinglePhase::flowrecords()
+{
+
+}
+
 void Integrator_SinglePhase::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator::h5write(parent,group_name);
@@ -667,18 +673,6 @@ void Integrator_SinglePhase_Coulomb::corrector()
     double m_eroded = 0.0;
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
-    double m_force_gx = 0.0;
-    double m_force_gy = 0.0;
-    double m_force_bx = 0.0;
-    double m_force_by = 0.0;
-    double m_force_bcx = 0.0;
-    double m_force_bcy = 0.0;
-    double m_force_rx = 0.0;
-    double m_force_ry = 0.0;
-    double m_power_g = 0.0;
-    double m_power_b = 0.0;
-    double m_power_bc = 0.0;
-    double m_power_r = 0.0;
 
     const double sin_intfrictang=sin(int_frict);
 
@@ -688,20 +682,13 @@ void Integrator_SinglePhase_Coulomb::corrector()
     tivector<double> &kactxy=effect_kactxy_[0];
     tivector<double> &bedfrictang=effect_bedfrict_;
 
-    if (localquants_ptr->no_locations > 0)
-    {
-    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
-    		localquants_ptr->temps[iloc].resize(0);
-    }
-
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume) \
-		reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         //ANNOTATE_ITERATION_TASK(ISPC_cor_iter);
@@ -780,11 +767,8 @@ void Integrator_SinglePhase_Coulomb::corrector()
 
         elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
-
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //corrector itself
-
-
 
         double speed;
         double forceintx, forceinty;
@@ -798,8 +782,6 @@ void Integrator_SinglePhase_Coulomb::corrector()
         double h_inv;
         double sgn_dudy, sgn_dvdx, tmp;
         double es, totalShear;
-
-        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
 
         Ustore[0] = prev_state_vars_[0][ndx]
                 - dtdx * (fluxxp[0] - fluxxm[0])
@@ -951,7 +933,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
                 if (inertial_y <= drag_y)
                     tmp = 0.0;
             }
-            Ustore[2];
+            Ustore[2] = tmp;
 
 
 #ifdef STOPPED_FLOWS
@@ -1016,7 +998,163 @@ void Integrator_SinglePhase_Coulomb::corrector()
 		m_eroded += elem_eroded;
 		m_deposited += elem_deposited;
 
-		if (h[ndx] >= thr) {
+		// apply bc's
+		for (int j = 0; j < 4; j++)
+			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+				for (int k = 0; k < NUM_STATE_VARS; k++)
+					state_vars_[k][ndx] = 0.0;
+	}
+
+	forceint = m_forceint;
+	forcebed = m_forcebed;
+	eroded = m_eroded;
+	deposited = m_deposited;
+	realvolume = m_realvolume;
+
+    //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
+    //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
+}
+void Integrator_SinglePhase_Coulomb::flowrecords()
+{
+	// Updating spatial derivatives of State Variables
+	ElemProp.slopes(matprops_ptr);
+
+	// Temporary reduction variables for recording QoIs globally
+    double m_force_gx = 0.0;
+    double m_force_gy = 0.0;
+    double m_force_bx = 0.0;
+    double m_force_by = 0.0;
+    double m_force_bcx = 0.0;
+    double m_force_bcy = 0.0;
+    double m_force_rx = 0.0;
+    double m_force_ry = 0.0;
+    double m_power_g = 0.0;
+    double m_power_b = 0.0;
+    double m_power_bc = 0.0;
+    double m_power_r = 0.0;
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+    tivector<double> *dgdx=d_gravity_;
+    tivector<double> &bedfrictang=effect_bedfrict_;
+
+    double Kactxy;
+    const double sin_intfrictang=sin(int_frict);
+    double cosphiSQ = cos(int_frict);
+    cosphiSQ*=cosphiSQ;
+
+    // Initializing temporary arrays before searching for locations
+    if (localquants_ptr->no_locations > 0)
+    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    		localquants_ptr->temps[iloc].resize(0);
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
+        reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
+		reduction(+: m_power_g, m_power_b, m_power_bc, m_power_r)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+
+        if(h[ndx] > thr)
+        {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            double dxdy = dx_[0][ndx] * dx_[1][ndx];
+
+            double VxVy[2];
+            double tanbed = tan(bedfrictang[ndx]);
+            double tandelSQ = tanbed * tanbed;
+
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+
+            //vel is used to determine if velocity gradients are converging or diverging
+            double vel;
+
+            //COEFFICIENTS
+            double hSQ = h[ndx] * h[ndx];
+
+            vel = dhVx_dx[ndx]/h[ndx] - hVx[ndx]*dh_dx[ndx]/hSQ +
+            		dhVy_dy[ndx]/h[ndx] - hVy[ndx]*dh_dy[ndx]/hSQ;
+
+            Kactxy = (2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny) *
+            		sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
+
+            //if there is no yielding...
+            if(fabs(VxVy[0]) < tiny && fabs(VxVy[1]) < tiny)
+               	Kactxy = 1.0;
+
+            Kactxy *= scale_.epsilon;
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            double speed, h_inv;
+            double forceintx, forceinty;
+            double forcebedx, forcebedy;
+            double forcebedx_curv, forcebedy_curv;
+            double forcegravx , forcegravy;
+            double unitvx, unitvy;
+            double sgn_dudy, sgn_dvdx, tmp;
+
+            // initialize to zero
+            forceintx = forcebedx = 0.0;
+            forcebedx_curv = forcebedy_curv = 0.0;
+            forceinty = forcebedy = 0.0;
+            unitvx = unitvy = 0.0;
+
+            // S terms
+            // here speed is speed squared
+            speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+
+            if (speed > 0.0)
+            {
+                // here speed is speed
+                speed = sqrt(speed);
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = unitvy = 0.0;
+            }
+            h_inv = 1.0 / h[ndx];
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // x direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the x direction
+            forcegravx = g[0][ndx] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVx_dy[ndx] - VxVy[0] * dh_dy[ndx]);
+            sgn_dudy = sgn_tiny(tmp, frict_tiny);
+            forceintx = sgn_dudy * h[ndx] * Kactxy * (g[2][ndx] * dh_dy[ndx] + dgdx[1][ndx] * h[ndx]) * sin_intfrictang;
+
+            // the bed friction force for fast moving flow
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedx = unitvx * tanbed * g[2][ndx] * h[ndx];
+            	forcebedx_curv = unitvx * tanbed * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
+            }
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // y direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // the gravity force in the y direction
+            forcegravy = g[1][ndx] * h[ndx];
+
+            // the internal friction force
+            tmp = h_inv * (dhVy_dx[ndx] - VxVy[1] * dh_dx[ndx]);
+            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
+            forceinty = sgn_dvdx * h[ndx] * Kactxy * (g[2][ndx] * dh_dx[ndx] + dgdx[0][ndx] * h[ndx]) * sin_intfrictang;
+
+            // the bed friction force for fast moving flow
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedy = unitvy * tanbed * g[2][ndx] * h[ndx];
+            	forcebedy_curv = unitvy * tanbed * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
+            }
+
+            /////////////////////////////////////////////////////////////////////////////
+            // Recording QoIs globally from updated cells
 			m_force_gx += (forcegravx * dxdy);
 			m_force_gy += (forcegravy * dxdy);
 			m_force_bx -= (forcebedx * dxdy);
@@ -1030,28 +1168,18 @@ void Integrator_SinglePhase_Coulomb::corrector()
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
 			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+
+			// Searching user-defined locations to record QoIs
+			if (localquants_ptr->no_locations > 0)
+				localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+						coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
+						forcegravx, forcegravy, -forcebedx, -forcebedy,
+						-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
+						zeta_[0][ndx], zeta_[1][ndx]);
 		}
-
-		// apply bc's
-		for (int j = 0; j < 4; j++)
-			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
-				for (int k = 0; k < NUM_STATE_VARS; k++)
-					state_vars_[k][ndx] = 0.0;
-
-		if (localquants_ptr->no_locations > 0)
-			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
-					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
-					forcegravx, forcegravy, -forcebedx, -forcebedy,
-					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
-					zeta_[0][ndx], zeta_[1][ndx]);
 	}
 
-	forceint = m_forceint;
-	forcebed = m_forcebed;
-	eroded = m_eroded;
-	deposited = m_deposited;
-	realvolume = m_realvolume;
-
+    // Storing QoIs globally from updated cells at current time
 	force_gx = m_force_gx;
 	force_gy = m_force_gy;
 	force_bx = m_force_bx;
@@ -1065,6 +1193,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
 	power_bc = m_power_bc;
 	power_r = m_power_r;
 
+	// Recording time-integration of QoIs globally from updated cells
 	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
 	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
 	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
@@ -1074,10 +1203,9 @@ void Integrator_SinglePhase_Coulomb::corrector()
 	Tpower_bc += m_power_bc * dt;
 	Tpower_r += m_power_r * dt;
 
-    //ANNOTATE_TASK_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
-    //ANNOTATE_SITE_END(Integrator_SinglePhase_Coulomb_FirstOrder_corrector);
-
-
+	// Storing recorded specified QoIs at user-defined locations
+    if (localquants_ptr->no_locations > 0)
+     	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
 }
 void Integrator_SinglePhase_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1140,37 +1268,14 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     double m_eroded = 0.0;
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
-    double m_force_gx = 0.0;
-    double m_force_gy = 0.0;
-    double m_force_bx = 0.0;
-    double m_force_by = 0.0;
-    double m_force_bcx = 0.0;
-    double m_force_bcy = 0.0;
-    double m_force_rx = 0.0;
-    double m_force_ry = 0.0;
-    double m_power_g = 0.0;
-    double m_power_b = 0.0;
-    double m_power_bc = 0.0;
-    double m_power_r = 0.0;
 
     double inv_xi= 1.0/xi;
 
     //convinience ref
     tivector<double> *g=gravity_;
-    tivector<double> &kactxy=effect_kactxy_[0];
 
-    if (localquants_ptr->no_locations > 0)
-    {
-    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
-    		localquants_ptr->temps[iloc].resize(0);
-    }
-
-    // mdj 2007-04 this loop has pretty much defeated me - there is
-    //             a dependency in the Element class that causes incorrect
-    //             results
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume) \
-		reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1219,22 +1324,6 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             fluxym[ivar] = node_flux_[ivar][nym];
 
 
-        /* the values being passed to correct are for a SINGLE element, NOT a
-         region, as such the only change that having variable bedfriction
-         requires is to pass the bedfriction angle for the current element
-         rather than the only bedfriction
-         I wonder if this is legacy code, it seems odd that it is only called
-         for the SUN Operating System zee ../geoflow/correct.f */
-
-#ifdef STOPPED_FLOWS
-    #ifdef STOPCRIT_CHANGE_SOURCE
-        int IF_STOPPED=stoppedflags_[ndx];
-    #else
-        int IF_STOPPED = !(!stoppedflags_[ndx]);
-    #endif
-#endif
-
-
         double VxVy[2];
         if(h[ndx] > tiny)
         {
@@ -1260,8 +1349,6 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         double Ustore[3];
         double inertial_x, inertial_y;
         double drag_x, drag_y;
-
-        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
 
         Ustore[0] = prev_state_vars_[0][ndx]
                 - dtdx * (fluxxp[0] - fluxxm[0])
@@ -1289,8 +1376,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         unitvx = 0.0;
         unitvy = 0.0;
         elem_eroded = 0.0;
-        
-        
+
         if(h[ndx] > tiny)
         {
             // S terms
@@ -1314,17 +1400,17 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
              // x direction source terms
              //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-            // the gravity force in the x direction
+            // The gravity force in the x direction
             forcegravx = g[0][ndx] * h[ndx];
 
-            //the Coulomb type friction force in x direction
+            // The basal type friction force in x direction
             tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
             if (tmp > 0.0){
             	forcebedx = unitvx * mu * g[2][ndx] * h[ndx];
             	forcebedx_curv = unitvx * mu * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
             }
 
-            //the Turbulent type force for fast moving flow in x direction
+            // The velocity-dependent resisting force in x direction
             forceintx = unitvx * speed_squared * inv_xi / scale_.epsilon;
 
             //STOPPING CRITERIA
@@ -1340,17 +1426,17 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
              // y direction source terms
              //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-            // the gravity force in the y direction
+            // The gravity force in the y direction
             forcegravy = g[1][ndx] * h[ndx];
 
-            // the Coulomb type friction force  in y direction
+            // The basal friction force  in y direction
             tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
             if (tmp > 0.0){
             	forcebedy = unitvy * mu * g[2][ndx] * h[ndx];
             	forcebedy_curv = unitvy * mu * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
             }
 
-            // the Turbulent type force for fast moving flow in y direction
+            // The velocity-dependent resisting force in y direction
             forceinty = unitvy * speed_squared * inv_xi / scale_.epsilon;
 
             //STOPPING CRITERIA
@@ -1399,7 +1485,134 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         m_eroded += elem_eroded;
         m_deposited += elem_deposited;
 
-		if (h[ndx] >= thr) {
+		// apply bc's
+		for (int j = 0; j < 4; j++)
+			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+				for (int k = 0; k < NUM_STATE_VARS; k++)
+					state_vars_[k][ndx] = 0.0;
+	}
+
+	forceint = m_forceint;
+	forcebed = m_forcebed;
+	eroded = m_eroded;
+	deposited = m_deposited;
+	realvolume = m_realvolume;
+}
+void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
+{
+	// Updating spatial derivatives of State Variables
+	ElemProp.slopes(matprops_ptr);
+
+	// Temporary reduction variables for recording QoIs globally
+    double m_force_gx = 0.0;
+    double m_force_gy = 0.0;
+    double m_force_bx = 0.0;
+    double m_force_by = 0.0;
+    double m_force_bcx = 0.0;
+    double m_force_bcy = 0.0;
+    double m_force_rx = 0.0;
+    double m_force_ry = 0.0;
+    double m_power_g = 0.0;
+    double m_power_b = 0.0;
+    double m_power_bc = 0.0;
+    double m_power_r = 0.0;
+
+    double inv_xi= 1.0/xi;
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+
+    // Initializing temporary arrays before searching for locations
+    if (localquants_ptr->no_locations > 0)
+    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    		localquants_ptr->temps[iloc].resize(0);
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
+        reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
+		reduction(+: m_power_g, m_power_b, m_power_bc, m_power_r)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+
+        if(h[ndx] > thr)
+        {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            double dxdy = dx_[0][ndx] * dx_[1][ndx];
+
+            double VxVy[2];
+
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            double speed, speed_squared, tmp;
+            double forceintx, forceinty;
+            double forcebedx, forcebedy;
+            double forcebedx_curv, forcebedy_curv;
+            double forcegravx , forcegravy;
+            double unitvx, unitvy;
+
+            // initialize to zero
+            forceintx = forcebedx = 0.0;
+            forcebedx_curv = forcebedy_curv = 0.0;
+            forceinty = forcebedy = 0.0;
+            unitvx = unitvy = 0.0;
+
+            // S terms
+            // here speed is speed squared
+        	speed_squared = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+
+            if (speed_squared > 0.0)
+            {
+
+                speed = sqrt(speed_squared);
+
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // x direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+            // The gravity force in the x direction
+            forcegravx = g[0][ndx] * h[ndx];
+
+            // The basal friction force in x direction
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            if (tmp > 0.0) {
+            	forcebedx = unitvx * mu * g[2][ndx] * h[ndx];
+            	forcebedx_curv = unitvx * mu * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
+            }
+
+            // The velocity-dependent resisting force in x direction
+            forceintx = unitvx * speed_squared * inv_xi / scale_.epsilon;
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // y direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+            // The gravity force in the y direction
+            forcegravy = g[1][ndx] * h[ndx];
+
+            // The basal friction force in y direction
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            if (tmp > 0.0) {
+            	forcebedy = unitvy * mu * g[2][ndx] * h[ndx];
+            	forcebedy_curv = unitvy * mu * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
+            }
+
+            // The velocity-dependent resisting force in y direction
+            forceinty = unitvy * speed_squared * inv_xi / scale_.epsilon;
+
+            /////////////////////////////////////////////////////////////////////////////
+            // Recording QoIs globally from updated cells at current time
 			m_force_gx += (forcegravx * dxdy);
 			m_force_gy += (forcegravy * dxdy);
 			m_force_bx -= (forcebedx * dxdy);
@@ -1413,28 +1626,18 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
 			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+
+			// Searching user-defined locations to record QoIs
+			if (localquants_ptr->no_locations > 0)
+				localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+						coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
+						forcegravx, forcegravy, -forcebedx, -forcebedy,
+						-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
+						zeta_[0][ndx], zeta_[1][ndx]);
 		}
-
-		// apply bc's
-		for (int j = 0; j < 4; j++)
-			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
-				for (int k = 0; k < NUM_STATE_VARS; k++)
-					state_vars_[k][ndx] = 0.0;
-
-		if (localquants_ptr->no_locations > 0)
-			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
-					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
-					forcegravx, forcegravy, -forcebedx, -forcebedy,
-					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
-					zeta_[0][ndx], zeta_[1][ndx]);
 	}
 
-	forceint = m_forceint;
-	forcebed = m_forcebed;
-	eroded = m_eroded;
-	deposited = m_deposited;
-	realvolume = m_realvolume;
-
+    // Storing QoIs globally from updated cells at current time
 	force_gx = m_force_gx;
 	force_gy = m_force_gy;
 	force_bx = m_force_bx;
@@ -1448,6 +1651,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 	power_bc = m_power_bc;
 	power_r = m_power_r;
 
+	// Recording time-integration of QoIs globally from updated cells
 	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
 	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
 	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
@@ -1456,6 +1660,10 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
 	Tpower_b += m_power_b * dt;
 	Tpower_bc += m_power_bc * dt;
 	Tpower_r += m_power_r * dt;
+
+	// Storing recorded specified QoIs at user-defined locations
+    if (localquants_ptr->no_locations > 0)
+     	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
 }
 void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1530,8 +1738,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::predictor()
 {
 }
 
-
-
 void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 {
     Element* Curr_El;
@@ -1542,32 +1748,16 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     double m_eroded = 0.0;
     double m_deposited = 0.0;
     double m_realvolume = 0.0;
-    double m_force_gx = 0.0;
-    double m_force_gy = 0.0;
-    double m_force_bx = 0.0;
-    double m_force_by = 0.0;
-    double m_force_bcx = 0.0;
-    double m_force_bcy = 0.0;
-    double m_force_rx = 0.0;
-    double m_force_ry = 0.0;
-    double m_power_g = 0.0;
-    double m_power_b = 0.0;
-    double m_power_bc = 0.0;
-    double m_power_r = 0.0;
+
+    double mu_1 = tan(phi1);
+    double mu_2 = tan(phi2);
+    double mu_3 = tan(phi3);
 
     //convinience ref
     tivector<double> *g=gravity_;
-    tivector<double> &kactxy=effect_kactxy_[0];
-
-    if (localquants_ptr->no_locations > 0)
-    {
-    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
-    		localquants_ptr->temps[iloc].resize(0);
-    }
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
-        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume) \
-		reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1616,22 +1806,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
             fluxym[ivar] = node_flux_[ivar][nym];
 
 
-        /* the values being passed to correct are for a SINGLE element, NOT a
-         region, as such the only change that having variable bedfriction
-         requires is to pass the bedfriction angle for the current element
-         rather than the only bedfriction
-         I wonder if this is legacy code, it seems odd that it is only called
-         for the SUN Operating System zee ../geoflow/correct.f */
-
-#ifdef STOPPED_FLOWS
-    #ifdef STOPCRIT_CHANGE_SOURCE
-        int IF_STOPPED=stoppedflags_[ndx];
-    #else
-        int IF_STOPPED = !(!stoppedflags_[ndx]);
-    #endif
-#endif
-
-
         double VxVy[2];
         if(h[ndx] > tiny)
         {
@@ -1645,11 +1819,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 
         elements_[ndx].convect_dryline(VxVy[0], VxVy[1], dt); //this is necessary
 
-
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //corrector itself
-
-
 
         double speed;
         double forceintx, forceinty;
@@ -1658,9 +1829,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
         double forcegravx, forcegravy;
         double unitvx, unitvy, tmp;
         double Ustore[3];
-        double mu_bed, mu_1, mu_2, mu_3, Local_Fr;
-
-        double slope = sqrt(zeta_[0][ndx] * zeta_[0][ndx] + zeta_[1][ndx] * zeta_[1][ndx]);
+        double mu_bed, Local_Fr;
 
         Ustore[0] = prev_state_vars_[0][ndx]
                 - dtdx * (fluxxp[0] - fluxxm[0])
@@ -1708,11 +1877,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
                 unitvx = 0.0;
                 unitvy = 0.0;
             }
+            // Calculation of Froude number
             Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] * scale_.epsilon);
-
-            mu_1 = tan(phi1);
-            mu_2 = tan(phi2);
-            mu_3 = tan(phi3);
 
             //ccccccccccccccc Calculation of mu_bed(Local_Fr,h) ccccccccccccccccc
 
@@ -1732,17 +1898,18 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			// x direction source terms
 			//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-			// the gravity force in the x direction
+			// The gravity force in the x direction
 			forcegravx = g[0][ndx] * h[ndx];
 
-			// the bed friction forces for fast moving flow in x direction
+			// The basal friction forces in x direction
             tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
             if (tmp > 0.0){
             	forcebedx = unitvx * mu_bed * g[2][ndx] * h[ndx];
             	forcebedx_curv = unitvx * mu_bed * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
             }
 
-			forceintx = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dx[ndx];
+            // The resisting forces due to flow thickness gradient in x direction
+			forceintx = h[ndx] * g[2][ndx] * dh_dx[ndx] * scale_.epsilon;
 
 			//STOPPING CRITERIA
 			inertial_x = fabs( Ustore[1] + dt * forcegravx );
@@ -1758,18 +1925,18 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			// y direction source terms
 			//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-			// the gravity force in the y direction
-
+			// The gravity force in the y direction
 			forcegravy = g[1][ndx] * h[ndx];
 
-			// the bed friction forces for fast moving flow in y direction
+			// The basal friction forces in y direction
             tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
             if (tmp > 0.0){
             	forcebedy = unitvy * mu_bed * g[2][ndx] * h[ndx];
             	forcebedy_curv = unitvy * mu_bed * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
             }
 
-			forceinty = h[ndx] * g[2][ndx] * kactxy[ndx] * dh_dy[ndx];
+            // The resisting forces due to flow thickness gradient in y direction
+			forceinty = h[ndx] * g[2][ndx] * dh_dy[ndx] * scale_.epsilon;
 
 			//STOPPING CRITERIA
 			inertial_y = fabs( Ustore[2] + dt * forcegravy );
@@ -1816,7 +1983,149 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 		m_eroded += elem_eroded;
 		m_deposited += elem_deposited;
 
-		if (h[ndx] >= thr) {
+		// apply bc's
+		for (int j = 0; j < 4; j++)
+			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+				for (int k = 0; k < NUM_STATE_VARS; k++)
+					state_vars_[k][ndx] = 0.0;
+	}
+
+	forceint = m_forceint;
+	forcebed = m_forcebed;
+	eroded = m_eroded;
+	deposited = m_deposited;
+	realvolume = m_realvolume;
+}
+void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
+{
+	// Updating spatial derivatives of State Variables
+	ElemProp.slopes(matprops_ptr);
+
+    // Temporary reduction variables for recording QoIs globally
+    double m_force_gx = 0.0;
+    double m_force_gy = 0.0;
+    double m_force_bx = 0.0;
+    double m_force_by = 0.0;
+    double m_force_bcx = 0.0;
+    double m_force_bcy = 0.0;
+    double m_force_rx = 0.0;
+    double m_force_ry = 0.0;
+    double m_power_g = 0.0;
+    double m_power_b = 0.0;
+    double m_power_bc = 0.0;
+    double m_power_r = 0.0;
+
+    double mu_1 = tan(phi1);
+    double mu_2 = tan(phi2);
+    double mu_3 = tan(phi3);
+
+    //convinience ref
+    tivector<double> *g=gravity_;
+
+    // Initializing temporary arrays before searching for locations
+    if (localquants_ptr->no_locations > 0)
+    	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    		localquants_ptr->temps[iloc].resize(0);
+
+    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
+        reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
+		reduction(+: m_power_g, m_power_b, m_power_bc, m_power_r)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
+
+        if(h[ndx] > thr)
+        {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            double dxdy = dx_[0][ndx] * dx_[1][ndx];
+
+            double VxVy[2];
+
+            VxVy[0] = hVx[ndx] / h[ndx];
+            VxVy[1] = hVy[ndx] / h[ndx];
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            double speed;
+            double forceintx, forceinty;
+            double forcebedx, forcebedy;
+            double forcebedx_curv, forcebedy_curv;
+            double forcegravx , forcegravy;
+            double unitvx, unitvy, tmp;
+            double mu_bed, Local_Fr;
+
+            // initialize to zero
+            forceintx = forcebedx = 0.0;
+            forcebedx_curv = forcebedy_curv = 0.0;
+            forceinty = forcebedy = 0.0;
+            unitvx = unitvy = 0.0;
+
+            // S terms
+            // here speed is speed squared
+        	speed = VxVy[0] * VxVy[0] + VxVy[1] * VxVy[1];
+
+            if (speed > 0.0)
+            {
+                speed = sqrt(speed);
+
+                unitvx = VxVy[0] / speed;
+                unitvy = VxVy[1] / speed;
+            }
+            else
+            {
+                unitvx = 0.0;
+                unitvy = 0.0;
+            }
+            Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] * scale_.epsilon);
+
+            //ccccccccccccccc Calculation of mu_bed(Local_Fr,h) ccccccccccccccccc
+
+            //Dynamic flow regime
+			if ( Local_Fr >= Beta )
+				mu_bed = mu_1 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] * Beta / ( L_material * Local_Fr ) );
+
+            //Intermediate flow regime
+			else if ( ( Local_Fr < Beta ) && ( Local_Fr > 0.0 ) )
+				mu_bed = mu_3 + pow( ( Local_Fr / Beta ), 0.001 ) * ( mu_1 - mu_3 ) + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material );
+
+            //Static regime
+			else if ( Local_Fr == 0.0 )
+				mu_bed = mu_3 + ( mu_2 - mu_1 ) / ( 1.0 + h[ndx] / L_material);
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // x direction source terms
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+			// The gravity force in the x direction
+			forcegravx = g[0][ndx] * h[ndx];
+
+			// The basal friction forces in x direction
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[0] * hVx[ndx] * curvature_[0][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedx = unitvx * mu_bed * g[2][ndx] * h[ndx];
+            	forcebedx_curv = unitvx * mu_bed * VxVy[0] * hVx[ndx] * curvature_[0][ndx];
+            }
+
+            // The resisting forces due to flow thickness gradient in x direction
+			forceintx = h[ndx] * g[2][ndx] * dh_dx[ndx] * scale_.epsilon;
+
+            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            // y direction source terms
+            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+			// The gravity force in the y direction
+			forcegravy = g[1][ndx] * h[ndx];
+
+			// The basal friction forces in y direction
+            tmp = c_dmax1(g[2][ndx] * h[ndx] + VxVy[1] * hVy[ndx] * curvature_[1][ndx], 0.0);
+            if (tmp > 0.0){
+            	forcebedy = unitvy * mu_bed * g[2][ndx] * h[ndx];
+            	forcebedy_curv = unitvy * mu_bed * VxVy[1] * hVy[ndx] * curvature_[1][ndx];
+            }
+
+            // The resisting forces due to flow thickness gradient in y direction
+			forceinty = h[ndx] * g[2][ndx] * dh_dy[ndx] * scale_.epsilon;
+
+            /////////////////////////////////////////////////////////////////////////////
+			// Recording QoIs globally from updated cells
 			m_force_gx += (forcegravx * dxdy);
 			m_force_gy += (forcegravy * dxdy);
 			m_force_bx -= (forcebedx * dxdy);
@@ -1830,28 +2139,18 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
 			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
+
+			// Searching user-defined locations to record QoIs
+			if (localquants_ptr->no_locations > 0)
+				localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
+						coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
+						forcegravx, forcegravy, -forcebedx, -forcebedy,
+						-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
+						zeta_[0][ndx], zeta_[1][ndx]);
 		}
-
-		// apply bc's
-		for (int j = 0; j < 4; j++)
-			if (neigh_proc_[j][ndx] == INIT)   // this is a boundary!
-				for (int k = 0; k < NUM_STATE_VARS; k++)
-					state_vars_[k][ndx] = 0.0;
-
-		if (localquants_ptr->no_locations > 0)
-			localquants_ptr->FindElement(thr, dt, dx_[0][ndx], dx_[1][ndx],
-					coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx], hVy[ndx],
-					forcegravx, forcegravy, -forcebedx, -forcebedy,
-					-forcebedx_curv, -forcebedy_curv, -forceintx, -forceinty,
-					zeta_[0][ndx], zeta_[1][ndx]);
 	}
 
-	forceint = m_forceint;
-	forcebed = m_forcebed;
-	eroded = m_eroded;
-	deposited = m_deposited;
-	realvolume = m_realvolume;
-
+    // Storing QoIs globally from updated cells at current time
 	force_gx = m_force_gx;
 	force_gy = m_force_gy;
 	force_bx = m_force_bx;
@@ -1865,6 +2164,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 	power_bc = m_power_bc;
 	power_r = m_power_r;
 
+	// Recording time-integration of QoIs globally from updated cells
 	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
 	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
 	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
@@ -1873,6 +2173,10 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
 	Tpower_b += m_power_b * dt;
 	Tpower_bc += m_power_bc * dt;
 	Tpower_r += m_power_r * dt;
+
+	// Storing recorded specified QoIs at user-defined locations
+    if (localquants_ptr->no_locations > 0)
+     	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -1928,6 +2232,10 @@ void Integrator_TwoPhases::predictor()
 }
 
 void Integrator_TwoPhases::corrector()
+{
+
+}
+void Integrator_TwoPhases::flowrecords()
 {
 
 }
@@ -2307,6 +2615,10 @@ void Integrator_TwoPhases_Coulomb::corrector()
     eroded = m_eroded;
     deposited = m_deposited;
     realvolume = m_realvolume;
+}
+void Integrator_TwoPhases_Coulomb::flowrecords()
+{
+
 }
 void Integrator_TwoPhases_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
