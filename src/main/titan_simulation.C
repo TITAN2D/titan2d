@@ -810,9 +810,11 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
 
         output_discharge(matprops, &timeprops, &discharge_planes, myid);
 
-        output_localquants(&timeprops, &localquants, myid);
-
-        output_globalquants(&timeprops, statprops, myid);
+        if(mode == XDMF_OLD)
+        {
+        	output_localquants(&timeprops, &localquants, myid);
+        	output_globalquants(&timeprops, statprops, myid);
+        }
 
         if(myid == 0)
             output_summary(&timeprops, statprops, savefileflag);
