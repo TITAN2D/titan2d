@@ -188,31 +188,37 @@ void output_localquantsTimeIntegrals(TimeProps* timeprops, LocalQuants* localq, 
 	int iloc, num_locs = localq->no_locations;
 
 	if (num_locs > 0) {
-		double tempin[8], tempout[8];
+		double tempin[12], tempout[12];
 		for (iloc = 0; iloc < num_locs; iloc++) {
 
-		    tempin[0] = localq->T_Fg[iloc];
-		    tempin[1] = localq->T_Fb[iloc];
-		    tempin[2] = localq->T_Fbc[iloc];
-		    tempin[3] = localq->T_Fi[iloc];
-		    tempin[4] = localq->T_Pg[iloc];
-		    tempin[5] = localq->T_Pb[iloc];
-		    tempin[6] = localq->T_Pbc[iloc];
-		    tempin[7] = localq->T_Pi[iloc];
+		    tempin[0] = localq->T_Fgx[iloc];
+		    tempin[1] = localq->T_Fgy[iloc];
+		    tempin[2] = localq->T_Fbx[iloc];
+		    tempin[3] = localq->T_Fby[iloc];
+		    tempin[4] = localq->T_Fbcx[iloc];
+		    tempin[5] = localq->T_Fbcy[iloc];
+		    tempin[6] = localq->T_Fix[iloc];
+		    tempin[7] = localq->T_Fiy[iloc];
+		    tempin[8] = localq->T_Pg[iloc];
+		    tempin[9] = localq->T_Pb[iloc];
+		    tempin[10] = localq->T_Pbc[iloc];
+		    tempin[11] = localq->T_Pi[iloc];
 
 #ifdef USE_MPI
-		    	MPI_Reduce(tempin, tempout, 8, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		    	MPI_Reduce(tempin, tempout, 12, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-		    	for(int i=0;i<8;++i)tempout[i]=tempin[i];
+		    	for(int i=0;i<12;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
 		    if (myid == 0) {
 		    	FILE* fp = fopen("TimeIntegraredLocalQuants.info", "a");
-		    	fprintf(fp,"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+		    	fprintf(fp,"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 					localq->Tst_scale * tempout[0],localq->Tst_scale * tempout[1],
 					localq->Tst_scale * tempout[2],localq->Tst_scale * tempout[3],
-					localq->Tp_scale * tempout[4],localq->Tp_scale * tempout[5],
-					localq->Tp_scale * tempout[6],localq->Tp_scale * tempout[7]);
+					localq->Tst_scale * tempout[4],localq->Tst_scale * tempout[5],
+					localq->Tst_scale * tempout[6],localq->Tst_scale * tempout[7],
+					localq->Tp_scale * tempout[8],localq->Tp_scale * tempout[9],
+					localq->Tp_scale * tempout[10],localq->Tp_scale * tempout[11]);
 				fclose(fp);
 		    }
 		}

@@ -130,10 +130,14 @@ protected:
     double power_bc;
     double power_r;
 
-    double Tforce_g;
-    double Tforce_b;
-    double Tforce_bc;
-    double Tforce_r;
+    double Tforce_gx;
+    double Tforce_bx;
+    double Tforce_bcx;
+    double Tforce_rx;
+    double Tforce_gy;
+    double Tforce_by;
+    double Tforce_bcy;
+    double Tforce_ry;
     double Tpower_g;
     double Tpower_b;
     double Tpower_bc;

@@ -68,10 +68,14 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
 	power_bc = 0.0;
 	power_r = 0.0;
 
-	Tforce_g = 0.0;
-	Tforce_b = 0.0;
-	Tforce_bc = 0.0;
-	Tforce_r = 0.0;
+	Tforce_gx = 0.0;
+	Tforce_bx = 0.0;
+	Tforce_bcx = 0.0;
+	Tforce_rx = 0.0;
+	Tforce_gy = 0.0;
+	Tforce_by = 0.0;
+	Tforce_bcy = 0.0;
+	Tforce_ry = 0.0;
 	Tpower_g = 0.0;
 	Tpower_b = 0.0;
 	Tpower_bc = 0.0;
@@ -1194,10 +1198,14 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 	power_r = m_power_r;
 
 	// Recording time-integration of QoIs globally from updated cells
-	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
-	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
-	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
-	Tforce_r += sqrt(m_force_rx * m_force_rx + m_force_ry * m_force_ry) * dt;
+	Tforce_gx += m_force_gx * dt;
+	Tforce_bx += m_force_bx * dt;
+	Tforce_bcx += m_force_bcx * dt;
+	Tforce_rx += m_force_rx * dt;
+	Tforce_gy += m_force_gy * dt;
+	Tforce_by += m_force_by * dt;
+	Tforce_bcy += m_force_bcy * dt;
+	Tforce_ry += m_force_ry * dt;
 	Tpower_g += m_power_g * dt;
 	Tpower_b += m_power_b * dt;
 	Tpower_bc += m_power_bc * dt;
@@ -1652,10 +1660,14 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
 	power_r = m_power_r;
 
 	// Recording time-integration of QoIs globally from updated cells
-	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
-	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
-	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
-	Tforce_r += sqrt(m_force_rx * m_force_rx + m_force_ry * m_force_ry) * dt;
+	Tforce_gx += m_force_gx * dt;
+	Tforce_bx += m_force_bx * dt;
+	Tforce_bcx += m_force_bcx * dt;
+	Tforce_rx += m_force_rx * dt;
+	Tforce_gy += m_force_gy * dt;
+	Tforce_by += m_force_by * dt;
+	Tforce_bcy += m_force_bcy * dt;
+	Tforce_ry += m_force_ry * dt;
 	Tpower_g += m_power_g * dt;
 	Tpower_b += m_power_b * dt;
 	Tpower_bc += m_power_bc * dt;
@@ -2165,10 +2177,14 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 	power_r = m_power_r;
 
 	// Recording time-integration of QoIs globally from updated cells
-	Tforce_g += sqrt(m_force_gx *  m_force_gx + m_force_gy * m_force_gy) * dt;
-	Tforce_b += sqrt(m_force_bx * m_force_bx + m_force_by * m_force_by) * dt;
-	Tforce_bc += sqrt(m_force_bcx * m_force_bcx + m_force_bcy * m_force_bcy) * dt;
-	Tforce_r += sqrt(m_force_rx * m_force_rx + m_force_ry * m_force_ry) * dt;
+	Tforce_gx += m_force_gx * dt;
+	Tforce_bx += m_force_bx * dt;
+	Tforce_bcx += m_force_bcx * dt;
+	Tforce_rx += m_force_rx * dt;
+	Tforce_gy += m_force_gy * dt;
+	Tforce_by += m_force_by * dt;
+	Tforce_bcy += m_force_bcy * dt;
+	Tforce_ry += m_force_ry * dt;
 	Tpower_g += m_power_g * dt;
 	Tpower_b += m_power_b * dt;
 	Tpower_bc += m_power_bc * dt;

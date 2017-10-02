@@ -1314,17 +1314,29 @@ public:
 	// array holding S_othery time-history in the specified location
 	std::vector<double> Pi;
 
+	// array holding S_gx time-history in the specified location
+	std::vector<double> T_Fgx;
+
 	// array holding S_gy time-history in the specified location
-	std::vector<double> T_Fg;
+	std::vector<double> T_Fgy;
+
+	// array holding S_bedx time-history in the specified location
+	std::vector<double> T_Fbx;
+
+	// array holding S_bedy time-history in the specified location
+	std::vector<double> T_Fby;
 
 	// array holding S_bedcurvx time-history in the specified location
-	std::vector<double> T_Fb;
+	std::vector<double> T_Fbcx;
 
 	// array holding S_bedcurvx time-history in the specified location
-	std::vector<double> T_Fbc;
+	std::vector<double> T_Fbcy;
+
+	// array holding S_otherx time-history in the specified location
+	std::vector<double> T_Fix;
 
 	// array holding S_othery time-history in the specified location
-	std::vector<double> T_Fi;
+	std::vector<double> T_Fiy;
 
 	// array holding S_gy time-history in the specified location
 	std::vector<double> T_Pg;
