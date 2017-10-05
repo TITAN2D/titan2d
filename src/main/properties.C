@@ -1729,7 +1729,10 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 		}
 		else if (temps[i].size() > 14) {
 
-			std::vector<double> W(temps[i].size() / 14);
+			std::vector<double> W;
+			int N = temps[i].size() / 14;
+			for (int j = 0; j < N; j++)
+				W.push_back(1.0 / temps[i][14*j+13]);
 
 			double numH = 0.0, numV=0.0, numFgx = 0.0, numFgy = 0.0, numFbx = 0.0, numFby = 0.0, numFbcx = 0.0, numFbcy = 0.0, numFix = 0.0, numFiy = 0.0, numzx = 0.0, numzy = 0.0, den = 0.0;
 			double numPg = 0.0, numPb = 0.0, numPbc = 0.0, numPi = 0.0;
@@ -1737,9 +1740,8 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			double numTFgy = 0.0, numTFby = 0.0, numTFbcy = 0.0, numTFiy = 0.0;
 			double numTPg = 0.0, numTPb = 0.0, numTPbc = 0.0, numTPi = 0.0;
 
-			for (int j = 0; j < W.size(); j++) {
+			for (int j = 0; j < N; j++) {
 
-				W[j] = 1.0 / temps[i][14*j+13];
 				numH += W[j] * temps[i][14*j];
 				numV += W[j] * sqrt(temps[i][14*j+1]*temps[i][14*j+1] + temps[i][14*j+2]*temps[i][14*j+2]);
 				numFgx += W[j] * temps[i][14*j+3];

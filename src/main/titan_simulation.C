@@ -1226,7 +1226,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
 		//write out temporal integral values of global quantities computed in integrators class
 		double tempin[12], tempout[12];
 		tempin[0] = integrator->Tforce_gx;
-		tempin[1] = integrator->Tforce_gx;
+		tempin[1] = integrator->Tforce_gy;
 		tempin[2] = integrator->Tforce_bx;
 		tempin[3] = integrator->Tforce_by;
 		tempin[4] = integrator->Tforce_bcx;

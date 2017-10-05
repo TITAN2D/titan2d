@@ -1050,7 +1050,10 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
     // Initializing temporary arrays before searching for locations
     if (localquants_ptr->no_locations > 0)
     	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    	{
     		localquants_ptr->temps[iloc].resize(0);
+    		localquants_ptr->TimeInts[iloc].resize(0);
+    	}
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
         reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
@@ -1533,7 +1536,10 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
     // Initializing temporary arrays before searching for locations
     if (localquants_ptr->no_locations > 0)
     	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    	{
     		localquants_ptr->temps[iloc].resize(0);
+    		localquants_ptr->TimeInts[iloc].resize(0);
+    	}
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
         reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
@@ -2037,7 +2043,10 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
     // Initializing temporary arrays before searching for locations
     if (localquants_ptr->no_locations > 0)
     	for (int iloc = 0; iloc < localquants_ptr->no_locations; iloc++)
+    	{
     		localquants_ptr->temps[iloc].resize(0);
+    		localquants_ptr->TimeInts[iloc].resize(0);
+    	}
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
         reduction(+: m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
