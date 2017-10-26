@@ -119,13 +119,15 @@ void output_globalquants(TimeProps* timeprops, StatProps* statprops, int myid) {
 
 	if (myid == 0) {
 		FILE* fp = fopen("TemporalSpatial.info", "a");
-		fprintf(fp, "%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+		fprintf(fp,
+				"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+				statprops->force_conx, statprops->force_cony,
 				statprops->force_gx, statprops->force_gy, statprops->force_bx,
 				statprops->force_by, statprops->force_bcx, statprops->force_bcy,
-				statprops->force_rx, statprops->force_ry, statprops->power_g,
-				statprops->power_b, statprops->power_bc, statprops->power_r,
-				statprops->Vol_, statprops->Area_, statprops->Velmean_,
-				timeprops->cur_time * timeprops->TIME_SCALE);
+				statprops->force_rx, statprops->force_ry, statprops->power_con,
+				statprops->power_g, statprops->power_b, statprops->power_bc,
+				statprops->power_r, statprops->Vol_, statprops->Area_,
+				statprops->Velmean_, timeprops->cur_time * timeprops->TIME_SCALE);
 		fclose(fp);
 	}
 }
@@ -145,38 +147,40 @@ void output_localquants(TimeProps* timeprops, LocalQuants* localq, int myid) {
 				fprintf(fp, "\t(UTM E, UTM N): %g, %g\n",
 						localq->length_scale * localq->X[iloc],
 						localq->length_scale * localq->Y[iloc]);
-				fprintf(fp, "\tFlow height     Flow Velocity     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty      Power_g      Power_bed      Power_bedcurv      Power_resist      Slope_x      Slope_y      Time\n\n");
+				fprintf(fp, "\tFlow height     Flow Velocity     F_convetx     F_convecty     S_gx     S_gy     S_bedx     S_bedy     S_bedcurvx     S_bedcurvy     S_resistx      S_resisty      Power_g      Power_bed      Power_bedcurv      Power_resist      Slope_x      Slope_y      Time\n\n");
 
 				if (localq->temps[iloc].size() == 0)
 					fclose(fp);
 				else {
 					fprintf(fp,
-							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+							"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 							localq->Height[iloc], localq->Velocity[iloc],
+							localq->Fconx[iloc], localq->Fcony[iloc],
 							localq->Fgx[iloc], localq->Fgy[iloc],
 							localq->Fbx[iloc], localq->Fby[iloc],
 							localq->Fbcx[iloc], localq->Fbcy[iloc],
 							localq->Fix[iloc], localq->Fiy[iloc],
-							localq->Pg[iloc], localq->Pb[iloc],
-							localq->Pbc[iloc], localq->Pi[iloc],
-							localq->zetax[iloc], localq->zetay[iloc],
-							timeprops->cur_time * timeprops->TIME_SCALE);
+							localq->Pcon[iloc], localq->Pg[iloc],
+							localq->Pb[iloc], localq->Pbc[iloc],
+							localq->Pi[iloc], localq->zetax[iloc],
+							localq->zetay[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
 					fclose(fp);
 				}
 			} else if (localq->temps[iloc].size() > 0) {
 				sprintf(filename, "Location-%04d.dat", iloc);
 				FILE* fp = fopen(filename, "a");
 				fprintf(fp,
-						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
 						localq->Height[iloc], localq->Velocity[iloc],
+						localq->Fconx[iloc], localq->Fcony[iloc],
 						localq->Fgx[iloc], localq->Fgy[iloc],
 						localq->Fbx[iloc], localq->Fby[iloc],
-						localq->Fbcx[iloc], localq->Fbcy[iloc],
+						localq->Fbcx[iloc],localq->Fbcy[iloc],
 						localq->Fix[iloc], localq->Fiy[iloc],
-						localq->Pg[iloc], localq->Pb[iloc],
-						localq->Pbc[iloc], localq->Pi[iloc],
-						localq->zetax[iloc], localq->zetay[iloc],
-						timeprops->cur_time * timeprops->TIME_SCALE);
+						localq->Pcon[iloc], localq->Pg[iloc],
+						localq->Pb[iloc], localq->Pbc[iloc],
+						localq->Pi[iloc], localq->zetax[iloc],
+						localq->zetay[iloc], timeprops->cur_time * timeprops->TIME_SCALE);
 				fclose(fp);
 			}
 		}
@@ -188,39 +192,52 @@ void output_localquantsTimeIntegrals(TimeProps* timeprops, LocalQuants* localq, 
 	int iloc, num_locs = localq->no_locations;
 
 	if (num_locs > 0) {
-		double tempin[12], tempout[12];
+		double tempin[15], tempout[15];
 		for (iloc = 0; iloc < num_locs; iloc++) {
 
-		    tempin[0] = localq->T_Fgx[iloc];
-		    tempin[1] = localq->T_Fgy[iloc];
-		    tempin[2] = localq->T_Fbx[iloc];
-		    tempin[3] = localq->T_Fby[iloc];
-		    tempin[4] = localq->T_Fbcx[iloc];
-		    tempin[5] = localq->T_Fbcy[iloc];
-		    tempin[6] = localq->T_Fix[iloc];
-		    tempin[7] = localq->T_Fiy[iloc];
-		    tempin[8] = localq->T_Pg[iloc];
-		    tempin[9] = localq->T_Pb[iloc];
-		    tempin[10] = localq->T_Pbc[iloc];
-		    tempin[11] = localq->T_Pi[iloc];
+		    tempin[0] = localq->T_Fconx[iloc];
+		    tempin[1] = localq->T_Fcony[iloc];
+		    tempin[2] = localq->T_Fgx[iloc];
+		    tempin[3] = localq->T_Fgy[iloc];
+		    tempin[4] = localq->T_Fbx[iloc];
+		    tempin[5] = localq->T_Fby[iloc];
+		    tempin[6] = localq->T_Fbcx[iloc];
+		    tempin[7] = localq->T_Fbcy[iloc];
+		    tempin[8] = localq->T_Fix[iloc];
+		    tempin[9] = localq->T_Fiy[iloc];
+		    tempin[10] = localq->T_Pcon[iloc];
+		    tempin[11] = localq->T_Pg[iloc];
+		    tempin[12] = localq->T_Pb[iloc];
+		    tempin[13] = localq->T_Pbc[iloc];
+		    tempin[14] = localq->T_Pi[iloc];
 
 #ifdef USE_MPI
-		    	MPI_Reduce(tempin, tempout, 12, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		    	MPI_Reduce(tempin, tempout, 14, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-		    	for(int i=0;i<12;++i)tempout[i]=tempin[i];
+		    	for(int i=0;i<14;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
-		    if (myid == 0) {
-		    	FILE* fp = fopen("TimeIntegraredLocalQuants.info", "a");
-		    	fprintf(fp,"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
-					localq->Tst_scale * tempout[0],localq->Tst_scale * tempout[1],
-					localq->Tst_scale * tempout[2],localq->Tst_scale * tempout[3],
-					localq->Tst_scale * tempout[4],localq->Tst_scale * tempout[5],
-					localq->Tst_scale * tempout[6],localq->Tst_scale * tempout[7],
-					localq->Tp_scale * tempout[8],localq->Tp_scale * tempout[9],
-					localq->Tp_scale * tempout[10],localq->Tp_scale * tempout[11]);
+			if (myid == 0) {
+				FILE* fp = fopen("TimeIntegraredLocalQuants.info", "a");
+				fprintf(fp,
+						"%16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g, %16.10g\n",
+						localq->Tst_scale * tempout[0],
+						localq->Tst_scale * tempout[1],
+						localq->Tst_scale * tempout[2],
+						localq->Tst_scale * tempout[3],
+						localq->Tst_scale * tempout[4],
+						localq->Tst_scale * tempout[5],
+						localq->Tst_scale * tempout[6],
+						localq->Tst_scale * tempout[7],
+						localq->Tst_scale * tempout[8],
+						localq->Tst_scale * tempout[9],
+						localq->Tp_scale * tempout[10],
+						localq->Tp_scale * tempout[11],
+						localq->Tp_scale * tempout[12],
+						localq->Tp_scale * tempout[13],
+						localq->Tp_scale * tempout[14]);
 				fclose(fp);
-		    }
+			}
 		}
 	}
 }

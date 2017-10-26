@@ -1278,6 +1278,12 @@ public:
 	// array holding flow velocity time-history in the specified location
 	std::vector<double> Velocity;
 
+	// array holding time-history of convective flux along y direction in the specified location
+	std::vector<double> Fconx;
+
+	// array holding time-history of convective flux along y direction in the specified location
+	std::vector<double> Fcony;
+
 	// array holding S_gx time-history in the specified location
 	std::vector<double> Fgx;
 
@@ -1303,6 +1309,9 @@ public:
 	std::vector<double> Fiy;
 
 	// array holding S_gy time-history in the specified location
+	std::vector<double> Pcon;
+
+	// array holding S_gy time-history in the specified location
 	std::vector<double> Pg;
 
 	// array holding S_bedcurvx time-history in the specified location
@@ -1313,6 +1322,12 @@ public:
 
 	// array holding S_othery time-history in the specified location
 	std::vector<double> Pi;
+
+	// array holding time-history of convective flux along y direction in the specified location
+	std::vector<double> T_Fconx;
+
+	// array holding time-history of convective flux along y direction in the specified location
+	std::vector<double> T_Fcony;
 
 	// array holding S_gx time-history in the specified location
 	std::vector<double> T_Fgx;
@@ -1339,6 +1354,9 @@ public:
 	std::vector<double> T_Fiy;
 
 	// array holding S_gy time-history in the specified location
+	std::vector<double> T_Pcon;
+
+	// array holding S_gy time-history in the specified location
 	std::vector<double> T_Pg;
 
 	// array holding S_bedcurvx time-history in the specified location
@@ -1360,10 +1378,11 @@ public:
 	void print0();
 	void FindElement(const double dt, const double dx, const double dy,
 			const double xEl, const double yEl, const double h,
-			const double hVx, const double hVy, const double Fgravx,
-			const double Fgravy, const double Fbedx, const double Fbedy,
-			const double Fbedcx, const double Fbedcy, const double Fintx,
-			const double Finty, const double zeta_x, const double zeta_y);
+			const double hVx, const double hVy, const double Fconvx,
+			const double Fconvy, const double Fgravx, const double Fgravy,
+			const double Fbedx, const double Fbedy, const double Fbedcx,
+			const double Fbedcy, const double Fintx, const double Finty,
+			const double zeta_x, const double zeta_y);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
 	//! Dump object content to hdf5 file
 	void h5write(H5::CommonFG *parent, string group_name = "LocalQuants") const;

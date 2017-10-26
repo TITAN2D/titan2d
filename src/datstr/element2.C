@@ -2870,7 +2870,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             for(int i=0;i<NUM_STATE_VARS;++i)np->refinementflux(i,flux[i]);
             
             /* CASE I
-             ------------------- -------------------               
+              ------------------- -------------------
              |                   |                   |               
              |                   |                   |               
              |                   |                   |               
@@ -2882,25 +2882,25 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
              |                   |                   |   
              |                   |                   |       
              |                   |                   |       
-             ------------------- -------------------
+              ------------------- -------------------
              */
 
             /*
              Case II
 
-             --------- ----------------------------         
+              --------- ----------------------------
              |         |         |                  |       
              |positive_z_side--->|<----zelmpos      |       
              |         | this  np|                  |       
              |         |   h     |                  |       
              |         |         |                  |
-             ---------|---------|nm1   elm1        |
+              ---------|---------|nm1   elm1        |
              |         |         |      hp          |
              |         |         |                  |
              |         | elm2 np2|                  |
              |         |         |                  |
              positive_z_side_2-->|                  |
-             --------- ----------------------------
+              --------- ----------------------------
 
              */
 
@@ -2949,7 +2949,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
             
             /*  Case III
 
-             ------------------- --------- ---------               
+              ------------------- --------- ---------
              |                   |         |         |
              |positive_z_side--->|<----zelmpos_2     |               
              |                   |nm2 elm2 |         |               
@@ -2961,7 +2961,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
              |                   |nm1 elm1 |         |        
              |                   |     hp1 |         |       
              |                   |<----zelmpos       |       
-             ------------------- --------- ---------
+              ------------------- --------- ---------
 
 
              */
@@ -3054,7 +3054,7 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                  
                  Case I
 
-                 ------------------- -------------------               
+                  ------------------- -------------------
                  |                   |                   |               
                  |                   |<--zm              |               
                  |                   |                   |               
@@ -3066,24 +3066,24 @@ void Element::calc_edge_states(ElementsHashTable* El_Table, NodeHashTable* NodeT
                  |                   |                   |   
                  |                   |                   |       
                  |                   |                   |       
-                 ------------------- -------------------
+                  ------------------- -------------------
 
 
                  Case II  
 
-                 --------- -----------------------------         
+                  --------- -----------------------------
                  |         |         |                   |       
                  |         |         |<--zm(z-minus side)|       
                  |         |  elm1   |                   |       
                  |         |   h     |                   |       
                  |         |         |                   |
-                 ---------|---------|nm    this         |
+                  ---------|---------|nm    this         |
                  |         |         |       hp          |
                  |         |         |                   |
                  |         | elm2    |                   |
                  |         |   h2    |                   |
                  |         |         |                   |
-                 --------- -----------------------------
+                  --------- -----------------------------
 
                  */
 
