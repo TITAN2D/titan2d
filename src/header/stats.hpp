@@ -110,6 +110,8 @@ public:
     //! xyminmax holds the minimum and maximum x and y coordinates where the pile height is greater than hxyminmax
     double hxyminmax;
 
+    double force_transx;
+    double force_transy;
     double force_conx;
     double force_cony;
     double force_gx;
@@ -120,11 +122,14 @@ public:
     double force_bcy;
     double force_rx;
     double force_ry;
+    double power_trans;
     double power_con;
     double power_g;
     double power_b;
     double power_bc;
     double power_r;
+
+    double Froude;
 
     double Vol_;
     double Area_;

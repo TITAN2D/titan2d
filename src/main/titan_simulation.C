@@ -1224,27 +1224,30 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
 	if (elementType == ElementType::SinglePhase) {
 		//write out temporal integral values of global quantities computed in integrators class
-		double tempin[15], tempout[15];
-		tempin[0] = integrator->Tforce_conx;
-		tempin[1] = integrator->Tforce_cony;
-		tempin[2] = integrator->Tforce_gx;
-		tempin[3] = integrator->Tforce_gy;
-		tempin[4] = integrator->Tforce_bx;
-		tempin[5] = integrator->Tforce_by;
-		tempin[6] = integrator->Tforce_bcx;
-		tempin[7] = integrator->Tforce_bcy;
-		tempin[8] = integrator->Tforce_rx;
-		tempin[9] = integrator->Tforce_ry;
-		tempin[10] = integrator->Tpower_con;
-		tempin[11] = integrator->Tpower_g;
-		tempin[12] = integrator->Tpower_b;
-		tempin[13] = integrator->Tpower_bc;
-		tempin[14] = integrator->Tpower_r;
+		double tempin[18], tempout[18];
+		tempin[0] = integrator->Tforce_transx;
+		tempin[1] = integrator->Tforce_transy;
+		tempin[2] = integrator->Tforce_conx;
+		tempin[3] = integrator->Tforce_cony;
+		tempin[4] = integrator->Tforce_gx;
+		tempin[5] = integrator->Tforce_gy;
+		tempin[6] = integrator->Tforce_bx;
+		tempin[7] = integrator->Tforce_by;
+		tempin[8] = integrator->Tforce_bcx;
+		tempin[9] = integrator->Tforce_bcy;
+		tempin[10] = integrator->Tforce_rx;
+		tempin[11] = integrator->Tforce_ry;
+		tempin[12] = integrator->Tpower_trans;
+		tempin[13] = integrator->Tpower_con;
+		tempin[14] = integrator->Tpower_g;
+		tempin[15] = integrator->Tpower_b;
+		tempin[16] = integrator->Tpower_bc;
+		tempin[17] = integrator->Tpower_r;
 
 #ifdef USE_MPI
-		MPI_Reduce(tempin, tempout, 15, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		MPI_Reduce(tempin, tempout, 18, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-		for (int i = 0; i < 15; ++i)
+		for (int i = 0; i < 18; ++i)
 			tempout[i] = tempin[i];
 #endif //USE_MPI
 
@@ -1254,17 +1257,17 @@ void cxxTitanSimulation::run(bool start_from_restart)
 					* scale_.length * timeprops.TIME_SCALE;
 			double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
 
-			for (int i = 0; i < 5; ++i) {
+			for (int i = 0; i < 6; ++i) {
 				tempout[i] *= FORCE_SCALE;
-				tempout[i+5] *= FORCE_SCALE;
-				tempout[i+10] *= POWER_SCALE;
+				tempout[i+6] *= FORCE_SCALE;
+				tempout[i+12] *= POWER_SCALE;
 			}
 
 			FILE* fp = fopen("TemporalIntegrals.info", "w");
-			fprintf(fp, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
-					tempout[0], tempout[1], tempout[2], tempout[3], tempout[4],
-					tempout[5], tempout[6], tempout[7], tempout[8], tempout[9],
-					tempout[10], tempout[11], tempout[12], tempout[13], tempout[14]);
+			fprintf(fp, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
+					tempout[0], tempout[1], tempout[2], tempout[3], tempout[4],tempout[5],
+					tempout[6], tempout[7], tempout[8], tempout[9],tempout[10], tempout[11],
+					tempout[12], tempout[13], tempout[14], tempout[15], tempout[16], tempout[17]);
 			fclose(fp);
 		}
 

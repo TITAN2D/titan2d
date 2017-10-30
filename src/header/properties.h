@@ -1266,6 +1266,9 @@ public:
 	// array containing Northing slopes (Y)
 	std::vector<double> zetay;
 
+	// array containing Froude number
+	std::vector<double> Froude;
+
 	// temporary arrays holding the local values of state vars and their distance to the specified location
 	std::vector<std::vector<double> > temps;
 
@@ -1277,6 +1280,12 @@ public:
 
 	// array holding flow velocity time-history in the specified location
 	std::vector<double> Velocity;
+
+	// array holding time-history of transient term along y direction in the specified location
+	std::vector<double> Ftransx;
+
+	// array holding time-history of transient term along y direction in the specified location
+	std::vector<double> Ftransy;
 
 	// array holding time-history of convective flux along y direction in the specified location
 	std::vector<double> Fconx;
@@ -1308,20 +1317,29 @@ public:
 	// array holding S_othery time-history in the specified location
 	std::vector<double> Fiy;
 
-	// array holding S_gy time-history in the specified location
+	// array holding Powers due to  time-history in the specified location
+	std::vector<double> Ptrans;
+
+	// array holding Powers due to convective fluxes time-history in the specified location
 	std::vector<double> Pcon;
 
-	// array holding S_gy time-history in the specified location
+	// array holding Powers due to S_grav time-history in the specified location
 	std::vector<double> Pg;
 
-	// array holding S_bedcurvx time-history in the specified location
+	// array holding Powers due to S_bed time-history in the specified location
 	std::vector<double> Pb;
 
-	// array holding S_bedcurvx time-history in the specified location
+	// array holding Powers due to S_bedcurv time-history in the specified location
 	std::vector<double> Pbc;
 
-	// array holding S_othery time-history in the specified location
+	// array holding Powers due to S_res time-history in the specified location
 	std::vector<double> Pi;
+
+	// array holding time-history of convective flux along y direction in the specified location
+	std::vector<double> T_Ftransx;
+
+	// array holding time-history of convective flux along y direction in the specified location
+	std::vector<double> T_Ftransy;
 
 	// array holding time-history of convective flux along y direction in the specified location
 	std::vector<double> T_Fconx;
@@ -1354,6 +1372,9 @@ public:
 	std::vector<double> T_Fiy;
 
 	// array holding S_gy time-history in the specified location
+	std::vector<double> T_Ptrans;
+
+	// array holding S_gy time-history in the specified location
 	std::vector<double> T_Pcon;
 
 	// array holding S_gy time-history in the specified location
@@ -1377,12 +1398,13 @@ public:
 	void print_local_quants(int i);
 	void print0();
 	void FindElement(const double dt, const double dx, const double dy,
-			const double xEl, const double yEl, const double h,
-			const double hVx, const double hVy, const double Fconvx,
-			const double Fconvy, const double Fgravx, const double Fgravy,
-			const double Fbedx, const double Fbedy, const double Fbedcx,
-			const double Fbedcy, const double Fintx, const double Finty,
-			const double zeta_x, const double zeta_y);
+			const double xEl, const double yEl, const double h, const double Vx,
+			const double Vy, const double Ftransx, const double Ftransy,
+			const double Fconvx, const double Fconvy, const double Fgravx,
+			const double Fgravy, const double Fbedx, const double Fbedy,
+			const double Fbedcx, const double Fbedcy, const double Fintx,
+			const double Finty, const double zeta_x, const double zeta_y,
+			const double Froude);
 	void StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops);
 	//! Dump object content to hdf5 file
 	void h5write(H5::CommonFG *parent, string group_name = "LocalQuants") const;

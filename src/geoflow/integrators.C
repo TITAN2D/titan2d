@@ -55,6 +55,8 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     deposited = 0.0;
     realvolume = 0.0;
 
+    force_transx = 0.0;
+    force_transy = 0.0;
     force_conx = 0.0;
     force_cony = 0.0;
 	force_gx = 0.0;
@@ -65,22 +67,28 @@ Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
 	force_bcy = 0.0;
 	force_rx = 0.0;
 	force_ry = 0.0;
+	power_trans = 0.0;
 	power_con = 0.0;
 	power_g = 0.0;
 	power_b = 0.0;
 	power_bc = 0.0;
 	power_r = 0.0;
 
+	Fr_ = 0.0;
+
+	Tforce_transx = 0.0;
 	Tforce_conx = 0.0;
 	Tforce_gx = 0.0;
 	Tforce_bx = 0.0;
 	Tforce_bcx = 0.0;
 	Tforce_rx = 0.0;
+	Tforce_transy = 0.0;
 	Tforce_cony = 0.0;
 	Tforce_gy = 0.0;
 	Tforce_by = 0.0;
 	Tforce_bcy = 0.0;
 	Tforce_ry = 0.0;
+	Tpower_trans = 0.0;
 	Tpower_con = 0.0;
 	Tpower_g = 0.0;
 	Tpower_b = 0.0;
@@ -251,33 +259,37 @@ void Integrator::step()
     double FORCE_SCALE = scale_.gravity * scale_.height * scale_.length * scale_.length;
     double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
 
-    double tempin[21], tempout[21];
+    double tempin[25], tempout[25];
     tempin[0] = outflow;    //volume that flew out the boundaries this iteration
     tempin[1] = eroded;     //volume that was eroded this iteration
     tempin[2] = deposited;  //volume that is currently deposited
     tempin[3] = realvolume; //"actual" volume within boundaries
     tempin[4] = forceint;   //internal friction force
     tempin[5] = forcebed;   //bed friction force
-    tempin[6] = force_conx;
-    tempin[7] = force_cony;
-    tempin[8] = force_gx;
-    tempin[9] = force_gy;
-    tempin[10] = force_bx;
-    tempin[11] = force_by;
-    tempin[12] = force_bcx;
-    tempin[13] = force_bcy;
-    tempin[14] = force_rx;
-    tempin[15] = force_ry;
-    tempin[16] = power_con;
-    tempin[17] = power_g;
-    tempin[18] = power_b;
-    tempin[19] = power_bc;
-    tempin[20] = power_r;
+    tempin[6] = force_transx;
+    tempin[7] = force_transy;
+    tempin[8] = force_conx;
+    tempin[9] = force_cony;
+    tempin[10] = force_gx;
+    tempin[11] = force_gy;
+    tempin[12] = force_bx;
+    tempin[13] = force_by;
+    tempin[14] = force_bcx;
+    tempin[15] = force_bcy;
+    tempin[16] = force_rx;
+    tempin[17] = force_ry;
+    tempin[18] = power_trans;
+    tempin[19] = power_con;
+    tempin[20] = power_g;
+    tempin[21] = power_b;
+    tempin[22] = power_bc;
+    tempin[23] = power_r;
+    tempin[24] = Fr_;
 
 #ifdef USE_MPI
-    MPI_Reduce(tempin, tempout, 21, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(tempin, tempout, 25, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #else //USE_MPI
-    for(int i=0;i<21;++i)tempout[i]=tempin[i];
+    for(int i=0;i<25;++i)tempout[i]=tempin[i];
 #endif //USE_MPI
 
     statprops_ptr->outflowvol += tempout[0] * (matprops_ptr->scale.height) * (matprops_ptr->scale.length)
@@ -292,21 +304,25 @@ void Integrator::step()
     statprops_ptr->forceint = tempout[4] / tempout[3] * matprops_ptr->scale.gravity;
     statprops_ptr->forcebed = tempout[5] / tempout[3] * matprops_ptr->scale.gravity;
 
-    statprops_ptr->force_conx = tempout[6] * FORCE_SCALE;
-    statprops_ptr->force_cony = tempout[7] * FORCE_SCALE;
-    statprops_ptr->force_gx = tempout[8] * FORCE_SCALE;
-    statprops_ptr->force_gy = tempout[9] * FORCE_SCALE;
-    statprops_ptr->force_bx = tempout[10] * FORCE_SCALE;
-    statprops_ptr->force_by = tempout[11] * FORCE_SCALE;
-    statprops_ptr->force_bcx = tempout[12] * FORCE_SCALE;
-    statprops_ptr->force_bcy = tempout[13] * FORCE_SCALE;
-    statprops_ptr->force_rx = tempout[14] * FORCE_SCALE;
-    statprops_ptr->force_ry = tempout[15] * FORCE_SCALE;
-    statprops_ptr->power_con = tempout[16] * POWER_SCALE;
-    statprops_ptr->power_g = tempout[17] * POWER_SCALE;
-    statprops_ptr->power_b = tempout[18] * POWER_SCALE;
-    statprops_ptr->power_bc = tempout[19] * POWER_SCALE;
-    statprops_ptr->power_r = tempout[20] * POWER_SCALE;
+    statprops_ptr->force_transx = tempout[6] * FORCE_SCALE;
+    statprops_ptr->force_transy = tempout[7] * FORCE_SCALE;
+    statprops_ptr->force_conx = tempout[8] * FORCE_SCALE;
+    statprops_ptr->force_cony = tempout[9] * FORCE_SCALE;
+    statprops_ptr->force_gx = tempout[10] * FORCE_SCALE;
+    statprops_ptr->force_gy = tempout[11] * FORCE_SCALE;
+    statprops_ptr->force_bx = tempout[12] * FORCE_SCALE;
+    statprops_ptr->force_by = tempout[13] * FORCE_SCALE;
+    statprops_ptr->force_bcx = tempout[14] * FORCE_SCALE;
+    statprops_ptr->force_bcy = tempout[15] * FORCE_SCALE;
+    statprops_ptr->force_rx = tempout[16] * FORCE_SCALE;
+    statprops_ptr->force_ry = tempout[17] * FORCE_SCALE;
+    statprops_ptr->power_trans = tempout[18] * POWER_SCALE;
+    statprops_ptr->power_con = tempout[19] * POWER_SCALE;
+    statprops_ptr->power_g = tempout[20] * POWER_SCALE;
+    statprops_ptr->power_b = tempout[21] * POWER_SCALE;
+    statprops_ptr->power_bc = tempout[22] * POWER_SCALE;
+    statprops_ptr->power_r = tempout[23] * POWER_SCALE;
+    statprops_ptr->Froude = tempout[24];
 
     PROFILING3_STOPADD_RESTART(step_calc_stats,pt_start);
 
@@ -1091,6 +1107,8 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 	ElemProp.calc_edge_states(matprops_ptr, timeprops_ptr, this, myid, order, junk);
 
 	// Temporary reduction variables for recording QoIs globally
+	double m_force_transx = 0.0;
+	double m_force_transy = 0.0;
 	double m_force_conx = 0.0;
 	double m_force_cony = 0.0;
 	double m_force_gx = 0.0;
@@ -1101,11 +1119,14 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
     double m_force_bcy = 0.0;
     double m_force_rx = 0.0;
     double m_force_ry = 0.0;
+    double m_power_trans = 0.0;
     double m_power_con = 0.0;
     double m_power_g = 0.0;
     double m_power_b = 0.0;
     double m_power_bc = 0.0;
     double m_power_r = 0.0;
+    double m_Fr = 0.0;
+    double m_vol = 0.0;
 
     // Initializing temporary arrays before searching for locations
     if (localquants_ptr->no_locations > 0)
@@ -1118,8 +1139,9 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
     tivector<double> &kactxy=effect_kactxy_[0];
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_force_conx, m_force_cony, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
-		reduction(+: m_power_con, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_force_transx, m_force_transy, m_force_conx, m_force_cony, m_force_gx, m_force_gy) \
+		reduction(+: m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
+		reduction(+: m_power_trans, m_power_con, m_power_g, m_power_b, m_power_bc, m_power_r, m_Fr, m_vol)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1167,15 +1189,17 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             double speed, h_inv;
+            double forcetransx, forcetransy;
             double forceconvectx, forceconvecty;
             double forceintx, forceinty;
             double forcebedx, forcebedy;
             double forcebedx_curv, forcebedy_curv;
             double forcegravx , forcegravy;
-            double unitvx, unitvy;
+            double unitvx, unitvy, Local_Fr;
             double sgn_dudy, sgn_dvdx, tmp;
 
             // initialize to zero
+            forcetransx = forcetransy = 0.0;
             forceconvectx = forceconvecty = 0.0;
             forceintx = forcebedx = 0.0;
             forcebedx_curv = forcebedy_curv = 0.0;
@@ -1198,10 +1222,14 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
                 unitvx = unitvy = 0.0;
             }
             h_inv = 1.0 / h[ndx];
+            Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] * scale_.epsilon);
 
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // x direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+            // the transient force in the x direction
+            forcetransx = (hVx[ndx] - prev_state_vars_[1][ndx]) / dt;
 
             // the convective in x direction
             forceconvectx = (fluxxp[1] - fluxxm[1]) / dx_[0][ndx] + (fluxyp[1] - fluxym[1]) / dx_[1][ndx];
@@ -1225,6 +1253,9 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
             // y direction source terms
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+            // the transient force in the y direction
+            forcetransy = (hVy[ndx] - prev_state_vars_[2][ndx]) / dt;
+
             // the convective in y direction
             forceconvecty = (fluxxp[2] - fluxxm[2]) / dx_[0][ndx] + (fluxyp[2] - fluxym[2]) / dx_[1][ndx];
 
@@ -1245,6 +1276,8 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 
             /////////////////////////////////////////////////////////////////////////////
             // Recording QoIs globally from updated cells
+            m_force_transx += (forcetransx * dxdy);
+            m_force_transy += (forcetransy * dxdy);
             m_force_conx += (forceconvectx * dxdy);
             m_force_cony += (forceconvecty * dxdy);
 			m_force_gx += (forcegravx * dxdy);
@@ -1256,25 +1289,31 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 			m_force_rx -= (forceintx * dxdy);
 			m_force_ry -= (forceinty * dxdy);
 
+			m_power_trans += (forcetransx * VxVy[0] + forcetransy * VxVy[1]) * dxdy;
 			m_power_con += (forceconvectx * VxVy[0] + forceconvecty * VxVy[1]) * dxdy;
 			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
 			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
 
+		    m_Fr += (Local_Fr * dxdy * h[ndx]);
+		    m_vol += dxdy * h[ndx];
+
 			// Searching user-defined locations to record QoIs
 			if (localquants_ptr->no_locations > 0)
 				localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
 						coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx],
-						hVy[ndx], forceconvectx, forceconvecty, forcegravx,
-						forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
-						-forcebedy_curv, -forceintx, -forceinty, zeta_[0][ndx],
-						zeta_[1][ndx]);
+						hVy[ndx], forcetransx, forcetransy, forceconvectx,
+						forceconvecty, forcegravx, forcegravy, -forcebedx,
+						-forcebedy, -forcebedx_curv, -forcebedy_curv, -forceintx,
+						-forceinty, zeta_[0][ndx], zeta_[1][ndx], Local_Fr);
 		}
 	}
 
     // Storing QoIs globally from updated cells at current time
-	force_conx = m_force_conx;
+	force_transx = m_force_transx;
+	force_transy = m_force_transy;
+    force_conx = m_force_conx;
 	force_cony = m_force_cony;
 	force_gx = m_force_gx;
 	force_gy = m_force_gy;
@@ -1284,23 +1323,28 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 	force_bcy = m_force_bcy;
 	force_rx = m_force_rx;
 	force_ry = m_force_ry;
+	power_trans = m_power_trans;
 	power_con = m_power_con;
 	power_g = m_power_g;
 	power_b = m_power_b;
 	power_bc = m_power_bc;
 	power_r = m_power_r;
+	Fr_ = m_Fr / m_vol;
 
 	// Recording time-integration of QoIs globally from updated cells
+	Tforce_transx += m_force_transx * dt;
 	Tforce_conx += m_force_conx * dt;
 	Tforce_gx += m_force_gx * dt;
 	Tforce_bx += m_force_bx * dt;
 	Tforce_bcx += m_force_bcx * dt;
 	Tforce_rx += m_force_rx * dt;
+	Tforce_transy += m_force_transy * dt;
 	Tforce_cony += m_force_cony * dt;
 	Tforce_gy += m_force_gy * dt;
 	Tforce_by += m_force_by * dt;
 	Tforce_bcy += m_force_bcy * dt;
 	Tforce_ry += m_force_ry * dt;
+	Tpower_trans += m_power_trans * dt;
 	Tpower_con += m_power_con * dt;
 	Tpower_g += m_power_g * dt;
 	Tpower_b += m_power_b * dt;
@@ -1612,6 +1656,8 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
 	ElemProp.calc_edge_states(matprops_ptr, timeprops_ptr, this, myid, order, junk);
 
 	// Temporary reduction variables for recording QoIs globally
+	double m_force_transx = 0.0;
+	double m_force_transy = 0.0;
 	double m_force_conx = 0.0;
 	double m_force_cony = 0.0;
 	double m_force_gx = 0.0;
@@ -1622,11 +1668,14 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
     double m_force_bcy = 0.0;
     double m_force_rx = 0.0;
     double m_force_ry = 0.0;
+    double m_power_trans = 0.0;
     double m_power_con = 0.0;
     double m_power_g = 0.0;
     double m_power_b = 0.0;
     double m_power_bc = 0.0;
     double m_power_r = 0.0;
+    double m_Fr = 0.0;
+    double m_vol = 0.0;
 
     double inv_xi= 1.0/xi;
 
@@ -1642,8 +1691,9 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
     	}
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_force_conx, m_force_cony, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
-		reduction(+: m_power_con, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_force_transx, m_force_transy, m_force_conx, m_force_cony, m_force_gx, m_force_gy) \
+		reduction(+: m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
+		reduction(+: m_power_trans, m_power_con, m_power_g, m_power_b, m_power_bc, m_power_r, m_Fr, m_vol)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -1691,14 +1741,16 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             double speed, speed_squared, tmp;
+            double forcetransx, forcetransy;
             double forceconvectx, forceconvecty;
             double forceintx, forceinty;
             double forcebedx, forcebedy;
             double forcebedx_curv, forcebedy_curv;
             double forcegravx , forcegravy;
-            double unitvx, unitvy;
+            double unitvx, unitvy, Local_Fr;
 
             // initialize to zero
+            forcetransx = forcetransy = 0.0;
             forceintx = forcebedx = 0.0;
             forcebedx_curv = forcebedy_curv = 0.0;
             forceinty = forcebedy = 0.0;
@@ -1722,9 +1774,14 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
                 unitvy = 0.0;
             }
 
+            Local_Fr = speed / sqrt( g[2][ndx] * h[ndx] * scale_.epsilon);
+
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // x direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+            // the transient force in the x direction
+            forcetransx = (hVx[ndx] - prev_state_vars_[1][ndx]) / dt;
 
             // the convective in x direction
             forceconvectx = (fluxxp[1] - fluxxm[1]) / dx_[0][ndx] + (fluxyp[1] - fluxym[1]) / dx_[1][ndx];
@@ -1746,6 +1803,9 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
             // y direction source terms
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+            // the transient force in the y direction
+            forcetransy = (hVy[ndx] - prev_state_vars_[2][ndx]) / dt;
+
             // the convective in y direction
             forceconvecty = (fluxxp[2] - fluxxm[2]) / dx_[0][ndx] + (fluxyp[2] - fluxym[2]) / dx_[1][ndx];
 
@@ -1764,6 +1824,8 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
 
             /////////////////////////////////////////////////////////////////////////////
             // Recording QoIs globally from updated cells at current time
+            m_force_transx += (forcetransx * dxdy);
+            m_force_transy += (forcetransy * dxdy);
             m_force_conx += (forceconvectx * dxdy);
             m_force_cony += (forceconvecty * dxdy);
 			m_force_gx += (forcegravx * dxdy);
@@ -1775,25 +1837,31 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
 			m_force_rx -= (forceintx * dxdy);
 			m_force_ry -= (forceinty * dxdy);
 
+			m_power_trans += (forcetransx * VxVy[0] + forcetransy * VxVy[1]) * dxdy;
 			m_power_con += (forceconvectx * VxVy[0] + forceconvecty * VxVy[1]) * dxdy;
 			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
 			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
 
+		    m_Fr += (Local_Fr * dxdy * h[ndx]);
+		    m_vol += dxdy * h[ndx];
+
 			// Searching user-defined locations to record QoIs
 			if (localquants_ptr->no_locations > 0)
 				localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
 						coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx],
-						hVy[ndx], forceconvectx, forceconvecty, forcegravx,
-						forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
-						-forcebedy_curv, -forceintx, -forceinty, zeta_[0][ndx],
-						zeta_[1][ndx]);
+						hVy[ndx], forcetransx, forcetransy, forceconvectx,
+						forceconvecty, forcegravx, forcegravy, -forcebedx,
+						-forcebedy, -forcebedx_curv, -forcebedy_curv, -forceintx,
+						-forceinty, zeta_[0][ndx], zeta_[1][ndx], Local_Fr);
 		}
 	}
 
     // Storing QoIs globally from updated cells at current time
-	force_conx = m_force_conx;
+	force_transx = m_force_transx;
+	force_transy = m_force_transy;
+    force_conx = m_force_conx;
 	force_cony = m_force_cony;
 	force_gx = m_force_gx;
 	force_gy = m_force_gy;
@@ -1803,23 +1871,28 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
 	force_bcy = m_force_bcy;
 	force_rx = m_force_rx;
 	force_ry = m_force_ry;
+	power_trans = m_power_trans;
 	power_con = m_power_con;
 	power_g = m_power_g;
 	power_b = m_power_b;
 	power_bc = m_power_bc;
 	power_r = m_power_r;
+	Fr_ = m_Fr / m_vol;
 
 	// Recording time-integration of QoIs globally from updated cells
+	Tforce_transx += m_force_transx * dt;
 	Tforce_conx += m_force_conx * dt;
 	Tforce_gx += m_force_gx * dt;
 	Tforce_bx += m_force_bx * dt;
 	Tforce_bcx += m_force_bcx * dt;
 	Tforce_rx += m_force_rx * dt;
+	Tforce_transy += m_force_transy * dt;
 	Tforce_cony += m_force_cony * dt;
 	Tforce_gy += m_force_gy * dt;
 	Tforce_by += m_force_by * dt;
 	Tforce_bcy += m_force_bcy * dt;
 	Tforce_ry += m_force_ry * dt;
+	Tpower_trans += m_power_trans * dt;
 	Tpower_con += m_power_con * dt;
 	Tpower_g += m_power_g * dt;
 	Tpower_b += m_power_b * dt;
@@ -1859,7 +1932,7 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     phi3=33.9;
     Beta=0.65;
     L_material=1.0E-3;
-    thr=0.05;
+    thr=0.001;
 }
 
 bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
@@ -2171,6 +2244,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 	ElemProp.calc_edge_states(matprops_ptr, timeprops_ptr, this, myid, order, junk);
 
     // Temporary reduction variables for recording QoIs globally
+	double m_force_transx = 0.0;
+	double m_force_transy = 0.0;
 	double m_force_conx = 0.0;
 	double m_force_cony = 0.0;
 	double m_force_gx = 0.0;
@@ -2181,11 +2256,14 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
     double m_force_bcy = 0.0;
     double m_force_rx = 0.0;
     double m_force_ry = 0.0;
+    double m_power_trans = 0.0;
     double m_power_con = 0.0;
     double m_power_g = 0.0;
     double m_power_b = 0.0;
     double m_power_bc = 0.0;
     double m_power_r = 0.0;
+    double m_Fr = 0.0;
+    double m_vol = 0.0;
 
     double mu_1 = tan(phi1);
     double mu_2 = tan(phi2);
@@ -2203,8 +2281,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
     	}
 
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
-        reduction(+: m_force_conx, m_force_cony, m_force_gx, m_force_gy, m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
-		reduction(+: m_power_con, m_power_g, m_power_b, m_power_bc, m_power_r)
+        reduction(+: m_force_transx, m_force_transy, m_force_conx, m_force_cony, m_force_gx, m_force_gy) \
+		reduction(+: m_force_bx, m_force_by, m_force_bcx, m_force_bcy, m_force_rx, m_force_ry) \
+		reduction(+: m_power_con, m_power_g, m_power_b, m_power_bc, m_power_r, m_Fr, m_vol)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
@@ -2251,6 +2330,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
             double speed;
+            double forcetransx, forcetransy;
             double forceconvectx, forceconvecty;
             double forceintx, forceinty;
             double forcebedx, forcebedy;
@@ -2260,6 +2340,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
             double mu_bed, Local_Fr;
 
             // initialize to zero
+            forcetransx = forcetransy = 0.0;
+            forceconvectx = forceconvecty = 0.0;
             forceintx = forcebedx = 0.0;
             forcebedx_curv = forcebedy_curv = 0.0;
             forceinty = forcebedy = 0.0;
@@ -2300,6 +2382,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
             // x direction source terms
             //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+            // the transient force in the x direction
+            forcetransx = (hVx[ndx] - prev_state_vars_[1][ndx]) / dt;
+
             // the convective in x direction
             forceconvectx = (fluxxp[1] - fluxxm[1]) / dx_[0][ndx] + (fluxyp[1] - fluxym[1]) / dx_[1][ndx];
 
@@ -2320,6 +2405,9 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
             // y direction source terms
             //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+            // the transient force in the y direction
+            forcetransy = (hVy[ndx] - prev_state_vars_[2][ndx]) / dt;
+
             // the convective in y direction
             forceconvecty = (fluxxp[2] - fluxxm[2]) / dx_[0][ndx] + (fluxyp[2] - fluxym[2]) / dx_[1][ndx];
 
@@ -2338,6 +2426,8 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 
             /////////////////////////////////////////////////////////////////////////////
             // Recording QoIs globally from updated cells at current time
+            m_force_transx += (forcetransx * dxdy);
+            m_force_transy += (forcetransy * dxdy);
             m_force_conx += (forceconvectx * dxdy);
             m_force_cony += (forceconvecty * dxdy);
 			m_force_gx += (forcegravx * dxdy);
@@ -2349,25 +2439,31 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 			m_force_rx -= (forceintx * dxdy);
 			m_force_ry -= (forceinty * dxdy);
 
+			m_power_trans += (forcetransx * VxVy[0] + forcetransy * VxVy[1]) * dxdy;
 			m_power_con += (forceconvectx * VxVy[0] + forceconvecty * VxVy[1]) * dxdy;
 			m_power_g += (forcegravx * VxVy[0] + forcegravy * VxVy[1]) * dxdy;
 			m_power_b -= (forcebedx * VxVy[0] + forcebedy * VxVy[1]) * dxdy;
 			m_power_bc -= (forcebedx_curv * VxVy[0] + forcebedy_curv * VxVy[1]) * dxdy;
 			m_power_r -= (forceintx * VxVy[0] + forceinty * VxVy[1]) * dxdy;
 
+		    m_Fr += (Local_Fr * dxdy * h[ndx]);
+		    m_vol += dxdy * h[ndx];
+
 			// Searching user-defined locations to record QoIs
 			if (localquants_ptr->no_locations > 0)
 				localquants_ptr->FindElement(dt, dx_[0][ndx], dx_[1][ndx],
 						coord_[0][ndx], coord_[1][ndx], h[ndx], hVx[ndx],
-						hVy[ndx], forceconvectx, forceconvecty, forcegravx,
-						forcegravy, -forcebedx, -forcebedy, -forcebedx_curv,
-						-forcebedy_curv, -forceintx, -forceinty, zeta_[0][ndx],
-						zeta_[1][ndx]);
+						hVy[ndx], forcetransx, forcetransy, forceconvectx,
+						forceconvecty, forcegravx, forcegravy, -forcebedx,
+						-forcebedy, -forcebedx_curv, -forcebedy_curv, -forceintx,
+						-forceinty, zeta_[0][ndx], zeta_[1][ndx], Local_Fr);
 		}
 	}
 
     // Storing QoIs globally from updated cells at current time
-	force_conx = m_force_conx;
+	force_transx = m_force_transx;
+	force_transy = m_force_transy;
+    force_conx = m_force_conx;
 	force_cony = m_force_cony;
 	force_gx = m_force_gx;
 	force_gy = m_force_gy;
@@ -2377,23 +2473,28 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 	force_bcy = m_force_bcy;
 	force_rx = m_force_rx;
 	force_ry = m_force_ry;
+	power_trans = m_power_trans;
 	power_con = m_power_con;
 	power_g = m_power_g;
 	power_b = m_power_b;
 	power_bc = m_power_bc;
 	power_r = m_power_r;
+	Fr_ = m_Fr / m_vol;
 
 	// Recording time-integration of QoIs globally from updated cells
+	Tforce_transx += m_force_transx * dt;
 	Tforce_conx += m_force_conx * dt;
 	Tforce_gx += m_force_gx * dt;
 	Tforce_bx += m_force_bx * dt;
 	Tforce_bcx += m_force_bcx * dt;
 	Tforce_rx += m_force_rx * dt;
+	Tforce_transy += m_force_transy * dt;
 	Tforce_cony += m_force_cony * dt;
 	Tforce_gy += m_force_gy * dt;
 	Tforce_by += m_force_by * dt;
 	Tforce_bcy += m_force_bcy * dt;
 	Tforce_ry += m_force_ry * dt;
+	Tpower_trans += m_power_trans * dt;
 	Tpower_con += m_power_con * dt;
 	Tpower_g += m_power_g * dt;
 	Tpower_b += m_power_b * dt;

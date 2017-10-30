@@ -117,6 +117,8 @@ protected:
     double deposited;
     double realvolume;
 
+    double force_transx;
+    double force_transy;
     double force_conx;
     double force_cony;
     double force_gx;
@@ -127,22 +129,27 @@ protected:
     double force_bcy;
     double force_rx;
     double force_ry;
+    double power_trans;
     double power_con;
     double power_g;
     double power_b;
     double power_bc;
     double power_r;
+    double Fr_;
 
+    double Tforce_transx;
     double Tforce_conx;
     double Tforce_gx;
     double Tforce_bx;
     double Tforce_bcx;
     double Tforce_rx;
+    double Tforce_transy;
     double Tforce_cony;
     double Tforce_gy;
     double Tforce_by;
     double Tforce_bcy;
     double Tforce_ry;
+    double Tpower_trans;
     double Tpower_con;
     double Tpower_g;
     double Tpower_b;

@@ -1531,12 +1531,18 @@ LocalQuants::~LocalQuants()
 void LocalQuants::allocate(int m_no_locations)
 {
 	no_locations = m_no_locations;
-	X.resize(no_locations);
-	Y.resize(no_locations);
+	X.push_back(no_locations);
+	Y.push_back(no_locations);
+
 	zetax.resize(no_locations);
 	zetay.resize(no_locations);
+	Froude.resize(no_locations);
+
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
+
+	Ftransx.resize(no_locations);
+	Ftransy.resize(no_locations);
 	Fconx.resize(no_locations);
 	Fcony.resize(no_locations);
 	Fgx.resize(no_locations);
@@ -1547,25 +1553,34 @@ void LocalQuants::allocate(int m_no_locations)
 	Fbcy.resize(no_locations);
 	Fix.resize(no_locations);
 	Fiy.resize(no_locations);
+
+	Ptrans.resize(no_locations);
+	Pcon.resize(no_locations);
 	Pg.resize(no_locations);
 	Pb.resize(no_locations);
 	Pbc.resize(no_locations);
 	Pi.resize(no_locations);
+
+	T_Ftransx.resize(no_locations);
 	T_Fconx.resize(no_locations);
 	T_Fgx.resize(no_locations);
 	T_Fbx.resize(no_locations);
 	T_Fbcx.resize(no_locations);
 	T_Fix.resize(no_locations);
+	T_Ftransy.resize(no_locations);
 	T_Fcony.resize(no_locations);
 	T_Fgy.resize(no_locations);
 	T_Fby.resize(no_locations);
 	T_Fbcy.resize(no_locations);
 	T_Fiy.resize(no_locations);
+
+	T_Ptrans.resize(no_locations);
 	T_Pcon.resize(no_locations);
 	T_Pg.resize(no_locations);
 	T_Pb.resize(no_locations);
 	T_Pbc.resize(no_locations);
 	T_Pi.resize(no_locations);
+
 	temps.resize(no_locations);
 	TimeInts.resize(no_locations);
 
@@ -1575,10 +1590,16 @@ void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 	X.push_back(x_in);
 	Y.push_back(y_in);
 	no_locations = X.size();
+
 	zetax.resize(no_locations);
 	zetay.resize(no_locations);
+	Froude.resize(no_locations);
+
 	Height.resize(no_locations);
 	Velocity.resize(no_locations);
+
+	Ftransx.resize(no_locations);
+	Ftransy.resize(no_locations);
 	Fconx.resize(no_locations);
 	Fcony.resize(no_locations);
 	Fgx.resize(no_locations);
@@ -1589,21 +1610,28 @@ void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 	Fbcy.resize(no_locations);
 	Fix.resize(no_locations);
 	Fiy.resize(no_locations);
+
+	Ptrans.resize(no_locations);
 	Pcon.resize(no_locations);
 	Pg.resize(no_locations);
 	Pb.resize(no_locations);
 	Pbc.resize(no_locations);
 	Pi.resize(no_locations);
+
+	T_Ftransx.resize(no_locations);
 	T_Fconx.resize(no_locations);
 	T_Fgx.resize(no_locations);
 	T_Fbx.resize(no_locations);
 	T_Fbcx.resize(no_locations);
 	T_Fix.resize(no_locations);
+	T_Ftransy.resize(no_locations);
 	T_Fcony.resize(no_locations);
 	T_Fgy.resize(no_locations);
 	T_Fby.resize(no_locations);
 	T_Fbcy.resize(no_locations);
 	T_Fiy.resize(no_locations);
+
+	T_Ptrans.resize(no_locations);
 	T_Pcon.resize(no_locations);
 	T_Pg.resize(no_locations);
 	T_Pb.resize(no_locations);
@@ -1662,11 +1690,12 @@ void LocalQuants::print0()
 
 void LocalQuants::FindElement(const double dt, const double dx, const double dy,
 		const double xEl, const double yEl, const double h, const double Vx,
-		const double Vy, const double Fconvx, const double Fconvy,
-		const double Fgravx, const double Fgravy, const double Fbedx,
-		const double Fbedy, const double Fbedcx, const double Fbedcy,
-		const double Fintx, const double Finty, const double zeta_x,
-		const double zeta_y) {
+		const double Vy, const double Ftransx, const double Ftransy,
+		const double Fconvx, const double Fconvy, const double Fgravx,
+		const double Fgravy, const double Fbedx, const double Fbedy,
+		const double Fbedcx, const double Fbedcy, const double Fintx,
+		const double Finty, const double zeta_x, const double zeta_y,
+		const double Froude) {
 	for (int i = 0; i < no_locations; i++) {
 
 		if ((fabs(X[i] - xEl) <= 0.5 * dx) && (fabs(Y[i] - yEl) <= 0.5 * dy)) {
@@ -1674,6 +1703,8 @@ void LocalQuants::FindElement(const double dt, const double dx, const double dy,
 			temps[i].push_back(h);
 			temps[i].push_back(Vx);
 			temps[i].push_back(Vy);
+			temps[i].push_back(Ftransx);
+			temps[i].push_back(Ftransy);
 			temps[i].push_back(Fconvx);
 			temps[i].push_back(Fconvy);
 			temps[i].push_back(Fgravx);
@@ -1686,8 +1717,11 @@ void LocalQuants::FindElement(const double dt, const double dx, const double dy,
 			temps[i].push_back(Finty);
 			temps[i].push_back(zeta_x);
 			temps[i].push_back(zeta_y);
+			temps[i].push_back(Froude);
 			temps[i].push_back(sqrt((X[i] - xEl) * (X[i] - xEl) + (Y[i] - yEl) * (Y[i] - yEl)));
 
+			TimeInts[i].push_back(Ftransx * dt);
+			TimeInts[i].push_back(Ftransy * dt);
 			TimeInts[i].push_back(Fconvx * dt);
 			TimeInts[i].push_back(Fconvy * dt);
 			TimeInts[i].push_back(Fgravx * dt);
@@ -1698,6 +1732,7 @@ void LocalQuants::FindElement(const double dt, const double dx, const double dy,
 			TimeInts[i].push_back(Fbedcy * dt);
 			TimeInts[i].push_back(Fintx * dt);
 			TimeInts[i].push_back(Finty * dt);
+			TimeInts[i].push_back((Vx * Ftransx + Vy * Ftransy) * dt);
 			TimeInts[i].push_back((Vx * Fconvx + Vy * Fconvy) * dt);
 			TimeInts[i].push_back((Vx * Fgravx + Vy * Fgravy) * dt);
 			TimeInts[i].push_back((Vx * Fbedx + Vy * Fbedy) * dt);
@@ -1711,101 +1746,119 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 {
 	for (int i = 0; i < no_locations; i++) {
 
-		if (temps[i].size() == 16) {
+		if (temps[i].size() == 19) {
 
 			Height[i] = height_scale * temps[i][0];
 			Velocity[i] = velocity_scale * sqrt(temps[i][1]*temps[i][1] + temps[i][2]*temps[i][2]);
-			Fconx[i] = st_scale * temps[i][3];
-			Fcony[i] = st_scale * temps[i][4];
-			Fgx[i] = st_scale * temps[i][5];
-			Fgy[i] = st_scale * temps[i][6];
-			Fbx[i] = st_scale * temps[i][7];
-			Fby[i] = st_scale * temps[i][8];
-			Fbcx[i] = st_scale * temps[i][9];
-			Fbcy[i] = st_scale * temps[i][10];
-			Fix[i] = st_scale * temps[i][11];
-			Fiy[i] = st_scale * temps[i][12];
-			zetax[i] = temps[i][13];
-			zetay[i] = temps[i][14];
-			Pcon[i] = p_scale * (temps[i][3]*temps[i][1] + temps[i][4]*temps[i][2]);
-			Pg[i] = p_scale * (temps[i][5]*temps[i][1] + temps[i][6]*temps[i][2]);
-			Pb[i] = p_scale * (temps[i][7]*temps[i][1] + temps[i][8]*temps[i][2]);
-			Pbc[i] = p_scale * (temps[i][9]*temps[i][1] + temps[i][10]*temps[i][2]);
-			Pi[i] = p_scale * (temps[i][11]*temps[i][1] + temps[i][12]*temps[i][2]);
+			Ftransx[i] = st_scale * temps[i][3];
+			Ftransy[i] = st_scale * temps[i][4];
+			Fconx[i] = st_scale * temps[i][5];
+			Fcony[i] = st_scale * temps[i][6];
+			Fgx[i] = st_scale * temps[i][7];
+			Fgy[i] = st_scale * temps[i][8];
+			Fbx[i] = st_scale * temps[i][9];
+			Fby[i] = st_scale * temps[i][10];
+			Fbcx[i] = st_scale * temps[i][11];
+			Fbcy[i] = st_scale * temps[i][12];
+			Fix[i] = st_scale * temps[i][13];
+			Fiy[i] = st_scale * temps[i][14];
+			zetax[i] = temps[i][15];
+			zetay[i] = temps[i][16];
+			Froude[i] = temps[i][17];
+			Ptrans[i] = p_scale * (temps[i][3]*temps[i][1] + temps[i][4]*temps[i][2]);
+			Pcon[i] = p_scale * (temps[i][5]*temps[i][1] + temps[i][6]*temps[i][2]);
+			Pg[i] = p_scale * (temps[i][7]*temps[i][1] + temps[i][8]*temps[i][2]);
+			Pb[i] = p_scale * (temps[i][9]*temps[i][1] + temps[i][10]*temps[i][2]);
+			Pbc[i] = p_scale * (temps[i][11]*temps[i][1] + temps[i][12]*temps[i][2]);
+			Pi[i] = p_scale * (temps[i][13]*temps[i][1] + temps[i][14]*temps[i][2]);
 
-			T_Fconx[i] += TimeInts[i][0];
-			T_Fcony[i] += TimeInts[i][1];
-			T_Fgx[i] += TimeInts[i][2];
-			T_Fgy[i] += TimeInts[i][3];
-			T_Fbx[i] += TimeInts[i][4];
-			T_Fby[i] += TimeInts[i][5];
-			T_Fbcx[i] += TimeInts[i][6];
-			T_Fbcy[i] += TimeInts[i][7];
-			T_Fix[i] += TimeInts[i][8];
-			T_Fiy[i] += TimeInts[i][9];
-			T_Pcon[i] += TimeInts[i][10];
-			T_Pg[i] += TimeInts[i][11];
-			T_Pb[i] += TimeInts[i][12];
-			T_Pbc[i] += TimeInts[i][13];
-			T_Pi[i] += TimeInts[i][14];
+			T_Ftransx[i] += TimeInts[i][0];
+			T_Ftransy[i] += TimeInts[i][1];
+			T_Fconx[i] += TimeInts[i][2];
+			T_Fcony[i] += TimeInts[i][3];
+			T_Fgx[i] += TimeInts[i][4];
+			T_Fgy[i] += TimeInts[i][5];
+			T_Fbx[i] += TimeInts[i][6];
+			T_Fby[i] += TimeInts[i][7];
+			T_Fbcx[i] += TimeInts[i][8];
+			T_Fbcy[i] += TimeInts[i][9];
+			T_Fix[i] += TimeInts[i][10];
+			T_Fiy[i] += TimeInts[i][11];
+			T_Ptrans[i] += TimeInts[i][12];
+			T_Pcon[i] += TimeInts[i][13];
+			T_Pg[i] += TimeInts[i][14];
+			T_Pb[i] += TimeInts[i][15];
+			T_Pbc[i] += TimeInts[i][16];
+			T_Pi[i] += TimeInts[i][17];
 
 		}
-		else if (temps[i].size() > 16) {
+		else if (temps[i].size() > 19) {
 
 			std::vector<double> W;
-			int N = temps[i].size() / 16;
+			int N = temps[i].size() / 19;
 			for (int j = 0; j < N; j++)
-				W.push_back(1.0 / temps[i][16*j+15]);
+				W.push_back(1.0 / temps[i][19*j+18]);
 
-			double numH = 0.0, numV=0.0, numFconx = 0.0, numFcony = 0.0, numFgx = 0.0, numFgy = 0.0, numFbx = 0.0, numFby = 0.0, numFbcx = 0.0, numFbcy = 0.0, numFix = 0.0, numFiy = 0.0, numzx = 0.0, numzy = 0.0, den = 0.0;
-			double numPcon = 0.0, numPg = 0.0, numPb = 0.0, numPbc = 0.0, numPi = 0.0;
-			double numTFconx = 0.0, numTFgx = 0.0, numTFbx = 0.0, numTFbcx = 0.0, numTFix = 0.0;
-			double numTFcony = 0.0, numTFgy = 0.0, numTFby = 0.0, numTFbcy = 0.0, numTFiy = 0.0;
-			double numTPcon = 0.0, numTPg = 0.0, numTPb = 0.0, numTPbc = 0.0, numTPi = 0.0;
+			double numH = 0.0, numV=0.0, numFtransx = 0.0, numFtransy = 0.0, numFconx = 0.0, numFcony = 0.0;
+			double numFgx = 0.0, numFgy = 0.0, numFbx = 0.0, numFby = 0.0, numFbcx = 0.0, numFbcy = 0.0, numFix = 0.0, numFiy = 0.0;
+			double numzx = 0.0, numzy = 0.0, numFr = 0.0, den = 0.0;
+			double numPtrans = 0.0, numPcon = 0.0, numPg = 0.0, numPb = 0.0, numPbc = 0.0, numPi = 0.0;
+			double numTFtransx = 0.0, numTFconx = 0.0, numTFgx = 0.0, numTFbx = 0.0, numTFbcx = 0.0, numTFix = 0.0;
+			double numTFtransy = 0.0, numTFcony = 0.0, numTFgy = 0.0, numTFby = 0.0, numTFbcy = 0.0, numTFiy = 0.0;
+			double numTPtrans = 0.0, numTPcon = 0.0, numTPg = 0.0, numTPb = 0.0, numTPbc = 0.0, numTPi = 0.0;
 
 			for (int j = 0; j < N; j++) {
 
-				numH += W[j] * temps[i][16*j];
-				numV += W[j] * sqrt(temps[i][16*j+1]*temps[i][16*j+1] + temps[i][16*j+2]*temps[i][16*j+2]);
-				numFconx += W[j] * temps[i][16*j+3];
-				numFcony += W[j] * temps[i][16*j+4];
-				numFgx += W[j] * temps[i][16*j+5];
-				numFgy += W[j] * temps[i][16*j+6];
-				numFbx += W[j] * temps[i][16*j+7];
-				numFby += W[j] * temps[i][16*j+8];
-				numFbcx += W[j] * temps[i][16*j+9];
-				numFbcy += W[j] * temps[i][16*j+10];
-				numFix += W[j] * temps[i][16*j+11];
-				numFiy += W[j] * temps[i][16*j+12];
-				numzx += W[j] * temps[i][16*j+13];
-				numzy += W[j] * temps[i][16*j+14];
-				numPcon += W[j] * (temps[i][16*j+1]*temps[i][16*j+3] + temps[i][16*j+2]*temps[i][16*j+4]) / temps[i][16*j];
-				numPg += W[j] * (temps[i][16*j+1]*temps[i][16*j+5] + temps[i][16*j+2]*temps[i][16*j+6]) / temps[i][16*j];
-				numPb += W[j] * (temps[i][16*j+1]*temps[i][16*j+7] + temps[i][16*j+2]*temps[i][16*j+8]) / temps[i][16*j];
-				numPbc += W[j] * (temps[i][16*j+1]*temps[i][16*j+9] + temps[i][16*j+2]*temps[i][16*j+10]) / temps[i][16*j];
-				numPi += W[j] * (temps[i][16*j+1]*temps[i][16*j+11] + temps[i][16*j+2]*temps[i][16*j+12]) / temps[i][16*j];
+				numH += W[j] * temps[i][19*j];
+				numV += W[j] * sqrt(temps[i][19*j+1]*temps[i][19*j+1] + temps[i][19*j+2]*temps[i][19*j+2]);
+				numFtransx += W[j] * temps[i][19*j+3];
+				numFtransy += W[j] * temps[i][19*j+4];
+				numFconx += W[j] * temps[i][19*j+5];
+				numFcony += W[j] * temps[i][19*j+6];
+				numFgx += W[j] * temps[i][19*j+7];
+				numFgy += W[j] * temps[i][19*j+8];
+				numFbx += W[j] * temps[i][19*j+9];
+				numFby += W[j] * temps[i][19*j+10];
+				numFbcx += W[j] * temps[i][19*j+11];
+				numFbcy += W[j] * temps[i][19*j+12];
+				numFix += W[j] * temps[i][19*j+13];
+				numFiy += W[j] * temps[i][19*j+14];
+				numzx += W[j] * temps[i][19*j+15];
+				numzy += W[j] * temps[i][19*j+16];
+				numFr += W[j] * temps[i][19*j+17];
+				numPtrans += W[j] * (temps[i][19*j+1]*temps[i][19*j+3] + temps[i][19*j+2]*temps[i][19*j+4]) / temps[i][19*j];
+				numPcon += W[j] * (temps[i][19*j+1]*temps[i][19*j+5] + temps[i][19*j+2]*temps[i][19*j+6]) / temps[i][19*j];
+				numPg += W[j] * (temps[i][19*j+1]*temps[i][19*j+7] + temps[i][19*j+2]*temps[i][19*j+8]) / temps[i][19*j];
+				numPb += W[j] * (temps[i][19*j+1]*temps[i][19*j+9] + temps[i][19*j+2]*temps[i][19*j+10]) / temps[i][19*j];
+				numPbc += W[j] * (temps[i][19*j+1]*temps[i][19*j+11] + temps[i][19*j+2]*temps[i][19*j+12]) / temps[i][19*j];
+				numPi += W[j] * (temps[i][19*j+1]*temps[i][19*j+13] + temps[i][19*j+2]*temps[i][19*j+14]) / temps[i][19*j];
 
-				numTFconx += W[j] * TimeInts[i][15*j];
-				numTFcony += W[j] * TimeInts[i][15*j+1];
-				numTFgx += W[j] * TimeInts[i][15*j+2];
-				numTFgy += W[j] * TimeInts[i][15*j+3];
-				numTFbx += W[j] * TimeInts[i][15*j+4];
-				numTFby += W[j] * TimeInts[i][15*j+5];
-				numTFbcx += W[j] * TimeInts[i][15*j+6];
-				numTFbcy += W[j] * TimeInts[i][15*j+7];
-				numTFix += W[j] * TimeInts[i][15*j+8];
-				numTFiy += W[j] * TimeInts[i][15*j+9];
-				numTPcon += W[j] * TimeInts[i][15*j+10];
-				numTPg += W[j] * TimeInts[i][15*j+11];
-				numTPb += W[j] * TimeInts[i][15*j+12];
-				numTPbc += W[j] * TimeInts[i][15*j+13];
-				numTPi += W[j] * TimeInts[i][15*j+14];
+				numTFtransx += W[j] * TimeInts[i][18*j];
+				numTFtransy += W[j] * TimeInts[i][18*j+1];
+				numTFconx += W[j] * TimeInts[i][18*j+2];
+				numTFcony += W[j] * TimeInts[i][18*j+3];
+				numTFgx += W[j] * TimeInts[i][18*j+4];
+				numTFgy += W[j] * TimeInts[i][18*j+5];
+				numTFbx += W[j] * TimeInts[i][18*j+6];
+				numTFby += W[j] * TimeInts[i][18*j+7];
+				numTFbcx += W[j] * TimeInts[i][18*j+8];
+				numTFbcy += W[j] * TimeInts[i][18*j+9];
+				numTFix += W[j] * TimeInts[i][18*j+10];
+				numTFiy += W[j] * TimeInts[i][18*j+11];
+				numTPtrans += W[j] * TimeInts[i][18*j+12];
+				numTPcon += W[j] * TimeInts[i][18*j+13];
+				numTPg += W[j] * TimeInts[i][18*j+14];
+				numTPb += W[j] * TimeInts[i][18*j+15];
+				numTPbc += W[j] * TimeInts[i][18*j+16];
+				numTPi += W[j] * TimeInts[i][18*j+17];
 
 				den += W[j];
 			}
 
 			Height[i] = height_scale * numH / den;
 			Velocity[i] = velocity_scale * numV / den;
+			Ftransx[i] = st_scale * numFtransx / den;
+			Ftransy[i] = st_scale * numFtransy / den;
 			Fconx[i] = st_scale * numFconx / den;
 			Fcony[i] = st_scale * numFcony / den;
 			Fgx[i] = st_scale * numFgx / den;
@@ -1818,12 +1871,16 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			Fiy[i] = st_scale * numFiy / den;
 			zetax[i] = numzx / den;
 			zetay[i] = numzy / den;
+			Froude[i] = numFr / den;
+			Ptrans[i] = p_scale * numPtrans / den;
 			Pcon[i] = p_scale * numPcon / den;
 			Pg[i] = p_scale * numPg / den;
 			Pb[i] = p_scale * numPb / den;
 			Pbc[i] = p_scale * numPbc / den;
 			Pi[i] = p_scale * numPi / den;
 
+			T_Ftransx[i] += numTFtransx / den;
+			T_Ftransy[i] += numTFtransy / den;
 			T_Fconx[i] += numTFconx / den;
 			T_Fcony[i] += numTFcony / den;
 			T_Fgx[i] += numTFgx / den;
@@ -1834,6 +1891,7 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 			T_Fbcy[i] += numTFbcy / den;
 			T_Fix[i] += numTFix / den;
 			T_Fiy[i] += numTFiy / den;
+			T_Ptrans[i] += numTPtrans / den;
 			T_Pcon[i] += numTPcon / den;
 			T_Pg[i] += numTPg / den;
 			T_Pb[i] += numTPb / den;
@@ -1852,8 +1910,11 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleVectorAttribute(group, Y, Y.size());
     TiH5_writeDoubleVectorAttribute(group, zetax, zetax.size());
     TiH5_writeDoubleVectorAttribute(group, zetay, zetay.size());
+    TiH5_writeDoubleVectorAttribute(group, Froude, Froude.size());
     TiH5_writeDoubleVectorAttribute(group, Height, Height.size());
     TiH5_writeDoubleVectorAttribute(group, Velocity, Velocity.size());
+    TiH5_writeDoubleVectorAttribute(group, Ftransx, Ftransx.size());
+    TiH5_writeDoubleVectorAttribute(group, Ftransy, Ftransy.size())
     TiH5_writeDoubleVectorAttribute(group, Fconx, Fconx.size());
     TiH5_writeDoubleVectorAttribute(group, Fcony, Fcony.size());
     TiH5_writeDoubleVectorAttribute(group, Fgx, Fgx.size());
@@ -1863,21 +1924,25 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
     TiH5_writeDoubleVectorAttribute(group, Fbcx, Fbcx.size());
     TiH5_writeDoubleVectorAttribute(group, Fbcy, Fbcy.size());
     TiH5_writeDoubleVectorAttribute(group, Fix, Fix.size());
+    TiH5_writeDoubleVectorAttribute(group, Ptrans, Ptrans.size());
     TiH5_writeDoubleVectorAttribute(group, Pcon, Pcon.size());
     TiH5_writeDoubleVectorAttribute(group, Pg, Pg.size());
     TiH5_writeDoubleVectorAttribute(group, Pb, Pb.size());
     TiH5_writeDoubleVectorAttribute(group, Pbc, Pbc.size());
     TiH5_writeDoubleVectorAttribute(group, Pi, Pi.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Ftransx, T_Ftransx.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fconx, T_Fconx.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fgx, T_Fgx.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fbx, T_Fbx.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fbcx, T_Fbcx.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fix, T_Fix.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Ftransy, T_Ftransy.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fcony, T_Fcony.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fgy, T_Fgy.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fby, T_Fby.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fbcy, T_Fbcy.size());
     TiH5_writeDoubleVectorAttribute(group, T_Fiy, T_Fiy.size());
+    TiH5_writeDoubleVectorAttribute(group, T_Ptrans, T_Ptrans.size());
     TiH5_writeDoubleVectorAttribute(group, T_Pcon, T_Pcon.size());
     TiH5_writeDoubleVectorAttribute(group, T_Pg, T_Pg.size());
     TiH5_writeDoubleVectorAttribute(group, T_Pb, T_Pb.size());
@@ -1893,8 +1958,11 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleVectorAttribute(group, Y, Y.size());
     TiH5_readDoubleVectorAttribute(group, zetax, zetax.size());
     TiH5_readDoubleVectorAttribute(group, zetay, zetay.size());
+    TiH5_readDoubleVectorAttribute(group, Froude, Froude.size());
     TiH5_readDoubleVectorAttribute(group, Height, Height.size());
     TiH5_readDoubleVectorAttribute(group, Velocity, Velocity.size());
+    TiH5_readDoubleVectorAttribute(group, Ftransx, Ftransx.size());
+    TiH5_readDoubleVectorAttribute(group, Ftransy, Ftransy.size());
     TiH5_readDoubleVectorAttribute(group, Fconx, Fconx.size());
     TiH5_readDoubleVectorAttribute(group, Fcony, Fcony.size());
     TiH5_readDoubleVectorAttribute(group, Fgx, Fgx.size());
@@ -1905,18 +1973,26 @@ void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readDoubleVectorAttribute(group, Fbcy, Fbcy.size());
     TiH5_readDoubleVectorAttribute(group, Fix, Fix.size());
     TiH5_readDoubleVectorAttribute(group, Fiy, Fiy.size());
+    TiH5_readDoubleVectorAttribute(group, Ptrans, Ptrans.size());
+    TiH5_readDoubleVectorAttribute(group, Pcon, Pcon.size());
     TiH5_readDoubleVectorAttribute(group, Pg, Pg.size());
     TiH5_readDoubleVectorAttribute(group, Pb, Pb.size());
     TiH5_readDoubleVectorAttribute(group, Pbc, Pbc.size());
     TiH5_readDoubleVectorAttribute(group, Pi, Pi.size());
+    TiH5_readDoubleVectorAttribute(group, T_Ftransx, T_Ftransx.size());
+    TiH5_readDoubleVectorAttribute(group, T_Fconx, T_Fconx.size());
     TiH5_readDoubleVectorAttribute(group, T_Fgx, T_Fgx.size());
     TiH5_readDoubleVectorAttribute(group, T_Fbx, T_Fbx.size());
     TiH5_readDoubleVectorAttribute(group, T_Fbcx, T_Fbcx.size());
     TiH5_readDoubleVectorAttribute(group, T_Fix, T_Fix.size());
+    TiH5_readDoubleVectorAttribute(group, T_Ftransy, T_Ftransy.size());
+    TiH5_readDoubleVectorAttribute(group, T_Fcony, T_Fcony.size());
     TiH5_readDoubleVectorAttribute(group, T_Fgy, T_Fgy.size());
     TiH5_readDoubleVectorAttribute(group, T_Fby, T_Fby.size());
     TiH5_readDoubleVectorAttribute(group, T_Fbcy, T_Fbcy.size());
     TiH5_readDoubleVectorAttribute(group, T_Fiy, T_Fiy.size());
+    TiH5_readDoubleVectorAttribute(group, T_Ptrans, T_Ptrans.size());
+    TiH5_readDoubleVectorAttribute(group, T_Pcon, T_Pcon.size());
     TiH5_readDoubleVectorAttribute(group, T_Pg, T_Pg.size());
     TiH5_readDoubleVectorAttribute(group, T_Pb, T_Pb.size());
     TiH5_readDoubleVectorAttribute(group, T_Pbc, T_Pbc.size());
