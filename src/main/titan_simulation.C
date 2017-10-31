@@ -812,8 +812,11 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
 
         if(mode == XDMF_OLD)
         {
-        	output_localquants(&timeprops, &localquants, myid);
-        	output_globalquants(&timeprops, statprops, myid);
+        	if (localquants.no_locations > 0)
+        	{
+            	output_localquants(&timeprops, &localquants, myid);
+            	output_globalquants(&timeprops, statprops, myid);
+        	}
         }
 
         if(myid == 0)
@@ -963,7 +966,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     }
 
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
-    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, 0.0);
+    statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
@@ -1222,7 +1225,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
         output_stoch_stats(matprops_ptr, statprops);
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
-	if (elementType == ElementType::SinglePhase) {
+	if (elementType == ElementType::SinglePhase && localquants.no_locations > 0) {
 		//write out temporal integral values of global quantities computed in integrators class
 		double tempin[18], tempout[18];
 		tempin[0] = integrator->Tforce_transx;

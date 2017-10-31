@@ -122,7 +122,7 @@ void StatProps::scale(const MatProps* matprops_ptr)
 }
 
 void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
-                DischargePlanes* discharge, double d_time)
+                DischargePlanes* discharge, LocalQuants *_LocalQuants, double d_time)
 {
     assert(ElemTable->all_elenodes_are_permanent);
 
@@ -364,7 +364,7 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                 }*/
             }
 
-            if (h[ndx] > GEOFLOW_TINY)
+            if (_LocalQuants->no_locations > 0 && h[ndx] > _LocalQuants->thr)
             {
             	dA_ = dx_[0][ndx] * dx_[1][ndx];
             	m_Area_ += dA_;
@@ -507,16 +507,12 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
                     vxmean, vymean, piler);
             fclose(fp2);
 
-            if(timeprops->iter % 5 == 4)
+            if(_LocalQuants->no_locations > 0 && timeprops->iter % 5 == 4)
             {
                 FILE* fp3 = fopen("Elements.info", "a");
                 fprintf(fp3, "%.0f, %g\n", tempout[13], timeprops->cur_time * timeprops->TIME_SCALE);
                 fclose(fp3);
             }
-
-//            FILE* fp4 = fopen("TemporalSpatial.info", "a");
-//            fprintf(fp4, "%g, %g, %g, %g\n", Area_, Vol_, Velmean_, timeprops->cur_time * timeprops->TIME_SCALE);
-//            fclose(fp4);
         }
         /* standard to screen output */
         d_time *= timeprops->TIME_SCALE;

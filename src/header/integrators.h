@@ -186,6 +186,7 @@ public:
     double threshold;
     double erosion_rate;
     int do_erosion;
+
 protected:
     //!properly named references
     tivector<double> &h;
@@ -209,8 +210,6 @@ class Integrator_SinglePhase_Coulomb:public Integrator_SinglePhase
 public:
     Integrator_SinglePhase_Coulomb(cxxTitanSimulation *_titanSimulation);
 
-    virtual bool scale();
-    virtual bool unscale();
     virtual void print0(int spaces=0);
 
     //! Dump object content to hdf5 file
@@ -219,7 +218,7 @@ public:
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
     int stopping_criteria;
-    double thr;
+
 protected:
 
     /**
@@ -352,7 +351,6 @@ protected:
 public:
     double mu;
     double xi;
-    double thr;
 
 protected:
     //! calculation of k active passive
@@ -431,7 +429,6 @@ public:
     double phi3;
     double Beta;
     double L_material;
-    double thr;
 
 protected:
     //! calculation of k active passive

@@ -1514,6 +1514,7 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
 LocalQuants::LocalQuants()
 {
 	no_locations = 0;
+	thr = 0.001;
 	length_scale = 1.0;
 	height_scale = 1.0;
 	velocity_scale = 1.0;
@@ -1533,6 +1534,7 @@ void LocalQuants::allocate(int m_no_locations)
 	no_locations = m_no_locations;
 	X.push_back(no_locations);
 	Y.push_back(no_locations);
+	Thresh.push_back(no_locations);
 
 	zetax.resize(no_locations);
 	zetay.resize(no_locations);
@@ -1585,10 +1587,11 @@ void LocalQuants::allocate(int m_no_locations)
 	TimeInts.resize(no_locations);
 
 }
-void LocalQuants::addLocalQuants(const double x_in, const double y_in)
+void LocalQuants::addLocalQuants(const double x_in, const double y_in, const double thr_in)
 {
 	X.push_back(x_in);
 	Y.push_back(y_in);
+	Thresh.push_back(thr_in);
 	no_locations = X.size();
 
 	zetax.resize(no_locations);
@@ -1641,13 +1644,13 @@ void LocalQuants::addLocalQuants(const double x_in, const double y_in)
 	temps.resize(no_locations);
 	TimeInts.resize(no_locations);
 }
-void LocalQuants::init(int no_locations_in, double *XX, double *YY)
+void LocalQuants::init(int no_locations_in, double *XX, double *YY, double *TH)
 {
 	allocate(0);
 	if (no_locations_in > 0)
 	{
 		for (int iloc = 0; iloc < no_locations_in; iloc++)
-			addLocalQuants(XX[iloc],YY[iloc]);
+			addLocalQuants(XX[iloc],YY[iloc],TH[iloc]);
 	}
 }
 void LocalQuants::scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale)
@@ -1660,11 +1663,14 @@ void LocalQuants::scale(double m_time_scale, double m_length_scale, double m_hei
 	Tst_scale = m_time_scale * st_scale;
 	Tp_scale = m_time_scale * p_scale;
 
+	thr = 0.0;
     for(int i = 0; i < no_locations; i++)
     {
         X[i] /= m_length_scale;
         Y[i] /= m_length_scale;
+        thr += Thresh[i];
     }
+    thr /= (no_locations * height_scale);
 }
 
 void LocalQuants::print_local_quants(int i)

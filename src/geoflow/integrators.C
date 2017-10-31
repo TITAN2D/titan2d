@@ -237,7 +237,8 @@ void Integrator::step()
 
 
     // Recording Local and Global flow characteristics
-    flowrecords();
+    if (localquants_ptr->no_locations > 0)
+    	flowrecords();
 
     //statistics, etc.
     TIMING1_START(t_start2);
@@ -254,7 +255,7 @@ void Integrator::step()
 
     /* finished corrector step */
 
-    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, dt);
+    statprops_ptr->calc_stats(myid, matprops_ptr, timeprops_ptr, discharge_ptr, localquants_ptr, dt);
 
     double FORCE_SCALE = scale_.gravity * scale_.height * scale_.length * scale_.length;
     double POWER_SCALE = sqrt(scale_.gravity * scale_.length) * FORCE_SCALE;
@@ -435,27 +436,8 @@ Integrator_SinglePhase_Coulomb::Integrator_SinglePhase_Coulomb(cxxTitanSimulatio
     assert(order==1);
 
     stopping_criteria=0;
-    thr=0.05;
     //intfrictang=matprops_ptr->intfrict;
     //frict_tiny=matprops_ptr->frict_tiny;
-}
-bool Integrator_SinglePhase_Coulomb::scale()
-{
-    if(Integrator_SinglePhase::scale())
-    {
-        thr = thr/scale_.height;
-        return true;
-    }
-    return false;
-}
-bool Integrator_SinglePhase_Coulomb::unscale()
-{
-    if(Integrator_SinglePhase::unscale())
-    {
-        thr = thr*scale_.height;
-        return true;
-    }
-    return false;
 }
 void Integrator_SinglePhase_Coulomb::print0(int spaces)
 {
@@ -1146,7 +1128,7 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
 
-        if(h[ndx] > thr)
+        if(h[ndx] > localquants_ptr->thr)
         {
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
             double dxdy = dx_[0][ndx] * dx_[1][ndx];
@@ -1375,14 +1357,12 @@ Integrator_SinglePhase_Voellmy_Salm::Integrator_SinglePhase_Voellmy_Salm(cxxTita
 
     mu = 0.5;
     xi = 120.0;
-    thr = 0.05;
 }
 bool Integrator_SinglePhase_Voellmy_Salm::scale()
 {
     if(Integrator_SinglePhase::scale())
     {
         xi = xi/scale_.gravity;
-        thr = thr/scale_.height;
         return true;
     }
     return false;
@@ -1392,7 +1372,6 @@ bool Integrator_SinglePhase_Voellmy_Salm::unscale()
     if(Integrator_SinglePhase::unscale())
     {
         xi = xi*scale_.gravity;
-        thr = thr*scale_.height;
         return true;
     }
     return false;
@@ -1698,7 +1677,7 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
 
-        if(h[ndx] > thr)
+        if(h[ndx] > localquants_ptr->thr)
         {
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
             double dxdy = dx_[0][ndx] * dx_[1][ndx];
@@ -1910,7 +1889,6 @@ void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string g
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Voellmy_Salm","Type");
     TiH5_writeDoubleAttribute(group, mu);
     TiH5_writeDoubleAttribute(group, xi);
-    TiH5_writeDoubleAttribute(group, thr);
 }
 void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -1918,7 +1896,6 @@ void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, con
     H5::Group group(parent->openGroup(group_name));
     TiH5_readDoubleAttribute(group, mu);
     TiH5_readDoubleAttribute(group, xi);
-    TiH5_readDoubleAttribute(group, thr);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Forterre(cxxTitanSimulation *_titanSimulation):
@@ -1932,7 +1909,6 @@ Integrator_SinglePhase_Pouliquen_Forterre::Integrator_SinglePhase_Pouliquen_Fort
     phi3=33.9;
     Beta=0.65;
     L_material=1.0E-3;
-    thr=0.001;
 }
 
 bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
@@ -1943,7 +1919,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::scale()
         phi2*=PI/180.0;
         phi3*=PI/180.0;
         L_material = L_material/scale_.height;
-        thr = thr/scale_.height;
+//        thr = thr/scale_.height;
         return true;
     }
     return false;
@@ -1956,7 +1932,7 @@ bool Integrator_SinglePhase_Pouliquen_Forterre::unscale()
         phi2*=180.0/PI;
         phi3*=180.0/PI;
         L_material = L_material*scale_.height;
-        thr = thr*scale_.height;
+//        thr = thr*scale_.height;
         return true;
     }
     return false;
@@ -2288,7 +2264,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
     {
         if(adapted_[ndx] <= 0)continue;//if this element does not belong on this processor don't involve!!!
 
-        if(h[ndx] > thr)
+        if(h[ndx] > localquants_ptr->thr)
         {
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
             double dxdy = dx_[0][ndx] * dx_[1][ndx];
@@ -2515,7 +2491,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, st
     TiH5_writeDoubleAttribute(group, phi3);
     TiH5_writeDoubleAttribute(group, Beta);
     TiH5_writeDoubleAttribute(group, L_material);
-    TiH5_writeDoubleAttribute(group, thr);
 }
 void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
 {
@@ -2526,7 +2501,6 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *paren
     TiH5_readDoubleAttribute(group, phi3);
     TiH5_readDoubleAttribute(group, Beta);
     TiH5_readDoubleAttribute(group, L_material);
-    TiH5_readDoubleAttribute(group, thr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

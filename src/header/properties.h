@@ -1246,6 +1246,7 @@ class LocalQuants {
 public:
 	// number of locations
 	int no_locations;
+	double thr;
 	double height_scale;
 	double length_scale;
 	double velocity_scale;
@@ -1259,6 +1260,9 @@ public:
 
 	// array containing Northing coordinates (Y)
 	std::vector<double> Y;
+
+	// array containing thresholds
+	std::vector<double> Thresh;
 
 	// array containing Easting slopes (X)
 	std::vector<double> zetax;
@@ -1392,8 +1396,8 @@ public:
 	LocalQuants();
 	~LocalQuants();
 	void allocate(int m_no_locations);
-	void addLocalQuants(const double x_in, const double y_in);
-	void init(int no_locations_in, double *XX, double *YY);
+	void addLocalQuants(const double x_in, const double y_in, const double thr_in);
+	void init(int no_locations_in, double *XX, double *YY, double *TH);
 	void scale(double m_time_scale, double m_length_scale, double m_height_scale, double m_gravity_scale);
 	void print_local_quants(int i);
 	void print0();
