@@ -64,6 +64,11 @@ if 0: #set to 1 to try with flux source
     
 if 0: #set to 1 to try with dischargePlane
     sim.addDischargePlane(637380.0, 2145800.0, 664380.0, 2169800.0)
+    
+if 0: #set to 1 to try with flow records   
+    sim.addLocalQuants(644956.0, 2157970.0, 0.05)
+    sim.addLocalQuants(644827.0, 2157750.0, 0.05)
+    sim.addLocalQuants(644679.0, 2157550.0, 0.05)
 
 sim.setTimeProps(
     max_iter=1000, #one of them can be none, so the default value for both is none, if both none run till killed 
