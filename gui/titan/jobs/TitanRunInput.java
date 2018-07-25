@@ -113,8 +113,8 @@ public class TitanRunInput {
                     || (data.max_x_loc == TitanSimulationData.BLANK_FIELD) || (data.max_y_loc == TitanSimulationData.BLANK_FIELD)) {
                 writer.write(tab + "region_limits=" + "None" + "\n");
             } else {
-                writer.write(tab + "region_limits==(" + data.min_x_loc + ", " + data.min_y_loc +
-                        ", " + data.max_x_loc + ", " + data.max_y_loc + ")\n");
+                writer.write(tab + "region_limits=[" + data.min_x_loc + ", " + data.min_y_loc +
+                        ", " + data.max_x_loc + ", " + data.max_y_loc + "]\n");
             }
             writer.write(")\n\n");
         } catch (IOException ex) {

@@ -172,8 +172,8 @@ void TitanPreproc::run()
     {
         havelimits = 1;
         limits[0] = min_location_x;
-        limits[1] = max_location_x;
-        limits[2] = min_location_y;
+        limits[1] = min_location_y;
+        limits[2] = max_location_x;
         limits[3] = max_location_y;
     }
     else

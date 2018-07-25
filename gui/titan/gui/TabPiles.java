@@ -98,7 +98,7 @@ public class TabPiles extends TitanTabList {
 
             int index = table.getSelectedRow();
 
-            if (((String) (tm.getValueAt(index, 0))).isEmpty()) {
+            if (((String) (tm.getValueAt(index, 1))).isEmpty()) {
                 JOptionPane.showMessageDialog(TabPiles.this,
                         "No Max Initial Thickness for selected row!",
                         "Calculate Volume Error",
@@ -106,7 +106,7 @@ public class TabPiles extends TitanTabList {
                 return;
             }
 
-            if (((String) (tm.getValueAt(index, 3))).isEmpty()) {
+            if (((String) (tm.getValueAt(index, 4))).isEmpty()) {
                 JOptionPane.showMessageDialog(TabPiles.this,
                         "No Major Extent for selected row!",
                         "Calculate Volume Error",
@@ -114,7 +114,7 @@ public class TabPiles extends TitanTabList {
                 return;
             }
 
-            if (((String) (tm.getValueAt(index, 4))).isEmpty()) {
+            if (((String) (tm.getValueAt(index, 5))).isEmpty()) {
                 JOptionPane.showMessageDialog(TabPiles.this,
                         "No Minor Extent for selected row!",
                         "Calculate Volume Error",
@@ -122,14 +122,14 @@ public class TabPiles extends TitanTabList {
                 return;
             }
 
-            float maxInitThickness = Float.parseFloat((String) (tm.getValueAt(index, 0)));
-            float majExtent = Float.parseFloat((String) (tm.getValueAt(index, 3)));
-            float minExtent = Float.parseFloat((String) (tm.getValueAt(index, 4)));
+            float maxInitThickness = Float.parseFloat((String) (tm.getValueAt(index, 1)));
+            float majExtent = Float.parseFloat((String) (tm.getValueAt(index, 4)));
+            float minExtent = Float.parseFloat((String) (tm.getValueAt(index, 5)));
 
-            float vol = maxInitThickness * majExtent * minExtent * (float) Math.PI;
+            float vol = ((float) Math.PI) * maxInitThickness * majExtent * minExtent * ((float) .5);
 
             JOptionPane.showMessageDialog(TabPiles.this,
-                    "Volume: " + vol,
+                    "Volume: " + vol + " m^3",
                     "Calculated Volume",
                     JOptionPane.INFORMATION_MESSAGE);
             return;
