@@ -48,7 +48,11 @@ void grass_sites_proc_output(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
             //if the current element is an active one on this processor
             if(EmTemp->adapted_flag() > 0)
             {
-                Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(8));
+	        // HT_Node_Ptr->lookup(EmTemp->node_key(8)) returns a null pointer.
+	        // Per header/hashtab.h, the n9th (8 out of 0->8) node is the bubble node
+	        // it's key is not stored separately since it has the same key as the element
+                //Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(8));
+	        Node *NodeTemp = (Node*) HT_Node_Ptr->lookup(EmTemp->key());
                 
                 double pile_height = EmTemp->state_vars(0) * (matprops->scale.height);
                 double x_mom = EmTemp->state_vars(1) * momentum_scale;

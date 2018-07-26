@@ -129,7 +129,7 @@ public class TabPiles extends TitanTabList {
             float vol = ((float) Math.PI) * maxInitThickness * majExtent * minExtent * ((float) .5);
 
             JOptionPane.showMessageDialog(TabPiles.this,
-                    "Volume: " + vol + " m^3",
+                    "Volume: " + vol + "  [m^3]",
                     "Calculated Volume",
                     JOptionPane.INFORMATION_MESSAGE);
             return;
