@@ -205,7 +205,8 @@ if(hemi == "South"):
 maxHeightFile = open(outDir+"/maxHeight_for_KML.data","r")
 maxHeight = maxHeightFile.readline()
 maxHeight = maxHeight.strip()
-maxHeight = int(float(maxHeight))
+#maxHeight = int(float(maxHeight))
+maxHeight = float(maxHeight)
 maxHeightFile.close()
 
 #get Image location
