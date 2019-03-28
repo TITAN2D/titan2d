@@ -58,12 +58,16 @@ public class TitanDBAccess {
 						" Date_Submitted VARCHAR(128), Output_Directory VARCHAR(128))");
 				createTable.execute(createString);
 			}
+
+			// The database has been successfully opened or created.
+			// Save a backup of the database
 		}
 		catch (SQLException ex) {
 			throw new SQLException(
 					"There was a problem establishing a connection to the" +
-					" job details database.\nConnection String : " + connectionURL +
-					"\nExiting...");
+					" job details database: " + dbName + ".\n" +
+					"Two instances of Titan2D cannot access the job details database simultaneously.\n" +
+					"Please verify an instance of Titan2D is not already running.");
 		}
 	}
 	
