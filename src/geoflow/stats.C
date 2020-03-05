@@ -169,10 +169,10 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     const double m_yCen = 0.3; //0; //1.0/(matprops->scale.length);
     const double min_height = matprops->scale.max_negligible_height;
     int numproc;
-    double m_x_min = HUGE;
-    double m_x_max = -HUGE;
-    double m_y_min = HUGE;
-    double m_y_max = -HUGE;
+    double m_x_min = HUGE_VAL;
+    double m_x_max = -HUGE_VAL;
+    double m_y_min = HUGE_VAL;
+    double m_y_max = -HUGE_VAL;
 
     double resolution = 0;
     Get_max_resolution(&resolution);
