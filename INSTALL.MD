@@ -15,6 +15,9 @@ See "Titan2D Compilation with Dependencies" below, for recommended libraries ver
 
 ### Centos 7
 
+Known issues:
+* Unstable run, likely due to old GDAL
+
 ```shell script
 # Install dependencies
 yum -y update
