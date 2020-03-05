@@ -247,7 +247,7 @@ AC_ARG_WITH(swig,
 #the public source code releases should come with swig generated files
 AS_IF([test "x$with_swig" != xno],
 [
-    AC_PATH_PROG([SWIG],[swig],[no],[$with_swig/bin:$PATH])
+    AC_PATH_PROGS([SWIG],[swig swig3 swig3.0],[no],[$with_swig/bin:$PATH])
 	if test "x$SWIG" = "xno"; then
 		AC_MSG_ERROR([swig is not found, set --with-swig variable!])
 	fi
@@ -361,7 +361,7 @@ AC_CHECK_FUNCS([floor pow sqrt strchr strdup])
 
 ## Clean up some stuff
 #======================================================================================
-LDFLAGS=`echo $LDFLAGS |sed 's|-L/usr/lib64||g;s|-L/usr/lib||g'`
+LDFLAGS=`echo $LDFLAGS |sed 's|-L/usr/lib64 ||g;s|-L/usr/lib ||g'`
 
 #======================================================================================
 AC_CONFIG_FILES([Makefile
