@@ -8,11 +8,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * Author: 
- * Description: 
+ * Author:
+ * Description:
  *
  *******************************************************************
- * $Id: stats.C 232 2012-03-27 00:33:41Z dkumar $ 
+ * $Id: stats.C 232 2012-03-27 00:33:41Z dkumar $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -169,10 +169,10 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     const double m_yCen = 0.3; //0; //1.0/(matprops->scale.length);
     const double min_height = matprops->scale.max_negligible_height;
     int numproc;
-    double m_x_min = HUGE;
-    double m_x_max = -HUGE;
-    double m_y_min = HUGE;
-    double m_y_max = -HUGE;
+    double m_x_min = HUGE_VAL;
+    double m_x_max = -HUGE_VAL;
+    double m_y_min = HUGE_VAL;
+    double m_y_max = -HUGE_VAL;
 
     double resolution = 0;
     Get_max_resolution(&resolution);
@@ -566,7 +566,7 @@ void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *t
     int no_of_buckets = El_Table->get_no_of_buckets();
     vector<HashEntryLine> &bucket=El_Table->bucket;
     tivector<Element> &elenode_=El_Table->elenode_;
-    
+
     //@ElementsBucketDoubleLoop
     for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
     {

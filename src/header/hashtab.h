@@ -243,7 +243,7 @@ protected:
 //
 constexpr tisize_t elem_reserved_size=1024000;
 constexpr tisize_t node_reserved_size=elem_reserved_size*9;
-
+// Node hash table class
 class NodeHashTable: public HashTable<Node>
 {
 public:
