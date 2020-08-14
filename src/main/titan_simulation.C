@@ -966,6 +966,10 @@ void cxxTitanSimulation::run(bool start_from_restart)
     }
 
     IF_MPI(MPI_Barrier (MPI_COMM_WORLD));
+    // initializing state variables
+    
+
+    integrator->initialize_statevariables();
     statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);

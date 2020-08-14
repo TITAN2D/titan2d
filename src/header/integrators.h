@@ -19,7 +19,9 @@
 #include "hpfem.h"
 #include "stats.hpp"
 #include "properties.h"
-
+#include <vector>
+#include <algorithm>
+#include <functional>
 class cxxTitanSimulation;
 
 /**
@@ -83,6 +85,10 @@ protected:
 
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords()=0;
+
+    //! initialize state variables from Dr. McGuire's code: Palak
+    virtual void initialize_statevariables()=0;
+
 
 
 protected:
@@ -182,6 +188,10 @@ protected:
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
 
+    //! initialize state variables from Dr. McGuire's code: Palak
+    virtual void initialize_statevariables();
+
+
 public:
     double threshold;
     double erosion_rate;
@@ -240,6 +250,9 @@ protected:
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
     virtual double get_coef_and_eigen(int ghost_flag);
+
+    //! initialize state variables from Dr. McGuire's code: Palak
+    virtual void initialize_statevariables();
 
 
 protected:
@@ -486,6 +499,9 @@ protected:
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
 
+    //Initialize state variables
+    void initialize_statevariables();
+
     //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
@@ -618,6 +634,9 @@ protected:
 
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
+
+    //virtual void initialize_statevariables();
+
 
     void calc_drag_force(const ti_ndx_t ndx, const double *vsolid, const double *vfluid,
             const double den_solid, const double den_fluid, const double vterminal,

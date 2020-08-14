@@ -411,6 +411,11 @@ void Integrator_SinglePhase::flowrecords()
 
 }
 
+void Integrator_SinglePhase::initialize_statevariables()
+{
+
+}
+
 void Integrator_SinglePhase::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator::h5write(parent,group_name);
@@ -1336,6 +1341,142 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 	// Storing recorded specified QoIs at user-defined locations
     if (localquants_ptr->no_locations > 0)
      	localquants_ptr->StoreQuant(matprops_ptr, timeprops_ptr);
+}
+
+
+void Integrator_SinglePhase_Coulomb::initialize_statevariables(){
+
+    // Read data from file and store it in a variables
+    printf("Initializing from Wildfire Data\n");
+    FILE *fx, *fy, *fh, *fhx, *fhy;
+    vector<double> x_wf, y_wf, h_wf, hvx_wf, hvy_wf;
+    
+    double *tmp_wf = NULL;
+    double tmp_fw = 0.0;
+    tmp_wf = &tmp_fw;
+    printf("reading first file\n");
+    fx = fopen("xgrid_wf.bin","rb");
+
+    if(!fx){
+        printf("Could not open wildfire datafiles\n");
+        assert(0);
+    }
+    
+    while(!feof(fx)){
+
+        //printf("Entered first loop\n");
+        freadD(fx,tmp_wf);
+        //fread(tmp_wf, sizeof(double), 1, fx);
+        //printf("Read first element\n");
+        x_wf.push_back((*tmp_wf/(matprops_ptr->scale.length)));
+    }
+
+    fclose(fx);
+
+    //printf("reading second file\n");
+
+    fy = fopen_bin("ygrid_wf.bin","r");
+    if(!fy){
+        printf("Could not open wildfire datafiles\n");
+        assert(0);
+    }
+    while(!feof(fy)){
+        freadD(fy,tmp_wf);
+        y_wf.push_back((*tmp_wf/(matprops_ptr->scale.length)));
+    }
+    fclose(fy);
+
+    fh = fopen_bin("h_wf.bin","r");
+    if(!fh){
+        printf("Could not open wildfire datafiles\n");
+        assert(0);
+    }
+    while(!feof(fh)){
+        freadD(fh,tmp_wf);
+        h_wf.push_back((*tmp_wf/(matprops_ptr->scale.height)));
+    }
+
+    fclose(fh);
+    fhx = fopen_bin("uh_wf.bin","r");
+    if(!fhx){
+        printf("Could not open wildfire datafiles\n");
+        assert(0);
+    }
+    while(!feof(fhx)){
+        freadD(fhx,tmp_wf);
+        hvx_wf.push_back((*tmp_wf/sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity))));
+    }
+
+    fclose(fhx);
+    fhy = fopen_bin("vh_wf.bin","r");
+    if(!fhy){
+        printf("Could not open wildfire datafiles\n");
+        assert(0);
+    }
+    while(!feof(fhy)){
+        freadD(fhy,tmp_wf);
+        hvy_wf.push_back((*tmp_wf/sqrt(matprops_ptr->scale.length * (matprops_ptr->scale.gravity))));
+    }      
+    fclose(fhy);
+    
+    // Get region of data available
+    double x_wf_min = x_wf.front();
+    double x_wf_max = x_wf.back();
+    double y_wf_min = y_wf.back();
+    double y_wf_max = y_wf.front();
+    printf("min x:%lf \tmax x:%lf\n",x_wf_min,x_wf_max);
+    printf("min y:%lf \tmax y:%lf\n",y_wf_min,y_wf_max);
+
+    // Get the value of the data from the nearest coordinate in the datafile
+    double xcoord, ycoord;
+
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        //ti_ndx_t nd_ndx=node_bubble_ndx_[ndx];
+        xcoord = coord_[0][ndx];
+        ycoord = coord_[1][ndx];
+
+        if (xcoord < x_wf_min || xcoord > x_wf_max) continue;
+        if (ycoord < y_wf_min || ycoord > y_wf_max) continue;
+
+        vector<double> tmp_x(x_wf.size(),xcoord);
+        vector<double> tmp_y(y_wf.size(),ycoord);
+
+        std::transform(tmp_x.begin(),tmp_x.end(),x_wf.begin(),tmp_x.begin(),std::minus<double>());
+        //tmp_x = abs(tmp_x);
+        std::transform(tmp_y.begin(),tmp_y.end(),y_wf.begin(),tmp_y.begin(),std::minus<double>());
+        //tmp_y = abs(tmp_y);
+        //tmp_y= abs(tmp_y - y_wf);
+
+        for (int i = 0; i < tmp_x.size(); i++)
+        {
+            if (tmp_x[i]<0) tmp_x[i] *= -1;
+        }
+
+        for (int i = 0; i < tmp_y.size(); i++)
+        {
+            if (tmp_y[i]<0) tmp_y[i] *= -1;
+        }
+        
+
+        int x_idx = std::min_element(tmp_x.begin(),tmp_x.end()) - tmp_x.begin();
+
+        int y_idx = std::min_element(tmp_y.begin(),tmp_y.end()) - tmp_y.begin();
+
+        int wf_idx = y_idx*(int)(x_wf.size()-1) + x_idx;
+
+        // update state variables for that location
+        h[ndx] = h_wf[wf_idx];
+        hVx[ndx] = hvx_wf[wf_idx];
+        hVy[ndx] = hvy_wf[wf_idx];
+        //h[ndx]=5.0;
+
+        //printf("wildfire x:%lf \ttitan x:%lf\n",x_wf[x_idx],xcoord);
+        //printf("wildfire y:%lf \ttitan y:%lf\n",y_wf[y_idx],ycoord);
+
+        
+    }
+
 }
 void Integrator_SinglePhase_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -2540,6 +2681,12 @@ void Integrator_TwoPhases::flowrecords()
 {
 
 }
+
+void Integrator_TwoPhases::initialize_statevariables()
+{
+
+}
+
 void Integrator_TwoPhases::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator::h5write(parent,group_name);
@@ -2921,6 +3068,12 @@ void Integrator_TwoPhases_Coulomb::flowrecords()
 {
 
 }
+/*
+void Intergrator_TwoPhases_Coulomb::initialize_statevariables()
+{
+
+} 
+*/
 void Integrator_TwoPhases_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_TwoPhases::h5write(parent,group_name);
@@ -2932,6 +3085,8 @@ void Integrator_TwoPhases_Coulomb::h5read(const H5::CommonFG *parent, const  str
     Integrator_TwoPhases::h5read(parent,group_name);
     H5::Group group(parent->openGroup(group_name));
 }
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
