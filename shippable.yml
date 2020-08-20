@@ -1,20 +1,12 @@
 language: none
 build:
     pre_ci_boot:
-        image_name: nsimakov/titan2d_ready_centos
-        image_tag: latest
+        image_name: nsimakov/titan2d_bin_maker
+        image_tag: centos6
         pull: true
-        options: "--user root -e HOME=/root -t"
+        options: "--user centos -e HOME=/home/centos -t"
     ci:
-        - mkdir ~/titan2d_wsp
-        - mkdir ~/titan2d_wsp/bld
-        - mkdir ~/titan2d_wsp/bld/gcc_opt
-        - cd /root/src/github.com/$REPO_FULL_NAME
-        - aclocal;autoheader;autoconf;automake --add-missing --copy
-        - cd ~/titan2d_wsp/bld/gcc_opt
-        - /root/src/github.com/$REPO_FULL_NAME/configure --prefix=`pwd`/../gcc_opt_bin --enable-openmp CXXFLAGS="-g -O2 -mtune=generic" --with-swig PYTHON=/usr/bin/python2
-        - make -j
-        - make install
-        - cd ~/titan2d_wsp
-        - git clone --depth=1 https://github.com/TITAN2D/titan2d_tests.git
-        - ~/miniconda3/bin/python3 ~/titan2d_wsp/titan2d_tests/src/titest.py --test-space=~/titan2d_wsp/dotests/gcc_opt -swig swig -bin ~/titan2d_wsp/bld/gcc_opt_bin/bin/titan -openmp -rt -v -np -ref std
+        - sudo rsync -a /root/src/github.com/$REPO_FULL_NAME /home/centos/titan2d_wsp/titan2d
+        - sudo chown -R centos:centos /home/centos/titan2d_wsp/titan2d
+        - /usr/local/bin/titan2d_bin_maker install_titan2d
+        - /usr/local/bin/titan2d_bin_maker run_tests
