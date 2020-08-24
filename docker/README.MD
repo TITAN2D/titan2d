@@ -106,7 +106,7 @@ docker run -it --rm \
     -e REPO_FULL_NAME=TITAN2D/titan2d \
     -v $HOME/titan2d_wsp/titan2d:/home/centos/titan2d_wsp/titan2d \
     -v $HOME/titan2d_wsp/dist:/home/centos/titan2d_wsp/dist \
-    --name titan2d_bin_maker --hostname titan2d_bin_maker \
+    --name titan2d_bin_maker_ubuntu18 --hostname titan2d_bin_maker_ubuntu18 \
     nsimakov/titan2d_bin_maker:ubuntu18 ubuild_test_pack v4.2.0 Ubuntu18
 
 # to do same stuff stepwise:
