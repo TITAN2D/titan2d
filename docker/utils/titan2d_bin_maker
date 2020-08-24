@@ -384,8 +384,8 @@ install_gnuplot() {
     ./configure --prefix=$TITAN2D_DEP CXXFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
     make -j $CORES_TO_USE
     make install
-
 }
+
 install_images2gif() {
     # ====================================================================
     # images2gif

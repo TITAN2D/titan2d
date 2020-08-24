@@ -67,7 +67,7 @@ docker run -it --rm \
     -e REPO_FULL_NAME=TITAN2D/titan2d \
     -v $HOME/titan2d_wsp/titan2d:/home/centos/titan2d_wsp/titan2d \
     -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
-    --name titan2d_bin_maker --hostname titan2d_bin_maker \
+    --name titan2d_bin_maker_centos7 --hostname titan2d_bin_maker_centos7 \
     nsimakov/titan2d_bin_maker:centos7
 
 # inside container to build titan2d run
@@ -83,12 +83,12 @@ docker run -it --rm \
 ~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker pack_titan2d_all v4.2.0 CentOS7
 
 # to copy it to host run on host
-docker cp titan2d_bin_maker:/home/centos/titan2d_wsp/titan2d_bld/titan2d-gccoptomp ./
+docker cp titan2d_bin_maker_centos7:/home/centos/titan2d_wsp/titan2d_bld/titan2d-gccoptomp ./
 # or all made tarballs
-docker cp titan2d_bin_maker:/home/centos/titan2d_wsp/dist/* ./
+docker cp titan2d_bin_maker_centos7:/home/centos/titan2d_wsp/dist/* ./
 
 #push to docker cloud
-docker push nsimakov/titan2d_bin_maker:centos6
+docker push nsimakov/titan2d_bin_maker:centos7
 ```
 
 # Docker Image for Titan2d Portable Binaries Making (Ubuntu 18)
@@ -107,15 +107,15 @@ docker run -it --rm \
     -v $HOME/titan2d_wsp/titan2d:/home/centos/titan2d_wsp/titan2d \
     -v $HOME/titan2d_wsp/dist:/home/centos/titan2d_wsp/dist \
     --name titan2d_bin_maker --hostname titan2d_bin_maker \
-    nsimakov/titan2d_bin_maker:ubuntu18 ubuild_test_pack
-ubuntu:18.04 bash
+    nsimakov/titan2d_bin_maker:ubuntu18 ubuild_test_pack v4.2.0 Ubuntu18
+
 # to do same stuff stepwise:
 docker run -it --rm \
     -e REPO_FULL_NAME=TITAN2D/titan2d \
     -v $HOME/titan2d_wsp/titan2d:/home/centos/titan2d_wsp/titan2d \
     -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
     --name titan2d_bin_maker --hostname titan2d_bin_maker \
-    nsimakov/titan2d_bin_maker:centos7
+    nsimakov/titan2d_bin_maker:ubuntu18
 
 # inside container to build titan2d run
 ~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker install_titan2d
@@ -126,8 +126,8 @@ docker run -it --rm \
 ~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker run_tests
 
 # pack for distribution
-~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker pack_titan2d_all vNightly CentOS7
-~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker pack_titan2d_all v4.2.0 CentOS7
+~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker pack_titan2d_all vNightly Ubuntu18
+~/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker pack_titan2d_all v4.2.0 Ubuntu18
 
 # to copy it to host run on host
 docker cp titan2d_bin_maker:/home/centos/titan2d_wsp/titan2d_bld/titan2d-gccoptomp ./
@@ -135,7 +135,7 @@ docker cp titan2d_bin_maker:/home/centos/titan2d_wsp/titan2d_bld/titan2d-gccopto
 docker cp titan2d_bin_maker:/home/centos/titan2d_wsp/dist/* ./
 
 #push to docker cloud
-docker push nsimakov/titan2d_bin_maker:centos6
+docker push nsimakov/titan2d_bin_maker:ubuntu18
 ```
 
 # Utils

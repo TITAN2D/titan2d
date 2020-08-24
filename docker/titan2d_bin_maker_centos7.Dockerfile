@@ -13,7 +13,7 @@ RUN yum install -y vim wget bzip2 xz rsync time mc \
         openssl openssl-devel openssl-static chrpath \
         libpng libpng-devel \
     yum install -y epel-release && \
-    yum install -y patchelf
+    yum install -y patchelf redhat-lsb-core
 # add users
 RUN useradd -m -s /bin/bash centos && \
     echo 'centos:centos' |chpasswd && \
