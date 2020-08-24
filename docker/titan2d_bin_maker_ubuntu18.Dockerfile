@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get install -y build-essential
 
 RUN apt-get install -y vim wget bzip2 rsync time mc \
-        autoconf make sudo git \
+        autoconf make automake sudo git \
         libssl-dev chrpath \
         libpng-dev patchelf pkg-config
 # add users

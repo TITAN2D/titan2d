@@ -9,7 +9,7 @@ RUN yum install -y centos-release-scl-rh && \
     yum install -y devtoolset-7 devtoolset-8 devtoolset-9
 
 RUN yum install -y vim wget bzip2 xz rsync time mc \
-        autoconf make sudo git \
+        autoconf make automake sudo git \
         openssl openssl-devel openssl-static chrpath \
         libpng libpng-devel \
         java-1.7.0-openjdk java-1.7.0-openjdk-devel && \

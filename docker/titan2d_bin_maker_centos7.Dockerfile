@@ -9,7 +9,7 @@ RUN yum install -y centos-release-scl-rh && \
     yum install -y devtoolset-7 devtoolset-8 devtoolset-9
 
 RUN yum install -y vim wget bzip2 xz rsync time mc \
-        autoconf make sudo git \
+        autoconf automake make sudo git \
         openssl openssl-devel openssl-static chrpath \
         libpng libpng-devel \
     yum install -y epel-release && \
