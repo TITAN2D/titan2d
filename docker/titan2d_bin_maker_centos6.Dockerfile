@@ -46,7 +46,7 @@ RUN su - centos -c "/usr/local/bin/titan2d_bin_maker install_pil" &&\
     su - centos -c "/usr/local/bin/titan2d_bin_maker install_libgd" &&\
     su - centos -c "/usr/local/bin/titan2d_bin_maker install_gnuplot" &&\
     su - centos -c "/usr/local/bin/titan2d_bin_maker install_images2gif" &&\
-    su - centos -c "/usr/local/bin/titan2d_bin_maker install_java"
+    su - centos -c "/usr/local/bin/titan2d_bin_maker install_java_copy_from_dist"
 
 RUN su - centos -c "/usr/local/bin/titan2d_bin_maker modify_dependencies_rpath"
 

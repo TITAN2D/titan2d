@@ -2,7 +2,7 @@ language: none
 build:
     pre_ci_boot:
         image_name: nsimakov/titan2d_bin_maker
-        image_tag: centos6
+        image_tag: centos7
         pull: true
         options: "--user centos -e HOME=/home/centos -t"
     ci:
