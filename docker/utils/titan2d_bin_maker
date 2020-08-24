@@ -584,6 +584,11 @@ install_miniconda(){
     ~/miniconda3/bin/conda install -y h5py
 }
 
+bootstrap_titan2d(){
+    cd ${TITAN_WSP}/titan2d
+    ./bootstrap.sh
+}
+
 install_titan2d(){
     echo "install_titan2d"
     [[ -d "${TITAN2D_BUILDS_TOP_DIR}/gccoptomp" ]] && rm -rf "${TITAN2D_BUILDS_TOP_DIR}/gccoptomp"
