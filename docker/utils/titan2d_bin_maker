@@ -628,10 +628,11 @@ pack_titan2d_dep(){
     version=$1
     flavour=$2
     echo "pack_titan2d_dep ${version} ${flavour}"
-    cd ${TITAN_DIST}
 
     # pack dependencies
-    tar -cavf titan2d_dep-${flavour}.tar.gz $TITAN2D_DEP
+    [[ -f "${TITAN_DIST}/titan2d_dep-${flavour}.tar.gz" ]] && rm -rf ${TITAN_DIST}/titan2d_dep-${flavour}.tar.gz
+    cd ${TITAN_WSP}
+    tar -cavf ${TITAN_DIST}/titan2d_dep-${flavour}.tar.gz titan2d_dep
 }
 pack_titan2d(){
     version=$1
@@ -640,12 +641,14 @@ pack_titan2d(){
     cd ${TITAN_DIST}
 
     # pack binaries
+    [[ -f "titan2d-${version}-Linux-64bit-${flavour}.tar.gz" ]] && rm -rf titan2d-${version}-Linux-64bit-${flavour}.tar.gz
     rsync -a ${TITAN2D_BUILDS_TOP_DIR}/titan2d-gccoptomp ./
     mv titan2d-gccoptomp titan2d-$version
     tar -cavf titan2d-${version}-Linux-64bit-${flavour}.tar.gz titan2d-$version
     rm -rf titan2d-$version
 
     # pack source code
+    [[ -f "titan2d-$version.tar.gz" ]] && rm -rf titan2d-$version.tar.gz
     rsync -a ${TITAN_WSP}/titan2d ./
     cd titan2d
     rm -rf .git .gitignore .idea .project

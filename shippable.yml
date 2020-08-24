@@ -9,6 +9,6 @@ build:
         - chown -R centos:centos /home/centos/titan2d_wsp/titan2d
         - ls /home/centos/titan2d_wsp
         - ls /home/centos/titan2d_wsp/titan2d
-        - su - centos -c "/usr/local/bin/titan2d_bin_maker bootstrap_titan2d"
-        - su - centos -c "/usr/local/bin/titan2d_bin_maker install_titan2d"
-        - su - centos -c "/usr/local/bin/titan2d_bin_maker run_tests"
+        - su - centos -c "/home/centos/titan2d_wsp/titan2d/docker/util/titan2d_bin_maker bootstrap_titan2d"
+        - su - centos -c "/home/centos/titan2d_wsp/titan2d/docker/util/titan2d_bin_maker install_titan2d"
+        - su - centos -c "/home/centos/titan2d_wsp/titan2d/docker/util/titan2d_bin_maker run_tests"
