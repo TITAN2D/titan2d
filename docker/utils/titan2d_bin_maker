@@ -6,11 +6,15 @@ if [[ "something$USER" == "something" ]]; then
     fi
 fi
 
-# set to use compilers from devtoolset-8
-source /opt/rh/devtoolset-7/enable
+if [[ -f "/opt/rh/devtoolset-7/enable" ]]; then
+    # set to use compilers from devtoolset-8
+    source /opt/rh/devtoolset-7/enable
+fi
+
 
 # make directories for dependencies sources and installation destination
 export TITAN_WSP=$HOME/titan2d_wsp
+export TITAN_DIST=$HOME/titan2d_wsp/dist
 export TITAN2D_DEP=${TITAN_WSP}/titan2d_dep
 export TITAN2D_DEP_SRC=${TITAN_WSP}/titan2d_dep_src
 #compile for architecture and path to headers
@@ -28,6 +32,7 @@ if [[ "$USER" != "root" ]]; then
     [[ ! -d "${TITAN2D_DEP}" ]] && mkdir -p "${TITAN2D_DEP}"
     [[ ! -d "${TITAN2D_DEP_SRC}" ]] && mkdir -p "${TITAN2D_DEP_SRC}"
     [[ ! -d "${TITAN2D_BUILDS_TOP_DIR}" ]] && mkdir -p "${TITAN2D_BUILDS_TOP_DIR}"
+    [[ ! -d "${TITAN_DIST}" ]] && mkdir -p "${TITAN_DIST}"
 fi
 
 set -e
@@ -38,7 +43,7 @@ run_bash_user=0
 
 download_dependencies(){
     cd $TITAN2D_DEP_SRC
-    wget https://github.com/TITAN2D/titan2d/releases/download/v4.0.0/dependencies.tar
+    wget https://github.com/TITAN2D/titan2d/releases/download/v4.2.0/dependencies.tar
     tar -xvf dependencies.tar
     rm dependencies.tar
     return
@@ -95,6 +100,25 @@ install_zlib() {
     make -j $CORES_TO_USE
     make install
 }
+install_zlib_1_2_9() {
+    # ====================================================================
+    # get zlib
+    # ====================================================================
+    cd $TITAN2D_DEP_SRC
+    [[ ! -f "zlib-1.2.9.tar.gz" ]] && wget https://www.zlib.net/fossils/zlib-1.2.9.tar.gz
+    [[ -d "zlib-1.2.9" ]] && rm -rf  zlib-1.2.9
+    tar xvzf zlib-1.2.9.tar.gz
+    cd zlib-1.2.9
+
+    ./configure --prefix=$TITAN2D_DEP
+
+    #set to use $TITAN2D_DEP_CFLAGS
+    awk -F '=' "(\$1==\"CFLAGS\"){print \$0,\"$TITAN2D_DEP_CFLAGS\"}(\$1!=\"CFLAGS\")" Makefile > Makefile_new
+    rm Makefile
+    mv Makefile_new Makefile
+    make -j $CORES_TO_USE
+    make install
+}
 install_hdf5() {
     # ====================================================================
     # get hdf5
@@ -130,7 +154,7 @@ install_gdal() {
     CONFIG_PREFIX_OLD=${HOME}/titan2d_wsp/titan2d_dep
     sed -i "s@$CONFIG_PREFIX_OLD@\${CONFIG_PREFIX}@g" ${TITAN2D_DEP}/bin/gdal-config
 }
- install_python2() {
+install_python2() {
     # ====================================================================
     # Python installation
     # ====================================================================
@@ -154,10 +178,42 @@ install_gdal() {
     #    _bsddb             bsddb185           bz2
     #    dbm                dl                 gdbm
     #    imageop            readline           sunaudiodev
-
-
-
 }
+install_python2_7_18() {
+    # ====================================================================
+    # Python installation
+    # ====================================================================
+    #get openssl dev
+    # Download, untar and compile python:
+    cd $TITAN2D_DEP_SRC
+    [[ ! -f "Python-2.7.18.tgz" ]] && wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
+    [[ -d "Python-2.7.18" ]] && rm -rf  Python-2.7.18
+    tar xvzf Python-2.7.18.tgz
+    cd Python-2.7.18
+    ./configure --prefix=$TITAN2D_DEP --enable-shared CXXFLAGS="$TITAN2D_DEP_CFLAGS" CFLAGS="$TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+    make -j $CORES_TO_USE
+    make install
+
+    if [ -x "$(command -v "yum")" ]
+    then
+        rsync -a /usr/lib64/libcrypto.so* $TITAN2D_DEP/lib
+        rsync -a /usr/lib64/libssl.so* $TITAN2D_DEP/lib
+    else
+        rsync -a /usr/lib/x86_64-linux-gnu/libcrypto.so* $TITAN2D_DEP/lib
+        rsync -a /usr/lib/x86_64-linux-gnu/libssl.so* $TITAN2D_DEP/lib
+    fi
+
+
+    # after that stage python can complain that some of the modules was not
+    # successfully compiled, usually thouse modules are not needed for titan
+    # bellow is example of such complains:
+    #    Python build finished, but the necessary bits to build these modules were not found:
+    #    _bsddb             bsddb185           bz2
+    #    dbm                dl                 gdbm
+    #    imageop            readline           sunaudiodev
+}
+
+
 install_pcre() {
     # ====================================================================
     # PCRE installation, used by SWIG
@@ -188,7 +244,7 @@ install_python2_swig() {
     make -j $CORES_TO_USE
     make install
 }
- install_python2_cython() {
+install_python2_cython() {
     # ====================================================================
     # cython installation
     # ====================================================================
@@ -199,7 +255,7 @@ install_python2_swig() {
     $TITAN2D_DEP/bin/python setup.py build
     $TITAN2D_DEP/bin/python setup.py install
 }
- install_python2_setuptools() {
+install_python2_setuptools() {
     # ====================================================================
     # setuptools
     # ====================================================================
@@ -210,7 +266,7 @@ install_python2_swig() {
     $TITAN2D_DEP/bin/python setup.py build
     $TITAN2D_DEP/bin/python setup.py install
 }
- install_python2_numpy() {
+install_python2_numpy() {
     # ====================================================================
     # numpy installation
     # ====================================================================
@@ -222,7 +278,20 @@ install_python2_swig() {
     $TITAN2D_DEP/bin/python setup.py build
     $TITAN2D_DEP/bin/python setup.py install
 }
- install_python2_h5py() {
+install_python2_numpy1_16_6() {
+    # ====================================================================
+    # numpy installation
+    # ====================================================================
+    cd $TITAN2D_DEP_SRC
+    [[ ! -f "numpy-1.16.6.tar.gz" ]] && wget https://github.com/numpy/numpy/releases/download/v1.16.6/numpy-1.16.6.tar.gz
+    [[ -d "numpy-1.16.6" ]] && rm -rf  numpy-1.16.6
+
+    tar xvzf numpy-1.16.6.tar.gz
+    cd numpy-1.16.6
+    $TITAN2D_DEP/bin/python setup.py build
+    $TITAN2D_DEP/bin/python setup.py install
+}
+install_python2_h5py() {
     # ====================================================================
     # h5py installation
     # ====================================================================
@@ -233,7 +302,7 @@ install_python2_swig() {
     $TITAN2D_DEP/bin/python setup.py build
     $TITAN2D_DEP/bin/python setup.py install
 }
- install_jpeg() {
+install_jpeg() {
     # ====================================================================
     # Proper jpeg for PIL
     # ====================================================================
@@ -247,7 +316,7 @@ install_python2_swig() {
     make install
     make install-lib
 }
- install_freetype2() {
+install_freetype2() {
     # ====================================================================
     # Proper freetype2 for PIL
     # ====================================================================
@@ -261,7 +330,7 @@ install_python2_swig() {
     make install
     sed -i 's/^prefix\s*=.*$/prefix="$( dirname "$( cd "$( dirname "$0" )" \&\& pwd )" )"/g' ${TITAN2D_DEP}/bin/freetype-config
 }
- install_pil() {
+install_pil() {
     # ====================================================================
     # PIL installation
     # ====================================================================
@@ -272,7 +341,7 @@ install_python2_swig() {
     $TITAN2D_DEP/bin/python setup.py build
     $TITAN2D_DEP/bin/python setup.py install
 }
- install_libgd() {
+install_libgd() {
     # ====================================================================
     # libgd for gnuplot installation
     # ====================================================================
@@ -286,6 +355,24 @@ install_python2_swig() {
 
     sed -i 's/^prefix\s*=.*$/prefix="$( dirname "$( cd "$( dirname "$0" )" \&\& pwd )" )"/g' ${TITAN2D_DEP}/bin/gdlib-config
 }
+install_libgd2_2_5() {
+    # ====================================================================
+    # libgd for gnuplot installation
+    # ====================================================================
+    cd $TITAN2D_DEP_SRC
+    [[ ! -f "libgd-2.2.5.tar.gz" ]] && wget https://github.com/libgd/libgd/releases/download/gd-2.2.5/libgd-2.2.5.tar.gz
+    [[ -d "libgd-2.2.5" ]] && rm -rf  libgd-2.2.5
+    #
+    tar xvzf libgd-2.2.5.tar.gz
+    cd libgd-2.2.5
+
+    ./configure --prefix=$TITAN2D_DEP CFLAGS="-g -O2 $TITAN2D_DEP_CFLAGS" LDFLAGS="$TITAN2D_DEP_LDFLAGS"
+    make -j $CORES_TO_USE
+    make install
+
+    sed -i 's/^prefix\s*=.*$/prefix="$( dirname "$( cd "$( dirname "$0" )" \&\& pwd )" )"/g' ${TITAN2D_DEP}/bin/gdlib-config
+}
+
 install_gnuplot() {
     # ====================================================================
     # gnuplot installation
@@ -310,22 +397,14 @@ install_images2gif() {
     $TITAN2D_DEP/bin/python setup.py build
     $TITAN2D_DEP/bin/python setup.py install
 }
-install_java() {
-    # ====================================================================
-    # java installation
-    # ====================================================================
-    # we will get binaries from distro itself
-    cd $TITAN2D_DEP/lib
-    rsync -a /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.261.x86_64 ./
-    mv java-1.7.0-openjdk-1.7.0.261.x86_64 java-1.7
 
-    cd $TITAN2D_DEP/lib/java-1.7/jre/lib/amd64
-    rsync -a /usr/lib64/libgconf-2.so.4* ./
-    rsync -a /usr/lib64/libORBit-2.so.0* ./
-
+install_java_update_rpath() {
     #now reinforce rpath
     cd $TITAN2D_DEP/lib/java-1.7/bin
     pwd
+
+    # some executables are not elf so lets just ingnore errors for now
+    set +e
 
     for f in `find . -maxdepth 1 -type f -executable`
     do
@@ -373,7 +452,57 @@ install_java() {
     chrpath -r '$ORIGIN:$ORIGIN/..' $f
     done
 
+    set -e
 }
+
+install_java_copy_from_dist() {
+    # ====================================================================
+    # java installation
+    # ====================================================================
+    # we will get binaries from distro itself
+    cd $TITAN2D_DEP/lib
+    [[ -d "$TITAN2D_DEP/lib/java-1.7" ]] && rm -rf "$TITAN2D_DEP/lib/java-1.7"
+    rsync -a /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.261.x86_64 ./
+    mv java-1.7.0-openjdk-1.7.0.261.x86_64 java-1.7
+
+    cd $TITAN2D_DEP/lib/java-1.7/jre/lib/amd64
+    rsync -a /usr/lib64/libgconf-2.so* ./
+    rsync -a /usr/lib64/libORBit-2.so* ./
+    rsync -a /lib64/libdbus-1.so* ./
+
+#        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007f6495f3f000)
+#        libdl.so.2 => /lib64/libdl.so.2 (0x00007f6495d3b000)
+#        libgio-2.0.so.0 => /lib64/libgio-2.0.so.0 (0x00007f6495a21000)
+#        libgobject-2.0.so.0 => /lib64/libgobject-2.0.so.0 (0x00007f64957d5000)
+#        libgmodule-2.0.so.0 => /lib64/libgmodule-2.0.so.0 (0x00007f64955d2000)
+#        libgthread-2.0.so.0 => /lib64/libgthread-2.0.so.0 (0x00007f64953ce000)
+#        librt.so.1 => /lib64/librt.so.1 (0x00007f64951c6000)
+#        libglib-2.0.so.0 => /lib64/libglib-2.0.so.0 (0x00007f6494eaf000)
+#        libc.so.6 => /lib64/libc.so.6 (0x00007f6494b1b000)
+#        /lib64/ld-linux-x86-64.so.2 (0x00007f64967b3000)
+#        libresolv.so.2 => /lib64/libresolv.so.2 (0x00007f64944b2000)
+#        libselinux.so.1 => /lib64/libselinux.so.1 (0x00007f649407d000)
+#        libdbus-1.so.3 => /lib64/libdbus-1.so.3 (0x00007f6493bcc000)
+
+
+    install_java_update_rpath
+
+    [[ -f "${TITAN2D_DEP_SRC}/java-1.7.tar.gz" ]] && rm -rf "${TITAN2D_DEP_SRC}/java-1.7.tar.gz"
+    cd $TITAN2D_DEP/lib
+    tar -cavf ${TITAN2D_DEP_SRC}/java-1.7.tar.gz java-1.7
+}
+
+install_java() {
+    # ====================================================================
+    # java installation
+    # ====================================================================
+    cd $TITAN2D_DEP/lib
+    tar xvzf ../../titan2d_dep_src/java-1.7.tar.gz
+
+    install_java_update_rpath
+}
+
+
  modify_dependencies_rpath() {
     # ====================================================================
     # Modify installation
@@ -381,6 +510,10 @@ install_java() {
     #change rpath of executables
     #chrpath only can change existing RPATH and can not create a new one
     #some of the dependencies don't have RPATH thus we will use patchelf
+
+    # some executables are not elf so lets just ingnore errors for now
+    set +e
+
     cd $TITAN2D_DEP/bin
     for f in `find . -maxdepth 1 -type f -executable`
     do
@@ -404,11 +537,11 @@ install_java() {
 
     cd $TITAN2D_DEP/lib
     chmod u+w $TITAN2D_DEP/lib/*
-    set +e
+
     for f in `find . -maxdepth 1 -type f -executable`
     do
         echo $f
-        if [[ "${f}" =~ ^(./libhdf5.so.10.1.0|./libz.so.1.2.8|./.*\.la|./libssl.so.1.0.1e)$ ]]
+        if [[ "${f}" =~ ^(./libhdf5.so.*|./libz.so.*|./.*\.la|./libssl.so.*)$ ]]
         then
             continue
         else
@@ -486,6 +619,36 @@ run_tests(){
         --test-space=${TITAN2D_BUILDS_TOP_DIR}/titan2d_tests_gccoptomp -swig swig \
         -bin ${TITAN2D_BUILDS_TOP_DIR}/titan2d-gccoptomp/bin/titan -openmp -rt -v -np -ref std
 }
+pack_titan2d_dep(){
+    version=$1
+    flavour=$2
+    echo "pack_titan2d_dep ${version} ${flavour}"
+    cd ${TITAN_DIST}
+
+    # pack dependencies
+    tar -cavf titan2d_dep-${flavour}.tar.gz $TITAN2D_DEP
+}
+pack_titan2d(){
+    version=$1
+    flavour=$2
+    echo "pack_titan2d ${version} ${flavour}"
+    cd ${TITAN_DIST}
+
+    # pack binaries
+    rsync -a ${TITAN2D_BUILDS_TOP_DIR}/titan2d-gccoptomp ./
+    mv titan2d-gccoptomp titan2d-$version
+    tar -cavf titan2d-${version}-Linux-64bit-${flavour}.tar.gz titan2d-$version
+    rm -rf titan2d-$version
+
+    # pack source code
+    rsync -a ${TITAN_WSP}/titan2d ./
+    cd titan2d
+    rm -rf .git .gitignore .idea .project
+    cd ..
+    mv titan2d titan2d-$version
+    tar -cavf titan2d-$version.tar.gz titan2d-$version
+    rm -rf titan2d-$version
+}
 
 while (( "$#" ))
 do
@@ -497,6 +660,49 @@ do
     bash_user)
         echo "Will launching bash at the end as regular user"
         run_bash_user=1
+        ;;
+    pack_titan2d)
+        if [ -n "$3" ] && [ ${2:0:1} != "-" ]; then
+            pack_titan2d $2 $3
+            shift 2
+        else
+            echo "Error: Arguments for $1 are missing" >&2
+            exit 1
+        fi
+        ;;
+    pack_titan2d_dep)
+        if [ -n "$3" ] && [ ${2:0:1} != "-" ]; then
+            pack_titan2d_dep $2 $3
+            shift 2
+        else
+            echo "Error: Arguments for $1 are missing" >&2
+            exit 1
+        fi
+        ;;
+    pack_titan2d_all)
+        if [ -n "$3" ] && [ ${2:0:1} != "-" ]; then
+            pack_titan2d $2 $3
+            pack_titan2d_dep $2 $3
+            shift 2
+        else
+            echo "Error: Arguments for $1 are missing" >&2
+            exit 1
+        fi
+        ;;
+    build_test_pack)
+        if [ -n "$3" ] && [ ${2:0:1} != "-" ]; then
+            install_titan2d
+            run_tests
+            pack_titan2d $2 $3
+            pack_titan2d_dep $2 $3
+            shift 2
+        else
+            echo "Error: Arguments for $1 are missing" >&2
+            exit 1
+        fi
+        ;;
+    ubuild_test_pack)
+        su - centos -c "/usr/local/bin/titan2d_bin_maker build_test_pack $2 $3"
         ;;
     -c)
         # from docker cmd skip to next
@@ -524,7 +730,7 @@ elif [ $run_bash_user -eq 1 ]; then
     su - centos
 elif [ $loop -eq 1 ]; then
     echo "All requested daemon launched"
-    while true; do
-        sleep 60
-    done
+#    while true; do
+#        sleep 60
+#    done
 fi
