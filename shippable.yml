@@ -4,9 +4,8 @@ build:
         image_name: nsimakov/titan2d_bin_maker
         image_tag: centos7
         pull: true
-        options: "--user centos -e HOME=/home/centos -t"
     ci:
-        - sudo rsync -a /root/src/github.com/$REPO_FULL_NAME /home/centos/titan2d_wsp/titan2d
-        - sudo chown -R centos:centos /home/centos/titan2d_wsp/titan2d
-        - /usr/local/bin/titan2d_bin_maker install_titan2d
-        - /usr/local/bin/titan2d_bin_maker run_tests
+        - rsync -a /root/src/github.com/$REPO_FULL_NAME /home/centos/titan2d_wsp/titan2d
+        - chown -R centos:centos /home/centos/titan2d_wsp/titan2d
+        - su - centos -c "/usr/local/bin/titan2d_bin_maker install_titan2d"
+        - su - centos -c "/usr/local/bin/titan2d_bin_maker run_tests"
