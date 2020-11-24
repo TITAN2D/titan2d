@@ -2838,242 +2838,314 @@ void Integrator_TwoPhases_Coulomb::corrector()
         double Vfluid[DIMENSION];
         double volf;
 
+        //source terms
+        
+        double SX = -g[0]*prev_state_vars_[0][ndx];
+        double SY = -g[1]*prev_state_vars_[0][ndx];
+        double RHO = rhow, SED[NUM_STATE_VARS-3], SF, q;
 
-        if(h[ndx] > GEOFLOW_TINY)
-        {
-            for(i = 0; i < DIMENSION; i++)
-                kactxy[i] = effect_kactxy_[i][ndx];
-
-            // fluid velocities
-            Vfluid[0] = hVx_liq[ndx] / h[ndx];
-            Vfluid[1] = hVy_liq[ndx] / h[ndx];
-
-            // volume fractions
-            volf = h_liq[ndx] / h[ndx];
-        }
-        else
-        {
-            for(i = 0; i < DIMENSION; i++)
-            {
-                kactxy[i] = matprops2_ptr->scale.epsilon;
-                Vfluid[i] = 0.;
+        for (i=3; i<NUM_STATE_VARS; i++){
+            SED[i-3]=0;
+            if(prev_state_vars_[0][ndx] > GEOFLOW_TINY){
+                SED[i-3] = prev_state_vars_[i][ndx] / prev_state_vars_[0][ndx];
             }
-            volf = 1.;
-            bedfrict = matprops2_ptr->bedfrict[material_[ndx]];
+            //TOTSED_[ndx]+=SED[i-3]/rhos;
+            if (SED[i-3]<-1e-5) SED[i-3]=0;
         }
 
-        double Vsolid[DIMENSION];
-        if(h_liq[ndx] > GEOFLOW_TINY)
-        {
-            Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
-            Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
-        }
-        else
-        {
-            Vsolid[0] = Vsolid[1] = 0.0;
-        }
+        RHO = rhow*(1-TOTSED_[ndx])+rhos*TOTSED_[ndx];
 
-        double V_avg[DIMENSION];
-        V_avg[0] = Vsolid[0] * volf + Vfluid[0] * (1. - volf);
-        V_avg[1] = Vsolid[1] * volf + Vfluid[1] * (1. - volf);
-        elements_[ndx].convect_dryline(V_avg[0],V_avg[1], dt); //this is necessary
+        double GAMMAX = 0, GAMMAY = 0;
+
+        double DFMASK = 0, BETAX = 0 , BETAY = 0;
+
+        DFMASK = c_dmin1(1,(TOTSED_[ndx] - 0.2)/0.2);
+
+        if(prev_state_vars_[0][ndx] < mindfdepth || TOTSED_[ndx] < 0.2) DFMASK = 0;
+        BETAX=-(1-lambda)*g[2]*prev_state_vars_[0][ndx]*frictioncoef;
+        BETAY=-(1-lambda)*g[2]*prev_state_vars_[0][ndx]*frictioncoef;
+        if(prev_state_vars_[1][ndx]<0) BETAX = -1*BETAX;
+        if(prev_state_vars_[2][ndx]<0) BETAY = -1*BETAY;
+
+        double E[4][NUM_STATE_VARS-3];
+        double mtstar, omega;
 
         double curv_x=curvature_[0][ndx];
         double curv_y=curvature_[1][ndx];
         double xslope=zeta_[0][ndx];
         double yslope=zeta_[1][ndx];
+        double slope = sqrt(xslope * xslope + yslope * yslope);
 
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //corrector
-        double speed;
-        double forceintx, forceinty;
-        double forcebedx, forcebedy;
-        double forcebedmax, forcebedequil, forcegrav;
-        double unitvx, unitvy;
-        double den_frac;
-        double alphaxx, alphayy, alphaxy, alphaxz, alphayz;
-        double tanbed;
 
-        double Ustore[6];
-        double h_inv, hphi_inv;
-        double sgn_dudy, sgn_dvdx, tmp;
-        double slope;
-        double t1, t2, t3, t4, t5;
-        double es, totalShear;
-        double drag[4];
+        for (i=0; i < (NUM_STATE_VARS-3); i++){
+            E[0][i]=0;
+            E[1][i]=0;
+            E[2][i]=0;
+            E[3][i]=0;
 
-        // initialize to zero
-        forceintx = 0.0;
-        forcebedx = 0.0;
-        forceinty = 0.0;
-        forcebedy = 0.0;
-        unitvx = 0.0;
-        unitvy = 0.0;
-        elem_eroded = 0.0;
-
-        slope = sqrt(xslope * xslope + yslope * yslope);
-        den_frac = den_fluid / den_solid;
-        for (i = 0; i < 6; ++i)
-            Ustore[i] = prev_state_vars_[i][ndx] + dt * Influx_[i][ndx]
-                    - dtdx * (fluxxp[i] - fluxxm[i])
-                    - dtdy * (fluxyp[i] - fluxym[i]);
-
-        if (Ustore[0] > tiny)
-        {
-            // Source terms ...
-            // here speed is speed squared
-            speed = Vsolid[0] * Vsolid[0] + Vsolid[1] * Vsolid[1];
-            if (speed > 0.0)
-            {
-                // here speed is speed
-                speed = sqrt(speed);
-                unitvx = Vsolid[0] / speed;
-                unitvy = Vsolid[1] / speed;
+            mtstar = mtstar0;
+            if (prev_state_vars_[0][ndx]/cos(atan(fabs(slope)))>h_c){
+                mtstar = mtstar0*pow(h_c/(prev_state_vars_[0][ndx]/cos(atan(fabs(slope)))),b);
             }
-            else
-            {
-                unitvx = 0.0;
-                unitvy = 0.0;
+
+            double H = c_dmin1(1, TOTM_[ndx]/mtstar);
+
+            if (prev_state_vars_[0][ndx]>10*GEOFLOW_TINY && TOTSED_[ndx] < 0.6 && DS_[i]<cri_splashd ){
+                E[0][i] = (1-H)*P_[i]*AMAP*(Cv*pi + (1-Cv))*Cb*R1;
+
+                if (TOTM_[ndx] > 1e-8 && M_[i][ndx] > 1e-8){
+                    E[1][i] = H*M_[i][ndx]/TOTM_[ndx]*ADMAP*(Cv*pi + (1-Cv))*Cb*R1;
+                }
+
+                if (prev_state_vars_[0][ndx]/cos(atan(fabs(slope)))>h_c){
+                    E[0][i] = E[0][i]*pow(h_c/(prev_state_vars_[0][ndx]/cos(atan(fabs(slope)))),b);
+                    E[1][i] = E[1][i]*pow(h_c/(prev_state_vars_[0][ndx]/cos(atan(fabs(slope)))),b);
+                }
             }
-            tanbed = tan(bedfrict);
-            h_inv = 1.0 / h[ndx];
-            hphi_inv = 1.0 / h_liq[ndx];
-            alphaxx = kactxy[0];
-            alphayy = kactxy[0];
-            den_frac = den_fluid / den_solid;
-            calc_drag_force(ndx, Vsolid, Vfluid, den_solid, den_fluid,terminal_vel, drag);
 
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    solid fraction x-direction source terms
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    alphaxy -- see pitman-le (2005)
-            tmp = hphi_inv * (dhVx_sol_dy[ndx] - Vsolid[0] * dh_liq_dy[ndx]);
-            sgn_dudy = sgn_tiny(tmp, frict_tiny);
-            alphaxy = sgn_dudy * sin_intfrictang * kactxy[0];
+            if (prev_state_vars_[0][ndx] <= hcfrict) MANNING = ROUGHNESS*pow(prev_state_vars_[0][ndx]/hcfrict, depthdependentexponent);
+            else MANNING = ROUGHNESS;
 
-            //    alphaxz (includes centrifugal effects)
-            alphaxz = -unitvx * tanbed
-                    * (1.0 + (Vsolid[0] * Vsolid[0]) * curv_x / g[2]);
+            double BETADRAG = pow(prev_state_vars_[0][ndx], 0.1667)/(MANNING*pow(g_total,0.5));
 
-            //    evaluate t1
-            t1 = (1.0 - den_frac)
-                    * (-alphaxx * xslope - alphaxy * yslope + alphaxz)
-                    * h_liq[ndx] * g[2];
-            //    evaluate t2
-            t2 = epsilon * den_frac * h_liq[ndx] * g[2] * dh_dx[ndx];
-            //    evaluate t3
-            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * xslope;
-            //    evaluate t4
-            t4 = h_liq[ndx] * g[0];
-            //    evaluate drag
-            t5 = drag[0];
-            //    update Ustore
-            Ustore[2] = Ustore[2] + dt * (t1 - t2 - t3 + t4 + t5);
+            q = pow(prev_state_vars_[2][ndx]*prev_state_vars_[1][ndx]+prev_state_vars_[2][ndx]*prev_state_vars_[1][ndx],0.5);
 
-            //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            // solid fraction y-direction source terms
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    alphaxy -- see pitman-le (2005) for definitions
-            tmp = hphi_inv * (dhVy_sol_dx[ndx] - Vsolid[1] * dh_liq_dx[ndx]);
-            sgn_dvdx = sgn_tiny(tmp, frict_tiny);
-            alphaxy = sgn_dvdx * sin_intfrictang * kactxy[0];
+            SF = MANNING*MANNING*q*q/pow(prev_state_vars_[0][ndx],3.3333);
 
-            //    alphayz
-            alphayz = -unitvy * tanbed
-                    * (1.0 + (Vsolid[1] * Vsolid[1]) * curv_y / g[2]);
+            if (prev_state_vars_[0][ndx]>10*GEOFLOW_TINY && TOTSED_[ndx] < 0.6){
 
-            //    evaluate t1
-            t1 = (1.0 - den_frac)
-                    * (-alphaxy * xslope - alphayy * yslope + alphayz)
-                    * h_liq[ndx] * g[2];
-            //    evaluate t2
-            t2 = epsilon * den_frac * h_liq[ndx] * dh_dy[ndx];
-            //    evaluate t3
-            t3 = epsilon * den_frac * h_liq[ndx] * g[2] * yslope;
-            //    evaluate t4 ( gravity along y-dir )
-            t4 = h_liq[ndx] * g[1];
-            //    drag term
-            t5 = drag[1];
-            Ustore[3] = Ustore[3] + dt * (t1 - t2 - t3 + t4 + t5);
+                omega = RHO*g[2]*SF*q;
 
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    fluid fraction x-direction source terms
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    gravity on fluid
-            t4 = h[ndx] * g[0];
-            //    drag force on fluid
-            t5 = drag[2];
-            Ustore[4] = Ustore[4] + dt * (t4 - t5);
+                if (omega > UC && TOTSED_[ndx] < 0.6 && prev_state_vars_[0][ndx]>DS_[i]) E[2][i]=af*(omega - UC);
 
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    fluid fraction y-direction source terms
-            //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            //    gravity on fluid
-            t4 = h[ndx] * g[1];
-            //    drag force on fluid
-            t5 = drag[3];
-            Ustore[5] = Ustore[5] + dt * (t4 - t5);
+                E[2][i]=ERODIBILITYMASK*(1-H)*P_[i]*eff_F/J_entrain*E[2][i];
+
+                if (TOTM_[ndx]>1e-6 && M_[i][ndx]>0){
+                    omega = RHO*g[2]*SF*q;
+
+                    if (omega > UC && TOTSED_[ndx] < 0.6 && prev_state_vars_[0][ndx]>DS_[i]) E[3][i]=af*(omega - UC);
+                    E[3][i]=ERODIBILITYMASK*H*M_[i][ndx]/TOTM_[ndx]*eff_F/((rhos-RHO)/rhos*g[2]*prev_state_vars_[0][ndx])*E[3][0];
+                }
+                else{
+                    E[3][0]=0;
+                }
+
+            }
+
+            VF_[i][ndx]=pow(pow(13.95*nu/DS_[i],2)+1.09*(rhos/rhow-1)*g[2]*DS_[i],0.5)-13.95*nu/DS_[i];
+
+            VF_[i][ndx]=VF_[i][ndx]*pow(1-c_dmin1(TOTSED_[ndx],0.99),4);
+
+            if (prev_state_vars_[0][ndx] > mindfdepth && TOTSED_[ndx]>0.5){
+                E[0][i]=0;
+                E[1][i]=0;
+                E[2][i]=0;
+                E[3][i]=0;
+                VF_[i][ndx]=0;
+            }
         }
 
-        // computation of magnitude of friction forces for statistics
-        elem_forceint = unitvx * forceintx + unitvy * forceinty;
-        elem_forcebed = unitvx * forcebedx + unitvy * forcebedy;
+        //Canopy Storage
+        if (CS>Si) Di=Ki*exp(gi*(CS-Si));
+        else Di=0;
+        CS=CS+dt*(1-pi)*R1-dt*Di-fmin(CS,dt*evap); 
 
-        // update the state variables
-        for (i = 0; i < 6; ++i)
-            state_vars_[i][ndx]=Ustore[i];
+        double Ustore[NUM_STATE_VARS], ZF, INFL, chtemp = 0, redetach = 0;
 
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        for (i=0; i<NUM_STATE_VARS; i++){
 
-        elem_forceint *= dxdy;
-        elem_forcebed *= dxdy;
-        elem_eroded *= dxdy;
+            Ustore[i]=prev_state_vars_[i][ndx] - dtdx * (fluxxp[i] - fluxxm[i]) - dtdy * (fluxyp[i] - fluxym[i]);
+        }
 
+        if (Ustore[0]>GEOFLOW_TINY){
 
-        if(stoppedflags_[ndx] == 2)
-            elem_deposited = h[ndx] * dxdy;
-        else
-            elem_deposited = 0.0;
+            if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R;
 
-        if(stoppedflags_[ndx])
-            elem_eroded = 0.0;
+            Ustore[1] = Ustore[1] + dt*SX + dt*GAMMAX + dt*DFMASK*BETAX;
+            Ustore[2] = Ustore[2] + dt*SY + dt*GAMMAY + dt*DFMASK*BETAY;
 
-        elements_[ndx].calc_shortspeed(1.0 / dt);
+            ZF = VINF_[ndx]/(THETAS-THETA0);
 
+            if (ZF != 0) INFL = c_dmin1(Ustore[0]-GEOFLOW_TINY, dt*KS*(ZF + HF + Ustore[0])/ZF);
+            else INFL = Ustore[0]-GEOFLOW_TINY;
 
-        //correct(elementType, NodeTable, ElemTable, dt, matprops_ptr, fluxprops_ptr, timeprops_ptr, this, Curr_El_out, &elemforceint,
-        //        &elemforcebed, &elemeroded, &elemdeposited);
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            VINF_[ndx] += INFL;
 
+            Ustore[0]-=INFL;
 
-        m_forceint += fabs(elem_forceint);
-        m_forcebed += fabs(elem_forcebed);
-        m_realvolume += dxdy * h[ndx];
-        m_eroded += elem_eroded;
-        m_deposited += elem_deposited;
+            TOTM_[ndx] = 0;
+            DEP_[ndx] = 0;
+
+            for (i = 3; i < (NUM_STATE_VARS); i++){
+
+                if (Ustore[0]>=10*GEOFLOW_TINY){
+
+                    chtemp = Ustore[i];
+
+                    redetach = c_dmin1(M_[i-3][ndx],dt*(E[1][i-3]+E[3][i-3]));
+
+                    Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
+
+                    Ustore[i] = Ustore[i] + dt *(E[0][i-3]+E[2][i-3]) + redetach;
+
+                    Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
+
+                    M_[i-3][ndx] = M_[i-3][ndx] + dt*(E[0][i-3]+E[2][i-3]) - Ustore[i] + chtemp;
+
+                    Ustore[0]= Ustore[0] + (Ustore[i] - chtemp)/(rhos*(1-phi));
+
+                    TOTM_[ndx] += M_[i-3][ndx];
+                    DEP_[ndx] += M_[i-3][ndx]/rhos;
+                }
+            }
+
+            if (Ustore[0] > GEOFLOW_TINY){
+                for (i=3; i < (NUM_STATE_VARS); i++){
+                    SED[i-3] = Ustore[i]/Ustore[0];
+                    TOTSED_[ndx] += SED[i-3]/rhos;
+                }
+            }
+            else{
+                Ustore[0] = GEOFLOW_TINY;
+                Ustore[1] = 0;
+                Ustore[2] = 0;
+
+                for(i=3 ; i < NUM_STATE_VARS; i++){
+                    M_[i-3][ndx] = M_[i-3][ndx] + Ustore[i];
+                    Ustore[i]=0;
+                    SED[i-3]=0;
+                }
+            }
+
+            if (Ustore[0] > GEOFLOW_TINY){
+                if (Ustore[0]<= hcfrict) MANNING = ROUGHNESS*pow(Ustore[0]/hcfrict, depthdependentexponent);
+                else MANNING = ROUGHNESS;
+
+                SF = MANNING*MANNING*g[2]*pow(Ustore[1]*Ustore[1]+Ustore[2]*Ustore[2],0.5)/pow(Ustore[0],2.333);
+
+                Ustore[1] = Ustore[1]/(1+dt*SF);
+                Ustore[2] = Ustore[2]/(1+dt*SF);
+            }
+
+        
+        }
+        else{
+            Ustore[0] = 0;
+            Ustore[1] = 0;
+            Ustore[2] = 0;
+
+            for(i=3 ; i < NUM_STATE_VARS; i++){
+                M_[i-3][ndx] = M_[i-3][ndx] + Ustore[i];
+                Ustore[i]=0;
+                SED[i-3]=0;
+            }
+        }
+
+        for (i = 0; i < NUM_STATE_VARS; ++i) state_vars_[i][ndx]=Ustore[i];
 
         // apply bc's
         for(int j = 0; j < 4; j++)
             if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
+
+        
+        if (Ustore[0] > GEOFLOW_TINY){
+            Vfluid[0] = Ustore[1]/Ustore[0];
+            Vfluid[1] = Ustore[2]/Ustore[0];
+        }
+        else{
+            Vfluid[0] = Vfluid[1] = 0;
+        }
+        elements_[ndx].convect_dryline(Vfluid[0],Vfluid[1], dt); //this is necessary
+
     }
-    forceint = m_forceint;
-    forcebed = m_forcebed;
-    eroded = m_eroded;
-    deposited = m_deposited;
-    realvolume = m_realvolume;
+       
+
 }
 void Integrator_TwoPhases_Coulomb::flowrecords()
 {
 
 }
-/*
-void Intergrator_TwoPhases_Coulomb::initialize_statevariables()
+//////// Added by Palak ////////
+void Integrator_TwoPhases_Coulomb::initialize_statevariables()
 {
+    detach = 1000;
+    detachd = 2000;
+    h_c = 0.00066;
+    mtstar0 = 2.7;
+    eff_F = 0.33;
+    J_entrain = 15.125;
+    stemdia = 0;
+    stemspace = 3;
+    dragcoef = 1.2;
+    b = 1;
+    af = 1;
+    afr = 1;
+    cri_splashd = 0.004; 
+    
+    pi = 0.35;
+    Si = 0.00151;
+    Ki = 5.62e-07;
+    gi = 5040;
+    evap = 0;
+    Cv = 0;
+    Cb = 0;
+    CS = 0;
+    Di = 0;
 
+    hcfrict = 0.003;
+    depthdependentexponent = -0.33;
+
+    rint = 60;
+    //readrainfalldata();
+    //rnum = RAIN.size();
+    rnum =91;
+
+
+    
+
+    
+    phi = 0.5;
+    rhos = 2600;
+    rhow = 1000;
+    s_rho = (rhos-rhow)/rhow;
+    rho0 = rhow*phi+rhos*(1-phi);
+    nu = 1.2e-6; //kinematic viscosity // needs to be changed
+    cohesion = 200;
+    frictioncoef = int_frict; //internal friction angle
+    lambda = 0.8;
+    cthreshold = 0.4;
+    mindfdepth = 0.01;
+    maxsoilthickness = 0.75;
+    AMAP = detach;
+    ADMAP = detachd;
+
+    
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    { 
+        TOTM_[ndx] = 0;
+        TOTSED_[ndx] = 0;
+        VINF_[ndx] = 0;
+        DEP_[ndx]=0;
+        for (int i = 0; i < (NUM_STATE_VARS -3); i++)
+        {   
+            M_[i][ndx] = 0;
+            VF_[i][ndx] = 0;
+        }
+        
+    }
+
+    for (int i = 0; i < (NUM_STATE_VARS -3); i++)
+    {   
+        P_[i] = 0.3333;
+        DS_[i] = 0.0001;
+    }
+    
+    g_total = 9.81;
+    // hfilm = 1e-5; // Geoflow tiny in Titan2d
 } 
-*/
+
 void Integrator_TwoPhases_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_TwoPhases::h5write(parent,group_name);

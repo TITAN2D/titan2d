@@ -174,6 +174,7 @@ void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **
         
         printf("The simulation region is:  x = %e to %e   y = %e to %e.\n", xmin, xmax, ymin, ymax);
         
+        //This is creating trimming of DEMs
         double xlength = 0.98 * (xmax - xmin);
         double ylength = 0.98 * (ymax - ymin);
         xmin = xmin + 0.1 * xlength;

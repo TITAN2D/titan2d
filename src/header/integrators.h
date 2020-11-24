@@ -528,6 +528,10 @@ protected:
     tivector<double> &dhVx_liq_dy;
     tivector<double> &dhVy_liq_dx;
     tivector<double> &dhVy_liq_dy;
+// Added by Palak//
+
+
+
 protected:
     void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol,
             const double dh_dx_liq,const double dhVx_dx_sol,
@@ -604,6 +608,10 @@ protected:
         }
         evalue = c_dmax1(eigenvxmax, eigenvymax);
     }
+
+     // Reading Rainfall data from the wildfire datafiles - Palak
+    
+
 };
 
 /**
@@ -622,6 +630,26 @@ public:
     //! Load object content from hdf5 file
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
+public:
+    // Added for merging wildfire code
+    double detach, detachd, h_c, mtstar0, eff_F, J_entrain, stemdia, stemspace, dragcoef, b, af, afr, cri_splashd;
+
+    double pi, Si, Ki, gi, evap, Cv, Cb, CS, Di;
+
+    double hcfrict, depthdependentexponent;
+
+    int rnum;
+    double rint, R1 = 3.8481e-06, R=3.8481e-06;
+    vector<double> RAIN, RAINTIME;
+
+    double g_total, phi, rhos, rhow, s_rho, rho0, cohesion, lambda, cthreshold, mindfdepth, maxsoilthickness, nu, frictioncoef;
+
+    
+
+    double P_[MAX_NUM_STATE_VARS-3], DS_[MAX_NUM_STATE_VARS-3];// initialize 
+
+    double AMAP, ADMAP, ROUGHNESS = 0.05, MANNING = 0.05, UC = 0.0062185, ERODIBILITYMASK = 1.0, WATERSHED = 1.0, THETA0 = 0.1, THETAS = 0.39, KS = 5.5556e-06, HF = 0.001;
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -635,7 +663,46 @@ protected:
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
 
-    //virtual void initialize_statevariables();
+    virtual void initialize_statevariables();
+
+    void readrainfalldata()
+    {
+        FILE *frain, *fraintime;
+
+        double *tmp_wf = NULL;
+        double tmp_fw = 0.0;
+        tmp_wf = &tmp_fw;
+
+        printf("reading first file\n");
+        frain = fopen("rain.bin","rb");
+        if(!frain){
+            printf("Could not open wildfire datafiles\n");
+            assert(0);
+        }
+        while(!feof(frain)){
+        //printf("Entered first loop\n");
+        freadD(frain,tmp_wf);
+        //fread(tmp_wf, sizeof(double), 1, fx);
+        //printf("Read first element\n");
+        RAIN.push_back(*tmp_wf);
+        }
+        fclose(frain);
+
+        fraintime = fopen("raintime.bin","rb");
+        if(!fraintime){
+            printf("Could not open wildfire datafiles\n");
+            assert(0);
+        }
+        while(!feof(fraintime)){
+        //printf("Entered first loop\n");
+        freadD(fraintime,tmp_wf);
+        //fread(tmp_wf, sizeof(double), 1, fx);
+        //printf("Read first element\n");
+        RAINTIME.push_back(*tmp_wf);
+        }
+
+        fclose(fraintime);
+    }
 
 
     void calc_drag_force(const ti_ndx_t ndx, const double *vsolid, const double *vfluid,

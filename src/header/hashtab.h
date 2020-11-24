@@ -655,6 +655,13 @@ public:
     //!used for hdf5 writing, temporary array
     vector<ti_ndx_t> node_ndx_buffer;
 
+    tivector<double> TOTM_;
+    tivector<double> TOTSED_;
+    tivector<double> M_[MAX_NUM_STATE_VARS-3];
+    tivector<double> VF_[MAX_NUM_STATE_VARS-3];
+    tivector<double> VINF_;
+    tivector<double> DEP_;
+
     ElementsProperties *ElemProp;
 };
 
@@ -728,6 +735,12 @@ public:
     tivector<double> *eigenvxymax_;
     tivector<double> *coord_;
 
+    tivector<double> &TOTM_;
+    tivector<double> &DEP_;
+    tivector<double> &TOTSED_;
+    tivector<double> &VINF_;
+    tivector<double> *M_;
+    tivector<double> *VF_;
 
     int myid;
     int numprocs;

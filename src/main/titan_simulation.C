@@ -970,6 +970,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     
 
     integrator->initialize_statevariables();
+    printf("***********Check point 1**********\n");
     statprops->calc_stats(myid, matprops_ptr, &timeprops, &discharge_planes, &localquants, 0.0);
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);

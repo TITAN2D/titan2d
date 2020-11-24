@@ -1622,6 +1622,14 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     Awet_.push_back();
     for(int i=0;i<2;++i)drypoint_[i].push_back();
     Swet_.push_back();
+
+    TOTM_.push_back();
+    TOTSED_.push_back();
+    VINF_.push_back();
+    DEP_.push_back();
+
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].push_back();
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].push_back();
     
     return ndx;
 }
@@ -1766,6 +1774,14 @@ void ElementsHashTable::flushElemTable()
     Awet_.__reorder_prolog(size);
     for(int i=0;i<2;++i)drypoint_[i].__reorder_prolog(size);
     Swet_.__reorder_prolog(size);
+
+    TOTM_.__reorder_prolog(size);
+    TOTSED_.__reorder_prolog(size);
+    VINF_.__reorder_prolog(size);
+    DEP_.__reorder_prolog(size);
+
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].__reorder_prolog(size);
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].__reorder_prolog(size);
 
 #if 0
     //DIMENSION__MAX_NUM_STATE_VARS
@@ -1979,6 +1995,16 @@ void ElementsHashTable::flushElemTable()
             iwetnode_.__reorder_body_byblocks(start, end,new_order);
             Awet_.__reorder_body_byblocks(start, end,new_order);
             Swet_.__reorder_body_byblocks(start, end,new_order);
+
+            TOTM_.__reorder_body_byblocks(start, end,new_order);
+            TOTSED_.__reorder_body_byblocks(start, end,new_order);
+            VINF_.__reorder_body_byblocks(start, end,new_order);
+            DEP_.__reorder_body_byblocks(start, end,new_order);
+
+            for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].__reorder_body_byblocks(start, end,new_order);
+            for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].__reorder_body_byblocks(start, end,new_order);
+
+            
         }
     }
 #endif
@@ -2081,6 +2107,14 @@ void ElementsHashTable::reserve(const tisize_t new_reserve_size)
     Awet_.reserve(new_reserve_size);
     for(int i=0;i<2;++i)drypoint_[i].reserve(new_reserve_size);
     Swet_.reserve(new_reserve_size);
+
+    TOTM_.reserve(new_reserve_size);
+    TOTSED_.reserve(new_reserve_size);
+    VINF_.reserve(new_reserve_size);
+    DEP_.reserve(new_reserve_size);
+
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].reserve(new_reserve_size);
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].reserve(new_reserve_size);
 }
 void ElementsHashTable::reserve_at_least(const tisize_t new_reserve_size)
 {
@@ -2207,6 +2241,18 @@ void ElementsHashTable::resize(const tisize_t new_resize)
         {for(int i=0;i<2;++i)drypoint_[i].resize(new_resize);}
 #pragma omp section
         Swet_.resize(new_resize);
+#pragma omp section       
+        TOTM_.resize(new_resize);
+#pragma omp section
+        TOTSED_.resize(new_resize);
+#pragma omp section
+        VINF_.resize(new_resize);
+#pragma omp section
+        DEP_.resize(new_resize);
+#pragma omp section
+        {for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].resize(new_resize);}
     }
 }
 void ElementsHashTable::groupCreateAddNode(vector<array<ti_ndx_t,4> > &new_sons_ndx,
@@ -2504,6 +2550,13 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVector(group,Awet_);
     TiH5_readTiVectorArray(group,drypoint_,2);
     TiH5_readTiVector(group,Swet_);
+    TiH5_readTiVector(group, TOTM_);
+    TiH5_readTiVector(group, TOTSED_);
+    TiH5_readTiVector(group, VINF_);
+    TiH5_readTiVector(group, DEP_);
+    TiH5_readTiVectorArray(group,M_,MAX_NUM_STATE_VARS-3);
+    TiH5_readTiVectorArray(group,VF_,MAX_NUM_STATE_VARS-3);
+
 
     //allocate and initialize not stored properties
     for (int j = 0; j < 8; j++) {
@@ -2560,7 +2613,13 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 eigenvxymax_(ElemTable->eigenvxymax_),
                 coord_(ElemTable->coord_),
                 node_key_(ElemTable->node_key_),
-                node_bubble_ndx_(ElemTable->node_bubble_ndx_)
+                node_bubble_ndx_(ElemTable->node_bubble_ndx_),
+                TOTM_(ElemTable->TOTM_),
+                TOTSED_(ElemTable->TOTSED_),
+                M_(ElemTable->M_),
+                VF_(ElemTable->VF_),
+                VINF_(ElemTable->VINF_),
+                DEP_(ElemTable->DEP_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
