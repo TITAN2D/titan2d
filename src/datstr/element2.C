@@ -547,6 +547,16 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
         set_shortspeed(ElemTable->shortspeed_[fthTemp]);
     }
 
+    set_VINF(ElemTable->VINF_[fthTemp]);
+    set_TOTM(ElemTable->TOTM_[fthTemp]* myfractionoffather);
+    set_TOTSED(ElemTable->TOTSED_[fthTemp]* myfractionoffather);
+    set_DEP(ElemTable->DEP_[fthTemp]* myfractionoffather);
+
+    for(i = 0; i < MAX_NUM_STATE_VARS - 3; i++){
+        set_M(i,ElemTable->M_[i][fthTemp]* myfractionoffather);
+        set_VF(i,ElemTable->VF_[i][fthTemp]* myfractionoffather);
+    }
+
     if(state_vars(0) < 0.)
         state_vars(0, 0.);
 
@@ -3407,10 +3417,10 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
 
         if(SHORTSPEED)
         {
-            double doubleswap = (temp_state_vars[2]) * (temp_state_vars[2])
-                    + (temp_state_vars[3]) * (temp_state_vars[3]);
+            double doubleswap = (temp_state_vars[1]) * (temp_state_vars[1])
+                    + (temp_state_vars[2]) * (temp_state_vars[2]);
 
-            if(!(doubleswap > (temp_state_vars[1] * temp_state_vars[1] *
+            if(!(doubleswap > (temp_state_vars[0] * temp_state_vars[0] *
             GEOFLOW_TINY
                                * GEOFLOW_TINY)))
             {
@@ -3423,25 +3433,25 @@ double* Element::eval_velocity(double xoffset, double yoffset, double Vel[])
                     > shortspeed() * shortspeed() * temp_state_vars[1] * temp_state_vars[1]))
             {
                 doubleswap = sqrt(doubleswap);
-                Vel[0] = shortspeed() * temp_state_vars[2] / doubleswap;
-                Vel[1] = shortspeed() * temp_state_vars[3] / doubleswap;
+                Vel[0] = shortspeed() * temp_state_vars[1] / doubleswap;
+                Vel[1] = shortspeed() * temp_state_vars[2] / doubleswap;
                 Vel[2] = 0.;
                 Vel[3] = 0.;
             }
             else
             {
-                Vel[0] = temp_state_vars[2] / temp_state_vars[1];
-                Vel[1] = temp_state_vars[3] / temp_state_vars[1];
-                Vel[2] = temp_state_vars[4] / temp_state_vars[0];
-                Vel[3] = temp_state_vars[5] / temp_state_vars[0];
+                Vel[0] = temp_state_vars[1] / temp_state_vars[0];
+                Vel[1] = temp_state_vars[2] / temp_state_vars[0];
+                Vel[2] = temp_state_vars[3] / temp_state_vars[0];
+                Vel[3] = temp_state_vars[4] / temp_state_vars[0];
             }
         }
         else
         {
-            Vel[0] = temp_state_vars[2] / temp_state_vars[1];
-            Vel[1] = temp_state_vars[3] / temp_state_vars[1];
-            Vel[2] = temp_state_vars[4] / temp_state_vars[0];
-            Vel[3] = temp_state_vars[5] / temp_state_vars[0];
+            Vel[0] = temp_state_vars[1] / temp_state_vars[0];
+            Vel[1] = temp_state_vars[2] / temp_state_vars[0];
+            Vel[2] = temp_state_vars[3] / temp_state_vars[0];
+            Vel[3] = temp_state_vars[4] / temp_state_vars[0];
         }
         return Vel;
     }

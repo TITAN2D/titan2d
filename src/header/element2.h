@@ -682,6 +682,13 @@ public:
     //! The Element member function convect_dryline() calculates the coordinates of the "drypoint" in the element's local coordinate system.  This is used to determine the location of the wet-dry front (or dryline) inside this element, which in turn is used (in conjunction with the location of "iwetnode" - which indicates which side of the dryline is wet) to determine the fraction of its total area that is wet (Awet).  Awet is then returned by the function.  Keith wrote this function may 2007
     double convect_dryline(const double Vx, const double Vy, const double dt);
 
+    void set_VINF(double value);
+    void set_TOTM(double value);
+    void set_TOTSED(double value);
+    void set_M(int idim, double value);
+    void set_VF(int idim, double value);
+    void set_DEP(double value);
+
     //! sgn of double
 
     double sgn(double a);

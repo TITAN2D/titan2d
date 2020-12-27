@@ -927,7 +927,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
         AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -1.0);
 
-        //initialize pile height and if appropriate perform initial adaptation
+        //initialize pile height and if appropriate perform initial adaptation   
         init_piles();
     }
     else
@@ -1054,7 +1054,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
             
             
             TIMING1_START(t_start2);
-            Unrefine.unrefine(UNREFINE_TARGET);
+            //Unrefine.unrefine(UNREFINE_TARGET);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
             move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
@@ -1211,7 +1211,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     if(current_state_is_good)
         save_vizoutput_file(XDMF_CLOSE);
     else
-        save_vizoutput_file(XDMF_ONLYCLOSE);
+        save_vizoutput_file(XDMF_CLOSE);
 
     IF_MPI(MPI_Barrier(MPI_COMM_WORLD));
 

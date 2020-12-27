@@ -87,8 +87,8 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
             if(!(EmTemp->refined_flag()))
             {
                 pheight.push_back(EmTemp->state_vars(0) * matprops_ptr->scale.height);
-                xmom.push_back(EmTemp->state_vars(2) * momentum_scale);
-                ymom.push_back(EmTemp->state_vars(3) * momentum_scale);
+                xmom.push_back(EmTemp->state_vars(1) * momentum_scale);
+                ymom.push_back(EmTemp->state_vars(2) * momentum_scale);
                 num_elm++;
                 for(j = 0; j < 4; j++)
                 {

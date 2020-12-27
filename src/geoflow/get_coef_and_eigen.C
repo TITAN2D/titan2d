@@ -404,18 +404,25 @@ double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
         {
             //if this element does not belong on this processor don't involve!!!
             
-            if(h[ndx] > GEOFLOW_TINY)
+            if(state_vars_[0][ndx] > GEOFLOW_TINY)
             {
-                double Vsolid[2], Vfluid[2];
+                double VxVy[2];
                 double evalue;
                 /* calculate hmax */
-                if(hmax < h[ndx])
-                    hmax = h[ndx];
+                if(hmax < state_vars_[0][ndx])
+                    hmax = state_vars_[0][ndx];
                 
-
+                /*
                 gmfggetcoef2ph(h_liq[ndx],hVx_sol[ndx],hVy_sol[ndx],
                         dh_liq_dx[ndx],dhVx_sol_dx[ndx],
                         dh_liq_dy[ndx],dhVy_sol_dy[ndx],
+                        matprops_ptr->bedfrict[material_[ndx]], int_frict,
+                        kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
+                */
+
+                gmfggetcoef2ph(state_vars_[0][ndx], state_vars_[1][ndx], state_vars_[2][ndx],
+                        d_state_vars_[0][ndx], d_state_vars_[1][ndx],
+                        d_state_vars_[NUM_STATE_VARS][ndx], d_state_vars_[NUM_STATE_VARS+2][ndx],
                         matprops_ptr->bedfrict[material_[ndx]], int_frict,
                         kactxy_[0][ndx], kactxy_[1][ndx], tiny, scale_.epsilon);
 
@@ -427,17 +434,19 @@ double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
                 //must use hVx/h and hVy/h rather than eval_velocity (L'Hopital's
                 //rule speed if it is smaller) because underestimating speed (which
                 //results in over estimating the timestep) is fatal to stability...
-                Vsolid[0] = hVx_sol[ndx] / h_liq[ndx];
-                Vsolid[1] = hVy_sol[ndx] / h_liq[ndx];
-
-                Vfluid[0] = hVx_liq[ndx] / h[ndx];
-                Vfluid[1] = hVy_liq[ndx] / h[ndx];
-
+                VxVy[0] = state_vars_[1][ndx] / state_vars_[0][ndx];
+                VxVy[1] = state_vars_[2][ndx] / state_vars_[0][ndx];
+                
                 //eigen_(EmTemp->eval_state_vars(u_vec_alt),
+                /*
                 eigen2ph(h[ndx], h_liq[ndx], eigenvxymax_[0][ndx],
                           eigenvxymax_[1][ndx], evalue, tiny, kactxy_[0][ndx],
                           gravity_[2][ndx], Vsolid, Vfluid,
                           matprops2_ptr->flow_type);
+                */
+                eigen2ph(state_vars_[0][ndx], eigenvxymax_[0][ndx],eigenvxymax_[1][ndx],
+                        evalue, tiny, kactxy_[0][ndx], gravity_[2][ndx], VxVy);
+
 
                 // ***********************************************************
                 // !!!!!!!!!!!!!!!!!!!!!check dx & dy!!!!!!!!!!!!!!!!!!!!!!!!

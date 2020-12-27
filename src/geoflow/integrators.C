@@ -2755,6 +2755,22 @@ void Integrator_TwoPhases_Coulomb::corrector()
     double sin_intfrictang=sin(int_frict);
     double epsilon=scale_.epsilon;
 
+    //printf("Mindfdepth = %lf \n",mindfdepth);
+
+    double Ustore_max0=0 , infl_max, zf_max;
+    int index_max;
+
+    //Calculate Rain Data
+    double raintime_end = RAINTIME.back();
+    double raintime_start = RAINTIME[0];
+
+    if (timeprops_ptr->timesec() >= raintime_start && rain_idx < rnum && timeprops_ptr->timesec() >= RAINTIME[rain_idx]){
+        R = RAIN[rain_idx];
+        R1 = R;
+        rain_idx++;
+    }
+    printf("R = %.12lf\n",R);
+
     //convinience ref
     //tivector<double> *g=gravity_;
     //tivector<double> *dgdx=d_gravity_;
@@ -2821,6 +2837,22 @@ void Integrator_TwoPhases_Coulomb::corrector()
          I wonder if this is legacy code, it seems odd that it is only called
          for the SUN Operating System zee ../geoflow/correct.f */
 
+        
+        double kactxy[DIMENSION];
+        double bedfrict = effect_bedfrict_[ndx];
+        double Vfluid[DIMENSION];
+        double volf;
+        
+        if (prev_state_vars_[0][ndx] > GEOFLOW_TINY){
+            Vfluid[0] = prev_state_vars_[1][ndx]/prev_state_vars_[0][ndx];
+            Vfluid[1] = prev_state_vars_[2][ndx]/prev_state_vars_[0][ndx];
+        }
+        else{
+            Vfluid[0] = Vfluid[1] = 0;
+        }
+        elements_[ndx].convect_dryline(Vfluid[0],Vfluid[1], dt); //this is necessary
+        
+
 //#ifdef STOPPED_FLOWS
     #ifdef STOPCRIT_CHANGE_SOURCE
         int IF_STOPPED=stoppedflags_[ndx];
@@ -2831,12 +2863,14 @@ void Integrator_TwoPhases_Coulomb::corrector()
         double g[3]{gravity_[0][ndx],gravity_[1][ndx],gravity_[2][ndx]};
         double d_g[3]{d_gravity_[0][ndx],d_gravity_[1][ndx],d_gravity_[2][ndx]};
 
+        for (int i = 0; i < 2; i++){
+            g[i]=-1*g[i];
+            d_g[i]=-1*d_g[i];
+        }
+
 
         int i;
-        double kactxy[DIMENSION];
-        double bedfrict = effect_bedfrict_[ndx];
-        double Vfluid[DIMENSION];
-        double volf;
+        
 
         //source terms
         
@@ -2875,6 +2909,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
         double xslope=zeta_[0][ndx];
         double yslope=zeta_[1][ndx];
         double slope = sqrt(xslope * xslope + yslope * yslope);
+        double MANNING = 0.05;
 
 
         for (i=0; i < (NUM_STATE_VARS-3); i++){
@@ -2908,7 +2943,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
             double BETADRAG = pow(prev_state_vars_[0][ndx], 0.1667)/(MANNING*pow(g_total,0.5));
 
-            q = pow(prev_state_vars_[2][ndx]*prev_state_vars_[1][ndx]+prev_state_vars_[2][ndx]*prev_state_vars_[1][ndx],0.5);
+            q = pow(prev_state_vars_[1][ndx]*prev_state_vars_[1][ndx]+prev_state_vars_[2][ndx]*prev_state_vars_[2][ndx],0.5);
 
             SF = MANNING*MANNING*q*q/pow(prev_state_vars_[0][ndx],3.3333);
 
@@ -2957,89 +2992,74 @@ void Integrator_TwoPhases_Coulomb::corrector()
             Ustore[i]=prev_state_vars_[i][ndx] - dtdx * (fluxxp[i] - fluxxm[i]) - dtdy * (fluxyp[i] - fluxym[i]);
         }
 
-        if (Ustore[0]>GEOFLOW_TINY){
+        if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R;
 
-            if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R;
+        Ustore[1] = Ustore[1] + dt*SX + dt*GAMMAX + dt*DFMASK*BETAX;
+        Ustore[2] = Ustore[2] + dt*SY + dt*GAMMAY + dt*DFMASK*BETAY;
 
-            Ustore[1] = Ustore[1] + dt*SX + dt*GAMMAX + dt*DFMASK*BETAX;
-            Ustore[2] = Ustore[2] + dt*SY + dt*GAMMAY + dt*DFMASK*BETAY;
+        ZF = VINF_[ndx]/(THETAS-THETA0);
 
-            ZF = VINF_[ndx]/(THETAS-THETA0);
+        INFL = c_dmin1(Ustore[0]-GEOFLOW_TINY, dt*KS*(ZF + HF + Ustore[0])/ZF);
 
-            if (ZF != 0) INFL = c_dmin1(Ustore[0]-GEOFLOW_TINY, dt*KS*(ZF + HF + Ustore[0])/ZF);
-            else INFL = Ustore[0]-GEOFLOW_TINY;
+        VINF_[ndx] += INFL;
 
-            VINF_[ndx] += INFL;
+        if (timeprops_ptr->iter > 50) Ustore[0]-=INFL;
 
-            Ustore[0]-=INFL;
+        TOTM_[ndx] = 0;
+        DEP_[ndx] = 0;
 
-            TOTM_[ndx] = 0;
-            DEP_[ndx] = 0;
+        for (i = 3; i < (NUM_STATE_VARS); i++){
 
-            for (i = 3; i < (NUM_STATE_VARS); i++){
+            if (Ustore[0]>=10*GEOFLOW_TINY){
 
-                if (Ustore[0]>=10*GEOFLOW_TINY){
+                chtemp = Ustore[i];
 
-                    chtemp = Ustore[i];
+                redetach = c_dmin1(M_[i-3][ndx],dt*(E[1][i-3]+E[3][i-3]));
 
-                    redetach = c_dmin1(M_[i-3][ndx],dt*(E[1][i-3]+E[3][i-3]));
+                Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
 
-                    Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
+                Ustore[i] = Ustore[i] + dt *(E[0][i-3]+E[2][i-3]) + redetach;
 
-                    Ustore[i] = Ustore[i] + dt *(E[0][i-3]+E[2][i-3]) + redetach;
+                Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
 
-                    Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
+                M_[i-3][ndx] = M_[i-3][ndx] + dt*(E[0][i-3]+E[2][i-3]) - Ustore[i] + chtemp;
 
-                    M_[i-3][ndx] = M_[i-3][ndx] + dt*(E[0][i-3]+E[2][i-3]) - Ustore[i] + chtemp;
+                Ustore[0]= Ustore[0] + (Ustore[i] - chtemp)/(rhos*(1-phi));
 
-                    Ustore[0]= Ustore[0] + (Ustore[i] - chtemp)/(rhos*(1-phi));
-
-                    TOTM_[ndx] += M_[i-3][ndx];
-                    DEP_[ndx] += M_[i-3][ndx]/rhos;
-                }
+                TOTM_[ndx] += M_[i-3][ndx];
+                DEP_[ndx] += M_[i-3][ndx]/rhos;
             }
+        }
 
-            if (Ustore[0] > GEOFLOW_TINY){
-                for (i=3; i < (NUM_STATE_VARS); i++){
-                    SED[i-3] = Ustore[i]/Ustore[0];
-                    TOTSED_[ndx] += SED[i-3]/rhos;
-                }
+        TOTSED_[ndx] = 0;
+        if (Ustore[0] > GEOFLOW_TINY){
+            for (i=3; i < (NUM_STATE_VARS); i++){
+                SED[i-3] = Ustore[i]/Ustore[0];
+                TOTSED_[ndx] += SED[i-3]/rhos;
             }
-            else{
-                Ustore[0] = GEOFLOW_TINY;
-                Ustore[1] = 0;
-                Ustore[2] = 0;
-
-                for(i=3 ; i < NUM_STATE_VARS; i++){
-                    M_[i-3][ndx] = M_[i-3][ndx] + Ustore[i];
-                    Ustore[i]=0;
-                    SED[i-3]=0;
-                }
-            }
-
-            if (Ustore[0] > GEOFLOW_TINY){
-                if (Ustore[0]<= hcfrict) MANNING = ROUGHNESS*pow(Ustore[0]/hcfrict, depthdependentexponent);
-                else MANNING = ROUGHNESS;
-
-                SF = MANNING*MANNING*g[2]*pow(Ustore[1]*Ustore[1]+Ustore[2]*Ustore[2],0.5)/pow(Ustore[0],2.333);
-
-                Ustore[1] = Ustore[1]/(1+dt*SF);
-                Ustore[2] = Ustore[2]/(1+dt*SF);
-            }
-
-        
         }
         else{
-            Ustore[0] = 0;
-            Ustore[1] = 0;
-            Ustore[2] = 0;
+            //Ustore[0] = GEOFLOW_TINY;
+            //Ustore[1] = 0;
+            //Ustore[2] = 0;
 
             for(i=3 ; i < NUM_STATE_VARS; i++){
                 M_[i-3][ndx] = M_[i-3][ndx] + Ustore[i];
-                Ustore[i]=0;
+                //Ustore[i]=0;
                 SED[i-3]=0;
             }
         }
+
+        if (Ustore[0] > GEOFLOW_TINY){
+            if (Ustore[0]<= hcfrict) MANNING = ROUGHNESS*pow(Ustore[0]/hcfrict, depthdependentexponent);
+            else MANNING = ROUGHNESS;
+
+            SF = MANNING*MANNING*g[2]*pow(Ustore[1]*Ustore[1]+Ustore[2]*Ustore[2],0.5)/pow(Ustore[0],2.333);
+
+            Ustore[1] = Ustore[1]/(1+dt*SF);
+            Ustore[2] = Ustore[2]/(1+dt*SF);
+        }
+
 
         for (i = 0; i < NUM_STATE_VARS; ++i) state_vars_[i][ndx]=Ustore[i];
 
@@ -3049,18 +3069,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
                 for(int k = 0; k < NUM_STATE_VARS; k++)
                     state_vars_[k][ndx]=0.0;
 
-        
-        if (Ustore[0] > GEOFLOW_TINY){
-            Vfluid[0] = Ustore[1]/Ustore[0];
-            Vfluid[1] = Ustore[2]/Ustore[0];
-        }
-        else{
-            Vfluid[0] = Vfluid[1] = 0;
-        }
-        elements_[ndx].convect_dryline(Vfluid[0],Vfluid[1], dt); //this is necessary
-
     }
-       
 
 }
 void Integrator_TwoPhases_Coulomb::flowrecords()
@@ -3098,9 +3107,9 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     depthdependentexponent = -0.33;
 
     rint = 60;
-    //readrainfalldata();
-    //rnum = RAIN.size();
-    rnum =91;
+    readrainfalldata();
+    rnum = RAIN.size();
+    //rnum =91;
 
 
     
@@ -3133,7 +3142,11 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
             M_[i][ndx] = 0;
             VF_[i][ndx] = 0;
         }
-        
+        /*
+        state_vars_[0][ndx] = 0;
+        for(int i = 1; i < NUM_STATE_VARS; i++){
+            state_vars_[1][ndx]=0;
+        }  */      
     }
 
     for (int i = 0; i < (NUM_STATE_VARS -3); i++)
@@ -3143,6 +3156,7 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     }
     
     g_total = 9.81;
+    printf("********** Check point 0: All initial data Read ***********\n");
     // hfilm = 1e-5; // Geoflow tiny in Titan2d
 } 
 
@@ -3212,9 +3226,9 @@ void calc_volume(ElementType elementType,ElementsHashTable* El_Table, int myid, 
                 {
                     if(elementType == ElementType::TwoPhases)
                     {
-                        temp = sqrt(Curr_El->state_vars(2) * Curr_El->state_vars(2) + Curr_El->state_vars(3) * Curr_El->state_vars(3));
+                        temp = sqrt(Curr_El->state_vars(1) * Curr_El->state_vars(1) + Curr_El->state_vars(2) * Curr_El->state_vars(2));
                         v_ave += temp * dx * dy;
-                        temp /= Curr_El->state_vars(1);
+                        temp /= Curr_El->state_vars(0);
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
@@ -3342,7 +3356,7 @@ double get_max_momentum(ElementType elementType,ElementsHashTable* El_Table, Mat
                 {
                     if(elementType == ElementType::TwoPhases)
                     {
-                        mom2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3));
+                        mom2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2));
                     }
                     if(elementType == ElementType::SinglePhase)
                     {
@@ -3448,8 +3462,8 @@ void sim_end_warning(ElementType elementType,ElementsHashTable* El_Table, MatPro
                 {
                     if(elementType == ElementType::TwoPhases)
                     {
-                        velocity2 = (EmTemp->state_vars(2) * EmTemp->state_vars(2) + EmTemp->state_vars(3) * EmTemp->state_vars(3))
-                            / (EmTemp->state_vars(1) * EmTemp->state_vars(1));
+                        velocity2 = (EmTemp->state_vars(1) * EmTemp->state_vars(1) + EmTemp->state_vars(2) * EmTemp->state_vars(2))
+                            / (EmTemp->state_vars(0) * EmTemp->state_vars(0));
                     }
                     if(elementType == ElementType::SinglePhase)
                     {

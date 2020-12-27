@@ -188,8 +188,8 @@ void StatProps::calc_stats(int myid, MatProps* matprops, TimeProps* timeprops,
     double * RESTRICT hVy=&(state_vars_[2][0]);
 
     if(elementType == ElementType::TwoPhases){
-        hVx=&(state_vars_[2][0]);
-        hVy=&(state_vars_[3][0]);
+        hVx=&(state_vars_[1][0]);
+        hVy=&(state_vars_[2][0]);
     }
 
     TI_ASSUME_ALIGNED(h);

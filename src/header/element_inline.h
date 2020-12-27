@@ -371,6 +371,13 @@ inline double Element::dhVy_dy_sol() const {return d_state_vars(NUM_STATE_VARS+3
 inline double Element::prev_state_vars(int idim) const {return elementsHashTable->prev_state_vars_[idim][ndx_];}
 inline void Element::prev_state_vars(int idim, double value) {elementsHashTable->prev_state_vars_[idim][ndx_] =value;}
 
+inline void Element::set_VINF(double value){ elementsHashTable->VINF_[ndx_] = value;}
+inline void Element::set_TOTM(double value){ elementsHashTable->TOTM_[ndx_] = value;}
+inline void Element::set_TOTSED(double value){ elementsHashTable->TOTSED_[ndx_] = value;}
+inline void Element::set_DEP(double value){ elementsHashTable->DEP_[ndx_] = value;}
+inline void Element::set_M(int idim, double value){ elementsHashTable->M_[idim][ndx_] = value;}
+inline void Element::set_VF(int idim, double value){ elementsHashTable->VF_[idim][ndx_] = value;}
+
 //! updates prev_states variables to current states, for first order-calculations
 inline void Element::update_prev_state_vars(){for (int i = 0; i < NUM_STATE_VARS; i++)prev_state_vars(i, state_vars(i));}
 
