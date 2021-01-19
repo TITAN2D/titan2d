@@ -1,0 +1,14 @@
+language: none
+build:
+    pre_ci_boot:
+        image_name: nsimakov/titan2d_bin_maker
+        image_tag: centos7
+        pull: true
+    ci:
+        - rsync -a /root/src/github.com/$REPO_FULL_NAME /home/centos/titan2d_wsp
+        - chown -R centos:centos /home/centos/titan2d_wsp/titan2d
+        - ls /home/centos/titan2d_wsp
+        - ls /home/centos/titan2d_wsp/titan2d
+        - su - centos -c "/home/centos/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker bootstrap_titan2d"
+        - su - centos -c "/home/centos/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker install_titan2d"
+        - su - centos -c "/home/centos/titan2d_wsp/titan2d/docker/utils/titan2d_bin_maker run_tests"
