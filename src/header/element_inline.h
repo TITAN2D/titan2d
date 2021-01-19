@@ -378,6 +378,8 @@ inline void Element::set_DEP(double value){ elementsHashTable->DEP_[ndx_] = valu
 inline void Element::set_M(int idim, double value){ elementsHashTable->M_[idim][ndx_] = value;}
 inline void Element::set_VF(int idim, double value){ elementsHashTable->VF_[idim][ndx_] = value;}
 
+inline void Element::set_TOTEROS(double value){elementsHashTable->TOTEROS_[ndx_] = value;}
+inline double Element::TOT_EROS(){return elementsHashTable->TOTEROS_[ndx_];}
 //! updates prev_states variables to current states, for first order-calculations
 inline void Element::update_prev_state_vars(){for (int i = 0; i < NUM_STATE_VARS; i++)prev_state_vars(i, state_vars(i));}
 

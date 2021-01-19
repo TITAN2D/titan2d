@@ -1627,6 +1627,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     TOTSED_.push_back();
     VINF_.push_back();
     DEP_.push_back();
+    TOTEROS_.push_back();
 
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].push_back();
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].push_back();
@@ -1779,6 +1780,7 @@ void ElementsHashTable::flushElemTable()
     TOTSED_.__reorder_prolog(size);
     VINF_.__reorder_prolog(size);
     DEP_.__reorder_prolog(size);
+    TOTEROS_.__reorder_prolog(size);
 
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].__reorder_prolog(size);
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].__reorder_prolog(size);
@@ -2000,6 +2002,7 @@ void ElementsHashTable::flushElemTable()
             TOTSED_.__reorder_body_byblocks(start, end,new_order);
             VINF_.__reorder_body_byblocks(start, end,new_order);
             DEP_.__reorder_body_byblocks(start, end,new_order);
+            TOTEROS_.__reorder_body_byblocks(start, end, new_order);
 
             for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].__reorder_body_byblocks(start, end,new_order);
             for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].__reorder_body_byblocks(start, end,new_order);
@@ -2112,6 +2115,7 @@ void ElementsHashTable::reserve(const tisize_t new_reserve_size)
     TOTSED_.reserve(new_reserve_size);
     VINF_.reserve(new_reserve_size);
     DEP_.reserve(new_reserve_size);
+    TOTEROS_.reserve(new_reserve_size);
 
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].reserve(new_reserve_size);
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].reserve(new_reserve_size);
@@ -2249,6 +2253,8 @@ void ElementsHashTable::resize(const tisize_t new_resize)
         VINF_.resize(new_resize);
 #pragma omp section
         DEP_.resize(new_resize);
+#pragma omp section
+        TOTEROS_.resize(new_resize);
 #pragma omp section
         {for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].resize(new_resize);}
 #pragma omp section
@@ -2554,6 +2560,7 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVector(group, TOTSED_);
     TiH5_readTiVector(group, VINF_);
     TiH5_readTiVector(group, DEP_);
+    TiH5_readTiVector(group, TOTEROS_);
     TiH5_readTiVectorArray(group,M_,MAX_NUM_STATE_VARS-3);
     TiH5_readTiVectorArray(group,VF_,MAX_NUM_STATE_VARS-3);
 
@@ -2619,7 +2626,8 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 M_(ElemTable->M_),
                 VF_(ElemTable->VF_),
                 VINF_(ElemTable->VINF_),
-                DEP_(ElemTable->DEP_)
+                DEP_(ElemTable->DEP_),
+                TOTEROS_(ElemTable->TOTEROS_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);

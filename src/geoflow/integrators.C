@@ -1346,6 +1346,7 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 
 void Integrator_SinglePhase_Coulomb::initialize_statevariables(){
 
+    /*
     // Read data from file and store it in a variables
     printf("Initializing from Wildfire Data\n");
     FILE *fx, *fy, *fh, *fhx, *fhy;
@@ -1476,7 +1477,7 @@ void Integrator_SinglePhase_Coulomb::initialize_statevariables(){
 
         
     }
-
+*/
 }
 void Integrator_SinglePhase_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
@@ -2890,6 +2891,23 @@ void Integrator_TwoPhases_Coulomb::corrector()
         RHO = rhow*(1-TOTSED_[ndx])+rhos*TOTSED_[ndx];
 
         double GAMMAX = 0, GAMMAY = 0;
+        
+        double d_TOTSEDx = 0, d_TOTSEDy = 0;
+
+        for (i=3; i<NUM_STATE_VARS; i++){
+            if(prev_state_vars_[0][ndx] > GEOFLOW_TINY && prev_state_vars_[i][ndx] > 0 ){
+                d_TOTSEDx += (prev_state_vars_[0][ndx]*d_state_vars_[i][ndx] - prev_state_vars_[i][ndx]*d_state_vars_[0][ndx])/(prev_state_vars_[0][ndx]*prev_state_vars_[0][ndx]);
+
+                d_TOTSEDy += (prev_state_vars_[0][ndx]*d_state_vars_[i + NUM_STATE_VARS][ndx] - prev_state_vars_[i][ndx]*d_state_vars_[0 + NUM_STATE_VARS][ndx])/(prev_state_vars_[0][ndx]*prev_state_vars_[0][ndx]);
+            }
+        }
+
+        d_TOTSEDx = d_TOTSEDx/rhos;
+        d_TOTSEDy = d_TOTSEDy/rhos;
+
+        GAMMAX -= 0.5*(rhos - RHO)*g[2]*prev_state_vars_[0][ndx]*prev_state_vars_[0][ndx]/RHO*d_TOTSEDx;
+        GAMMAY -= 0.5*(rhos - RHO)*g[2]*prev_state_vars_[0][ndx]*prev_state_vars_[0][ndx]/RHO*d_TOTSEDy;
+    
 
         double DFMASK = 0, BETAX = 0 , BETAY = 0;
 
@@ -2959,17 +2977,27 @@ void Integrator_TwoPhases_Coulomb::corrector()
                     omega = RHO*g[2]*SF*q;
 
                     if (omega > UC && TOTSED_[ndx] < 0.6 && prev_state_vars_[0][ndx]>DS_[i]) E[3][i]=af*(omega - UC);
-                    E[3][i]=ERODIBILITYMASK*H*M_[i][ndx]/TOTM_[ndx]*eff_F/((rhos-RHO)/rhos*g[2]*prev_state_vars_[0][ndx])*E[3][0];
+                    E[3][i]=ERODIBILITYMASK*H*M_[i][ndx]/TOTM_[ndx]*eff_F/((rhos-RHO)/rhos*g[2]*prev_state_vars_[0][ndx])*E[3][i];
                 }
                 else{
-                    E[3][0]=0;
+                    E[3][i]=0;
                 }
 
+            }
+
+            if (TOTEROS_[ndx] < -1*maxsoilthickness){
+                E[0][i] = 0;
+                E[2][i] = 0;
             }
 
             VF_[i][ndx]=pow(pow(13.95*nu/DS_[i],2)+1.09*(rhos/rhow-1)*g[2]*DS_[i],0.5)-13.95*nu/DS_[i];
 
             VF_[i][ndx]=VF_[i][ndx]*pow(1-c_dmin1(TOTSED_[ndx],0.99),4);
+
+            E[0][i]=0;
+            E[1][i]=0;
+            E[2][i]=0;
+            E[3][i]=0;
 
             if (prev_state_vars_[0][ndx] > mindfdepth && TOTSED_[ndx]>0.5){
                 E[0][i]=0;
@@ -2983,7 +3011,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
         //Canopy Storage
         if (CS>Si) Di=Ki*exp(gi*(CS-Si));
         else Di=0;
-        CS=CS+dt*(1-pi)*R1-dt*Di-fmin(CS,dt*evap); 
+        CS=CS+dt*(1-pi)*R1-dt*Di-c_dmin1(CS,dt*evap); 
 
         double Ustore[NUM_STATE_VARS], ZF, INFL, chtemp = 0, redetach = 0;
 
@@ -2991,6 +3019,8 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
             Ustore[i]=prev_state_vars_[i][ndx] - dtdx * (fluxxp[i] - fluxxm[i]) - dtdy * (fluxyp[i] - fluxym[i]);
         }
+
+        Ustore[0] = c_dmax1(Ustore[0], 0.0);
 
         if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R;
 
@@ -3004,31 +3034,37 @@ void Integrator_TwoPhases_Coulomb::corrector()
         VINF_[ndx] += INFL;
 
         if (timeprops_ptr->iter > 50) Ustore[0]-=INFL;
+        //Ustore[0]-=INFL;
 
         TOTM_[ndx] = 0;
         DEP_[ndx] = 0;
 
         for (i = 3; i < (NUM_STATE_VARS); i++){
 
+            chtemp = Ustore[i];
+
             if (Ustore[0]>=10*GEOFLOW_TINY){
 
-                chtemp = Ustore[i];
+                
 
                 redetach = c_dmin1(M_[i-3][ndx],dt*(E[1][i-3]+E[3][i-3]));
 
                 Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
 
-                Ustore[i] = Ustore[i] + dt *(E[0][i-3]+E[2][i-3]) + redetach;
+                Ustore[i] = Ustore[i] + dt*(E[0][i-3]+E[2][i-3]) + redetach;
 
                 Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
 
                 M_[i-3][ndx] = M_[i-3][ndx] + dt*(E[0][i-3]+E[2][i-3]) - Ustore[i] + chtemp;
 
-                Ustore[0]= Ustore[0] + (Ustore[i] - chtemp)/(rhos*(1-phi));
+                TOTEROS_[ndx] -= (Ustore[i] - chtemp)/(rhos*(1-phi));
 
-                TOTM_[ndx] += M_[i-3][ndx];
-                DEP_[ndx] += M_[i-3][ndx]/rhos;
             }
+
+            Ustore[0]= Ustore[0] + (Ustore[i] - chtemp)/(rhos*(1-phi));           
+
+            TOTM_[ndx] += M_[i-3][ndx];
+            DEP_[ndx] += M_[i-3][ndx]/rhos;
         }
 
         TOTSED_[ndx] = 0;
@@ -3039,13 +3075,15 @@ void Integrator_TwoPhases_Coulomb::corrector()
             }
         }
         else{
-            //Ustore[0] = GEOFLOW_TINY;
-            //Ustore[1] = 0;
-            //Ustore[2] = 0;
+            Ustore[0] = GEOFLOW_TINY;
+            Ustore[1] = 0;
+            Ustore[2] = 0;
 
             for(i=3 ; i < NUM_STATE_VARS; i++){
+
+                TOTEROS_[ndx] += (Ustore[i])/(rhos*(1-phi));
                 M_[i-3][ndx] = M_[i-3][ndx] + Ustore[i];
-                //Ustore[i]=0;
+                Ustore[i]=0;
                 SED[i-3]=0;
             }
         }
@@ -3137,6 +3175,8 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
         TOTSED_[ndx] = 0;
         VINF_[ndx] = 0;
         DEP_[ndx]=0;
+        TOTEROS_[ndx]=0;
+        //state_vars_[0][ndx]=1e-4;
         for (int i = 0; i < (NUM_STATE_VARS -3); i++)
         {   
             M_[i][ndx] = 0;

@@ -551,6 +551,7 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
     set_TOTM(ElemTable->TOTM_[fthTemp]* myfractionoffather);
     set_TOTSED(ElemTable->TOTSED_[fthTemp]* myfractionoffather);
     set_DEP(ElemTable->DEP_[fthTemp]* myfractionoffather);
+    set_TOTEROS(ElemTable->TOTEROS_[fthTemp]);
 
     for(i = 0; i < MAX_NUM_STATE_VARS - 3; i++){
         set_M(i,ElemTable->M_[i][fthTemp]* myfractionoffather);
@@ -1920,17 +1921,17 @@ double Element::calc_elem_edge_wetness_factor(int ineigh, double dt)
     double VxVy[2]; //will be rarefaction velocity non-dimensionalized by cell size
     if(elementType() == ElementType::TwoPhases)
     {
-        VxVy[0] = state_vars(2) / state_vars(1);
+        VxVy[0] = state_vars(1) / state_vars(0);
         if(VxVy[0] != 0.0)
         {
-            a = sqrt(effect_kactxy(0) * gravity(2) * state_vars(1) + (state_vars(0) - state_vars(1)) * gravity(2));
+            a = sqrt(1 * gravity(2) * state_vars(0));
             VxVy[0] *= (1.0 + 2.0 * a / fabs(VxVy[0])) / dx(0);
         }
 
-        VxVy[1] = state_vars(3) / state_vars(1);
+        VxVy[1] = state_vars(2) / state_vars(0);
         if(VxVy[1] != 0.0)
         {
-            a = sqrt(effect_kactxy(1) * gravity(2) * state_vars(1) + (state_vars(0) - state_vars(1)) * gravity(2));
+            a = sqrt(1 * gravity(2) * state_vars(0));
             VxVy[1] *= (1.0 + 2.0 * a / fabs(VxVy[1])) / dx(1);
         }
     }
@@ -2153,7 +2154,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
     #ifdef STOPCRIT_CHANGE_FLUX
         else if(stoppedflags()==2)
         {
-            //printf("xdirflux case 2 ");
+            printf("xdirflux case 2 \n");
             //state variables
             hfv[0][0]=state_vars(0)+d_state_vars(0)*dz;
             hfv[0][1]=hfv[0][2]=0.0;
@@ -2190,7 +2191,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
             //speed=VxVy[0];
             speed = speed2 = hfv[0][1] / hfv[0][0];
 
-            a = sqrt(effect_kactxy(0) * gravity(2) * hfv[0][0]);
+            a = sqrt(1 * gravity(2) * hfv[0][0]);
 
             //fluxes
             hfv[1][0] = speed * hfv[0][0];
@@ -2204,6 +2205,7 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
         }
         //the "refinement flux" values (hrfv) are what the flux would have been if it had not been reset due to being "stopped," they are needed since refinement is based on fluxes (and also pileheight gradient but that's not relevant here)
     #if defined STOPCRIT_CHANGE_FLUX || defined STOPCRIT_CHANGE_BED
+        printf("X dir flux case 3\n");
         if(state_vars(0) < GEOFLOW_TINY)
         {
             hrfv[0][0]=hrfv[0][1]=hrfv[0][2]=0.0; //state variables
@@ -2240,17 +2242,11 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
             hrfv[2][2]=speed2+a;
         }
     #else
-        hrfv[0][0] = hfv[0][0];
-        hrfv[0][1] = hfv[0][1];
-        hrfv[0][2] = hfv[0][2];
-
-        hrfv[1][0] = hfv[1][0];
-        hrfv[1][1] = hfv[1][1];
-        hrfv[1][2] = hfv[1][2];
-
-        hrfv[2][0] = hfv[2][0];
-        hrfv[2][1] = hfv[2][1];
-        hrfv[2][2] = hfv[2][2];
+        for(i = 0; i < NUM_STATE_VARS; i++){
+            hrfv[0][i] = hfv[0][i];
+            hrfv[1][i] = hfv[1][i];
+            hrfv[2][i] = hfv[2][i];
+        }
     #endif
     }
     if(elementType() == ElementType::SinglePhase)
@@ -2435,7 +2431,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
             //speed=VxVy[1];
             speed = speed2 = hfv[0][2] / hfv[0][0];
 
-            a = sqrt(effect_kactxy(1) * gravity(2) * hfv[0][0]);
+            a = sqrt(1 * gravity(2) * hfv[0][0]);
 
             //fluxes
             hfv[1][0] = speed * hfv[0][0];
@@ -2486,17 +2482,11 @@ void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
             hrfv[2][2]=speed2+a;
         }
     #else
-        hrfv[0][0] = hfv[0][0];
-        hrfv[0][1] = hfv[0][1];
-        hrfv[0][2] = hfv[0][2];
-
-        hrfv[1][0] = hfv[1][0];
-        hrfv[1][1] = hfv[1][1];
-        hrfv[1][2] = hfv[1][2];
-
-        hrfv[2][0] = hfv[2][0];
-        hrfv[2][1] = hfv[2][1];
-        hrfv[2][2] = hfv[2][2];
+        for(i = 0; i < NUM_STATE_VARS; i++){
+            hrfv[0][i] = hfv[0][i];
+            hrfv[1][i] = hfv[1][i];
+            hrfv[2][i] = hfv[2][i];
+        }
     #endif
     }
     if(elementType() == ElementType::SinglePhase)
@@ -2728,13 +2718,14 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
                 flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar] + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar]))
                         / (sr - sl);
 
+        
         for(ivar = 3; ivar < NUM_STATE_VARS ; ivar++){
             if (flux[0]>0) {
-                if(hfvl[0][0] > GEOFLOW_TINY*0.5) flux[ivar] = flux[0]*hfvl[0][ivar]/hfvl[0][0];
+                if(hfvl[0][0] != 0) flux[ivar] = flux[0]*hfvl[0][ivar]/hfvl[0][0];
                 else flux[ivar] = 0;
             }
             else {
-                if(hfvr[0][0] > GEOFLOW_TINY*0.5) flux[ivar] = flux[0]*hfvr[0][ivar]/hfvr[0][0];
+                if(hfvr[0][0] != 0) flux[ivar] = flux[0]*hfvr[0][ivar]/hfvr[0][0];
                 else flux[ivar] = 0;
             }
         }
@@ -3645,7 +3636,7 @@ void Element::calc_topo_data(MatProps* matprops_ptr)
         exit(1);
     }
 #endif
-    set_elevation(elevation() / matprops_ptr->scale.length);
+    set_elevation((elevation()) / matprops_ptr->scale.length);
     //eldif=(elevation-eldif)*matprops_ptr->scale.length;
     //if(fabs(eldif)>1.0) printf("calc_topo_data() after-before=%g\n",eldif);
     i = Get_slope(resolution, xcoord, ycoord, zeta_ref(0), zeta_ref(1));
