@@ -2759,7 +2759,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
     //printf("Mindfdepth = %lf \n",mindfdepth);
 
     double Ustore_max0=0 , infl_max, zf_max;
-    int index_max;
+    
 
     //Calculate Rain Data
     double raintime_end = RAINTIME.back();
@@ -2791,6 +2791,12 @@ void Integrator_TwoPhases_Coulomb::corrector()
         {
             for (int i = 0; i < NUM_STATE_VARS; i++)
                 prev_state_vars_[i][ndx]=state_vars_[i][ndx];
+        }
+        if (index_max == 0) 
+        {
+            for (int i = 0; i < NUM_STATE_VARS; i++)
+                prev_state_vars_[i][ndx]=0;
+            prev_state_vars_[0][ndx]=0.0001;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2994,10 +3000,10 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
             VF_[i][ndx]=VF_[i][ndx]*pow(1-c_dmin1(TOTSED_[ndx],0.99),4);
 
-            E[0][i]=0;
-            E[1][i]=0;
-            E[2][i]=0;
-            E[3][i]=0;
+            //E[0][i]=0;
+            //E[1][i]=0;
+            //E[2][i]=0;
+            //E[3][i]=0;
 
             if (prev_state_vars_[0][ndx] > mindfdepth && TOTSED_[ndx]>0.5){
                 E[0][i]=0;
@@ -3033,19 +3039,25 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
         VINF_[ndx] += INFL;
 
-        if (timeprops_ptr->iter > 50) Ustore[0]-=INFL;
+        if (timeprops_ptr->iter > 10){
+            
+            Ustore[0]-=INFL;
+        } 
+
+        //VINF_[ndx] += INFL;
         //Ustore[0]-=INFL;
 
         TOTM_[ndx] = 0;
         DEP_[ndx] = 0;
 
+        double temp_height = Ustore[0];
+
         for (i = 3; i < (NUM_STATE_VARS); i++){
 
             chtemp = Ustore[i];
 
-            if (Ustore[0]>=10*GEOFLOW_TINY){
+            if (temp_height>=10*GEOFLOW_TINY){
 
-                
 
                 redetach = c_dmin1(M_[i-3][ndx],dt*(E[1][i-3]+E[3][i-3]));
 
@@ -3108,6 +3120,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
                     state_vars_[k][ndx]=0.0;
 
     }
+    index_max++;
 
 }
 void Integrator_TwoPhases_Coulomb::flowrecords()
@@ -3148,10 +3161,6 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     readrainfalldata();
     rnum = RAIN.size();
     //rnum =91;
-
-
-    
-
     
     phi = 0.5;
     rhos = 2600;
@@ -3182,11 +3191,12 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
             M_[i][ndx] = 0;
             VF_[i][ndx] = 0;
         }
+        
+        //state_vars_[0][ndx] = 0.0001;
         /*
-        state_vars_[0][ndx] = 0;
         for(int i = 1; i < NUM_STATE_VARS; i++){
             state_vars_[1][ndx]=0;
-        }  */      
+        }   */    
     }
 
     for (int i = 0; i < (NUM_STATE_VARS -3); i++)

@@ -645,6 +645,8 @@ public:
 
     double AMAP, ADMAP, ROUGHNESS = 0.05, UC = 0.0062185, ERODIBILITYMASK = 1.0, WATERSHED = 1.0, THETA0 = 0.1, THETAS = 0.39, KS = 5.5556e-06, HF = 0.001;
 
+    int index_max =0;
+
 protected:
     /**
      * Predictor step for second order of nothing for first order

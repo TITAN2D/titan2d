@@ -2178,12 +2178,24 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
         {
             //printf("xdirflux case 3 ");
             //state variables
+            for(i = 0; i < NUM_STATE_VARS; i++){
+                hfv[0][i] = 0;
+                hfv[1][i] = 0;
+                hfv[2][i] = 0;
+            }
+
             for(i = 0; i < NUM_STATE_VARS; i++)
                 hfv[0][i] = state_vars(i) + d_state_vars(i) * dz;
 
+            /*
+            for(i=3; i < NUM_STATE_VARS; i++){
+                hfv[0][i] = state_vars(i)/state_vars(0);
+            }*/
+
+            
             if((0.0 < Awet()) && (Awet() < 1.0))
             {
-                for(i = 0; i < 3; i++)
+                for(i = 0; i < NUM_STATE_VARS; i++)
                     hfv[0][i] *= wetnessfactor;
             }
 
@@ -2197,6 +2209,10 @@ void Element::xdirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
             hfv[1][0] = speed * hfv[0][0];
             hfv[1][1] = speed * hfv[0][1] + 0.5 * hfv[0][0] * a * a;
             hfv[1][2] = speed * hfv[0][2];
+
+            for(i = 3; i < NUM_STATE_VARS; i++){
+                hfv[1][i]=speed*hfv[0][i];
+            }
 
             //wave speeds
             hfv[2][0] = speed2 - a;
@@ -2418,14 +2434,27 @@ void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
         {
             //    printf("choice 3 ");
             //state variables
+            for(i = 0; i < NUM_STATE_VARS; i++){
+                hfv[0][i] = 0;
+                hfv[1][i] = 0;
+                hfv[2][i] = 0;
+            }
+
             for(i = 0; i < NUM_STATE_VARS; i++)
                 hfv[0][i] = state_vars(i) + d_state_vars(NUM_STATE_VARS + i) * dz;
 
+            /*
+            for(i=3; i < NUM_STATE_VARS; i++){
+                hfv[0][i] = state_vars(i)/state_vars(0);
+            }*/
+
+            
             if((0.0 < Awet()) && (Awet() < 1.0))
             {
-                for(i = 0; i < 3; i++)
+                for(i = 0; i < NUM_STATE_VARS; i++)
                     hfv[0][i] *= wetnessfactor;
             }
+            
 
             //eval_velocity(0.0,dz,VxVy);
             //speed=VxVy[1];
@@ -2437,6 +2466,10 @@ void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
             hfv[1][0] = speed * hfv[0][0];
             hfv[1][1] = speed * hfv[0][1];
             hfv[1][2] = speed * hfv[0][2] + 0.5 * hfv[0][0] * a * a;
+
+            for(i = 3; i < NUM_STATE_VARS; i++){
+                hfv[1][i]=speed*hfv[0][i];
+            }
 
             //wave speeds
             hfv[2][0] = speed2 - a;
@@ -2708,27 +2741,27 @@ void riemannflux(const ElementType elementType,double hfvl[3][MAX_NUM_STATE_VARS
         }
         
         if(sl >= 0.0)
-            for(ivar = 0; ivar < 3; ivar++)
+            for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 flux[ivar] = hfvl[1][ivar];
         else if(sr <= 0.0)
-            for(ivar = 0; ivar < 3; ivar++)
+            for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 flux[ivar] = hfvr[1][ivar];
         else
-            for(ivar = 0; ivar < 3; ivar++)
+            for(ivar = 0; ivar < NUM_STATE_VARS; ivar++)
                 flux[ivar] = (sr * hfvl[1][ivar] - sl * hfvr[1][ivar] + sl * sr * (hfvr[0][ivar] - hfvl[0][ivar]))
                         / (sr - sl);
 
-        
+        /*
         for(ivar = 3; ivar < NUM_STATE_VARS ; ivar++){
             if (flux[0]>0) {
-                if(hfvl[0][0] != 0) flux[ivar] = flux[0]*hfvl[0][ivar]/hfvl[0][0];
+                if(hfvl[0][0] != 0) flux[ivar] = flux[0]*hfvl[0][ivar];
                 else flux[ivar] = 0;
             }
             else {
-                if(hfvr[0][0] != 0) flux[ivar] = flux[0]*hfvr[0][ivar]/hfvr[0][0];
+                if(hfvr[0][0] != 0) flux[ivar] = flux[0]*hfvr[0][ivar];
                 else flux[ivar] = 0;
             }
-        }
+        }*/
     }
     
     return;
@@ -3497,6 +3530,7 @@ void Element::calc_gravity_vector(MatProps* matprops_ptr)
     double max_angle = atan(max_slope);
     
     double down_slope_gravity = 9.8 * sin(max_angle);
+    //double down_slope_gravity = 9.8;
     if(dabs(down_slope_gravity) > GEOFLOW_TINY)
     {
         gravity(0, -down_slope_gravity * zeta(0) / max_slope);
