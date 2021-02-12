@@ -663,6 +663,8 @@ public:
     tivector<double> DEP_;
     tivector<double> TOTEROS_;
 
+    tivector<double> CONC_[MAX_NUM_STATE_VARS-3];
+
     ElementsProperties *ElemProp;
 };
 
@@ -743,6 +745,7 @@ public:
     tivector<double> *M_;
     tivector<double> *VF_;
     tivector<double> &TOTEROS_;
+    tivector<double> *CONC_;
 
     int myid;
     int numprocs;

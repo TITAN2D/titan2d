@@ -687,6 +687,7 @@ public:
     void set_TOTSED(double value);
     void set_M(int idim, double value);
     void set_VF(int idim, double value);
+    void set_CONC(int idim, double value);
     void set_DEP(double value);
     void set_TOTEROS(double value);
     double TOT_EROS();

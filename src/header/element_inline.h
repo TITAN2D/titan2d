@@ -377,6 +377,7 @@ inline void Element::set_TOTSED(double value){ elementsHashTable->TOTSED_[ndx_] 
 inline void Element::set_DEP(double value){ elementsHashTable->DEP_[ndx_] = value;}
 inline void Element::set_M(int idim, double value){ elementsHashTable->M_[idim][ndx_] = value;}
 inline void Element::set_VF(int idim, double value){ elementsHashTable->VF_[idim][ndx_] = value;}
+inline void Element::set_CONC(int idim, double value){ elementsHashTable->CONC_[idim][ndx_] = value;}
 
 inline void Element::set_TOTEROS(double value){elementsHashTable->TOTEROS_[ndx_] = value;}
 inline double Element::TOT_EROS(){return elementsHashTable->TOTEROS_[ndx_];}

@@ -1631,6 +1631,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
 
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].push_back();
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].push_back();
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)CONC_[i].push_back();
     
     return ndx;
 }
@@ -1784,6 +1785,7 @@ void ElementsHashTable::flushElemTable()
 
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].__reorder_prolog(size);
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].__reorder_prolog(size);
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)CONC_[i].__reorder_prolog(size);
 
 #if 0
     //DIMENSION__MAX_NUM_STATE_VARS
@@ -2006,6 +2008,7 @@ void ElementsHashTable::flushElemTable()
 
             for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].__reorder_body_byblocks(start, end,new_order);
             for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].__reorder_body_byblocks(start, end,new_order);
+            for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)CONC_[i].__reorder_body_byblocks(start, end,new_order);
 
             
         }
@@ -2119,6 +2122,7 @@ void ElementsHashTable::reserve(const tisize_t new_reserve_size)
 
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].reserve(new_reserve_size);
     for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].reserve(new_reserve_size);
+    for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)CONC_[i].reserve(new_reserve_size);    
 }
 void ElementsHashTable::reserve_at_least(const tisize_t new_reserve_size)
 {
@@ -2259,6 +2263,8 @@ void ElementsHashTable::resize(const tisize_t new_resize)
         {for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)M_[i].resize(new_resize);}
 #pragma omp section
         {for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)VF_[i].resize(new_resize);}
+#pragma omp section
+        {for(int i=0; i < (MAX_NUM_STATE_VARS-3); i++)CONC_[i].resize(new_resize);}
     }
 }
 void ElementsHashTable::groupCreateAddNode(vector<array<ti_ndx_t,4> > &new_sons_ndx,
@@ -2563,6 +2569,7 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVector(group, TOTEROS_);
     TiH5_readTiVectorArray(group,M_,MAX_NUM_STATE_VARS-3);
     TiH5_readTiVectorArray(group,VF_,MAX_NUM_STATE_VARS-3);
+    TiH5_readTiVectorArray(group,CONC_,MAX_NUM_STATE_VARS-3);
 
 
     //allocate and initialize not stored properties
@@ -2627,7 +2634,8 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 VF_(ElemTable->VF_),
                 VINF_(ElemTable->VINF_),
                 DEP_(ElemTable->DEP_),
-                TOTEROS_(ElemTable->TOTEROS_)
+                TOTEROS_(ElemTable->TOTEROS_),
+                CONC_(ElemTable->CONC_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);

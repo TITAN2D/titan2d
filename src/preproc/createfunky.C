@@ -172,19 +172,21 @@ void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **
                 ymax = limits[3];
         }
         
-        printf("The simulation region is:  x = %e to %e   y = %e to %e.\n", xmin, xmax, ymin, ymax);
+        
         
         //This is creating trimming of DEMs
         double xlength = 0.98 * (xmax - xmin);
         double ylength = 0.98 * (ymax - ymin);
-        xmin = xmin + 0.1 * xlength;
-        xmax = xmax - 0.1 * xlength;
+        xmin = xmin + 0.01 * xlength;
+        xmax = xmax - 0.01 * xlength;
         xlength = xmax - xmin;
-        ymin = ymin + 0.1 * ylength;
-        ymax = ymax - 0.1 * ylength;
+        ymin = ymin + 0.01 * ylength;
+        ymax = ymax - 0.01 * ylength;
         ylength = ymax - ymin;
         
         int NumDim = 2; //x,y
+
+        printf("The simulation region is:  x = %e to %e   y = %e to %e.\n", xmin, xmax, ymin, ymax);
         
 #ifdef MIN_NONSEQ_REPART
         //the number of subdomain divisions per dimension is such that each

@@ -2739,10 +2739,6 @@ void Integrator_TwoPhases_Coulomb::corrector()
 {
     MatPropsTwoPhases* matprops2_ptr=static_cast<MatPropsTwoPhases*>(matprops_ptr);
 
-    double den_solid = matprops2_ptr->den_solid;
-    double den_fluid = matprops2_ptr->den_fluid;
-    double terminal_vel = matprops2_ptr->v_terminal;
-
     //for comparison of magnitudes of forces in slumping piles
     double m_forceint = 0.0;
     double m_forcebed = 0.0;
@@ -2756,7 +2752,6 @@ void Integrator_TwoPhases_Coulomb::corrector()
     double sin_intfrictang=sin(int_frict);
     double epsilon=scale_.epsilon;
 
-    //printf("Mindfdepth = %lf \n",mindfdepth);
 
     double Ustore_max0=0 , infl_max, zf_max;
     
@@ -2770,17 +2765,36 @@ void Integrator_TwoPhases_Coulomb::corrector()
         R1 = R;
         rain_idx++;
     }
-    printf("R = %.12lf\n",R);
+    //printf("R = %.12lf\n",R);
 
-    //convinience ref
-    //tivector<double> *g=gravity_;
-    //tivector<double> *dgdx=d_gravity_;
-    //tivector<double> &kactxy=effect_kactxy_[0];
-    //tivector<double> &bedfrictang=effect_bedfrict_;
+    double x_find = 259961.649325;
+    double y_find = 3816591.388375;
+    double short_dist = 10000;
+    ti_ndx_t f_idx;
+
+    for(ti_ndx_t ndx =0; ndx < elements_.size(); ndx++){
+        double xcoord = coord_[0][ndx];
+        double ycoord = coord_[1][ndx];
+
+        double dis = sqrt(pow(xcoord - x_find,2)+pow(ycoord - y_find,2));
+
+        if (dis < short_dist){
+            short_dist = dis;
+            f_idx = ndx;
+        }
+    }
+
+
+    //Element* Curr_El = &(elenode_[f_idx]);
+
+    printf("Distance = %.10lf\tElevation = %.10lf\n",short_dist, elements_[f_idx].elevation());
+    printf("dx = %.12lf\tdy = %.12lf\n",dx_[0][f_idx], dx_[1][f_idx]);
 
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
+    //printf("Before c1=%lf\tc2=%lf\tc3=%lf\n",state_vars_[3][f_idx],state_vars_[4][f_idx],state_vars_[5][f_idx]);
+    
     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
@@ -2792,12 +2806,14 @@ void Integrator_TwoPhases_Coulomb::corrector()
             for (int i = 0; i < NUM_STATE_VARS; i++)
                 prev_state_vars_[i][ndx]=state_vars_[i][ndx];
         }
-        if (index_max == 0) 
+        if (index_max == -10) 
         {
             for (int i = 0; i < NUM_STATE_VARS; i++)
                 prev_state_vars_[i][ndx]=0;
             prev_state_vars_[0][ndx]=0.0001;
         }
+
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         double elem_forceint;
@@ -3021,14 +3037,20 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
         double Ustore[NUM_STATE_VARS], ZF, INFL, chtemp = 0, redetach = 0;
 
+        if (ndx == f_idx) printf("1. H = %.8lf\n",prev_state_vars_[0][ndx]);
+
         for (i=0; i<NUM_STATE_VARS; i++){
 
             Ustore[i]=prev_state_vars_[i][ndx] - dtdx * (fluxxp[i] - fluxxm[i]) - dtdy * (fluxyp[i] - fluxym[i]);
         }
 
+        if (ndx == f_idx) printf("2. H = %.8lf\n",Ustore[0]);
+
         Ustore[0] = c_dmax1(Ustore[0], 0.0);
 
         if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R;
+
+        if (ndx == f_idx) printf("3. H = %.8lf\n",Ustore[0]);
 
         Ustore[1] = Ustore[1] + dt*SX + dt*GAMMAX + dt*DFMASK*BETAX;
         Ustore[2] = Ustore[2] + dt*SY + dt*GAMMAY + dt*DFMASK*BETAY;
@@ -3044,6 +3066,8 @@ void Integrator_TwoPhases_Coulomb::corrector()
             Ustore[0]-=INFL;
         } 
 
+        if (ndx == f_idx) printf("4. H = %.8lf\n",Ustore[0]);
+
         //VINF_[ndx] += INFL;
         //Ustore[0]-=INFL;
 
@@ -3055,6 +3079,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
         for (i = 3; i < (NUM_STATE_VARS); i++){
 
             chtemp = Ustore[i];
+            CONC_[i-3][ndx] = Ustore[i];
 
             if (temp_height>=10*GEOFLOW_TINY){
 
@@ -3078,7 +3103,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
             TOTM_[ndx] += M_[i-3][ndx];
             DEP_[ndx] += M_[i-3][ndx]/rhos;
         }
-
+        
         TOTSED_[ndx] = 0;
         if (Ustore[0] > GEOFLOW_TINY){
             for (i=3; i < (NUM_STATE_VARS); i++){
@@ -3100,6 +3125,8 @@ void Integrator_TwoPhases_Coulomb::corrector()
             }
         }
 
+        if (ndx == f_idx) printf("5. E1 = %.8lf\t E2 = %.8lf\t E3 = %.8lf\t E4=%.8lf\n",E[0][3],E[1][3],E[2][3],E[3][3]);
+
         if (Ustore[0] > GEOFLOW_TINY){
             if (Ustore[0]<= hcfrict) MANNING = ROUGHNESS*pow(Ustore[0]/hcfrict, depthdependentexponent);
             else MANNING = ROUGHNESS;
@@ -3120,6 +3147,67 @@ void Integrator_TwoPhases_Coulomb::corrector()
                     state_vars_[k][ndx]=0.0;
 
     }
+    /*
+     #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+        reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
+    for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
+    {
+        int xp = positive_x_side_[ndx];
+        int yp = (xp + 1) % 4;
+        int xm = (xp + 2) % 4;
+        int ym = (xp + 3) % 4;
+
+        ti_ndx_t nx[5];
+        nx[0] = ndx;
+        nx[1] = neighbor_ndx_[xp][ndx];
+        nx[2] = neighbor_ndx_[xm][ndx];
+        nx[3] = neighbor_ndx_[yp][ndx];
+        nx[4] = neighbor_ndx_[ym][ndx];
+
+        double temp_h = 0;
+        for(int j = 0; j < 5; j++){
+            for (int i = 3; i < NUM_STATE_VARS; i++){
+                temp_h = temp_h + (state_vars_[i][nx[j]]-CONC_[i-3][nx[j]])/(rhos*(1-phi));
+            }
+        }
+
+        state_vars_[0][ndx] = state_vars_[0][ndx] + temp_h*0.2;
+        if (ndx == f_idx) printf("5. H = %.8lf\t EROS=%.8lf\n",state_vars_[0][ndx],TOTEROS_[ndx]);
+
+        TOTEROS_[ndx] -= temp_h*0.2;
+
+        TOTSED_[ndx] = 0;
+
+        double SED[NUM_STATE_VARS -3];
+        if (state_vars_[0][ndx] > GEOFLOW_TINY){
+            for (int i=3; i < (NUM_STATE_VARS); i++){
+                SED[i-3] = state_vars_[i][ndx]/state_vars_[0][ndx];
+                TOTSED_[ndx] += SED[i-3]/rhos;
+            }
+        }
+        else{
+            state_vars_[0][ndx] = GEOFLOW_TINY;
+            state_vars_[1][ndx] = 0;
+            state_vars_[2][ndx] = 0;
+
+            for(int i=3 ; i < NUM_STATE_VARS; i++){
+
+                TOTEROS_[ndx] += (state_vars_[i][ndx])/(rhos*(1-phi));
+                M_[i-3][ndx] = M_[i-3][ndx] + state_vars_[i][ndx];
+                state_vars_[i][ndx]=0;
+                SED[i-3]=0;
+            }
+        }
+
+        for(int j = 0; j < 4; j++)
+            if(neigh_proc_[j][ndx] == INIT)   // this is a boundary!
+                for(int k = 0; k < NUM_STATE_VARS; k++)
+                    state_vars_[k][ndx]=0.0;
+
+
+    }*/
+    printf("After  c1=%lf\tc2=%lf\tc3=%lf\n",state_vars_[3][f_idx],state_vars_[4][f_idx],state_vars_[5][f_idx]);
+
     index_max++;
 
 }
@@ -3134,7 +3222,7 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     detachd = 2000;
     h_c = 0.00066;
     mtstar0 = 2.7;
-    eff_F = 0.33;
+    eff_F = 0.03;
     J_entrain = 15.125;
     stemdia = 0;
     stemspace = 3;
@@ -3150,7 +3238,7 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     gi = 5040;
     evap = 0;
     Cv = 0;
-    Cb = 0;
+    Cb = 1.0;
     CS = 0;
     Di = 0;
 

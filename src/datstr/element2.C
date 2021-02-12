@@ -556,6 +556,7 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
     for(i = 0; i < MAX_NUM_STATE_VARS - 3; i++){
         set_M(i,ElemTable->M_[i][fthTemp]* myfractionoffather);
         set_VF(i,ElemTable->VF_[i][fthTemp]* myfractionoffather);
+        set_CONC(i,ElemTable->CONC_[i][fthTemp]* myfractionoffather);
     }
 
     if(state_vars(0) < 0.)
@@ -2442,7 +2443,7 @@ void Element::ydirflux(MatProps* matprops_ptr2, Integrator *integrator, double d
 
             for(i = 0; i < NUM_STATE_VARS; i++)
                 hfv[0][i] = state_vars(i) + d_state_vars(NUM_STATE_VARS + i) * dz;
-
+ 
             /*
             for(i=3; i < NUM_STATE_VARS; i++){
                 hfv[0][i] = state_vars(i)/state_vars(0);
