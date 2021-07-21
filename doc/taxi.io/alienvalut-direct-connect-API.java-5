@@ -1,0 +1,106 @@
+...taxi.io-alienvalut-direct-connect-API.java-5->]-[->[
+]->Dashboard
+Browse
+Scan Endpoints
+All 
+Search OTX
+TECHPHAN573
+
+DirectConnect API
+The OTX DirectConnect API allows you to easily synchronize the Threat Intelligence available in OTX to the tools you use to monitor your environment. Using the DirectConnect agents you can integrate with your infrastructure to detect threats targeting your environment. If there is no pre-built agent for the products you are using, leverage the DirectConnect SDK (available in Java and Python) to develop your own integration for the community.
+
+Resources
+Docs
+TAXII
+Example API Uses
+
+OTX can act as a TAXII server, making it possible for you to consume pulses via any TAXII client that you prefer.
+Getting set up
+To consume the OTX STIX/TAXII feed you'll need to enter the following details into your TAXII client:
+Discovery URL: https://otx.alienvault.com/taxii/discovery
+Username: (Your API key)
+Password: (put anything here, password is ignored)
+How are you using STIX/TAXII?
+Despite a mammoth specification, we found there is little standardisation in the way TAXII client implementations work. For example, some clients will poll for updates every minute, some every hour. Some clients do not properly do "paging" of results. Let us know if our implementation isn't working for your client, or if you have any questions or suggestions.
+Testing / exploration
+To get an idea of how TAXII works with OTX, you can try it out using any number of available TAXII clients. Here are some examples using a client called cabby. cabby can be downloaded and installed, or if you have a working docker installed, you can run it via a docker container. If you're using docker, your command line will look something like
+docker run --rm=true eclecticiq/cabby:latest taxii-discovery ...more arguments...
+if you're running from a locally installed cabby instance, the same command would just be
+taxii-discovery ...more arguments...
+Discovery
+taxii-discovery is a cabby program that will call the taxii discovery endpoint, which tells you what services are available and some of the options they support.
+$ taxii-discovery --path https://otx.alienvault.com/taxii/discovery
+
+=== Service Instance ===
+  Service Type: POLL
+  Service Version: urn:taxii.mitre.org:services:1.1
+  Protocol Binding: urn:taxii.mitre.org:protocol:https:1.0
+  Service Address: https://otx.alienvault.com/taxii/poll
+  Message Binding: urn:taxii.mitre.org:message:xml:1.1
+  Available: True
+  Message: OTX Taxii Polling
+
+=== Service Instance ===
+  Service Type: COLLECTION_MANAGEMENT
+  Service Version: urn:taxii.mitre.org:services:1.1
+  Protocol Binding: urn:taxii.mitre.org:protocol:https:1.0
+  Service Address: https://otx.alienvault.com/taxii/collections
+  Message Binding: urn:taxii.mitre.org:message:xml:1.1
+  Available: True
+  Message: OTX Taxii Collections
+
+=== Service Instance ===
+  Service Type: DISCOVERY
+  Service Version: urn:taxii.mitre.org:services:1.1
+  Protocol Binding: urn:taxii.mitre.org:protocol:https:1.0
+  Service Address: https://otx.alienvault.com/taxii/discovery
+  Message Binding: urn:taxii.mitre.org:message:xml:1.1
+  Available: True
+  Message: OTX Taxii Discovery
+    
+Collections
+taxii-collections is a cabby program that will list the collections that are available to you. Note that available collections will vary by user, depending on collections you have access to. If you do not pass a username, then you will see only public collections. To see your personal additional collection, pass your OTX API key as the "username", with anything or nothing as the password.
+$ taxii-collections --path https://otx.alienvault.com/taxii/collections --username MY_OTX_API_KEY_HERE --password foo
+
+2017-04-25 14:53:42,286 INFO: Sending Collection_Information_Request to https://otx.alienvault.com/taxii/collections
+=== Data Collection Information ===
+Collection Name: user_AlienVault
+Collection Type: DATA_FEED
+Available: True
+Collection Description: Data feed for user: AlienVault
+Supported Content: All
+=== Polling Service Instance ===
+Poll Protocol: urn:taxii.mitre.org:protocol:https:1.0
+Poll Address: https://otx.alienvault.com/taxii/poll
+Message Binding: urn:taxii.mitre.org:message:xml:1.1
+==================================
+
+=== Data Collection Information ===
+Collection Name: group_999
+Collection Type: DATA_FEED
+Available: True
+Collection Description: Data feed for group: id=999 name=Secret Group #1
+Supported Content: All
+=== Polling Service Instance ===
+Poll Protocol: urn:taxii.mitre.org:protocol:https:1.0
+Poll Address: https://otx.alienvault.com/taxii/poll
+Message Binding: urn:taxii.mitre.org:message:xml:1.1
+==================================
+
+=== Data Collection Information ===
+Collection Name: group_1000
+Collection Type: DATA_FEED
+Available: True
+Collection Description: Data feed for group: id=18 name=My Malware Group
+Supported Content: All
+=== Polling Service Instance ===
+Poll Protocol: urn:taxii.mitre.org:protocol:https:1.0
+Poll Address: https://otx.alienvault.com/taxii/poll
+Message Binding: urn:taxii.mitre.org:message:xml:1.1
+==================================
+    
+Polling
+taxii-poll is a cabby program that will poll a collection and return all matching results. This command can be helpful to make sure that the collection feed is working, but because it dumps all the output in a raw for, the output won't be included here. This example will fetch the first page of results from the AlienVault user's feed, starting at April 15th, 2017 at midnight UTC.
+taxii-poll --path https://otx.alienvault.com/taxii/poll --collection user_AlienVault \
+    --username MY_OTX_API_KEY_HERE --password foo --begin 2017-04-15T00:00:00
+    
