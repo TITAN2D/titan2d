@@ -2761,7 +2761,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
     double raintime_start = RAINTIME[0];
 
     if (timeprops_ptr->timesec() >= raintime_start && rain_idx < rnum && timeprops_ptr->timesec() >= RAINTIME[rain_idx]){
-        R = RAIN[rain_idx];
+        R = R_coef*RAIN[rain_idx];
         R1 = R;
         rain_idx++;
     }

@@ -634,7 +634,7 @@ public:
     double hcfrict, depthdependentexponent;
 
     int rnum, rain_idx = 0;
-    double rint, R1 = 0, R= 0;
+    double rint, R1 = 0, R= 0, R_coef;
     vector<double> RAIN, RAINTIME;
 
     double g_total, phi, rhos, rhow, s_rho, rho0, cohesion, lambda, cthreshold, mindfdepth, maxsoilthickness, nu, frictioncoef;
@@ -724,7 +724,7 @@ protected:
 
         fclose(fpara);
         printf("total parameters: %d\n",m_para.size());
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 6; i++)
         {
             printf("Parameter %d = %.12lf\n",i,m_para[i]);
             /* code */
@@ -736,6 +736,7 @@ protected:
         lambda = m_para[2];
         eff_F = m_para[3];
         grain_size = m_para[4];
+        R_coef = m_para[5];
 
     }
 
