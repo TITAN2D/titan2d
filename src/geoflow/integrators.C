@@ -3248,6 +3248,13 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     rint = 60;
     readrainfalldata();
     rnum = RAIN.size();
+    printf("Number of Rain Data:%d\n",rnum);
+
+    for (int i = 0; i < rnum; i++)
+    {
+        printf("%d: %.12lf\n",i,RAIN[i]);
+    }
+    
     //rnum =91;
     
     phi = 0.5;
@@ -3287,13 +3294,17 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
         }   */    
     }
 
+    model_paramters();
+
     for (int i = 0; i < (NUM_STATE_VARS -3); i++)
     {   
         P_[i] = 0.3333;
-        DS_[i] = 0.0001;
+        DS_[i] = grain_size;
     }
     
     g_total = 9.81;
+
+    
     printf("********** Check point 0: All initial data Read ***********\n");
     // hfilm = 1e-5; // Geoflow tiny in Titan2d
 } 

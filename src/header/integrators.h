@@ -641,9 +641,9 @@ public:
 
     
 
-    double P_[MAX_NUM_STATE_VARS-3], DS_[MAX_NUM_STATE_VARS-3];// initialize 
+    double P_[MAX_NUM_STATE_VARS-3], DS_[MAX_NUM_STATE_VARS-3], grain_size;// initialize 
 
-    double AMAP, ADMAP, ROUGHNESS = 0.05, UC = 0.0062185, ERODIBILITYMASK = 1.0, WATERSHED = 1.0, THETA0 = 0.1, THETAS = 0.39, KS = 5.5556e-06, HF = 0.001;
+    double AMAP, ADMAP, ROUGHNESS = 0.05, UC = 0.0062185, ERODIBILITYMASK = 1.0, WATERSHED = 1.0, THETA0 = 0.1, THETAS = 0.39, KS = 2.43075e-06, HF = 0.001;
 
     int index_max =0;
 
@@ -685,6 +685,8 @@ protected:
         }
         fclose(frain);
 
+        //printf("Size of RAIN: %d\n",RAIN.size());
+
         fraintime = fopen("raintime.bin","rb");
         if(!fraintime){
             printf("Could not open wildfire datafiles\n");
@@ -699,6 +701,42 @@ protected:
         }
 
         fclose(fraintime);
+    }
+
+    void model_paramters(){
+        FILE *fpara;
+        vector<double> m_para;
+
+        double *tmp = NULL;
+        double temp1=0.00;
+        tmp = &temp1;
+
+        fpara = fopen("parameters.bin","rb");
+        if(!fpara){
+            printf("Could not open model parameters file\n");
+            assert(0);
+        }
+
+        while(!feof(fpara)){
+            freadD(fpara,tmp);
+            m_para.push_back(*tmp);
+        }
+
+        fclose(fpara);
+        printf("total parameters: %d\n",m_para.size());
+        for (int i = 0; i < 5; i++)
+        {
+            printf("Parameter %d = %.12lf\n",i,m_para[i]);
+            /* code */
+        }
+        
+
+        KS = m_para[0];
+        ROUGHNESS = m_para[1];
+        lambda = m_para[2];
+        eff_F = m_para[3];
+        grain_size = m_para[4];
+
     }
 
 
