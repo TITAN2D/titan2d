@@ -176,11 +176,11 @@ void TitanPreproc::createfunky(double limits[4], int *node_count, NodePreproc **
         
         double xlength = 0.98 * (xmax - xmin);
         double ylength = 0.98 * (ymax - ymin);
-        xmin = xmin + 0.1 * xlength;
-        xmax = xmax - 0.1 * xlength;
+        xmin = xmin + 0.05 * xlength;
+        xmax = xmax - 0.05* xlength;
         xlength = xmax - xmin;
-        ymin = ymin + 0.1 * ylength;
-        ymax = ymax - 0.1 * ylength;
+        ymin = ymin + 0.05 * ylength;
+        ymax = ymax - 0.05 * ylength;
         ylength = ymax - ymin;
         
         int NumDim = 2; //x,y
