@@ -2767,10 +2767,14 @@ void Integrator_TwoPhases_Coulomb::corrector()
     }
     //printf("R = %.12lf\n",R);
 
-    double x_find = 259961.649325;
-    double y_find = 3816591.388375;
-    double short_dist = 10000;
-    ti_ndx_t f_idx;
+    double x_find = 260236.77;
+    double y_find = 3816155.72;
+
+    double x_find1 = 261074.96;
+    double y_find1 = 3816184.86;
+    //double y_find = 3816591.388375;
+    double short_dist = 10000, short_dist1 = 10000;
+    ti_ndx_t f_idx, f_idx1;
 
     for(ti_ndx_t ndx =0; ndx < elements_.size(); ndx++){
         double xcoord = coord_[0][ndx];
@@ -2781,6 +2785,13 @@ void Integrator_TwoPhases_Coulomb::corrector()
         if (dis < short_dist){
             short_dist = dis;
             f_idx = ndx;
+        }
+
+        dis = sqrt(pow(xcoord - x_find1,2)+pow(ycoord - y_find1,2)); 
+
+        if (dis < short_dist1){
+            short_dist1 = dis;
+            f_idx1 = ndx;
         }
     }
 
@@ -2814,7 +2825,10 @@ void Integrator_TwoPhases_Coulomb::corrector()
         }
 
 
-
+        R1 = R*MASK_[ndx];
+        double R1_eff = (1-Cv)*R1 + Cv*(pi*R1 + Di);
+        //if(ndx == f_idx) printf("R 1 = %.15lf\n",R1);
+        //if(ndx == f_idx1) printf("R 2 = %.15lf\n",R1);
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         double elem_forceint;
         double elem_forcebed;
@@ -2949,7 +2963,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
         double xslope=zeta_[0][ndx];
         double yslope=zeta_[1][ndx];
         double slope = sqrt(xslope * xslope + yslope * yslope);
-        double MANNING = 0.05;
+        double MANNING = ROUGHNESS;
 
 
         for (i=0; i < (NUM_STATE_VARS-3); i++){
@@ -3048,7 +3062,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
         Ustore[0] = c_dmax1(Ustore[0], 0.0);
 
-        if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R;
+        if (WATERSHED==1) Ustore[0] = Ustore[0] + dt*R1_eff;
 
         if (ndx == f_idx) printf("3. H = %.8lf\n",Ustore[0]);
 
@@ -3272,6 +3286,10 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     AMAP = detach;
     ADMAP = detachd;
 
+    mask = 0;
+
+    initialize_mask();
+
     
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     { 
@@ -3287,6 +3305,20 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
             VF_[i][ndx] = 0;
         }
         
+        if (mask == 1){
+            double x_center = 257005;
+            double y_center = 3811485;
+
+            int x_idx = (int)abs(coord_[0][ndx] - x_center);
+            int y_idx = (int)abs(coord_[1][ndx] - y_center - mask_y + 1);
+
+            if (x_idx < mask_x && y_idx < mask_y) MASK_[ndx]=mask_vec[y_idx][x_idx];
+            else MASK_[ndx]=0;
+        }
+        else{
+            MASK_[ndx] = 1.0;
+        }
+
         //state_vars_[0][ndx] = 0.0001;
         /*
         for(int i = 1; i < NUM_STATE_VARS; i++){

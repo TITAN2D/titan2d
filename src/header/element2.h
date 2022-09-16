@@ -690,6 +690,7 @@ public:
     void set_CONC(int idim, double value);
     void set_DEP(double value);
     void set_TOTEROS(double value);
+    void set_MASK(double value);
     double TOT_EROS();
 
     //! sgn of double

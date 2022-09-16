@@ -647,6 +647,14 @@ public:
 
     int index_max =0;
 
+    bool mask = 1; 
+
+    int mask_x = 4509;
+    int mask_y = 7848;
+    int mask_value = 0;
+
+    vector <vector<int>> mask_vec;
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -732,11 +740,41 @@ protected:
         
 
         KS = m_para[0];
-        ROUGHNESS = m_para[1];
-        lambda = m_para[2];
+        Cv = m_para[1];
+        Cb = 1 - Cv;
+        ROUGHNESS = m_para[2];
         eff_F = m_para[3];
         grain_size = m_para[4];
         R_coef = m_para[5];
+
+    }
+
+    void initialize_mask(){
+        FILE *f_mask;
+        
+
+        if (mask == 1){
+
+            f_mask = fopen("../mask.bin","rb");
+             for (int j = 0; j < mask_y; j++)
+            {
+                vector<int> x_vec(mask_x); 
+                for (int i = 0; i < mask_x; i++)
+                {
+                    fread(&mask_value, sizeof(int), 1, f_mask);
+                    if(mask_value == 0){
+                        x_vec[i] = 1;
+                    }
+                    else{
+                        x_vec[i] = 0;
+                    }
+                }
+
+                mask_vec.push_back(x_vec);
+                
+            }
+
+        }
 
     }
 

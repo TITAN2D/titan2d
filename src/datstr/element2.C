@@ -549,6 +549,7 @@ void Element::init(const SFC_Key* nodekeys, const ti_ndx_t* nodes_ndx, const SFC
 
     set_VINF(ElemTable->VINF_[fthTemp]);
     set_TOTM(ElemTable->TOTM_[fthTemp]* myfractionoffather);
+    set_MASK(ElemTable->MASK_[fthTemp]);
     set_TOTSED(ElemTable->TOTSED_[fthTemp]* myfractionoffather);
     set_DEP(ElemTable->DEP_[fthTemp]* myfractionoffather);
     set_TOTEROS(ElemTable->TOTEROS_[fthTemp]);

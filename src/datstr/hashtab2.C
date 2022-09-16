@@ -1624,6 +1624,7 @@ ti_ndx_t ElementsHashTable::addElement_ndx(const SFC_Key& keyi)
     Swet_.push_back();
 
     TOTM_.push_back();
+    MASK_.push_back();
     TOTSED_.push_back();
     VINF_.push_back();
     DEP_.push_back();
@@ -1778,6 +1779,7 @@ void ElementsHashTable::flushElemTable()
     Swet_.__reorder_prolog(size);
 
     TOTM_.__reorder_prolog(size);
+    MASK_.__reorder_prolog(size);
     TOTSED_.__reorder_prolog(size);
     VINF_.__reorder_prolog(size);
     DEP_.__reorder_prolog(size);
@@ -2001,6 +2003,7 @@ void ElementsHashTable::flushElemTable()
             Swet_.__reorder_body_byblocks(start, end,new_order);
 
             TOTM_.__reorder_body_byblocks(start, end,new_order);
+            MASK_.__reorder_body_byblocks(start, end,new_order);
             TOTSED_.__reorder_body_byblocks(start, end,new_order);
             VINF_.__reorder_body_byblocks(start, end,new_order);
             DEP_.__reorder_body_byblocks(start, end,new_order);
@@ -2115,6 +2118,7 @@ void ElementsHashTable::reserve(const tisize_t new_reserve_size)
     Swet_.reserve(new_reserve_size);
 
     TOTM_.reserve(new_reserve_size);
+    MASK_.reserve(new_reserve_size);
     TOTSED_.reserve(new_reserve_size);
     VINF_.reserve(new_reserve_size);
     DEP_.reserve(new_reserve_size);
@@ -2251,6 +2255,8 @@ void ElementsHashTable::resize(const tisize_t new_resize)
         Swet_.resize(new_resize);
 #pragma omp section       
         TOTM_.resize(new_resize);
+#pragma omp section       
+        MASK_.resize(new_resize);
 #pragma omp section
         TOTSED_.resize(new_resize);
 #pragma omp section
@@ -2563,6 +2569,7 @@ void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_n
     TiH5_readTiVectorArray(group,drypoint_,2);
     TiH5_readTiVector(group,Swet_);
     TiH5_readTiVector(group, TOTM_);
+    TiH5_readTiVector(group, MASK_);
     TiH5_readTiVector(group, TOTSED_);
     TiH5_readTiVector(group, VINF_);
     TiH5_readTiVector(group, DEP_);
@@ -2635,7 +2642,8 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
                 VINF_(ElemTable->VINF_),
                 DEP_(ElemTable->DEP_),
                 TOTEROS_(ElemTable->TOTEROS_),
-                CONC_(ElemTable->CONC_)
+                CONC_(ElemTable->CONC_),
+                MASK_(ElemTable->MASK_)
 
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
