@@ -60,7 +60,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     }
 
     //if Need to have generic form, do vector of vectors
-    vector<double> pheight, xmom, ymom, xcoord, ycoord, zcoord,tot_eros;
+    vector<double> pheight, xmom, ymom, xcoord, ycoord, zcoord,tot_eros, hconc;
     vector<int> C1, C2, C3, C4;
     int num_nodes = 0, num_elm = 0;
     int i, j, k;
@@ -90,6 +90,7 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
                 xmom.push_back(EmTemp->state_vars(1) * momentum_scale);
                 ymom.push_back(EmTemp->state_vars(2) * momentum_scale);
                 tot_eros.push_back(EmTemp->TOT_EROS()*matprops_ptr->scale.height);
+                hconc.push_back(EmTemp->state_vars(3) * matprops_ptr->scale.height);
                 num_elm++;
                 for(j = 0; j < 4; j++)
                 {
@@ -167,6 +168,9 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     //Total Erosion
     copy(tot_eros.begin(), tot_eros.end(), vars);
     GH5_write_state_vars(h5fid, num_elm, vars, "EROSION");
+
+    copy(hconc.begin(), hconc.end(), vars);
+    GH5_write_state_vars(h5fid, num_elm, vars, "HCONC");
     
     delete[] vars;
     GH5_fclose(h5fid);
@@ -219,6 +223,13 @@ int write_xdmf_two_phases(ElementsHashTable *El_Table, NodeHashTable *NodeTable,
     xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
     xdmf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
     xdmf << "\t\t" << hdf5file << ":/Properties/EROSION" << endl;
+    xdmf << "</DataItem>" << endl;
+    xdmf << "</Attribute>" << endl;
+
+    xdmf << "<Attribute Type=\"Scalar\" Center=\"Cell\" Name=\"Species_Concentration\">" << endl;
+    xdmf << "<DataItem DataType=\"Float\" Precision=\"8\" ";
+    xdmf << "Dimensions=\"" << num_elm << " 1\" Format=\"HDF\">" << endl;
+    xdmf << "\t\t" << hdf5file << ":/Properties/HCONC" << endl;
     xdmf << "</DataItem>" << endl;
     xdmf << "</Attribute>" << endl;
     xdmf << "</Grid>" << endl;
