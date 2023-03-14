@@ -3035,7 +3035,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
             //E[2][i]=0;
             //E[3][i]=0;
 
-            if (prev_state_vars_[0][ndx] > mindfdepth && TOTSED_[ndx]>0.5){
+            if (prev_state_vars_[0][ndx] > mindfdepth && TOTSED_[ndx]>cthreshold){
                 E[0][i]=0;
                 E[1][i]=0;
                 E[2][i]=0;
@@ -3071,6 +3071,8 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
         ZF = VINF_[ndx]/(THETAS-THETA0);
 
+        //Calculating Infiltration
+
         INFL = c_dmin1(Ustore[0]-GEOFLOW_TINY, dt*KS*(ZF + HF + Ustore[0])/ZF);
 
         VINF_[ndx] += INFL;
@@ -3102,13 +3104,14 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
                 Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
 
+                //Ustore[i] = Ustore[i] + dt*(E[0][i-3]+E[2][i-3] - VF_[i-3][ndx]*SED[i-3]) + redetach;
                 Ustore[i] = Ustore[i] + dt*(E[0][i-3]+E[2][i-3]) + redetach;
 
                 Ustore[i] = exp(-VF_[i-3][ndx]/Ustore[0]*0.5*dt)*Ustore[i];
 
                 M_[i-3][ndx] = M_[i-3][ndx] + dt*(E[0][i-3]+E[2][i-3]) - Ustore[i] + chtemp;
 
-                TOTEROS_[ndx] -= (Ustore[i] - chtemp)/(rhos*(1-phi));
+                TOTEROS_[ndx] -= (Ustore[i] - chtemp)/(rhos*(1-phi)); //Updating Topography
 
             }
 
@@ -3141,6 +3144,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
 
         if (ndx == f_idx) printf("5. E1 = %.8lf\t E2 = %.8lf\t E3 = %.8lf\t E4=%.8lf\n",E[0][3],E[1][3],E[2][3],E[3][3]);
 
+        // Implicit Friction Update (LeVeque, 2011)
         if (Ustore[0] > GEOFLOW_TINY){
             if (Ustore[0]<= hcfrict) MANNING = ROUGHNESS*pow(Ustore[0]/hcfrict, depthdependentexponent);
             else MANNING = ROUGHNESS;
@@ -3232,30 +3236,31 @@ void Integrator_TwoPhases_Coulomb::flowrecords()
 //////// Added by Palak ////////
 void Integrator_TwoPhases_Coulomb::initialize_statevariables()
 {
-    detach = 1000;
-    detachd = 2000;
-    h_c = 0.00066;
-    mtstar0 = 2.7;
-    eff_F = 0.03;
-    J_entrain = 15.125;
+    detach = 1000; // Detachability of Original Soil (Used to determine rainsplash detachment rate)
+    detachd = 2000; // Detachability of Deposited Sediment (Used to determine rainsplash detachment rate for deposited sediment)
+    h_c = 0.00066;// Critical depth used in equation to determine rainsplash detachment as funciton of water depth
+    mtstar0 = 2.7;//Mass of Deposited Sediment Needed to Shield Original Soil From Erosion
+    eff_F = 0.03;// Effective Fraction of Stream Power In Entrainment
+    J_entrain = 15.125; // Energy Expended in Entraining a Unit Mass of Cohesive Sediment [m^2]/[s^2]
     stemdia = 0;
     stemspace = 3;
-    dragcoef = 1.2;
-    b = 1;
+    dragcoef = 1.2; 
+    b = 1; // Exponent in Rainsplash Model (determines rainsplash detachment as funciton of water depth)
     af = 1;
     afr = 1;
-    cri_splashd = 0.004; 
+    cri_splashd = 0.004; // No raindrop impact driven detachment if grain diameter exceeds this value [m]
     
-    pi = 0.35;
-    Si = 0.00151;
-    Ki = 5.62e-07;
-    gi = 5040;
-    evap = 0;
-    Cv = 0;
-    Cb = 1.0;
+    pi = 0.35; // Free Throughfall Coefficient
+    Si = 0.00151; // Canopy capacity (m)
+    Ki = 5.62e-07; // Canopy Drainage Rate Coefficient (m/s)
+    gi = 5040; // Canopy Drainage Rate Exponent (1/m)
+    evap = 0; // Evaporation Rate [m]/[s]
+    Cv = 0; // Percent Vegetation Cover [-]
+    Cb = 1.0; // Percent Bare Ground [-]
     CS = 0;
     Di = 0;
 
+    // Parameters for Depth-Dependment Manning Friciton Formulation
     hcfrict = 0.003;
     depthdependentexponent = -0.33;
 
@@ -3271,18 +3276,19 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     
     //rnum =91;
     
-    phi = 0.5;
-    rhos = 2600;
-    rhow = 1000;
+    phi = 0.5; // Bed Sediment Porosity
+    rhos = 2600; // Density of sediment [kg]/[m^3]
+    rhow = 1000; // Density of water [kg]/[m^3]
     s_rho = (rhos-rhow)/rhow;
     rho0 = rhow*phi+rhos*(1-phi);
-    nu = 1.2e-6; //kinematic viscosity // needs to be changed
-    cohesion = 200;
+    nu = 1.2e-6; //// Kinematic viscosity of fluid [Pa s
+    cohesion = 200; //Cohesion of Sediment in Deposited Layer [Pa]
     frictioncoef = int_frict; //internal friction angle
-    lambda = 0.8;
-    cthreshold = 0.4;
-    mindfdepth = 0.01;
-    maxsoilthickness = 0.75;
+    printf("Friction Coefficient: %.12lf\n", frictioncoef);
+    lambda = 0.8; // Ratio of Basal Pore Pressure to Total Basal Normal Stress in Debris Flow 
+    cthreshold = 0.4; // Threshold volumetric sediment concentration for debris flow
+    mindfdepth = 0.01; // Debris flow resistance terms are not applied unless the flow depth is greater than mindfdepth [m]
+    maxsoilthickness = 0.75; // Maximum Soil Thickness [m]
     AMAP = detach;
     ADMAP = detachd;
 
@@ -3293,10 +3299,10 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     { 
-        TOTM_[ndx] = 0;
-        TOTSED_[ndx] = 0;
+        TOTM_[ndx] = 0; // Total Mass of Sediment Per Unit Area in Deposited Layer
+        TOTSED_[ndx] = 0; // Total Volumetric Sediment Concentration
         VINF_[ndx] = 0;
-        DEP_[ndx]=0;
+        DEP_[ndx]=0; // Total Thickness of Sediment in Deposited Layer [m]
         TOTEROS_[ndx]=0;
         //state_vars_[0][ndx]=1e-4;
         for (int i = 0; i < (NUM_STATE_VARS -3); i++)
