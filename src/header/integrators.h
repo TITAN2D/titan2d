@@ -740,8 +740,11 @@ protected:
         
 
         KS = m_para[0];
-        Cv = m_para[1];
-        Cb = 1 - Cv;
+        maxsoilthickness = m_para[1];
+
+        //Cv = m_para[1];
+        Cv = 1.0;
+        Cb = 1.0- Cv;
         ROUGHNESS = m_para[2];
         eff_F = m_para[3];
         grain_size = m_para[4];
