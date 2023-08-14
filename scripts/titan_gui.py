@@ -812,7 +812,7 @@ class QuestionTemplate:
                 )
 
     def getHelp(self):
-        a=open('../README').read()
+        a=open('../README.md').read()
         tk = Tkinter.Tk()
         frame = Tkinter.Frame(tk, relief=FLAT, borderwidth=0)
         frame.pack(fill=BOTH,expand=1)
