@@ -1419,6 +1419,7 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         double elem_eroded;
         double elem_deposited;
 
+
         double dxdy = dx_[0][ndx] * dx_[1][ndx];
         double dtdx = dt / dx_[0][ndx];
         double dtdy = dt / dx_[1][ndx];
@@ -1504,6 +1505,8 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         unitvy = 0.0;
         elem_eroded = 0.0;
 
+        double total_gravity = sqrt(g[0][ndx]*g[0][ndx] + g[1][ndx]*g[1][ndx] + g[2][ndx]*g[2][ndx]);
+
         if(h[ndx] > tiny)
         {
             // S terms
@@ -1538,17 +1541,23 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             }
 
             // The velocity-dependent resisting force in x direction
-            forceintx = unitvx * speed_squared * inv_xi / scale_.epsilon;
+            forceintx = unitvx * total_gravity * speed_squared * inv_xi / scale_.epsilon;
 
             //STOPPING CRITERIA
             inertial_x = fabs( Ustore[1] + dt * forcegravx );
 
             drag_x = fabs( dt * ( forceintx + forcebedx + forcebedx_curv) );
 
+            //Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forcebedx_curv - forceintx);
+
+            
+
             if ( inertial_x > drag_x )
             	Ustore[1] = Ustore[1] + dt * (forcegravx - forcebedx - forcebedx_curv - forceintx);
             else
             	Ustore[1] = 0.0;
+
+                
              //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
              // y direction source terms
              //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1564,17 +1573,23 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
             }
 
             // The velocity-dependent resisting force in y direction
-            forceinty = unitvy * speed_squared * inv_xi / scale_.epsilon;
+            forceinty = unitvy * total_gravity * speed_squared * inv_xi / scale_.epsilon;
 
             //STOPPING CRITERIA
             inertial_y = fabs( Ustore[2] + dt * forcegravy );
 
             drag_y = fabs( dt * ( forceinty + forcebedy + forcebedy_curv) );
 
+            //Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forcebedy_curv - forceinty);
+
+            
+
             if ( inertial_y > drag_y )
             	Ustore[2] = Ustore[2] + dt * (forcegravy - forcebedy - forcebedy_curv - forceinty);
     	    else
     	    	Ustore[2] = 0.0;
+
+            
 
         }
 
