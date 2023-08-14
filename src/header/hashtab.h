@@ -243,7 +243,7 @@ protected:
 //
 constexpr tisize_t elem_reserved_size=1024000;
 constexpr tisize_t node_reserved_size=elem_reserved_size*9;
-
+// Node hash table class
 class NodeHashTable: public HashTable<Node>
 {
 public:
@@ -655,6 +655,17 @@ public:
     //!used for hdf5 writing, temporary array
     vector<ti_ndx_t> node_ndx_buffer;
 
+    tivector<double> TOTM_;
+    tivector<double> TOTSED_;
+    tivector<double> M_[MAX_NUM_STATE_VARS-3];
+    tivector<double> VF_[MAX_NUM_STATE_VARS-3];
+    tivector<double> VINF_;
+    tivector<double> DEP_;
+    tivector<double> TOTEROS_;
+
+    tivector<double> CONC_[MAX_NUM_STATE_VARS-3];
+    tivector<double> MASK_;
+
     ElementsProperties *ElemProp;
 };
 
@@ -728,6 +739,15 @@ public:
     tivector<double> *eigenvxymax_;
     tivector<double> *coord_;
 
+    tivector<double> &TOTM_;
+    tivector<double> &DEP_;
+    tivector<double> &TOTSED_;
+    tivector<double> &VINF_;
+    tivector<double> *M_;
+    tivector<double> *VF_;
+    tivector<double> &TOTEROS_;
+    tivector<double> *CONC_;
+    tivector<double> &MASK_;
 
     int myid;
     int numprocs;

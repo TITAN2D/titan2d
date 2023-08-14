@@ -626,7 +626,6 @@ public:
 
 /*****************************************************************************/
 //! this struct holds constants for material properties as well as other constants note that the material id tag (used as the indice for material properties... matname, bedfrict) as returned by Get_raster_id() (a GIS function call) starts from 1 and not from 0 so arrays must be one element larger
-/*****************************************************************************/
 class MatProps
 {
 public:

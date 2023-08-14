@@ -19,7 +19,9 @@
 #include "hpfem.h"
 #include "stats.hpp"
 #include "properties.h"
-
+#include <vector>
+#include <algorithm>
+#include <functional>
 class cxxTitanSimulation;
 
 /**
@@ -83,6 +85,10 @@ protected:
 
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords()=0;
+
+    //! initialize state variables from Dr. McGuire's code: Palak
+    virtual void initialize_statevariables()=0;
+
 
 
 protected:
@@ -182,6 +188,10 @@ protected:
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
 
+    //! initialize state variables from Dr. McGuire's code: Palak
+    virtual void initialize_statevariables();
+
+
 public:
     double threshold;
     double erosion_rate;
@@ -240,6 +250,9 @@ protected:
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
     virtual double get_coef_and_eigen(int ghost_flag);
+
+    //! initialize state variables from Dr. McGuire's code: Palak
+    virtual void initialize_statevariables();
 
 
 protected:
@@ -486,6 +499,9 @@ protected:
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
 
+    //Initialize state variables
+    void initialize_statevariables();
+
     //! this function computes k active/passive (which is necessary because of the use of the Coulomb friction model)
     //! calculates the wave speeds (eigen values of the flux jacobians) and based on them determines the maximum
     //! allowable timestep for this iteration.
@@ -512,10 +528,14 @@ protected:
     tivector<double> &dhVx_liq_dy;
     tivector<double> &dhVy_liq_dx;
     tivector<double> &dhVy_liq_dy;
+// Added by Palak//
+
+
+
 protected:
-    void gmfggetcoef2ph(const double h_liq,const double hVx_sol,const double hVy_sol,
-            const double dh_dx_liq,const double dhVx_dx_sol,
-            const double dh_dy_liq,const double dhVy_dy_sol,
+    void gmfggetcoef2ph(const double h,const double hVx,const double hVy,
+            const double dh_dx,const double dhVx_dx,
+            const double dh_dy,const double dhVy_dy,
             const double bedfrictang, const double intfrictang,
             double &Kactx, double &Kacty, const double tiny,
         const double epsilon)
@@ -524,23 +544,25 @@ protected:
         double vel;
 
         //COEFFICIENTS
-        double h_liqSQ=h_liq*h_liq;
+        double hSQ=h*h;
         double cosphiSQ = cos(intfrictang);
         double tandelSQ = tan(bedfrictang);
         cosphiSQ*=cosphiSQ;
         tandelSQ*=tandelSQ;
 
-        if(h_liq > tiny)
+
+
+        if(h > tiny)
         {
-             vel=dhVx_dx_sol/h_liq - hVx_sol*dh_dx_liq/h_liqSQ+
-                 dhVy_dy_sol/h_liq - hVy_sol*dh_dy_liq/h_liqSQ;
+             vel=dhVx_dx/h - hVx*dh_dx/hSQ+
+                 dhVy_dy/h - hVy*dh_dy/hSQ;
              Kactx=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
                  sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
              Kacty=(2.0/cosphiSQ)*(1.0-sgn_tiny(vel,tiny)*
                  sqrt(fabs(1.0-(1.0+tandelSQ)*cosphiSQ) )) -1.0;
 
              //if there is no yielding...
-             if(fabs(hVx_sol/h_liq) < tiny && fabs(hVy_sol/h_liq) < tiny)
+             if(fabs(hVx/h) < tiny && fabs(hVy/h) < tiny)
              {
                 Kactx = 1.0;
                 Kacty = 1.0;
@@ -557,37 +579,34 @@ protected:
     }
 
     //@TODO is it really h2
-    void eigen2ph( const double h_sol, const double h_liq, double &eigenvxmax, double &eigenvymax, double &evalue,
-            const double tiny, double &kactx, const double gravity_z,
-            const double *v_solid, const double *v_fluid, const int flowtype)
+    void eigen2ph( const double h, double &eigenvxmax, double &eigenvymax, double &evalue,
+            const double tiny, double &kactx, const double gravity_z, const double *VxVy)
 
     {
-        double sound_speed;
-        if (h_sol > tiny) {
-            //iverson and denlinger
-            if (kactx < 0.0) {
+        if (h > tiny)
+        {
+            //     iverson and denlinger
+            if (kactx < 0.0)
+            {
+                //negative kactxy
                 kactx = -kactx;
             }
+            eigenvxmax = fabs(VxVy[0]) + sqrt(1.0 * gravity_z * h);
+            eigenvymax = fabs(VxVy[1]) + sqrt(1.0 * gravity_z * h);
 
-            if (flowtype == 1)
-                sound_speed = sqrt(h_sol * kactx * gravity_z);
-            else if (flowtype == 2)
-                sound_speed = sqrt(h_sol * gravity_z);
-            else
-                sound_speed = sqrt(h_liq * gravity_z * kactx+(h_sol - h_liq) * gravity_z);
-
-            //x-direction
-            eigenvxmax = c_dmax1(fabs(v_solid[0] + sound_speed), fabs(v_fluid[0] + sound_speed));
-
-            //y-direction
-            eigenvymax = c_dmax1(fabs(v_solid[1] + sound_speed), fabs(v_fluid[1] + sound_speed));
         }
-        else {
+        else
+        {
             eigenvxmax = tiny;
             eigenvymax = tiny;
         }
+
         evalue = c_dmax1(eigenvxmax, eigenvymax);
     }
+
+     // Reading Rainfall data from the wildfire datafiles - Palak
+    
+
 };
 
 /**
@@ -606,6 +625,36 @@ public:
     //! Load object content from hdf5 file
     virtual void h5read(const H5::CommonFG *parent, const  string group_name="Integrator");
 
+public:
+    // Added for merging wildfire code
+    double detach, detachd, h_c, mtstar0, eff_F, J_entrain, stemdia, stemspace, dragcoef, b, af, afr, cri_splashd;
+
+    double pi, Si, Ki, gi, evap, Cv, Cb, CS, Di;
+
+    double hcfrict, depthdependentexponent;
+
+    int rnum, rain_idx = 0;
+    double rint, R1 = 0, R= 0, R_coef;
+    vector<double> RAIN, RAINTIME;
+
+    double g_total, phi, rhos, rhow, s_rho, rho0, cohesion, lambda, cthreshold, mindfdepth, maxsoilthickness, nu, frictioncoef;
+
+    
+
+    double P_[MAX_NUM_STATE_VARS-3], DS_[MAX_NUM_STATE_VARS-3], grain_size;// initialize 
+
+    double AMAP, ADMAP, ROUGHNESS = 0.05, UC = 0.0062185, ERODIBILITYMASK = 1.0, WATERSHED = 1.0, THETA0 = 0.1, THETAS = 0.39, KS = 2.43075e-06, HF = 0.001;
+
+    int index_max =0;
+
+    bool mask = 1; 
+
+    int mask_x = 4509;
+    int mask_y = 7848;
+    int mask_value = 0;
+
+    vector <vector<int>> mask_vec;
+
 protected:
     /**
      * Predictor step for second order of nothing for first order
@@ -618,6 +667,120 @@ protected:
 
     // This method is used when we need to get the records of flow characteristics such as forces.
     virtual void flowrecords();
+
+    virtual void initialize_statevariables();
+
+    void readrainfalldata()
+    {
+        FILE *frain, *fraintime;
+
+        double *tmp_wf = NULL;
+        double tmp_fw = 0.0;
+        tmp_wf = &tmp_fw;
+
+        printf("reading first file\n");
+        frain = fopen("rain.bin","rb");
+        if(!frain){
+            printf("Could not open wildfire datafiles\n");
+            assert(0);
+        }
+        while(!feof(frain)){
+        //printf("Entered first loop\n");
+        freadD(frain,tmp_wf);
+        //fread(tmp_wf, sizeof(double), 1, fx);
+        //printf("Read first element\n");
+        RAIN.push_back(*tmp_wf);
+        }
+        fclose(frain);
+
+        //printf("Size of RAIN: %d\n",RAIN.size());
+
+        fraintime = fopen("raintime.bin","rb");
+        if(!fraintime){
+            printf("Could not open wildfire datafiles\n");
+            assert(0);
+        }
+        while(!feof(fraintime)){
+        //printf("Entered first loop\n");
+        freadD(fraintime,tmp_wf);
+        //fread(tmp_wf, sizeof(double), 1, fx);
+        //printf("Read first element\n");
+        RAINTIME.push_back(*tmp_wf);
+        }
+
+        fclose(fraintime);
+    }
+
+    void model_paramters(){
+        FILE *fpara;
+        vector<double> m_para;
+
+        double *tmp = NULL;
+        double temp1=0.00;
+        tmp = &temp1;
+
+        fpara = fopen("parameters.bin","rb");
+        if(!fpara){
+            printf("Could not open model parameters file\n");
+            assert(0);
+        }
+
+        while(!feof(fpara)){
+            freadD(fpara,tmp);
+            m_para.push_back(*tmp);
+        }
+
+        fclose(fpara);
+        printf("total parameters: %d\n",m_para.size());
+        for (int i = 0; i < 6; i++)
+        {
+            printf("Parameter %d = %.12lf\n",i,m_para[i]);
+            /* code */
+        }
+        
+
+        KS = m_para[0];
+        maxsoilthickness = m_para[1];
+
+        //Cv = m_para[1];
+        Cv = 1.0;
+        Cb = 1.0- Cv;
+        ROUGHNESS = m_para[2];
+        eff_F = m_para[3];
+        grain_size = m_para[4];
+        R_coef = m_para[5];
+
+    }
+
+    void initialize_mask(){
+        FILE *f_mask;
+        
+
+        if (mask == 1){
+
+            f_mask = fopen("../mask.bin","rb");
+             for (int j = 0; j < mask_y; j++)
+            {
+                vector<int> x_vec(mask_x); 
+                for (int i = 0; i < mask_x; i++)
+                {
+                    fread(&mask_value, sizeof(int), 1, f_mask);
+                    if(mask_value == 0){
+                        x_vec[i] = 1;
+                    }
+                    else{
+                        x_vec[i] = 0;
+                    }
+                }
+
+                mask_vec.push_back(x_vec);
+                
+            }
+
+        }
+
+    }
+
 
     void calc_drag_force(const ti_ndx_t ndx, const double *vsolid, const double *vfluid,
             const double den_solid, const double den_fluid, const double vterminal,

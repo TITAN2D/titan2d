@@ -85,9 +85,19 @@ inline void ElementsProperties::calc_flux(ti_ndx_t ndx,FluxProps *fluxprops, Tim
                  */
 
                 //hydrograph flux starts at max rate decays linearly to zero at end of duration
+                /*
                 double tempflux = (fluxprops->influx[isrc])
                         * (1.0 - (curr_time - fluxprops->start_time[isrc])
                                 / (fluxprops->end_time[isrc] - fluxprops->start_time[isrc]));
+                */
+
+                double tempflux = 2.0;
+                if (curr_time <= (fluxprops->start_time[isrc] + fluxprops->end_time[isrc])*0.5){
+                    tempflux = 2.0 + (fluxprops->influx[isrc] - 2.0)*((curr_time - fluxprops->start_time[isrc])/(fluxprops->end_time[isrc] - fluxprops->start_time[isrc]))*2;
+                }
+                else{
+                    tempflux = (fluxprops->influx[isrc])* (1.0 - (curr_time - (fluxprops->start_time[isrc] + fluxprops->end_time[isrc])*0.5) / (fluxprops->end_time[isrc] - (fluxprops->start_time[isrc] + fluxprops->end_time[isrc])*0.5));
+                }
                 temp_coef *= (1.0 - major * major - minor * minor) * tempflux;
                 //temp_coef*=(1.0-major*major-minor*minor)*(fluxprops->influx[isrc]);
 
