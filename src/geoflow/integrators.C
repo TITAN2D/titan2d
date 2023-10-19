@@ -3307,7 +3307,7 @@ void Integrator_TwoPhases_Coulomb::initialize_statevariables()
     AMAP = detach;
     ADMAP = detachd;
 
-    mask = 1;
+    mask = 0;
 
     initialize_mask();
 
