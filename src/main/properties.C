@@ -1392,15 +1392,23 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
     // Output Slope Data
     {
         int ix, iy;
-        ostringstream filename;
+        ostringstream filename_x, filename_y;
 
-        filename<<output_prefix<<"x_slope.grid"<<std::ends;
-        FILE *fp_x = fopen(filename.str().c_str(), "wt");
+        filename_x<<output_prefix<<"x_slope.grid"<<std::ends;
+        FILE *fp_x = fopen(filename_x.str().c_str(), "wt");
 
-        filename<<output_prefix<<"y_slope.grid"<<std::ends;
-        FILE *fp_y = fopen(filename.str().c_str(), "wt");
+        filename_y<<output_prefix<<"y_slope.grid"<<std::ends;
+        FILE *fp_y = fopen(filename_y.str().c_str(), "wt");
 
-        fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
+        fprintf(fp_x, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "Pileheight=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+
+        printf("Testing fp_y \n");
+
+        fprintf(fp_y, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
                 "Pileheight=\n",
                 Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
@@ -1419,7 +1427,7 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
                 fprintf(fp_y, "%g ", y_slope);
             }
             xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
-            ierr = Get_elevation(res, xx, yy, x_slope, y_slope);
+            ierr = Get_slope(res, xx, yy, x_slope, y_slope);
             fprintf(fp_x, "%g\n", x_slope);
             fprintf(fp_y, "%g\n", y_slope);
         }
