@@ -1388,6 +1388,52 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
         }
         fclose(fp);
     }
+
+    // Output Slope Data
+    {
+        int ix, iy;
+        ostringstream filename_x, filename_y;
+
+        filename_x<<output_prefix<<"x_slope.grid"<<std::ends;
+        FILE *fp_x = fopen(filename_x.str().c_str(), "wt");
+
+        filename_y<<output_prefix<<"y_slope.grid"<<std::ends;
+        FILE *fp_y = fopen(filename_y.str().c_str(), "wt");
+
+        fprintf(fp_x, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "Pileheight=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+
+        printf("Testing fp_y \n");
+
+        fprintf(fp_y, "Nx=%d: X={%20.14g,%20.14g}\n"
+                "Ny=%d: Y={%20.14g,%20.14g}\n"
+                "Pileheight=\n",
+                Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
+                yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
+
+        double yy, xx, res = dx + dy, x_slope, y_slope;
+        int ierr;
+        for(iy = 0; iy < Ny; iy++)
+        {
+            yy = ((iy + 0.5) * dy + yminmax[0]) * matprops_ptr->scale.length;
+            for(ix = 0; ix < Nx - 1; ix++)
+            {
+                xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
+                ierr = Get_slope(res, xx, yy, x_slope, y_slope);
+                fprintf(fp_x, "%g ", x_slope);
+                fprintf(fp_y, "%g ", y_slope);
+            }
+            xx = ((ix + 0.5) * dx + xminmax[0]) * matprops_ptr->scale.length;
+            ierr = Get_slope(res, xx, yy, x_slope, y_slope);
+            fprintf(fp_x, "%g\n", x_slope);
+            fprintf(fp_y, "%g\n", y_slope);
+        }
+        fclose(fp_x);
+        fclose(fp_y);
+    }
     return;
 }
 

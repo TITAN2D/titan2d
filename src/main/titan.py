@@ -832,8 +832,8 @@ class TitanSimulationBase(object):
                     raise ValueError('TitanSimulation:addFluxSource: TwoPhases-Pitman-Le is set addPile should set vol_fract!')
             if len(self.ui_FluxSource)>0:
                 raise NotImplementedError("TitanSimulation:addFluxSource: FluxSources are not imlemented for TwoPhases-Pitman-Le model!")
-            if len(self.ui_DischargePlane)>0:
-                raise NotImplementedError("TitanSimulation:addDischargePlane: DischargePlanes are not imlemented for TwoPhases-Pitman-Le model!")
+            # if len(self.ui_DischargePlane)>0:
+            #     raise NotImplementedError("TitanSimulation:addDischargePlane: DischargePlanes are not imlemented for TwoPhases-Pitman-Le model!")
             if len(self.ui_LocalQuants)>0:
                 raise NotImplementedError("TitanSimulation:addLocalQuants: LocalQuants are not imlemented for TwoPhases-Pitman-Le model!")
         else:
