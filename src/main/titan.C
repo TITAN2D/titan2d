@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <wchar.h>
 
 #include "../header/ticore/omp_mpi.hpp"
 
@@ -46,7 +47,11 @@
 
 #include "../header/titan_simulation.h"
 
+#if PY_VERSION_HEX >= 0x03000000
+extern "C" PyObject* PyInit__cxxtitan();
+#else
 extern "C" void init_cxxtitan();
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -62,6 +67,8 @@ int main(int argc, char *argv[])
     char executable[1028];
     char python_home[1028];
     char buffer[1028];
+    wchar_t *python_home_w=nullptr;
+    wchar_t *program_name_w=nullptr;
     
 #ifdef __linux__
     i = readlink("/proc/self/exe", executable, 1028);
@@ -75,7 +82,14 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
     somthing with GetModuleFileName()
 #endif
-    Py_SetProgramName(executable);
+    program_name_w = Py_DecodeLocale(executable, nullptr);
+    if(program_name_w == nullptr)
+    {
+        fprintf(stderr, "Failed to decode executable path for Python runtime\n");
+        IF_MPI(MPI_Finalize());
+        return 1;
+    }
+    Py_SetProgramName(program_name_w);
 
 //#define MAKE_PORTABLE
 #ifdef MAKE_PORTABLE
@@ -94,7 +108,15 @@ int main(int argc, char *argv[])
 
     sprintf(python_home+strlen(python_home),"/lib/titan2d_dep");
     printf("Python home: %s\n",python_home);
-    Py_SetPythonHome(python_home);
+    python_home_w = Py_DecodeLocale(python_home, nullptr);
+    if(python_home_w == nullptr)
+    {
+        fprintf(stderr, "Failed to decode portable Python home\n");
+        PyMem_RawFree(program_name_w);
+        IF_MPI(MPI_Finalize());
+        return 1;
+    }
+    Py_SetPythonHome(python_home_w);
 #else
     if(getenv("PYTHONHOME"))
     {
@@ -102,13 +124,34 @@ int main(int argc, char *argv[])
     }
     else
     {
+      strncpy(python_home, TITAN_PYTHONHOME, sizeof(python_home));
+      python_home[sizeof(python_home) - 1] = '\0';
       printf("Python home: %s\n",python_home);
-      Py_SetPythonHome(TITAN_PYTHONHOME);
+      python_home_w = Py_DecodeLocale(python_home, nullptr);
+      if(python_home_w == nullptr)
+      {
+          fprintf(stderr, "Failed to decode configured Python home\n");
+          PyMem_RawFree(program_name_w);
+          IF_MPI(MPI_Finalize());
+          return 1;
+      }
+      Py_SetPythonHome(python_home_w);
     }
 
 #endif
     printf("Executable location: %s\n", executable);
-    printf("python home: %s\n", Py_GetPythonHome());
+    printf("python home: %ls\n", Py_GetPythonHome());
+    #if PY_VERSION_HEX >= 0x03000000
+    if(PyImport_AppendInittab("_cxxtitan", PyInit__cxxtitan) == -1)
+    {
+        fprintf(stderr, "Failed to register embedded _cxxtitan module\n");
+        if(python_home_w != nullptr)
+            PyMem_RawFree(python_home_w);
+        PyMem_RawFree(program_name_w);
+        IF_MPI(MPI_Finalize());
+        return 1;
+    }
+    #endif
     Py_Initialize();
     
     if(myid == 0)
@@ -123,11 +166,13 @@ int main(int argc, char *argv[])
     PyRun_SimpleString("import sys");
     
     sprintf(buffer,
-            "sys.path.insert(1,os.path.abspath(os.path.join('%s','..','..','lib','python2.7','site-packages','titan')))",
-            executable);
+            "sys.path.insert(1,os.path.abspath(os.path.join('%s','..','..','lib','python%d.%d','site-packages','titan')))",
+            executable, PY_MAJOR_VERSION, PY_MINOR_VERSION);
     PyRun_SimpleString(buffer);
     
+#if PY_VERSION_HEX < 0x03000000
     init_cxxtitan();
+#endif
     PyRun_SimpleString("from titan import *");
     
     //init some titan staff should be in function titan_init
@@ -255,7 +300,7 @@ int main(int argc, char *argv[])
             }
             if(addTime>0)
             {
-                sim.timeprops.maxtime+=addTime/sim.timeprops.TIME_SCALE;
+                sim.timeprops.maxtime+=addTime;
             }
             sim.run(true);
 
@@ -263,13 +308,13 @@ int main(int argc, char *argv[])
         else if(argc4py > 1)
         {
             //execute user script
-    		Py_Main(argc4py, argv4py);
-    	}
-    	else
-    	{
-    	    //print usage and exit
-    		printUsage=true;
-    	}
+            Py_BytesMain(argc4py, argv4py);
+        }
+        else
+        {
+            //print usage and exit
+            printUsage=true;
+        }
 
         delete [] argv4py;
     }
@@ -287,6 +332,9 @@ int main(int argc, char *argv[])
     }
     
     Py_Finalize();
+    if(python_home_w != nullptr)
+        PyMem_RawFree(python_home_w);
+    PyMem_RawFree(program_name_w);
     if(myid == 0)
     {
         printf("Done\n");
@@ -294,5 +342,3 @@ int main(int argc, char *argv[])
     IF_MPI(MPI_Finalize());
     return 0;
 }
-
-

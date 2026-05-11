@@ -88,7 +88,7 @@ public:
     //! Dump object content to hdf5 file
     void h5write(H5::CommonFG *parent, string group_name="Scale") const
     {
-        H5::Group group(parent->createGroup(group_name));
+        H5::Group group(TiH5_createGroup(parent, group_name));
         TiH5_writeDoubleAttribute(group, length);
         TiH5_writeDoubleAttribute(group, height);
         TiH5_writeDoubleAttribute(group, epsilon);
@@ -100,7 +100,7 @@ public:
     //! Load object content from hdf5 file
     void h5read(const H5::CommonFG *parent, const  string group_name="Scale")
     {
-        H5::Group group(parent->openGroup(group_name));
+        H5::Group group(TiH5_openGroup(parent, group_name));
         TiH5_readDoubleAttribute(group, length);
         TiH5_readDoubleAttribute(group, height);
         TiH5_readDoubleAttribute(group, epsilon);
@@ -513,7 +513,8 @@ public:
         if(maxiter>=0)
             if(iter > maxiter)
                 return 1;
-        if((vstarmax > 2.0) && !(vstar > 1.0))
+        const bool has_explicit_stop = (ndmaxtime >= 0.0) || (maxiter >= 0);
+        if(!has_explicit_stop && (vstarmax > 2.0) && !(vstar > 1.0))
             return 1;
         return 0;
     }
@@ -581,7 +582,7 @@ public:
     //! Dump object content to hdf5 file
     void h5write(H5::CommonFG *parent, string group_name="TimeProps") const
     {
-        H5::Group group(parent->createGroup(group_name));
+        H5::Group group(TiH5_createGroup(parent, group_name));
         TiH5_writeIntAttribute(group, maxiter);
         TiH5_writeIntAttribute(group, iter);
         TiH5_writeDoubleAttribute(group, maxtime);
@@ -603,7 +604,7 @@ public:
     //! Load object content from hdf5 file
     void h5read(const H5::CommonFG *parent, const  string group_name="TimeProps")
     {
-        H5::Group group(parent->openGroup(group_name));
+        H5::Group group(TiH5_openGroup(parent, group_name));
         TiH5_readIntAttribute(group, maxiter);
         TiH5_readIntAttribute(group, iter);
         TiH5_readDoubleAttribute(group, maxtime);

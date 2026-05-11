@@ -637,7 +637,7 @@ void InsanityCheck(ElementsHashTable* El_Table, int nump, int myid, TimeProps *t
 }
 void StatProps::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
 
     TiH5_writeIntAttribute(group, runid);
     TiH5_writeDoubleAttribute(group, xcen);
@@ -673,7 +673,7 @@ void StatProps::h5write(H5::CommonFG *parent, string group_name) const
 }
 void StatProps::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, runid);
     TiH5_readDoubleAttribute(group, xcen);

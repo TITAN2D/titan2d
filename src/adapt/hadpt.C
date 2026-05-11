@@ -184,6 +184,95 @@ void BuferNextLayerRefinementsFinder::findSeedRefinements(vector<ti_ndx_t> &seed
 
 }
 
+class CenterRefinementsFinder: public SeedRefinementsFinder
+{
+public:
+    CenterRefinementsFinder(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,
+                            const vector<array<double,2> > &_centers)
+        : SeedRefinementsFinder(_ElemTable, _NodeTable, _ElemProp),
+          centers(_centers),
+          loc_SeedRefinement(threads_number)
+    {
+    }
+
+    virtual void findSeedRefinements(vector<ti_ndx_t> &seedRefinement)
+    {
+        PROFILING1_DEFINE(pt_start);
+        tisize_t N = ElemTable->size();
+        PROFILING1_START(pt_start);
+        #pragma omp parallel
+        {
+            int ithread = omp_get_thread_num();
+            loc_SeedRefinement[ithread].resize(0);
+            vector<char> seen(N, 0);
+
+            #pragma omp for schedule(dynamic, TITAN2D_DINAMIC_CHUNK)
+            for(ti_ndx_t ndx = 0; ndx < N; ++ndx)
+            {
+                if((status[ndx] >= 0) && (adapted[ndx] > 0) && (adapted[ndx] < NEWSON) && (generation[ndx] < REFINE_LEVEL))
+                {
+                    const Element &elem = elements[ndx];
+                    const double minx = elem.coord(0) - elem.dx(0) * 0.5;
+                    const double maxx = elem.coord(0) + elem.dx(0) * 0.5;
+                    const double miny = elem.coord(1) - elem.dx(1) * 0.5;
+                    const double maxy = elem.coord(1) + elem.dx(1) * 0.5;
+
+                    for(const array<double,2> &center : centers)
+                    {
+                        if((minx <= center[0]) && (center[0] <= maxx) && (miny <= center[1]) && (center[1] <= maxy))
+                        {
+                            if(!seen[ndx])
+                            {
+                                loc_SeedRefinement[ithread].push_back(ndx);
+                                seen[ndx] = 1;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        PROFILING1_STOPADD(PrimaryRefinementsFinder_findSeedRefinements_loop, pt_start);
+
+        PROFILING1_START(pt_start);
+        merge_vectors_from_threads(seedRefinement, loc_SeedRefinement);
+        PROFILING1_STOPADD(PrimaryRefinementsFinder_findSeedRefinements_merge, pt_start);
+    }
+
+    int minCenterGeneration() const
+    {
+        int min_generation = REFINE_LEVEL;
+
+        for(const array<double,2> &center : centers)
+        {
+            for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
+            {
+                if((status[ndx] >= 0) && (adapted[ndx] > 0))
+                {
+                    const Element &elem = elements[ndx];
+                    const double minx = elem.coord(0) - elem.dx(0) * 0.5;
+                    const double maxx = elem.coord(0) + elem.dx(0) * 0.5;
+                    const double miny = elem.coord(1) - elem.dx(1) * 0.5;
+                    const double maxy = elem.coord(1) + elem.dx(1) * 0.5;
+
+                    if((minx <= center[0]) && (center[0] <= maxx) && (miny <= center[1]) && (center[1] <= maxy))
+                    {
+                        if(elem.generation() < min_generation)
+                            min_generation = elem.generation();
+                        break;
+                    }
+                }
+            }
+        }
+
+        return min_generation;
+    }
+
+private:
+    const vector<array<double,2> > &centers;
+    vector<vector<ti_ndx_t> > loc_SeedRefinement;
+};
+
 HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer):
    TempList(_ElemTable, 384),
    ElemTable(_ElemTable),
@@ -203,6 +292,87 @@ HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, Element
     {
         create_node_ielm[i].resize(0);
         create_node_iwhich[i].resize(0);
+    }
+}
+
+void HAdapt::initialRefineToCenters(const vector<array<double,2> > &centers)
+{
+    if(centers.empty())
+        return;
+
+    CenterRefinementsFinder centerRefinementsFinder(ElemTable, NodeTable, ElemProp, centers);
+
+    int mincentergen = REFINE_LEVEL;
+    int intswap = REFINE_LEVEL;
+    int icounter = 0;
+
+    do
+    {
+        for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
+        {
+            if(ElemTable->adapted_[ndx] >= NEWSON)
+                ElemTable->adapted_[ndx] = NOTRECADAPTED;
+        }
+
+        move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+        ElemTable->updateLocalElements();
+        ElemTable->updateNeighboursIndexes();
+
+        mincentergen = centerRefinementsFinder.minCenterGeneration();
+#ifdef USE_MPI
+        MPI_Allreduce(&mincentergen, &intswap, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+        mincentergen = intswap;
+#endif
+        if(mincentergen >= REFINE_LEVEL)
+            break;
+
+        refine2(centerRefinementsFinder);
+    }
+    while((++icounter) < (REFINE_LEVEL + 3));
+}
+
+static vector<array<double,2> > collect_initial_adapt_centers(PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps *timeprops_ptr)
+{
+    vector<array<double,2> > centers;
+
+    if(timeprops_ptr->iter == 0)
+    {
+        for(int ipile = 0; ipile < pileprops_ptr->numpiles; ++ipile)
+            centers.push_back({{pileprops_ptr->xCen[ipile], pileprops_ptr->yCen[ipile]}});
+
+        for(int isrc = 0; isrc < fluxprops_ptr->no_of_sources; ++isrc)
+            if(fluxprops_ptr->start_time[isrc] == 0.0)
+                centers.push_back({{fluxprops_ptr->xCen[isrc], fluxprops_ptr->yCen[isrc]}});
+    }
+    else
+    {
+        const double begoftimestep = timeprops_ptr->cur_time - timeprops_ptr->dtime;
+        const double endoftimestep = timeprops_ptr->cur_time;
+
+        for(int isrc = 0; isrc < fluxprops_ptr->no_of_sources; ++isrc)
+            if((begoftimestep <= fluxprops_ptr->start_time[isrc]) && (fluxprops_ptr->start_time[isrc] < endoftimestep))
+                centers.push_back({{fluxprops_ptr->xCen[isrc], fluxprops_ptr->yCen[isrc]}});
+    }
+
+    return centers;
+}
+
+static void apply_initial_pile_heights(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, MatProps* matprops_ptr,
+                                       PileProps *pileprops_ptr)
+{
+    const int no_of_buckets = HT_Elem_Ptr->get_no_of_buckets();
+    vector<HashEntryLine> &bucket = HT_Elem_Ptr->bucket;
+    tivector<Element> &elenode_ = HT_Elem_Ptr->elenode_;
+
+    //@ElementsBucketDoubleLoop
+    for(int ibuck = 0; ibuck < no_of_buckets; ibuck++)
+    {
+        for(int ielm = 0; ielm < bucket[ibuck].ndx.size(); ielm++)
+        {
+            Element *EmTemp = &(elenode_[bucket[ibuck].ndx[ielm]]);
+            if(EmTemp->adapted_flag() > TOBEDELETED)
+                pileprops_ptr->set_element_height_to_elliptical_pile_height(HT_Node_Ptr, EmTemp, matprops_ptr);
+        }
     }
 }
 
@@ -586,6 +756,42 @@ void refinewrapper(ElementsHashTable* HT_Elem_Ptr, NodeHashTable*HT_Node_Ptr, Ma
 void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr, int h_count, MatProps* matprops_ptr,
                      PileProps *pileprops_ptr, FluxProps *fluxprops_ptr, TimeProps* timeprops_ptr, int num_buffer_layer)
 {
+    {
+        int myid = 0;
+        int numprocs = 1;
+        MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+        MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+
+        htflush(HT_Elem_Ptr, HT_Node_Ptr, 1);
+        move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
+        HT_Elem_Ptr->updateLocalElements();
+        HT_Elem_Ptr->updateNeighboursIndexes();
+
+        ElementsProperties elemProp(HT_Elem_Ptr, HT_Node_Ptr);
+        HAdapt hadapt(HT_Elem_Ptr, HT_Node_Ptr, &elemProp, timeprops_ptr, matprops_ptr, num_buffer_layer);
+
+        const vector<array<double,2> > centers = collect_initial_adapt_centers(pileprops_ptr, fluxprops_ptr, timeprops_ptr);
+        hadapt.initialRefineToCenters(centers);
+
+        if(timeprops_ptr->iter == 0)
+            apply_initial_pile_heights(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr);
+        mark_flux_region(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, fluxprops_ptr, timeprops_ptr);
+        move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
+
+        hadapt.adapt(h_count, 0.0);
+
+        if(timeprops_ptr->iter == 0)
+            apply_initial_pile_heights(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr);
+        mark_flux_region(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, fluxprops_ptr, timeprops_ptr);
+
+        if(numprocs > 1)
+            repartition2(HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
+
+        move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
+        HT_Elem_Ptr->updateLocalElements();
+        HT_Elem_Ptr->updateNeighboursIndexes();
+        return;
+    }
     
     int k, i, j;
     Element* EmTemp;
@@ -704,6 +910,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
     //AssertMeshErrorFree(HT_Elem_Ptr,HT_Node_Ptr,numprocs,myid,0.0);
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
     move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
+    HT_Elem_Ptr->updateLocalElements();
+    HT_Elem_Ptr->updateNeighboursIndexes();
     
     /*
      if(myid==0) {

@@ -20,6 +20,7 @@
 #endif
 
 #include <sstream>
+#include <utility>
 
 
 
@@ -30,6 +31,28 @@
 #define TARGETPROC -1
 
 #define AssertMeshNodeCheck
+
+static int find_matching_neighbor_slot(const Element* father, const int father_side, const Element* neigh)
+{
+    for(int i = 0; i < 8; ++i)
+    {
+        if(neigh->neighbor(i) == father->key())
+            return i;
+    }
+
+    for(int i = 0; i < 4; ++i)
+    {
+        const bool corners_match =
+            (neigh->node_key(i) == father->node_key((father_side + 1) % 4)) &&
+            (neigh->node_key((i + 1) % 4) == father->node_key(father_side));
+        const bool side_node_matches =
+            (neigh->node_key(i + 4) == father->node_key(father_side + 4));
+        if(corners_match && side_node_matches)
+            return i;
+    }
+
+    return -1;
+}
 
 //! investigate an Element, question his "friends and family" about him.
 void ElemBackgroundCheck(ElementsHashTable* El_Table, NodeHashTable* NodeTable, const SFC_Key& debugkey, FILE *fp)
@@ -1295,6 +1318,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
 
         int iside, ineigh, ineighp4, isonA, isonB;
         int ineighme, ineighmep4, ineighson, inewcase, inode;
+        bool skip_side;
 
         ti_ndx_t ifather=allRefinement[iElm];
         EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
@@ -1378,20 +1402,32 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                 EmNeighNew[0] = EmNeighNew[1] = EmNeighNew[2] = EmNeighNew[3] = NULL;
                 EmNeighNewNdx[0] = EmNeighNewNdx[1] = EmNeighNewNdx[2] = EmNeighNewNdx[3] = ti_ndx_unknown;
                 
-                for(ineighme = 0; ineighme < 8; ineighme++)
+                ineighme = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[0]);
+                if(ineighme < 0)
                 {
-                    if(EmFather->key()==EmNeighOld[1]->neighbor(ineighme))
-                        break;
-                    
+                    const int ineighme_alt = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[1]);
+                    if(ineighme_alt >= 0)
+                    {
+                        std::swap(EmNeighOld[0], EmNeighOld[1]);
+                        std::swap(EmNeighOldNdx[0], EmNeighOldNdx[1]);
+                        ineighme = ineighme_alt;
+                    }
                 }
-                if(!(ineighme < 8))
+                if(ineighme < 0)
                 {
-                    cout<<"FUBAR 0 detected in refine_neigh_update\nEmFather={"<<EmFather->key()<<"}\n";
-                    cout<<"EmNeighOld[0]={"<<EmNeighOld[0]->key()<<"} ineigh="<<ineigh<<" isonA="<<isonA<<" isonB="<<isonB<<"\n";
-                    cout<<"aborting!!"<<endl;
-                    
-                    assert(ineighme < 8);
+                    printf("refine_neigh_update: can not match father side.%016llx neighbor0 %016llx neighbor1 %016llx side %d\n",
+                           (unsigned long long)EmFather->key(),
+                           (unsigned long long)EmNeighOld[0]->key(),
+                           (unsigned long long)EmNeighOld[1]->key(),
+                           ineigh);
+                    skip_side = true;
                 }
+                else
+                {
+                    skip_side = false;
+                }
+                if(skip_side)
+                    continue;
                 
                 //There are 5 cases I need to worry about about
                 //A: my old neighbor is one generation older than me, only
@@ -2663,11 +2699,15 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
                 assert(EmNeighOld[1]);
                 EmNeighNew[0] = EmNeighNew[1] = EmNeighNew[2] = EmNeighNew[3] = NULL;
                 
-                for(ineighme = 0; ineighme < 8; ineighme++)
+                ineighme = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[0]);
+                if(ineighme < 0)
                 {
-                    if(EmFather->key()==EmNeighOld[1]->neighbor(ineighme))
-                        break;
-                    
+                    const int ineighme_alt = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[1]);
+                    if(ineighme_alt >= 0)
+                    {
+                        std::swap(EmNeighOld[0], EmNeighOld[1]);
+                        ineighme = ineighme_alt;
+                    }
                 }
                 if(!(ineighme < 8))
                 {

@@ -101,22 +101,27 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
-AM_PATH_PYTHON([2.7],, [:])
+AM_PATH_PYTHON([3.8],, [:])
 PYTHON_BIN_DIR=`AS_DIRNAME($PYTHON)`
 PYTHON_ROOT=`AS_DIRNAME($PYTHON_BIN_DIR)`
+AC_PATH_PROGS([PYTHON_CONFIG],
+	[python$PYTHON_VERSION-config python3-config python-config],
+	[no],
+	[$PYTHON_BIN_DIR:$PATH]
+)
+AS_IF([test "x$PYTHON_CONFIG" == xno],
+	[AC_MSG_FAILURE([Could not find a matching python-config for $PYTHON])]
+)
 
-AS_IF([test "$PYTHON_ROOT" == "/usr"],
-	[
-		PYTHON_LIBS="-lpython$PYTHON_VERSION"
-	],
-	[
-		
-		PYTHON_LIBS="-L$PYTHON_ROOT/lib -lpython$PYTHON_VERSION"
-	]
+PYTHON_CPPFLAGS=`$PYTHON_CONFIG --includes`
+PYTHON_EMBED_LDFLAGS=`$PYTHON_CONFIG --ldflags --embed 2>/dev/null`
+AS_IF([test "x$PYTHON_EMBED_LDFLAGS" == x],
+	[PYTHON_EMBED_LDFLAGS=`$PYTHON_CONFIG --ldflags`]
 )
 
 AC_SUBST([PYTHON_ROOT],[$PYTHON_ROOT])
-AC_SUBST([PYTHON_LIBS],[$PYTHON_LIBS])
+AC_SUBST([PYTHON_CPPFLAGS],[$PYTHON_CPPFLAGS])
+AC_SUBST([PYTHON_EMBED_LDFLAGS],[$PYTHON_EMBED_LDFLAGS])
 
 AH_TEMPLATE([TITAN_PYTHONHOME],[eventually PYTHONHOME])
 AC_DEFINE_UNQUOTED([TITAN_PYTHONHOME],["$PYTHON_ROOT"])
@@ -253,7 +258,7 @@ AS_IF([test "x$with_swig" != xno],
 	fi
 	SWIG_VERSION=`$SWIG -version|grep ersion|cut -d ' ' -f 3`
 	SWIG_VERSION_MAJOR=`echo $SWIG_VERSION|cut -d . -f1`
-	if test "x$SWIG_VERSION_MAJOR" != "x3"; then
+	if test "$SWIG_VERSION_MAJOR" -lt 3; then
 		AC_MSG_ERROR([swig is too old should be at least 3.0, set SWIG variable for custom location!])
 	fi
 	
@@ -285,7 +290,8 @@ AM_CONDITIONAL([WITH_SWIG], test "x$with_swig" != "xno")
 #------------------------------------------------------------------------------------
 AS_IF([test "x$with_titan2d_dep" == xno],
 	[
-		RPATH=$PYTHON_ROOT/lib
+		PYTHON_LIBDIR=`$PYTHON -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR') or '')"`
+		RPATH=$PYTHON_LIBDIR
 		AS_IF([test "x$with_hdf5" != xno],
 			[RPATH=$with_hdf5/lib:$RPATH]
 		)
@@ -440,4 +446,3 @@ AS_IF([test "x$enable_java_gui" != xno],
 AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_DEP],[$TITAN2D_DEP])])
 AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_PORTABLE],[$TITAN2D_PORTABLE])])
 AC_MSG_RESULT([AS_HELP_STRING([TITAN2D_ON_VHUB],[$TITAN2D_ON_VHUB])])
-

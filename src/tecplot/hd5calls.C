@@ -127,9 +127,9 @@ void GH5_write_mesh_data(hid_t fp, int conns, int points, int *conndata, double 
     hid_t mesh_grp, conn_dataid, xyz_dataid;
     hid_t conn_spc, pts_spc;
     hsize_t conn_dim[2] =
-    { conns, 4 };
+    { static_cast<hsize_t>(conns), 4 };
     hsize_t pts_dim[2] =
-    { points, 3 };
+    { static_cast<hsize_t>(points), 3 };
     herr_t status;
     
     // create group of Meshdata
@@ -171,7 +171,7 @@ void GH5_write_state_vars(hid_t fid, int num_elms, double *state_var, const char
     hid_t vars_grp, dataid, dataspc;
     herr_t status;
     hsize_t dims[2] =
-    { num_elms, 1 };
+    { static_cast<hsize_t>(num_elms), 1 };
     int i;
     //create group for state_vars
     vars_grp = GH5_open_group(fid, "/Properties");

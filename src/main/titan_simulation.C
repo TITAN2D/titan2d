@@ -424,7 +424,7 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent)
 {
     ///////////////////////////////////////////////////////////////////////////
     //write cxxTitanSimulation
-    H5::Group groupTitanSimulation(parent->createGroup("TitanSimulation"));
+    H5::Group groupTitanSimulation(TiH5_createGroup(parent, "TitanSimulation"));
 
     TiH5_writeIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_writeIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
@@ -466,7 +466,7 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
 {
     ///////////////////////////////////////////////////////////////////////////
     //read cxxTitanSimulation
-    H5::Group groupTitanSimulation(parent->openGroup("TitanSimulation"));
+    H5::Group groupTitanSimulation(TiH5_openGroup(parent, "TitanSimulation"));
 
     TiH5_readIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_readIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
@@ -746,9 +746,19 @@ void cxxTitanSimulation::save_restart_file()
     sprintf(xmdf_Quad9_filename, "%s_Quad9_p%04d.xmf", restart_prefix.c_str(), myid);
     sprintf(xmdf_Quad4_filename, "%s_Quad4_p%04d.xmf", restart_prefix.c_str(), myid);
 
+    // Force a strong HDF5 close so restart snapshots are finalized even if
+    // some subordinate HDF5 objects are still live when the file is closed.
+    H5::FileAccPropList fapl = H5::FileAccPropList::DEFAULT;
+    H5Pset_fclose_degree(fapl.getId(), H5F_CLOSE_STRONG);
+
     //write H5
-    H5::H5File file(hf5_filename, H5F_ACC_TRUNC);
+    H5::H5File file(
+        hf5_filename,
+        H5F_ACC_TRUNC,
+        H5::FileCreatPropList::DEFAULT,
+        fapl);
     h5write(&file);
+    file.flush(H5F_SCOPE_GLOBAL);
     file.close();
 
     if(restart_keep_all)

@@ -234,69 +234,68 @@ for fname in dirList:
     fileSplit = fname.split('.')
     # check to see if its a file
     if len(fileSplit) > 1:
-		# check to see if its a 'Points' file
-		if fileSplit[1] == "Points":
-			print fname
-			points = open(baseDir+"/"+fname, 'r')
-			ph = fileSplit[0]+".PILE_HEIGHT"
-			heights = open(baseDir+"/"+ph, 'r')
+        # check to see if its a 'Points' file
+        if fileSplit[1] == "Points":
+            print(fname)
+            points = open(baseDir + "/" + fname, 'r')
+            ph = fileSplit[0] + ".PILE_HEIGHT"
+            heights = open(baseDir + "/" + ph, 'r')
 
-			# every 1 line in PILE_HEIGHT corresponds to 4 lines in Points.txt
-			height = heights.readline()
-			begin = date
-			end = date + datetime.timedelta(days=1)
-			firstCordX = 0
-			firstCordY = 0
-			firstCordZ = 0
-			while 1:
-				# Convert UTM to lat/lon and then print <Placemark> tag
-				if ( float(height) > 0 ):
-					merapi.write('\t\t<Placemark>\n')
-					merapi.write('\t\t\t<name>Height '+str(float(height)) +' meters</name>\n')
-					style = int(float(height)*10/maxHeight)
-					if(style > 10):
-						style = 10
-					merapi.write('\t\t\t<styleUrl>#volcanoPolyStyle'+str(style)+'</styleUrl>\n')
-					merapi.write('\t\t\t<TimeSpan>\n')
-					merapi.write('\t\t\t\t<begin>'+str(begin)+'</begin>\n')
-					merapi.write('\t\t\t\t<end>'+str(end)+'</end>\n')
-					merapi.write('\t\t\t</TimeSpan>\n')
-					merapi.write(placemarkHeader)
-                                        tryCount=0
-                                        exceptCount=0
-					for x in range(5):
-						if (x != 4):
-							point = points.readline()
-							xyz = point.split('\t')
-                                                        try:
-                                                           tryCount+=1
-							   (lat,lng) = utmToLatLng(zone, float(xyz[0]), float(xyz[1]), northernHemisphere)
-							   merapi.write('\t\t\t\t\t\t\t'+str(lng)+','+str(lat)+','+str(float(height))+'\n')
-                                                        except:
-                                                           exceptCount+=1
-                                                           break
-							if (x == 0):
-								firstCordX = str(lng)
-								firstCordY = str(lat)
-								firstCordZ = str(float(height))
-						if (x == 4):
-							merapi.write('\t\t\t\t\t\t\t'+firstCordX+','+firstCordY+','+firstCordZ)
-					merapi.write(placemarkFooter)
-				else:
-					for x in range(4):
-						point = points.readline()
-				height = heights.readline()
-				if not height:
-					break
-                        # end while
-			date += datetime.timedelta(days=1)
-			points.close()
-			heights.close()
+            # every 1 line in PILE_HEIGHT corresponds to 4 lines in Points.txt
+            height = heights.readline()
+            begin = date
+            end = date + datetime.timedelta(days=1)
+            firstCordX = 0
+            firstCordY = 0
+            firstCordZ = 0
+            tryCount = 0
+            exceptCount = 0
+            while 1:
+                # Convert UTM to lat/lon and then print <Placemark> tag
+                if float(height) > 0:
+                    merapi.write('\t\t<Placemark>\n')
+                    merapi.write('\t\t\t<name>Height ' + str(float(height)) + ' meters</name>\n')
+                    style = int(float(height) * 10 / maxHeight)
+                    if style > 10:
+                        style = 10
+                    merapi.write('\t\t\t<styleUrl>#volcanoPolyStyle' + str(style) + '</styleUrl>\n')
+                    merapi.write('\t\t\t<TimeSpan>\n')
+                    merapi.write('\t\t\t\t<begin>' + str(begin) + '</begin>\n')
+                    merapi.write('\t\t\t\t<end>' + str(end) + '</end>\n')
+                    merapi.write('\t\t\t</TimeSpan>\n')
+                    merapi.write(placemarkHeader)
+                    for x in range(5):
+                        if x != 4:
+                            point = points.readline()
+                            xyz = point.split('\t')
+                            try:
+                                tryCount += 1
+                                (lat, lng) = utmToLatLng(zone, float(xyz[0]), float(xyz[1]), northernHemisphere)
+                                merapi.write('\t\t\t\t\t\t\t' + str(lng) + ',' + str(lat) + ',' + str(float(height)) + '\n')
+                            except:
+                                exceptCount += 1
+                                break
+                            if x == 0:
+                                firstCordX = str(lng)
+                                firstCordY = str(lat)
+                                firstCordZ = str(float(height))
+                        if x == 4:
+                            merapi.write('\t\t\t\t\t\t\t' + firstCordX + ',' + firstCordY + ',' + firstCordZ)
+                    merapi.write(placemarkFooter)
+                else:
+                    for x in range(4):
+                        point = points.readline()
+                height = heights.readline()
+                if not height:
+                    break
+            date += datetime.timedelta(days=1)
+            points.close()
+            heights.close()
 
-                        if exceptCount != 0:
-                            print("try count: %d\n", tryCount)
-                            print("except count: %d\n", exceptCount)
-                            print("percent: %d\n", exceptCount/tryCount)
+            if exceptCount != 0:
+                print("try count: %d" % tryCount)
+                print("except count: %d" % exceptCount)
+                print("percent: %.4f" % (float(exceptCount) / float(tryCount)))
 
 merapi.write(footer)
 merapi.close()

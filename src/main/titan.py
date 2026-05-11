@@ -37,7 +37,7 @@ def VarTypeInt(sectionName,varName,value):
         raise ValueError(sectionName+": incorrect data type for argument "+varName+"="+str(value)+", should be int!")
     return int(value)
 def VarTypeString(sectionName,varName,value):
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         raise ValueError(sectionName+": incorrect data type for argument "+varName+"="+str(value)+", should be string!")
     return value
 def VarTypeStringConvNone(sectionName,varName,value):
@@ -52,11 +52,11 @@ def VarTypeTupleSimple(sectionName,varName,value):
     return value
 
 def VarTypeCoulombMatMapBedFrict(sectionName,varName,value):
-    print sectionName,varName,value
+    print(sectionName,varName,value)
     value_out={}
     if not isinstance(value, (dict)):
         raise ValueError(sectionName+": incorrect data type for argument "+varName+"="+str(value)+", should be dict!")
-    for k,v in value.iteritems():
+    for k,v in value.items():
         value_out[k]=VarTypeFloat(sectionName, "values of dict "+varName,v)
     return value_out
 
@@ -172,7 +172,7 @@ class TiArgCheckerAndSetter(object):
             
         if check_extra_args:
             if len(arg_in)==1:
-                raise ValueError(self.sectionName+": unknown argument: "+arg_in.keys()[0])
+                raise ValueError(self.sectionName+": unknown argument: "+next(iter(arg_in)))
             if len(arg_in)>1:
                 raise ValueError(self.sectionName+": unknown arguments: "+", ".join(arg_in.keys()))
         
@@ -339,6 +339,9 @@ class TitanSimulationBase(object):
     def __init__(self,overwrite_output=False):
         #initiate all class members
         self.overwrite_output=VarType(bool).chk("TitanSimulation", "overwrite_output", overwrite_output)
+        self._initializing_defaults=True
+        self._restart_output_explicit=False
+        self._time_series_output_explicit=False
         #GIS
         self.ui_GIS=None
         self.chk_GIS=TiArgCheckerAndSetter(
@@ -704,8 +707,19 @@ class TitanSimulationBase(object):
                 'filename':{'desc':'',
                     'validator':VarTypeString
                 },
-            }
+                'gis_main':{'desc':'',
+                    'validator':VarTypeStringConvNone
+                },
+                'add_iterations':{'desc':'',
+                    'validator':VarType(int,conditions=[{'f':lambda v: v >= 0,'msg':'should be non-negative or None!'}],CanBeNone=True).chk
+                },
+                'add_time':{'desc':'',
+                    'validator':VarType(float,conditions=[{'f':lambda v: v >= 0.0,'msg':'should be non-negative or None!'}],CanBeNone=True).chk
+                },
+            },
+            defaultParameters={'gis_main':None,'add_iterations':None,'add_time':None}
         )
+        self._initializing_defaults=False
         
         
     def setGIS(self,**kwarg):
@@ -767,12 +781,16 @@ class TitanSimulationBase(object):
             self.ui_TimeProps['max_time']=-1.0
     def setRestartOutput(self,**kwarg):
         self.ui_RestartOutput=self.chk_RestartOutput.process(kwarg)
+        if not self._initializing_defaults:
+            self._restart_output_explicit=True
         if self.ui_RestartOutput['dtime']==None:
             self.ui_RestartOutput['dtime']=-1.0
         if self.ui_RestartOutput['diter']==None:
             self.ui_RestartOutput['diter']=-1
     def setTimeSeriesOutput(self,**kwarg):
         self.ui_TimeSeriesOutput=self.chk_TimeSeriesOutput.process(kwarg)
+        if not self._initializing_defaults:
+            self._time_series_output_explicit=True
         if self.ui_TimeSeriesOutput['dtime']==None:
             self.ui_TimeSeriesOutput['dtime']=-1.0
         if self.ui_TimeSeriesOutput['diter']==None:
@@ -824,6 +842,12 @@ class TitanSimulationBase(object):
         self.ui_loadRestart=self.chk_loadRestart.process(kwarg)
         
     def _validate(self):
+        if self.ui_loadRestart !=None:
+            if not os.path.isfile(self.ui_loadRestart['filename']):
+                raise IOError("Restart file does not exist ("+self.ui_loadRestart['filename']+").")
+            if len(self.ui_Pile)>0 or len(self.ui_FluxSource)>0 or len(self.ui_DischargePlane)>0:
+                raise ValueError("loadRestart can not be combined with addPile, addFluxSource or addDischargePlane.")
+            return
         #######################################################################
         #check cross section
         if self.ui_MatModel['model']=='TwoPhases-Pitman-Le':
@@ -869,24 +893,66 @@ class TitanSimulation(TitanSimulationBase):
         super(TitanSimulation, self).__init__(overwrite_output=overwrite_output)
         #initiate all class members
         self.sim=None
+
+    def _ensure_output_directory(self,dirname):
+        if dirname=="":
+            return
+        if os.path.exists(dirname):
+            if not os.path.isdir(dirname):
+                raise IOError("Output path exists and is not a directory ("+dirname+").")
+            return
+        os.mkdir(dirname)
+
+    def _setCxxTitanSimulationFromRestart(self):
+        ui_loadRestart=self.ui_loadRestart
+        ui_RestartOutput=self.ui_RestartOutput
+        ui_TimeSeriesOutput=self.ui_TimeSeriesOutput
+
+        self.sim=cxxTitanSimulation()
+        self.sim.overwrite_output=self.overwrite_output
+
+        self.sim.load_restart(ui_loadRestart['filename'],ui_loadRestart['gis_main'])
+
+        timeprops=self.sim.get_timeprops()
+        if ui_loadRestart['add_iterations']!=None and ui_loadRestart['add_iterations']>0:
+            timeprops.maxiter+=ui_loadRestart['add_iterations']
+        if ui_loadRestart['add_time']!=None and ui_loadRestart['add_time']>0.0:
+            timeprops.maxtime+=ui_loadRestart['add_time']
+            timeprops.ndmaxtime=timeprops.maxtime/timeprops.TIME_SCALE
+
+        if self._restart_output_explicit:
+            self.sim.get_timeprops().setRestartOutput(ui_RestartOutput['diter'],ui_RestartOutput['dtime'])
+            self.sim.restart_enabled=ui_RestartOutput['enabled']
+            self.sim.restart_prefix=ui_RestartOutput['output_prefix']
+            self.sim.restart_keep_all=ui_RestartOutput['keep_all']
+            self.sim.restart_keep_redundant_data=ui_RestartOutput['keep_redundant_data']
+            if self.sim.myid==0 and self.sim.restart_enabled:
+                self._ensure_output_directory(self.sim.restart_prefix)
+
+        if self._time_series_output_explicit:
+            self.sim.get_timeprops().setTimeSeriesOutput(ui_TimeSeriesOutput['diter'],ui_TimeSeriesOutput['dtime'])
+            self.sim.vizoutput=ui_TimeSeriesOutput['vizoutput']
+            self.sim.vizoutput_prefix=ui_TimeSeriesOutput['output_prefix']
+            if self.sim.myid==0 and self.sim.vizoutput!=0:
+                self._ensure_output_directory(self.sim.vizoutput_prefix)
         
     def _setCxxTitanSimulation(self):
         """initiate and set all parameters of cxxTitanSimulation"""
         if 0:
-            print self.ui_GIS
-            print self.ui_Scale
-            print self.ui_NumProp
-            print self.ui_MatModel
-            print self.ui_TimeProps
-            print 'ui_RestartOutput',self.ui_RestartOutput
-            print 'ui_TimeSeriesOutput',self.ui_TimeSeriesOutput
-            print self.ui_StatProps
-            print self.ui_OutlineProps
-            print self.ui_Pile
-            print self.ui_FluxSource
-            print self.ui_DischargePlane
-            print self.ui_LocalQuants
-            print self.ui_loadRestart
+            print(self.ui_GIS)
+            print(self.ui_Scale)
+            print(self.ui_NumProp)
+            print(self.ui_MatModel)
+            print(self.ui_TimeProps)
+            print('ui_RestartOutput',self.ui_RestartOutput)
+            print('ui_TimeSeriesOutput',self.ui_TimeSeriesOutput)
+            print(self.ui_StatProps)
+            print(self.ui_OutlineProps)
+            print(self.ui_Pile)
+            print(self.ui_FluxSource)
+            print(self.ui_DischargePlane)
+            print(self.ui_LocalQuants)
+            print(self.ui_loadRestart)
         #convinience references
         ui_GIS=self.ui_GIS
         ui_Scale=self.ui_Scale
@@ -1001,7 +1067,7 @@ class TitanSimulation(TitanSimulationBase):
         #uncouple the c++ from python proxy 
         integrator_obj.thisown=0
         #set parameters
-        for k,v in ui_Integrator.iteritems():
+        for k,v in ui_Integrator.items():
             setattr(integrator_obj,k,v)
         
         self.sim.set_integrator(integrator_obj)
@@ -1029,10 +1095,10 @@ class TitanSimulation(TitanSimulationBase):
                 matprops.matnames.push_back("all materials")
                 matprops.bedfrict.push_back(float(ui_MatModel['bed_frict']))
         else:
-            print ui_MatModel['bed_frict']
+            print(ui_MatModel['bed_frict'])
             matprops.material_count=len(ui_MatModel['bed_frict'])
-            for k,v in ui_MatModel['bed_frict'].iteritems():
-                print k,v
+            for k,v in ui_MatModel['bed_frict'].items():
+                print(k,v)
                 matprops.matnames.push_back(k)
                 matprops.bedfrict.push_back(float(v))
             #if they did want to use a GIS material map...
@@ -1149,6 +1215,10 @@ class TitanSimulation(TitanSimulationBase):
         """Perform simulation"""
         
         self._validate()
+        if self.ui_loadRestart !=None:
+            self._setCxxTitanSimulationFromRestart()
+            self.sim.run(True)
+            return
         #by this time all values should be sanitized
         self._setCxxTitanSimulation()
         
@@ -1159,12 +1229,12 @@ class TitanSimulation(TitanSimulationBase):
             # locate titan_preprocess: 
             # first check the local-diretory,
             
-            print "\npreproc..."
+            print("\npreproc...")
             self._preproc()
     
             if self.sim.get_mapnames().gis_vector != "":
-                print "\nvectordatpreproc..."
+                print("\nvectordatpreproc...")
                 vectordatpreproc(self.sim.get_mapnames().gis_main, self.sim.get_mapnames().gis_sub, self.sim.get_mapnames().gis_mapset, self.sim.get_mapnames().gis_map, self.sim.get_mapnames().gis_vector)
-            print
+            print()
         #self.sim.input_summary()
         self.sim.run(False)

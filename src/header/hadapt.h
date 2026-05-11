@@ -90,6 +90,7 @@ public:
 public:
     HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, ElementsProperties* _ElemProp,TimeProps* _timeprops, MatProps* _matprops, const int _num_buffer_layer);
     void adapt(int h_count, double target);
+    void initialRefineToCenters(const vector<array<double,2> > &centers);
     
     void refinewrapper2(MatProps* matprops_ptr, ElemPtrList *RefinedList, Element *EmTemp);
 
@@ -261,30 +262,14 @@ private:
     {
 
         const ti_ndx_t neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
+        const int shared_neigh_which = which_neighbor(ndx,neigh_elm_ndx) + 4;
+        ASSERT2(neigh_which == shared_neigh_which);
         calc_coord_and_key(new_node_key[iElm][which],new_node_coord[iElm][which], node0_ndx, node1_ndx);
-        if(ElemTable->myprocess_[neigh_elm_ndx]==myid)
+        new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
+        if(ti_ndx_negative(new_node_ndx[iElm][which]))
         {
-            if(refining_elem_map[neigh_elm_ndx]==-1 || ElemTable->neigh_gen_[neigh][ndx] < ElemTable->generation_[ndx])
-            {
-                //i.e. neigbour is not refined or neighour is of lower generation
-                ASSERT2(ti_ndx_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                create_node_ielm[ithread].push_back(iElm);
-                create_node_iwhich[ithread].push_back(which);
-            }
-            else
-            {
-                ASSERT2(ti_ndx_not_negative(NodeTable->lookup_ndx(new_node_key[iElm][which])));
-                new_node_ndx[iElm][which]=new_node_ndx[refining_elem_map[neigh_elm_ndx]][neigh_which];
-            }
-        }
-        else
-        {
-            new_node_ndx[iElm][which]=NodeTable->lookup_ndx(new_node_key[iElm][which]);
-            if(ti_ndx_negative(new_node_ndx[iElm][which]))
-            {
-                create_node_ielm[ithread].push_back(iElm);
-                create_node_iwhich[ithread].push_back(which);
-            }
+            create_node_ielm[ithread].push_back(iElm);
+            create_node_iwhich[ithread].push_back(which);
         }
     }
     /**
@@ -306,9 +291,10 @@ private:
     void rE__find_new_side_node(const int iElm, const int which, const ti_ndx_t ndx,const int neigh, const int neigh_which)
     {
         const ti_ndx_t neigh_elm_ndx = ElemTable->neighbor_ndx_[neigh][ndx];
-        ASSERT2(neigh_which == which_neighbor(ndx,neigh_elm_ndx) + 4);
-        new_node_key[iElm][which] = ElemTable->node_key_[neigh_which][neigh_elm_ndx];
-        new_node_ndx[iElm][which] = ElemTable->node_key_ndx_[neigh_which][neigh_elm_ndx];
+        const int shared_neigh_which = which_neighbor(ndx,neigh_elm_ndx) + 4;
+        ASSERT2(neigh_which == shared_neigh_which);
+        new_node_key[iElm][which] = ElemTable->node_key_[shared_neigh_which][neigh_elm_ndx];
+        new_node_ndx[iElm][which] = ElemTable->node_key_ndx_[shared_neigh_which][neigh_elm_ndx];
         for(int j=0;j<DIMENSION;++j)
             new_node_coord[iElm][which][j]=NodeTable->coord_[j][new_node_ndx[iElm][which]];
     }
@@ -400,4 +386,3 @@ private:
 
 
 #endif	/* HADAPT_H */
-
