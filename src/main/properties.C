@@ -85,7 +85,7 @@ void MapNames::print0()
 
 void MapNames::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
 
     TiH5_writeStringAttribute(group, gis_main);
     TiH5_writeStringAttribute(group, gis_sub);
@@ -102,7 +102,7 @@ void MapNames::h5write(H5::CommonFG *parent, string group_name) const
 }
 void MapNames::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readStringAttribute(group, gis_main);
     TiH5_readStringAttribute(group, gis_sub);
@@ -354,7 +354,7 @@ double PileProps::get_elliptical_pile_height(NodeHashTable* HT_Node_Ptr, Element
 }
 void PileProps::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"PileProps","Type");
     TiH5_writeIntAttribute(group, numpiles);
     TiH5_writeDoubleAttribute(group, height_scale);
@@ -375,7 +375,7 @@ void PileProps::h5write(H5::CommonFG *parent, string group_name) const
 }
 void PileProps::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, numpiles);
     TiH5_readDoubleAttribute(group, height_scale);
@@ -398,7 +398,7 @@ PileProps* PileProps::createPileProps(const H5::CommonFG *parent, const  string 
 {
     PileProps *pileProps=nullptr;
     string PilePropsType;
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readStringAttribute__(group,PilePropsType,"Type");
 
     if (PilePropsType == "PileProps")
@@ -466,20 +466,20 @@ void PilePropsTwoPhases::set_element_height_to_elliptical_pile_height(NodeHashTa
 void PilePropsTwoPhases::h5write(H5::CommonFG *parent, string group_name) const
 {
     PileProps::h5write(parent, group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"PilePropsTwoPhases","Type");
     TiH5_writeDoubleVectorAttribute(group, vol_fract, numpiles);
 }
 void PilePropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     PileProps::h5read(parent, group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readDoubleVectorAttribute(group, vol_fract, numpiles);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void FluxProps::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     TiH5_writeIntAttribute(group, no_of_sources);
 
     TiH5_writeDoubleVectorAttribute(group, influx, no_of_sources);
@@ -502,7 +502,7 @@ void FluxProps::h5write(H5::CommonFG *parent, string group_name) const
 }
 void FluxProps::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, no_of_sources);
 
@@ -526,14 +526,14 @@ void FluxProps::h5read(const H5::CommonFG *parent, const  string group_name)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void DischargePlanes::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     TiH5_writeIntAttribute(group, num_planes);
 
     TiH5_writeVectorArrayAttribute(group, planes);
 }
 void DischargePlanes::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, num_planes);
 
@@ -544,7 +544,7 @@ MatProps* MatProps::createMatProps(const H5::CommonFG *parent,TiScale &_scale, c
 {
     MatProps *matProps=nullptr;
     string matPropsType;
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readStringAttribute__(group,matPropsType,"Type");
 
     if (matPropsType == "MatProps")
@@ -566,7 +566,7 @@ MatProps* MatProps::createMatProps(const H5::CommonFG *parent,TiScale &_scale, c
 }
 void MatProps::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"MatProps","Type");
 
     TiH5_writeIntAttribute(group, number_of_cells_across_axis);
@@ -584,7 +584,7 @@ void MatProps::h5write(H5::CommonFG *parent, string group_name) const
 }
 void MatProps::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, number_of_cells_across_axis);
     TiH5_readDoubleAttribute(group, smallest_axis);
@@ -602,7 +602,7 @@ void MatProps::h5read(const H5::CommonFG *parent, const  string group_name)
 void MatPropsTwoPhases::h5write(H5::CommonFG *parent, string group_name) const
 {
     MatProps::h5write(parent, group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"MatPropsTwoPhases","Type");
 
     TiH5_writeDoubleAttribute(group, den_solid);
@@ -614,7 +614,7 @@ void MatPropsTwoPhases::h5write(H5::CommonFG *parent, string group_name) const
 void MatPropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     MatProps::h5read(parent, group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readDoubleAttribute(group, den_solid);
     TiH5_readDoubleAttribute(group, den_fluid);
@@ -626,7 +626,7 @@ void MatPropsTwoPhases::h5read(const H5::CommonFG *parent, const  string group_n
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void LHS_Props::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
 
     TiH5_writeIntAttribute(group, refnum);
     TiH5_writeIntAttribute(group, runid);
@@ -634,7 +634,7 @@ void LHS_Props::h5write(H5::CommonFG *parent, string group_name) const
 }
 void LHS_Props::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, refnum);
     TiH5_readIntAttribute(group, runid);
@@ -1065,7 +1065,7 @@ void OutLine::flush_stats(bool zero_old_arrays)
     const ti_ndx_t N=pileheight_by_elm.size();
     double * RESTRICT m_pileheight_by_elm=&(pileheight_by_elm[0]);
     double * RESTRICT m_max_kinergy_by_elm=&(max_kinergy_by_elm[0]);
-    double * RESTRICT m_max_dynamic_pressure_by_elm=&(max_kinergy_by_elm[0]);
+    double * RESTRICT m_max_dynamic_pressure_by_elm=&(max_dynamic_pressure_by_elm[0]);
     double * RESTRICT m_cum_kinergy_by_elm=&(cum_kinergy_by_elm[0]);
 
     TI_ASSUME_ALIGNED(m_pileheight_by_elm);
@@ -1211,7 +1211,7 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
 
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
-                "Pileheight=\n",
+                "Elevation=\n",
                 Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
                 yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
         for(iy = 0; iy < Ny; iy++)
@@ -1367,7 +1367,7 @@ void OutLine::output(MatProps* matprops_ptr, StatProps* statprops_ptr)
 
         fprintf(fp, "Nx=%d: X={%20.14g,%20.14g}\n"
                 "Ny=%d: Y={%20.14g,%20.14g}\n"
-                "Pileheight=\n",
+                "Elevation=\n",
                 Nx, xminmax[0] * matprops_ptr->scale.length, xminmax[1] * matprops_ptr->scale.length, Ny,
                 yminmax[0] * matprops_ptr->scale.length, yminmax[1] * matprops_ptr->scale.length);
 
@@ -1447,7 +1447,7 @@ void OutLine::reload(MatProps* matprops_ptr, StatProps* statprops_ptr)
 
 void OutLine::h5write(H5::CommonFG *parent, string group_name)
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
 
     if(enabled)
         combine_results_from_threads();
@@ -1459,8 +1459,8 @@ void OutLine::h5write(H5::CommonFG *parent, string group_name)
     TiH5_writeIntAttribute(group, size);
     TiH5_writeDoubleAttribute(group, dx);
     TiH5_writeDoubleAttribute(group, dy);
-    TiH5_writeDoubleAttribute(group, xminmax[2]);
-    TiH5_writeDoubleAttribute(group, yminmax[2]);
+    TiH5_writeDoubleArrayAttribute(group, xminmax, 2);
+    TiH5_writeDoubleArrayAttribute(group, yminmax, 2);
 
     TiH5_writeBoolAttribute(group, enabled);
     TiH5_writeScalarDataTypeAttribute(group,init_size,datatypeOutLineInitSize);
@@ -1479,7 +1479,7 @@ void OutLine::h5write(H5::CommonFG *parent, string group_name)
 }
 void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readScalarDataTypeAttribute(group, elementType, datatypeElementType);
 
@@ -1490,8 +1490,21 @@ void OutLine::h5read(const H5::CommonFG *parent, const  string group_name)
     TiH5_readIntAttribute(group, size);
     TiH5_readDoubleAttribute(group, dx);
     TiH5_readDoubleAttribute(group, dy);
-    TiH5_readDoubleAttribute(group, xminmax[2]);
-    TiH5_readDoubleAttribute(group, yminmax[2]);
+    if(group.attrExists("xminmax") && group.attrExists("yminmax"))
+    {
+        TiH5_readDoubleArrayAttribute(group, xminmax, 2);
+        TiH5_readDoubleArrayAttribute(group, yminmax, 2);
+    }
+    else
+    {
+        // Older restart snapshots stored broken outline bounds. Reconstruct
+        // them from the loaded mesh tables so restarted map outputs get the
+        // correct coordinate headers again.
+        xminmax[0] = ElemTable->get_Xrange()[0];
+        xminmax[1] = ElemTable->get_Xrange()[1];
+        yminmax[0] = ElemTable->get_Yrange()[0];
+        yminmax[1] = ElemTable->get_Yrange()[1];
+    }
 
     TiH5_readBoolAttribute(group, enabled);
     TiH5_readScalarDataTypeAttribute(group,init_size,datatypeOutLineInitSize);
@@ -1909,7 +1922,7 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 
 void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
 
     TiH5_writeIntAttribute(group, no_locations);
     TiH5_writeDoubleVectorAttribute(group, X, X.size());
@@ -1957,7 +1970,7 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
 }
 void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, no_locations);
     TiH5_readDoubleVectorAttribute(group, X, X.size());

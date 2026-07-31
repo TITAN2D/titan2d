@@ -23,6 +23,7 @@
 #define TITAN2D_VERSION_REVISION 0
 
 extern int threads_number;
+extern int solver_threads_number;
 
 #define TITAN2D_DINAMIC_CHUNK 64
 #define TITAN2D_DINAMIC_MIDIUM_CHUNK 512

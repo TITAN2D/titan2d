@@ -21,7 +21,8 @@
 #include <string>
 using namespace std;
 
-const int GDAL = 2;
+// Avoid colliding with the GDAL namespace provided by modern GDAL headers.
+const int GIS_GDAL = 2;
 const int GIS_GRASS = 1;
 
 class GisLabels;

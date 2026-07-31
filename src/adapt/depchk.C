@@ -53,8 +53,8 @@ void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement,
 		{ //--element is temporary varible
 			ti_ndx_t ndx=tempList[ielem];
 
-			for(int i = 0; i < 4; i++)
-			{ //-- checking the four neighbors to identify which must be refined
+			for(int i = 0; i < 8; i++)
+			{ //-- checking all real neighbor slots to identify which must be refined
 
 				int neigh_proc = ElemTable->neigh_proc_[i][ndx];
 
@@ -64,7 +64,14 @@ void HAdapt::findTriggeredRefinements(const vector<ti_ndx_t> &primaryRefinement,
 					ti_ndx_t neigh_ndx = ElemTable->lookup_ndx(ElemTable->neighbors_[i][ndx]);//ElemTable->neighbor_ndx_[i][ndx];
 
 					//assert(Neigh);
-					if(ti_ndx_not_negative(neigh_ndx) && neigh_proc == myid)
+					if(ti_ndx_negative(neigh_ndx))
+					{
+						// The index-based AMR path depends on a current local or ghost
+						// neighbor before it can safely trigger dependent refinement.
+						ifg = 0;
+						break;
+					}
+					if(neigh_proc == myid)
 					{ //-- if this neighbor is in the same proc as element is
 
 						if(ElemTable->generation_[ndx] > ElemTable->generation_[neigh_ndx])
@@ -362,4 +369,3 @@ void depchk(Element* EmTemp, ElementsHashTable* El_Table, int* ifg, Element* ref
 }
 
 #endif
-

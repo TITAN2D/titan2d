@@ -20,6 +20,7 @@
 #endif
 
 #include <sstream>
+#include <utility>
 
 
 
@@ -30,6 +31,149 @@
 #define TARGETPROC -1
 
 #define AssertMeshNodeCheck
+
+static int find_matching_neighbor_slot(const Element* father, const int father_side, const Element* neigh)
+{
+    for(int i = 0; i < 8; ++i)
+    {
+        if(neigh->neighbor(i) == father->key())
+            return i;
+    }
+
+    for(int i = 0; i < 4; ++i)
+    {
+        const bool corners_match =
+            (neigh->node_key(i) == father->node_key((father_side + 1) % 4)) &&
+            (neigh->node_key((i + 1) % 4) == father->node_key(father_side));
+        const bool side_node_matches =
+            (neigh->node_key(i + 4) == father->node_key(father_side + 4));
+        if(corners_match && side_node_matches)
+            return i;
+    }
+
+    return -1;
+}
+
+static int corrected_remote_neighbor_proc(ElementsHashTable* ElemTable, Element* father,
+                                          const int ineigh, const int myid, const int numprocs)
+{
+    int neigh_proc = father->neigh_proc(ineigh);
+    if((neigh_proc < 0) || (neigh_proc >= numprocs))
+        return neigh_proc;
+
+    const ti_ndx_t neigh_ndx = ElemTable->lookup_ndx(father->neighbor(ineigh));
+    father->neighbor_ndx(ineigh, neigh_ndx);
+    if(neigh_proc == myid)
+        return neigh_proc;
+
+    if(ti_ndx_negative(neigh_ndx))
+        return neigh_proc;
+
+    Element* neigh = &(ElemTable->elenode_[neigh_ndx]);
+    const int owner = (neigh->adapted_flag() > 0) ? myid : neigh->myprocess();
+    if((owner >= 0) && (owner < numprocs) && (owner != neigh_proc))
+    {
+        father->set_neigh_proc(ineigh, owner);
+        neigh_proc = owner;
+    }
+
+    return neigh_proc;
+}
+
+static void repair_stale_oldfather_neighbors(ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
+                                             const vector<ti_ndx_t> &allRefinement, const int myid)
+{
+    for(ti_ndx_t father_ndx: allRefinement)
+    {
+        Element* father = &(ElemTable->elenode_[father_ndx]);
+        const SFC_Key father_key = father->key();
+
+        for(ti_ndx_t ndx = 0; ndx < ElemTable->size(); ++ndx)
+        {
+            if((ndx == father_ndx) || (ElemTable->status_[ndx] < 0) || (ElemTable->adapted_[ndx] <= TOBEDELETED))
+                continue;
+
+            Element* elem = &(ElemTable->elenode_[ndx]);
+            for(int elem_side = 0; elem_side < 4; ++elem_side)
+            {
+                if((elem->neighbor(elem_side) != father_key) && (elem->neighbor(elem_side + 4) != father_key))
+                    continue;
+
+                int father_side = -1;
+                for(int iside = 0; iside < 8; ++iside)
+                {
+                    if(father->neighbor(iside) == elem->key())
+                    {
+                        father_side = iside % 4;
+                        break;
+                    }
+                }
+                if(father_side < 0)
+                    father_side = (elem_side + 2) % 4;
+
+                if(elem->generation() != father->generation())
+                    continue;
+
+                const int son_a = father_side;
+                const int son_b = (father_side + 1) % 4;
+                ti_ndx_t son_a_ndx = father->son_ndx(son_a);
+                ti_ndx_t son_b_ndx = father->son_ndx(son_b);
+                if(ti_ndx_negative(son_a_ndx))
+                    son_a_ndx = ElemTable->lookup_ndx(father->son(son_a));
+                if(ti_ndx_negative(son_b_ndx))
+                    son_b_ndx = ElemTable->lookup_ndx(father->son(son_b));
+                if(ti_ndx_negative(son_a_ndx) || ti_ndx_negative(son_b_ndx))
+                    continue;
+
+                Element* sonA = &(ElemTable->elenode_[son_a_ndx]);
+                Element* sonB = &(ElemTable->elenode_[son_b_ndx]);
+
+                elem->set_neighbor(elem_side, sonB->key());
+                elem->set_neighbor(elem_side + 4, sonA->key());
+                elem->neighbor_ndx(elem_side, son_b_ndx);
+                elem->neighbor_ndx(elem_side + 4, son_a_ndx);
+                elem->get_neigh_gen(elem_side, sonB->generation());
+                elem->get_neigh_gen(elem_side + 4, sonA->generation());
+                elem->set_neigh_proc(elem_side, myid);
+                elem->set_neigh_proc(elem_side + 4, myid);
+
+                sonA->set_neighbor(father_side, elem->key());
+                sonA->set_neighbor(father_side + 4, elem->key());
+                sonA->neighbor_ndx(father_side, ndx);
+                sonA->neighbor_ndx(father_side + 4, ndx);
+                sonA->get_neigh_gen(father_side, elem->generation());
+                sonA->get_neigh_gen(father_side + 4, elem->generation());
+                sonA->set_neigh_proc(father_side, myid);
+                sonA->set_neigh_proc(father_side + 4, -2);
+
+                sonB->set_neighbor(father_side, elem->key());
+                sonB->set_neighbor(father_side + 4, elem->key());
+                sonB->neighbor_ndx(father_side, ndx);
+                sonB->neighbor_ndx(father_side + 4, ndx);
+                sonB->get_neigh_gen(father_side, elem->generation());
+                sonB->get_neigh_gen(father_side + 4, elem->generation());
+                sonB->set_neigh_proc(father_side, myid);
+                sonB->set_neigh_proc(father_side + 4, -2);
+
+                ti_ndx_t node_ndx = NodeTable->lookup_ndx(elem->node_key(elem_side));
+                if(ti_ndx_not_negative(node_ndx))
+                    NodeTable->info_[node_ndx] = CORNER;
+                node_ndx = NodeTable->lookup_ndx(elem->node_key((elem_side + 1) % 4));
+                if(ti_ndx_not_negative(node_ndx))
+                    NodeTable->info_[node_ndx] = CORNER;
+                node_ndx = NodeTable->lookup_ndx(elem->node_key(elem_side + 4));
+                if(ti_ndx_not_negative(node_ndx))
+                    NodeTable->info_[node_ndx] = S_C_CON;
+                node_ndx = NodeTable->lookup_ndx(sonA->node_key(father_side + 4));
+                if(ti_ndx_not_negative(node_ndx))
+                    NodeTable->info_[node_ndx] = S_S_CON;
+                node_ndx = NodeTable->lookup_ndx(sonB->node_key(father_side + 4));
+                if(ti_ndx_not_negative(node_ndx))
+                    NodeTable->info_[node_ndx] = S_S_CON;
+            }
+        }
+    }
+}
 
 //! investigate an Element, question his "friends and family" about him.
 void ElemBackgroundCheck(ElementsHashTable* El_Table, NodeHashTable* NodeTable, const SFC_Key& debugkey, FILE *fp)
@@ -970,7 +1114,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
 
             for(ineigh = 0; ineigh < 8; ineigh++)
             {
-                neigh_proc = EmFather->neigh_proc(ineigh);
+                neigh_proc = corrected_remote_neighbor_proc(ElemTable, EmFather, ineigh, myid, numprocs);
                 assert(neigh_proc < numprocs);
                 ineighm4 = ineigh % 4;
                 ineighp4 = ineighm4 + 4;
@@ -1048,7 +1192,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                                 NdTemp->info(CORNER);
                             }
                             
-                            if(EmFather->neigh_proc(ineighother) == myid)
+                            if(corrected_remote_neighbor_proc(ElemTable, EmFather, ineighother, myid, numprocs) == myid)
                             {
                                 //one neighbor on this side belongs to another processor and
                                 //has just been taken care of
@@ -1210,10 +1354,9 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                 isonB = (iside + 1) % 4;
                 
                 ineigh = iside;
-                neigh_proc = EmFather->neigh_proc(ineigh);
+                neigh_proc = corrected_remote_neighbor_proc(ElemTable, EmFather, ineigh, myid, numprocs);
                 if((neigh_proc >= 0) && (neigh_proc != myid))
                 {
-                    
                     //The element I want my neighbor proc to update
                     SET_OLDKEY((&(send[neigh_proc][(4 * isend[neigh_proc] + 0) * KEYLENGTH])),EmFather->neighbor(ineigh));
                     //ME
@@ -1245,7 +1388,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                 }
                 
                 ineigh = iside + 4;
-                neigh_proc = EmFather->neigh_proc(ineigh);
+                neigh_proc = corrected_remote_neighbor_proc(ElemTable, EmFather, ineigh, myid, numprocs);
                 if((neigh_proc >= 0) && (neigh_proc != myid))
                 {
                     //I know I'm one generation older than my old neighbor so
@@ -1295,6 +1438,7 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
 
         int iside, ineigh, ineighp4, isonA, isonB;
         int ineighme, ineighmep4, ineighson, inewcase, inode;
+        bool skip_side;
 
         ti_ndx_t ifather=allRefinement[iElm];
         EmFather = &(ElemTable->elenode_[ifather]);  //Hello I'm the OLDFATHER
@@ -1378,20 +1522,32 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                 EmNeighNew[0] = EmNeighNew[1] = EmNeighNew[2] = EmNeighNew[3] = NULL;
                 EmNeighNewNdx[0] = EmNeighNewNdx[1] = EmNeighNewNdx[2] = EmNeighNewNdx[3] = ti_ndx_unknown;
                 
-                for(ineighme = 0; ineighme < 8; ineighme++)
+                ineighme = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[0]);
+                if(ineighme < 0)
                 {
-                    if(EmFather->key()==EmNeighOld[1]->neighbor(ineighme))
-                        break;
-                    
+                    const int ineighme_alt = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[1]);
+                    if(ineighme_alt >= 0)
+                    {
+                        std::swap(EmNeighOld[0], EmNeighOld[1]);
+                        std::swap(EmNeighOldNdx[0], EmNeighOldNdx[1]);
+                        ineighme = ineighme_alt;
+                    }
                 }
-                if(!(ineighme < 8))
+                if(ineighme < 0)
                 {
-                    cout<<"FUBAR 0 detected in refine_neigh_update\nEmFather={"<<EmFather->key()<<"}\n";
-                    cout<<"EmNeighOld[0]={"<<EmNeighOld[0]->key()<<"} ineigh="<<ineigh<<" isonA="<<isonA<<" isonB="<<isonB<<"\n";
-                    cout<<"aborting!!"<<endl;
-                    
-                    assert(ineighme < 8);
+                    printf("refine_neigh_update: can not match father side.%016llx neighbor0 %016llx neighbor1 %016llx side %d\n",
+                           (unsigned long long)EmFather->key(),
+                           (unsigned long long)EmNeighOld[0]->key(),
+                           (unsigned long long)EmNeighOld[1]->key(),
+                           ineigh);
+                    skip_side = true;
                 }
+                else
+                {
+                    skip_side = false;
+                }
+                if(skip_side)
+                    continue;
                 
                 //There are 5 cases I need to worry about about
                 //A: my old neighbor is one generation older than me, only
@@ -1880,12 +2036,18 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
                              */
                             if(!EmTemp)
                             {
-                                printf("refine_neigh_update(): myid=%d receiving from iproc=%d, %dth element being received is {%10u,%10u} but this off processor neighbor is missing\n",
-                                       myid, iproc, irecvd, recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 0],
-                                       recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 1]);
-                                ElemBackgroundCheck(ElemTable, NodeTable, sfc_key_from_oldkey(&(recv[iproc][(4 * irecvd + 0) * KEYLENGTH])),
-                                stdout);
-                                assert(EmTemp);
+                                fprintf(stderr,
+                                        "refinedNeighboursUpdate(): myid=%d missing target from iproc=%d, recv=%d, target={%10u,%10u}, old_neigh={%10u,%10u}, son0={%10u,%10u}, son1={%10u,%10u}\n",
+                                        myid, iproc, irecvd, recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 0],
+                                        recv[iproc][(4 * irecvd + 0) * KEYLENGTH + 1],
+                                        recv[iproc][(4 * irecvd + 1) * KEYLENGTH + 0],
+                                        recv[iproc][(4 * irecvd + 1) * KEYLENGTH + 1],
+                                        recv[iproc][(4 * irecvd + 2) * KEYLENGTH + 0],
+                                        recv[iproc][(4 * irecvd + 2) * KEYLENGTH + 1],
+                                        recv[iproc][(4 * irecvd + 3) * KEYLENGTH + 0],
+                                        recv[iproc][(4 * irecvd + 3) * KEYLENGTH + 1]);
+                                MPI_Abort(MPI_COMM_WORLD, 1);
+                                abort();
                             }
                             
                             //my old neighbor will introduce his NEWSONs to me
@@ -2103,7 +2265,9 @@ void HAdapt::refinedNeighboursUpdate(const vector<ti_ndx_t> &allRefinement)
     }
 #endif
     //remove OLDFATHERs
-    ElemTable->removeElements(&(allRefinement[0]),allRefinement.size());//I've lived a good life, it's my time to die
+    repair_stale_oldfather_neighbors(ElemTable, NodeTable, allRefinement, myid);
+    if(!allRefinement.empty())
+        ElemTable->removeElements(&(allRefinement[0]),allRefinement.size());//I've lived a good life, it's my time to die
     //RefinedList->set_inewstart(RefinedList->get_num_elem());
     PROFILING3_STOPADD_RESTART(HAdapt_refinedNeighboursUpdate_removeElements,pt_start);
     if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
@@ -2663,11 +2827,15 @@ void refine_neigh_update(ElementsHashTable* El_Table, NodeHashTable* NodeTable, 
                 assert(EmNeighOld[1]);
                 EmNeighNew[0] = EmNeighNew[1] = EmNeighNew[2] = EmNeighNew[3] = NULL;
                 
-                for(ineighme = 0; ineighme < 8; ineighme++)
+                ineighme = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[0]);
+                if(ineighme < 0)
                 {
-                    if(EmFather->key()==EmNeighOld[1]->neighbor(ineighme))
-                        break;
-                    
+                    const int ineighme_alt = find_matching_neighbor_slot(EmFather, ineigh, EmNeighOld[1]);
+                    if(ineighme_alt >= 0)
+                    {
+                        std::swap(EmNeighOld[0], EmNeighOld[1]);
+                        ineighme = ineighme_alt;
+                    }
                 }
                 if(!(ineighme < 8))
                 {

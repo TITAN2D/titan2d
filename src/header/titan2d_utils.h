@@ -499,7 +499,7 @@ extern TitanProfiling titanProfiling;
 
 
 
-#ifndef _OPENMP
+#if !defined(_OPENMP) && !defined(TITAN2D_OPENMP_RUNTIME)
 #define omp_get_thread_num() 0
 #endif
 

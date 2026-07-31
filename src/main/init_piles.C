@@ -236,4 +236,3 @@ void cxxTitanSimulation::init_piles()
     
     return;
 }
-

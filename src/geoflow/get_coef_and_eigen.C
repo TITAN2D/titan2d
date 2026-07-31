@@ -62,7 +62,7 @@ double Integrator_SinglePhase_Coulomb::get_coef_and_eigen(int ghost_flag)
         dt[2] = c_dmin1(dttemp, dttemp2);
     } //end of section that SHOULD ____NOT___ be openmp'd
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))
@@ -175,7 +175,7 @@ double Integrator_SinglePhase_Voellmy_Salm::get_coef_and_eigen(int ghost_flag)
         dt[2] = c_dmin1(dttemp, dttemp2);
     } //end of section that SHOULD ____NOT___ be openmp'd
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))
@@ -284,7 +284,7 @@ double Integrator_SinglePhase_Pouliquen_Forterre::get_coef_and_eigen(int ghost_f
         dt[2] = c_dmin1(dttemp, dttemp2);
     } //end of section that SHOULD ____NOT___ be openmp'd
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))
@@ -397,7 +397,7 @@ double Integrator_TwoPhases::get_coef_and_eigen(int ghost_flag)
     
 
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(min:min_dx_dy_evalue) reduction(max:hmax)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if((adapted_[ndx] > 0) || ((adapted_[ndx] < 0) && (ghost_flag == 1)))

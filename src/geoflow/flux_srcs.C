@@ -132,7 +132,6 @@ void adapt_fluxsrc_region(ElementsHashTable *ElemTable, NodeHashTable *NodeTable
 
         printf("=========================adapt_fluxsrc_region2 %d\n",timeprops->iter);
 
-
         //update temporary arrays of elements/nodes pointers
         NodeTable->flushNodeTable();
         ElemTable->flushElemTable();
@@ -267,4 +266,3 @@ void Element::calc_flux(NodeHashTable *NodeTable, FluxProps *fluxprops, TimeProp
     
     return;
 }
-

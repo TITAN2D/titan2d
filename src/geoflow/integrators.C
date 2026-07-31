@@ -29,6 +29,19 @@
 
 //#include <advisor-annotate.h>double
 
+static void move_data_and_flush(int numprocs, int myid, ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
+                                TimeProps* timeprops_ptr)
+{
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
+    if(!ElemTable->all_elenodes_are_permanent || !NodeTable->all_elenodes_are_permanent)
+    {
+        NodeTable->flushNodeTable();
+        ElemTable->flushElemTable();
+        ElemTable->updateNeighboursIndexes();
+    }
+}
+
 Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
     timeprops_ptr(_titanSimulation->get_timeprops()),
@@ -155,7 +168,7 @@ void Integrator::step()
      */
 
     /* pass off proc data here (really only need state_vars for off-proc neighbors) */
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
 
@@ -195,7 +208,7 @@ void Integrator::step()
     /* finished predictor step */
 
     /* really only need to share dudx, state_vars, and kactxy */
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     /* calculate the slopes for the new (half-time step) state variables */
@@ -208,7 +221,7 @@ void Integrator::step()
 
 
     /* really only need to share dudx, state_vars, and kactxy */
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     /* calculate kact/pass */
@@ -331,7 +344,7 @@ void Integrator::step()
 }
 void Integrator::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator","Type");
     TiH5_writeDoubleAttribute(group,  int_frict);
     TiH5_writeDoubleAttribute(group,  frict_tiny);
@@ -340,7 +353,7 @@ void Integrator::h5write(H5::CommonFG *parent, string group_name) const
 }
 void Integrator::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readDoubleAttribute(group,  int_frict);
     TiH5_readDoubleAttribute(group,  frict_tiny);
     TiH5_readIntAttribute(group,  order);
@@ -350,7 +363,7 @@ Integrator* Integrator::createIntegrator(const H5::CommonFG *parent, cxxTitanSim
 {
     Integrator* integrator=nullptr;
     string integratorType;
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readStringAttribute__(group,integratorType,"Type");
 
     if (integratorType == "Integrator_SinglePhase_Coulomb")
@@ -414,7 +427,7 @@ void Integrator_SinglePhase::flowrecords()
 void Integrator_SinglePhase::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator::h5write(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase","Type");
     TiH5_writeDoubleAttribute(group,  threshold);
     TiH5_writeDoubleAttribute(group,  erosion_rate);
@@ -423,7 +436,7 @@ void Integrator_SinglePhase::h5write(H5::CommonFG *parent, string group_name) co
 void Integrator_SinglePhase::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator::h5read(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readDoubleAttribute(group,  threshold);
     TiH5_readDoubleAttribute(group,  erosion_rate);
     TiH5_readIntAttribute(group, do_erosion);
@@ -701,7 +714,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
     //             results
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -1340,13 +1353,13 @@ void Integrator_SinglePhase_Coulomb::flowrecords()
 void Integrator_SinglePhase_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Coulomb","Type");
 }
 void Integrator_SinglePhase_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_SinglePhase_Voellmy_Salm::Integrator_SinglePhase_Voellmy_Salm(cxxTitanSimulation *_titanSimulation):
@@ -1397,11 +1410,13 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     double m_realvolume = 0.0;
 
     double inv_xi= 1.0/xi;
-
     //convinience ref
     tivector<double> *g=gravity_;
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -1504,7 +1519,6 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
         unitvx = 0.0;
         unitvy = 0.0;
         elem_eroded = 0.0;
-
         double total_gravity = sqrt(g[0][ndx]*g[0][ndx] + g[1][ndx]*g[1][ndx] + g[2][ndx]*g[2][ndx]);
 
         if(h[ndx] > tiny)
@@ -1900,7 +1914,7 @@ void Integrator_SinglePhase_Voellmy_Salm::flowrecords()
 void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Voellmy_Salm","Type");
     TiH5_writeDoubleAttribute(group, mu);
     TiH5_writeDoubleAttribute(group, xi);
@@ -1908,7 +1922,7 @@ void Integrator_SinglePhase_Voellmy_Salm::h5write(H5::CommonFG *parent, string g
 void Integrator_SinglePhase_Voellmy_Salm::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readDoubleAttribute(group, mu);
     TiH5_readDoubleAttribute(group, xi);
 }
@@ -1985,7 +1999,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     //convinience ref
     tivector<double> *g=gravity_;
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -2499,7 +2513,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::flowrecords()
 void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_SinglePhase::h5write(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator_SinglePhase_Pouliquen_Forterre","Type");
     TiH5_writeDoubleAttribute(group, phi1);
     TiH5_writeDoubleAttribute(group, phi2);
@@ -2510,7 +2524,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::h5write(H5::CommonFG *parent, st
 void Integrator_SinglePhase_Pouliquen_Forterre::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_SinglePhase::h5read(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_readDoubleAttribute(group, phi1);
     TiH5_readDoubleAttribute(group, phi2);
     TiH5_readDoubleAttribute(group, phi3);
@@ -2558,13 +2572,13 @@ void Integrator_TwoPhases::flowrecords()
 void Integrator_TwoPhases::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator::h5write(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator_TwoPhases","Type");
 }
 void Integrator_TwoPhases::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator::h5read(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Integrator_TwoPhases_Coulomb::Integrator_TwoPhases_Coulomb(cxxTitanSimulation *_titanSimulation):
@@ -2632,7 +2646,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -2939,13 +2953,13 @@ void Integrator_TwoPhases_Coulomb::flowrecords()
 void Integrator_TwoPhases_Coulomb::h5write(H5::CommonFG *parent, string group_name) const
 {
     Integrator_TwoPhases::h5write(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     TiH5_writeStringAttribute__(group,"Integrator_TwoPhases_Coulomb","Type");
 }
 void Integrator_TwoPhases_Coulomb::h5read(const H5::CommonFG *parent, const  string group_name)
 {
     Integrator_TwoPhases::h5read(parent,group_name);
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

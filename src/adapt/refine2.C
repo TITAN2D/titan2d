@@ -88,6 +88,13 @@ void HAdapt::check_create_new_node(const int which, const int Node1, const int N
 void HAdapt::check_create_new_node2(const int iElm, const int iNode, const int info, int& RefNe, const int boundary)
 {
     ti_ndx_t ndx = new_node_ndx[iElm][iNode];
+    ti_ndx_t key_ndx = NodeTable->lookup_ndx(new_node_key[iElm][iNode]);
+
+    if(!new_node_isnew[iElm][iNode] && ti_ndx_not_negative(key_ndx) && key_ndx != ndx)
+    {
+        ndx = key_ndx;
+        new_node_ndx[iElm][iNode] = ndx;
+    }
 
     if(new_node_isnew[iElm][iNode])
     {
@@ -96,6 +103,20 @@ void HAdapt::check_create_new_node2(const int iElm, const int iNode, const int i
     }
     else if(NodeTable->coord_[0][ndx] != new_node_coord[iElm][iNode][0] || NodeTable->coord_[1][ndx] != new_node_coord[iElm][iNode][1])
     {
+        fprintf(stderr,
+                "check_create_new_node2 mismatch: iElm=%d iNode=%d ndx=%d key_ndx=%d newkey=%" PRIu64 " ndxkey=%" PRIu64
+                " existing=(%.17g, %.17g) new=(%.17g, %.17g) isnew=%d\n",
+                iElm,
+                iNode,
+                static_cast<int>(ndx),
+                static_cast<int>(key_ndx),
+                new_node_key[iElm][iNode],
+                get_ukey_from_sfc_key(NodeTable->key_[ndx]),
+                NodeTable->coord_[0][ndx],
+                NodeTable->coord_[1][ndx],
+                new_node_coord[iElm][iNode][0],
+                new_node_coord[iElm][iNode][1],
+                new_node_isnew[iElm][iNode] ? 1 : 0);
         assert(0);
     }
     else
@@ -1273,6 +1294,7 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     int boundary;
     int order[5];
     int NewOrder[4][5];
+    bool refreshed_indexes = false;
     
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
@@ -1283,7 +1305,38 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
     
     for(i = 0; i < 8; i++) //-- corners and sides
     {
-        NodeTemp[i] = (Node*) HT_Node_Ptr->lookup(EmTemp->node_key(i));
+        ti_ndx_t node_ndx = EmTemp->node_key_ndx(i);
+        if(ti_ndx_not_negative(node_ndx))
+            NodeTemp[i] = &(HT_Node_Ptr->node(node_ndx));
+        else
+        {
+            node_ndx = HT_Node_Ptr->lookup_ndx(EmTemp->node_key(i));
+            if(ti_ndx_not_negative(node_ndx))
+            {
+                EmTemp->node_key_ndx(i, node_ndx);
+                NodeTemp[i] = &(HT_Node_Ptr->node(node_ndx));
+            }
+            else
+                NodeTemp[i] = nullptr;
+        }
+        if((NodeTemp[i] == nullptr) && !refreshed_indexes)
+        {
+            HT_Elem_Ptr->updateNeighboursIndexes();
+            refreshed_indexes = true;
+
+            node_ndx = EmTemp->node_key_ndx(i);
+            if(ti_ndx_not_negative(node_ndx))
+                NodeTemp[i] = &(HT_Node_Ptr->node(node_ndx));
+            else
+            {
+                node_ndx = HT_Node_Ptr->lookup_ndx(EmTemp->node_key(i));
+                if(ti_ndx_not_negative(node_ndx))
+                {
+                    EmTemp->node_key_ndx(i, node_ndx);
+                    NodeTemp[i] = &(HT_Node_Ptr->node(node_ndx));
+                }
+            }
+        }
         assert(NodeTemp[i]);
     }
     
@@ -1326,7 +1379,39 @@ void refine(Element* EmTemp, ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_N
                 NewOrder[i][a] = NewOrder[i][b] = order[j];
     }
     
-    NodeTemp[8] = (Node*) HT_Node_Ptr->lookup(EmTemp->key()); //-- bubble
+    ti_ndx_t bubble_ndx = EmTemp->node_bubble_ndx();
+    if(ti_ndx_not_negative(bubble_ndx))
+        NodeTemp[8] = &(HT_Node_Ptr->node(bubble_ndx));
+    else
+    {
+        bubble_ndx = HT_Node_Ptr->lookup_ndx(EmTemp->key());
+        if(ti_ndx_not_negative(bubble_ndx))
+        {
+            EmTemp->node_bubble_ndx(bubble_ndx);
+            NodeTemp[8] = &(HT_Node_Ptr->node(bubble_ndx));
+        }
+        else
+            NodeTemp[8] = nullptr;
+    }
+    if((NodeTemp[8] == nullptr) && !refreshed_indexes)
+    {
+        HT_Elem_Ptr->updateNeighboursIndexes();
+        refreshed_indexes = true;
+
+        bubble_ndx = EmTemp->node_bubble_ndx();
+        if(ti_ndx_not_negative(bubble_ndx))
+            NodeTemp[8] = &(HT_Node_Ptr->node(bubble_ndx));
+        else
+        {
+            bubble_ndx = HT_Node_Ptr->lookup_ndx(EmTemp->key());
+            if(ti_ndx_not_negative(bubble_ndx))
+            {
+                EmTemp->node_bubble_ndx(bubble_ndx);
+                NodeTemp[8] = &(HT_Node_Ptr->node(bubble_ndx));
+            }
+        }
+    }
+    assert(NodeTemp[8]);
             
     //SIDE 0
     if(EmTemp->neigh_proc(0) == -1)
@@ -2182,4 +2267,3 @@ void create_new_node(int which, int Node1, int Node2, NodeHashTable* HT_Node_Ptr
     
     return;
 }
-

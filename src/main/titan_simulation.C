@@ -48,6 +48,7 @@ TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
 TitanProfiling titanProfiling;
 int threads_number;
+int solver_threads_number;
 
 
 #include <stdio.h>
@@ -61,6 +62,23 @@ int threads_number;
 int NUM_STATE_VARS;
 bool SHORTSPEED;
 double GEOFLOW_TINY;
+
+static void flush_hash_tables_if_needed(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
+{
+    if(!ElemTable->all_elenodes_are_permanent || !NodeTable->all_elenodes_are_permanent)
+    {
+        NodeTable->flushNodeTable();
+        ElemTable->flushElemTable();
+        ElemTable->updateNeighboursIndexes();
+    }
+}
+
+static void move_data_and_flush(int numprocs, int myid, ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
+                                TimeProps* timeprops_ptr)
+{
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    flush_hash_tables_if_needed(ElemTable, NodeTable);
+}
 
 
 cxxTitanSimulation::cxxTitanSimulation() :
@@ -424,7 +442,7 @@ void cxxTitanSimulation::h5write(H5::CommonFG *parent)
 {
     ///////////////////////////////////////////////////////////////////////////
     //write cxxTitanSimulation
-    H5::Group groupTitanSimulation(parent->createGroup("TitanSimulation"));
+    H5::Group groupTitanSimulation(TiH5_createGroup(parent, "TitanSimulation"));
 
     TiH5_writeIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_writeIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
@@ -466,7 +484,7 @@ void cxxTitanSimulation::h5read(const H5::CommonFG *parent)
 {
     ///////////////////////////////////////////////////////////////////////////
     //read cxxTitanSimulation
-    H5::Group groupTitanSimulation(parent->openGroup("TitanSimulation"));
+    H5::Group groupTitanSimulation(TiH5_openGroup(parent, "TitanSimulation"));
 
     TiH5_readIntAttribute(groupTitanSimulation, REFINE_LEVEL);
     TiH5_readIntAttribute(groupTitanSimulation, NUM_STATE_VARS);
@@ -746,9 +764,19 @@ void cxxTitanSimulation::save_restart_file()
     sprintf(xmdf_Quad9_filename, "%s_Quad9_p%04d.xmf", restart_prefix.c_str(), myid);
     sprintf(xmdf_Quad4_filename, "%s_Quad4_p%04d.xmf", restart_prefix.c_str(), myid);
 
+    // Force a strong HDF5 close so restart snapshots are finalized even if
+    // some subordinate HDF5 objects are still live when the file is closed.
+    H5::FileAccPropList fapl = H5::FileAccPropList::DEFAULT;
+    H5Pset_fclose_degree(fapl.getId(), H5F_CLOSE_STRONG);
+
     //write H5
-    H5::H5File file(hf5_filename, H5F_ACC_TRUNC);
+    H5::H5File file(
+        hf5_filename,
+        H5F_ACC_TRUNC,
+        H5::FileCreatPropList::DEFAULT,
+        fapl);
     h5write(&file);
+    file.flush(H5F_SCOPE_GLOBAL);
     file.close();
 
     if(restart_keep_all)
@@ -806,7 +834,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
     int savefileflag=1;
     if(mode!=XDMF_ONLYCLOSE)
     {
-        move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+        move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
         output_discharge(matprops, &timeprops, &discharge_planes, myid);
 
@@ -923,7 +951,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     {
         setup_geoflow(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops);
 
-        move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+        move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
         AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -1.0);
 
@@ -970,7 +998,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
-    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
     save_vizoutput_file(XDMF_NEW);
 
     /*
@@ -1052,7 +1080,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
             Unrefine.unrefine(UNREFINE_TARGET);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
-            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+            move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
             TIMING1_STOPADD(unrefinementTime, t_start2);
 
             if((numprocs > 1) && (timeprops.iter % 10 == 9))
@@ -1060,7 +1088,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
                 repartition2(ElemTable, NodeTable, &timeprops);
 
                 //this move_data() here for debug... to make AssertMeshErrorFree() Work
-                move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+                move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
                 ElemTable->updateLocalElements();
                 ElemTable->updateNeighboursIndexes();
@@ -1188,7 +1216,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
 //        output_localquants(&timeprops, &localquants, myid);
     }
 
-    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
     PROFILING1_STOP(tsim_iter,pt_start0);
 
     /*

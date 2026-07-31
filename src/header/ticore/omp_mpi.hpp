@@ -17,14 +17,17 @@
 #ifndef SRC_HEADER_TICORE_OMP_MPI_HPP_
 #define SRC_HEADER_TICORE_OMP_MPI_HPP_
 
-#ifdef _OPENMP
+#if defined(_OPENMP) || defined(TITAN2D_OPENMP_RUNTIME)
 #include <omp.h>
+#endif
 
+#ifdef _OPENMP
 #define IF_OMP(statement) statement
-
 #else
-
 #define IF_OMP(statement)
+#endif
+
+#if !defined(_OPENMP) && !defined(TITAN2D_OPENMP_RUNTIME)
 #define omp_get_thread_num() 0
 #define omp_get_max_threads() 1
 

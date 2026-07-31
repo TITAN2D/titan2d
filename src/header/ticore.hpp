@@ -22,9 +22,8 @@
 #if defined(__INTEL_COMPILER)
 #include <malloc.h>
 #else
-#include <mm_malloc.h>
 #define NO_MM_MALLOC
-#endif // defined(__GNUC__)
+#endif
 
 //!Memory management
 #ifdef NO_MM_MALLOC

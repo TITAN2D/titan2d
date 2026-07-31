@@ -76,7 +76,7 @@ void HashTable<T>::init(double *doublekeyrangein, int size, double XR[], double 
     
     all_elenodes_are_permanent=false;
 
-#ifdef _OPENMP
+#if defined(_OPENMP) || defined(TITAN2D_OPENMP_RUNTIME)
     bucket_lock.resize(NBUCKETS);
     for(i=0;i<NBUCKETS;++i)
         omp_init_lock(&(bucket_lock[i]));
@@ -633,7 +633,7 @@ template <typename T>
 void HashTable<T>::h5write(H5::CommonFG *parent, const string group_name) const
 {
     //group should be already created by child class
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     hsize_t dims = size();
 
     TiH5_writeTiVector(group,key_,dims);
@@ -653,7 +653,7 @@ void HashTable<T>::h5write(H5::CommonFG *parent, const string group_name) const
 template <typename T>
 void HashTable<T>::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
     all_elenodes_are_permanent=true;
 
     TiH5_readTiVector(group,key_);
@@ -679,7 +679,7 @@ void HashTable<T>::h5read(const H5::CommonFG *parent, const  string group_name)
 
     //resize and fill buckets
     bucket.resize(NBUCKETS);
-#ifdef _OPENMP
+#if defined(_OPENMP) || defined(TITAN2D_OPENMP_RUNTIME)
     bucket_lock.resize(NBUCKETS);
     for(ti_ndx_t i=0;i<NBUCKETS;++i)
         omp_init_lock(&(bucket_lock[i]));
@@ -923,8 +923,79 @@ void NodeHashTable::groupCreateAddNode(vector<int> &create_node_ielm, vector<int
         assert(ti_ndx_negative(lookup_ndx(new_node_key[iElm][which])));
     }
 #endif
+    if(N==0)
+        return;
+
+    vector<int> order(N);
+    for(int i=0;i<N;++i)
+        order[i]=i;
+
+    sort(order.begin(), order.end(), [&](int lhs, int rhs)
+    {
+        const int iElmL=create_node_ielm[lhs];
+        const int whichL=create_node_iwhich[lhs];
+        const int iElmR=create_node_ielm[rhs];
+        const int whichR=create_node_iwhich[rhs];
+        return new_node_key[iElmL][whichL] < new_node_key[iElmR][whichR];
+    });
+
+    vector<int> unique_request;
+    unique_request.reserve(N);
+    vector<int> request_to_unique(N, -1);
+
+    for(int i=0;i<N;++i)
+    {
+        const int req=order[i];
+        const int iElm=create_node_ielm[req];
+        const int which=create_node_iwhich[req];
+        const SFC_Key &key=new_node_key[iElm][which];
+
+        if(!unique_request.empty())
+        {
+            const int prev=unique_request.back();
+            const int prevElm=create_node_ielm[prev];
+            const int prevWhich=create_node_iwhich[prev];
+
+            if(new_node_key[prevElm][prevWhich] == key)
+            {
+                for(int j=0;j<DIMENSION;++j)
+                    assert(new_node_coord[prevElm][prevWhich][j] == new_node_coord[iElm][which][j]);
+                request_to_unique[req]=static_cast<int>(unique_request.size()) - 1;
+                continue;
+            }
+        }
+
+        unique_request.push_back(req);
+        request_to_unique[req]=static_cast<int>(unique_request.size()) - 1;
+    }
+
+    vector<ti_ndx_t> unique_ndx(unique_request.size(), ti_ndx_doesnt_exist);
+    vector<char> unique_isnew(unique_request.size(), 0);
+
+    ti_ndx_t n_new = 0;
+    for(size_t u=0;u<unique_request.size();++u)
+    {
+        const int req=unique_request[u];
+        const int iElm=create_node_ielm[req];
+        const int which=create_node_iwhich[req];
+        const SFC_Key &key=new_node_key[iElm][which];
+
+        unique_ndx[u]=lookup_ndx(key);
+        if(ti_ndx_negative(unique_ndx[u]))
+        {
+            unique_ndx[u]=size()+n_new;
+            unique_isnew[u]=1;
+            ++n_new;
+        }
+        else
+        {
+            for(int j=0;j<DIMENSION;++j)
+                assert(coord_[j][unique_ndx[u]] == new_node_coord[iElm][which][j]);
+        }
+    }
+
     ti_ndx_t ndx_start=size();
-    ti_ndx_t new_size=size()+N;
+    ti_ndx_t new_size=size()+n_new;
 
     #pragma omp parallel
     {
@@ -966,48 +1037,55 @@ void NodeHashTable::groupCreateAddNode(vector<int> &create_node_ielm, vector<int
             connection_id_.resize(new_size);
         }
     }
-    //set values
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
-    for(int i=0;i<N;++i)
-    {
-        const int iElm=create_node_ielm[i];
-        const int which=create_node_iwhich[i];
-        const ti_ndx_t ndx=ndx_start+i;
 
-        SFC_Key keyi=new_node_key[iElm][which];
+    for(size_t u=0;u<unique_request.size();++u)
+    {
+        if(!unique_isnew[u])
+            continue;
+
+        const int req=unique_request[u];
+        const int iElm=create_node_ielm[req];
+        const int which=create_node_iwhich[req];
+        const ti_ndx_t ndx=unique_ndx[u];
+        const SFC_Key keyi=new_node_key[iElm][which];
 
         key_[ndx]=keyi;
         status_[ndx]=CS_Added;
-
         elenode_[ndx].ndx(ndx);
 
         for(int j=0;j<DIMENSION;++j)
-              coord_[j][ndx]=new_node_coord[iElm][which][j];
-
-        new_node_ndx[iElm][which]=ndx;
-        new_node_isnew[iElm][which]=true;
+            coord_[j][ndx]=new_node_coord[iElm][which][j];
     }
 
-    //place to hash table
-    #pragma omp parallel for schedule(guided,TITAN2D_DINAMIC_CHUNK)
     for(int i=0;i<N;++i)
     {
         const int iElm=create_node_ielm[i];
         const int which=create_node_iwhich[i];
-        SFC_Key keyi=new_node_key[iElm][which];
+        const int u=request_to_unique[i];
+        assert(u >= 0);
+        new_node_ndx[iElm][which]=unique_ndx[u];
+        new_node_isnew[iElm][which]=false;
+    }
+
+    for(size_t u=0;u<unique_request.size();++u)
+    {
+        if(!unique_isnew[u])
+            continue;
+
+        const int req=unique_request[u];
+        const int iElm=create_node_ielm[req];
+        const int which=create_node_iwhich[req];
+        const SFC_Key &keyi=new_node_key[iElm][which];
+        const ti_ndx_t ndx=unique_ndx[u];
+
+        new_node_isnew[iElm][which]=true;
 
         int entry = hash(keyi);
         IF_OMP(omp_set_lock(&(bucket_lock[entry])));
         int entry_size = bucket[entry].key.size();
 
-        //get space
-        ti_ndx_t ndx=ndx_start+i;
-
-        //place to hash table
         if(entry_size>0)
         {
-            //this place is already occupied
-            //find proper place to insert it
             int j;
             SFC_Key *keyArr = &(bucket[entry].key[0]);
             for(j=0;j<entry_size&&keyi>keyArr[j];++j){}
@@ -1017,21 +1095,20 @@ void NodeHashTable::groupCreateAddNode(vector<int> &create_node_ielm, vector<int
         }
         else
         {
-            //will be first member of the bucket entry
             bucket[entry].key.push_back(keyi);
             bucket[entry].ndx.push_back(ndx);
         }
         IF_OMP(omp_unset_lock(&(bucket_lock[entry])));
     }
 
-    ENTRIES+=N;
+    ENTRIES+=n_new;
     return;
 }
 void NodeHashTable::h5write(H5::CommonFG *parent, string const group_name)
 {
     if(all_elenodes_are_permanent==false)
         flushNodeTable();
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     HashTable<Node>::h5write(parent,group_name);
 
     //atributes
@@ -1083,7 +1160,7 @@ void NodeHashTable::h5write(H5::CommonFG *parent, string const group_name)
 }
 void NodeHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     HashTable<Node>::h5read(parent,group_name);
 
@@ -2323,7 +2400,7 @@ void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
 {
     if(all_elenodes_are_permanent==false)
         flushElemTable();
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
     HashTable<Element>::h5write(parent,group_name);
 
     //atributes
@@ -2427,7 +2504,7 @@ void ElementsHashTable::h5write(H5::CommonFG *parent, const string group_name)
 }
 void ElementsHashTable::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     HashTable<Element>::h5read(parent,group_name);
 
@@ -2566,5 +2643,3 @@ EleNodeRef::EleNodeRef(ElementsHashTable *_ElemTable, NodeHashTable* _NodeTable)
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 }
-
-

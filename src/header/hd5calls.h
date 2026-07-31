@@ -112,6 +112,40 @@ extern H5::EnumType datatypeElementType;
 extern H5::EnumType datatypePileType;
 extern H5::EnumType datatypeOutLineInitSize;
 
+inline H5::Group TiH5_createGroup(const H5::CommonFG *parent, const char *name)
+{
+    return H5::Group(H5Gcreate2(parent->getLocId(), name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
+}
+inline H5::Group TiH5_createGroup(H5::CommonFG *parent, const char *name)
+{
+    return TiH5_createGroup(const_cast<const H5::CommonFG *>(parent), name);
+}
+inline H5::Group TiH5_createGroup(const H5::CommonFG *parent, const std::string &name)
+{
+    return TiH5_createGroup(parent, name.c_str());
+}
+inline H5::Group TiH5_createGroup(H5::CommonFG *parent, const std::string &name)
+{
+    return TiH5_createGroup(parent, name.c_str());
+}
+
+inline H5::Group TiH5_openGroup(const H5::CommonFG *parent, const char *name)
+{
+    return H5::Group(H5Gopen2(parent->getLocId(), name, H5P_DEFAULT));
+}
+inline H5::Group TiH5_openGroup(H5::CommonFG *parent, const char *name)
+{
+    return TiH5_openGroup(const_cast<const H5::CommonFG *>(parent), name);
+}
+inline H5::Group TiH5_openGroup(const H5::CommonFG *parent, const std::string &name)
+{
+    return TiH5_openGroup(parent, name.c_str());
+}
+inline H5::Group TiH5_openGroup(H5::CommonFG *parent, const std::string &name)
+{
+    return TiH5_openGroup(parent, name.c_str());
+}
+
 /**
  * initialize all hdf5 enum datatypes
  */

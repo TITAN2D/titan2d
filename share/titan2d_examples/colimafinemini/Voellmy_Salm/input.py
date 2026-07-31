@@ -21,7 +21,7 @@ sim.setNumProp(
 sim.setMatModel(
     model='Voellmy-Salm',
 
-    mu = 0.5,
+    mu = 0.35,
     xi = 120.0,
 )
 sim.addPile(
@@ -35,12 +35,12 @@ sim.addPile(
 )
 
 sim.setTimeProps(
-    max_iter=5000,
+    max_iter=30000,
 )
 
 sim.setTimeSeriesOutput(
     vizoutput=('xdmf','meshplot'),
-    dtime=1.0,
+    dtime=100.0,
 )
 
 #start simulation
