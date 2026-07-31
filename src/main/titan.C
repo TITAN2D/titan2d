@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     	int argc4py=0;
     	char **argv4py=new char*[argc];
 
-    	int num_threads=1;
+        int num_threads=0;
 
     	for(int i=0;i<argc;i++){
     		string arg(argv[i]);
@@ -221,17 +221,13 @@ int main(int argc, char *argv[])
 
     			num_threads=atoi(argv[i]);
 
-    	       //set openmp threads
-#ifdef _OPENMP
-    			printf("Set threads number to %d\n\n",num_threads);
-    			omp_set_num_threads(num_threads);
-#else
+#if !defined(_OPENMP) && !defined(TITAN2D_OPENMP_RUNTIME)
     			if(num_threads>1)
     				printf("Warning: This version was compiled without openmp support!\n");
 
     			num_threads=1;
-    			printf("Set threads number to %d\n\n",num_threads);
 #endif
+                printf("Set threads number to %d\n\n",num_threads);
     			continue;
     		}
             if(arg=="-restart")
@@ -277,10 +273,20 @@ int main(int argc, char *argv[])
     	}
 
 #ifdef _OPENMP
+        if(num_threads > 0)
+            omp_set_num_threads(num_threads);
     	threads_number=omp_get_max_threads();
+        solver_threads_number=threads_number;
     	printf("Max threads number is %d\n\n",threads_number);
+#elif defined(TITAN2D_OPENMP_RUNTIME)
+        solver_threads_number=(num_threads > 0) ? num_threads : omp_get_max_threads();
+        omp_set_num_threads(1);
+        threads_number=1;
+        printf("Max solver threads number is %d\n\n",solver_threads_number);
+        printf("Non-solver threads number is %d\n\n",threads_number);
 #else
         threads_number=1;
+        solver_threads_number=1;
 #endif
 
         if(printUsage)

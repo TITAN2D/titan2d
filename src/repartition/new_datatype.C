@@ -63,9 +63,9 @@ void MPI_New_Datatype()
     int d;
     ElemPack* elem = new ElemPack;
     
-    MPI_Address(&(elem->myprocess), &displs[0]);
-    MPI_Address(&(elem->key[0]), &displs[1]);
-    MPI_Address(&(elem->elevation), &displs[2]);
+    MPI_Get_address(&(elem->myprocess), &displs[0]);
+    MPI_Get_address(&(elem->key[0]), &displs[1]);
+    MPI_Get_address(&(elem->elevation), &displs[2]);
     
     types[0] = MPI_INT;
     types[1] = MPI_UNSIGNED;
@@ -74,7 +74,7 @@ void MPI_New_Datatype()
     for(d = 2; d >= 0; d--)
         displs[d] -= displs[0];
     
-    MPI_Type_struct(3, blockcounts, displs, types, &ELEMTYPE);
+    MPI_Type_create_struct(3, blockcounts, displs, types, &ELEMTYPE);
     MPI_Type_commit(&ELEMTYPE);
     
     //create the 2nd new d_type
@@ -86,8 +86,8 @@ void MPI_New_Datatype()
     
     NeighborPack* neigh = new NeighborPack;
     
-    MPI_Address(&(neigh->target_proc), &displs2[0]);
-    MPI_Address(&(neigh->elkey), &displs2[1]);
+    MPI_Get_address(&(neigh->target_proc), &displs2[0]);
+    MPI_Get_address(&(neigh->elkey), &displs2[1]);
     
     types2[0] = MPI_INT;
     types2[1] = MPI_UNSIGNED;
@@ -95,7 +95,7 @@ void MPI_New_Datatype()
     for(d = 1; d >= 0; d--)
         displs2[d] -= displs2[0];
     
-    MPI_Type_struct(2, blockcounts2, displs2, types2, &NEIGHTYPE);
+    MPI_Type_create_struct(2, blockcounts2, displs2, types2, &NEIGHTYPE);
     MPI_Type_commit(&NEIGHTYPE);
     
     //create the 3rd new d_type
@@ -109,13 +109,13 @@ void MPI_New_Datatype()
     
     refined_neighbor_pack* fine = new refined_neighbor_pack;
     
-    MPI_Address(&(fine->orig_gen), &displs3[0]);
-    MPI_Address(&(fine->target_element), &displs3[1]);
+    MPI_Get_address(&(fine->orig_gen), &displs3[0]);
+    MPI_Get_address(&(fine->target_element), &displs3[1]);
     
     for(d = 1; d >= 0; d--)
         displs3[d] -= displs3[0];
     
-    MPI_Type_struct(2, blockcounts3, displs3, types3, &REFINED_INFO);
+    MPI_Type_create_struct(2, blockcounts3, displs3, types3, &REFINED_INFO);
     MPI_Type_commit(&REFINED_INFO);
     
     //create the 4th new d_type
@@ -128,9 +128,9 @@ void MPI_New_Datatype()
     
     Neigh_Sol_Pack* neigh_sol = new Neigh_Sol_Pack;
     
-    MPI_Address(&(neigh_sol->nside), &displs5[0]);
-    MPI_Address((neigh_sol->key), &displs5[1]);
-    MPI_Address((neigh_sol->solu), &displs5[2]);
+    MPI_Get_address(&(neigh_sol->nside), &displs5[0]);
+    MPI_Get_address((neigh_sol->key), &displs5[1]);
+    MPI_Get_address((neigh_sol->solu), &displs5[2]);
     
     types5[0] = MPI_INT;
     types5[1] = MPI_UNSIGNED;
@@ -139,7 +139,7 @@ void MPI_New_Datatype()
     for(d = 2; d >= 0; d--)
         displs5[d] -= displs5[0];
     
-    MPI_Type_struct(3, blockcounts5, displs5, types5, &NSOLTYPE);
+    MPI_Type_create_struct(3, blockcounts5, displs5, types5, &NSOLTYPE);
     MPI_Type_commit(&NSOLTYPE);
     
     //delete neigh_sol;  //added by acbauer 4/3/02 -- may be a bug?????
@@ -152,14 +152,14 @@ void MPI_New_Datatype()
     
     BSFC_VERTEX* sfc_vert_ptr = new BSFC_VERTEX;
     
-    MPI_Address(&(sfc_vert_ptr->destination_proc), &displs6[0]);
-    MPI_Address(&(sfc_vert_ptr->sfc_key[0]), &displs6[1]);
-    MPI_Address(&(sfc_vert_ptr->lb_weight), &displs6[2]);
+    MPI_Get_address(&(sfc_vert_ptr->destination_proc), &displs6[0]);
+    MPI_Get_address(&(sfc_vert_ptr->sfc_key[0]), &displs6[1]);
+    MPI_Get_address(&(sfc_vert_ptr->lb_weight), &displs6[2]);
     
     for(d = 2; d >= 0; d--)
         displs6[d] -= displs6[0];
     
-    MPI_Type_struct(3, blockcounts6, displs6, types6, &LB_VERT_TYPE);
+    MPI_Type_create_struct(3, blockcounts6, displs6, types6, &LB_VERT_TYPE);
     MPI_Type_commit(&LB_VERT_TYPE);
     
     //New data types are created at this point

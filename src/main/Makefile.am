@@ -10,10 +10,11 @@ bin_SCRIPTS = titanvars.sh
 titan_SOURCES = titan.C cxxtitan_wrap.cxx titan_simulation.C delete_tab.C datread.C hilbert.C init_piles.C update_topo.C restart.C properties.C titan2d_utils.C
 #titan-properties.$(OBJEXT):CXXFLAGS +=-qopt-report=5 -qopt-report-phase=vec 
 titan_CXXFLAGS = -fpic -I$(srcdir)/../gisapi @PYTHON_CPPFLAGS@
+titan_LDFLAGS = @OPENMP_CXXFLAGS@
 titan_cxxtitan_wrap_o_CXXFLAGS = -O0
 
 titan_LDADD = ../preproc/libtitan_preprocess.a ../gisapi/libgisapi.a ../adapt/libadapt.a \
-  ../datstr/libdatstr.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
+  ../datstr/libdatstr.a ../geoflow/libgeoflow_solver.a ../geoflow/libgeoflow.a ../useful/libuseful.a \
   ../repartition/librepartition.a ../tecplot/libtecplot.a \
   ../vectordatapreproc/libvectordatpreproc.a \
   @PYTHON_EMBED_LDFLAGS@

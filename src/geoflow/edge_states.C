@@ -41,7 +41,7 @@ void ElementsProperties::calc_edge_states(MatProps* matprops_ptr, TimeProps* tim
     vector<double> &localoutflow=dtmp;
     localoutflow.resize(elements_.size());
     
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         localoutflow[ndx]=0.0;
@@ -64,7 +64,7 @@ void ElementsProperties::calc_edge_states(MatProps* matprops_ptr, TimeProps* tim
 #else
     double localoutflow_sum=0.0;
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(+:localoutflow_sum)
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) reduction(+:localoutflow_sum)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
         if(adapted_[ndx] > 0)//if this element does not belong on this processor don't involve!!!

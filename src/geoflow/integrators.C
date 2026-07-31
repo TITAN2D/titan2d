@@ -29,6 +29,19 @@
 
 //#include <advisor-annotate.h>double
 
+static void move_data_and_flush(int numprocs, int myid, ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
+                                TimeProps* timeprops_ptr)
+{
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+
+    if(!ElemTable->all_elenodes_are_permanent || !NodeTable->all_elenodes_are_permanent)
+    {
+        NodeTable->flushNodeTable();
+        ElemTable->flushElemTable();
+        ElemTable->updateNeighboursIndexes();
+    }
+}
+
 Integrator::Integrator(cxxTitanSimulation *_titanSimulation):
     EleNodeRef(_titanSimulation->ElemTable,_titanSimulation->NodeTable),
     timeprops_ptr(_titanSimulation->get_timeprops()),
@@ -155,7 +168,7 @@ void Integrator::step()
      */
 
     /* pass off proc data here (really only need state_vars for off-proc neighbors) */
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
 
@@ -195,7 +208,7 @@ void Integrator::step()
     /* finished predictor step */
 
     /* really only need to share dudx, state_vars, and kactxy */
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     /* calculate the slopes for the new (half-time step) state variables */
@@ -208,7 +221,7 @@ void Integrator::step()
 
 
     /* really only need to share dudx, state_vars, and kactxy */
-    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
     PROFILING3_STOPADD_RESTART(step_other,pt_start);
 
     /* calculate kact/pass */
@@ -701,7 +714,7 @@ void Integrator_SinglePhase_Coulomb::corrector()
     //             results
     //ANNOTATE_SITE_BEGIN(ISPC_cor);
     //ANNOTATE_TASK_BEGIN(Integrator_SinglePhase_Coulomb_FirstOrder_corrector_loop);
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_MIDIUM_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -1400,7 +1413,10 @@ void Integrator_SinglePhase_Voellmy_Salm::corrector()
     //convinience ref
     tivector<double> *g=gravity_;
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    // mdj 2007-04 this loop has pretty much defeated me - there is
+    //             a dependency in the Element class that causes incorrect
+    //             results
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -1983,7 +1999,7 @@ void Integrator_SinglePhase_Pouliquen_Forterre::corrector()
     //convinience ref
     tivector<double> *g=gravity_;
 
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {
@@ -2630,7 +2646,7 @@ void Integrator_TwoPhases_Coulomb::corrector()
     // mdj 2007-04 this loop has pretty much defeated me - there is
     //             a dependency in the Element class that causes incorrect
     //             results
-    #pragma omp parallel for schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
+    #pragma omp parallel for num_threads(solver_threads_number) schedule(dynamic,TITAN2D_DINAMIC_CHUNK) \
         reduction(+: m_forceint, m_forcebed, m_eroded, m_deposited, m_realvolume)
     for(ti_ndx_t ndx = 0; ndx < elements_.size(); ndx++)
     {

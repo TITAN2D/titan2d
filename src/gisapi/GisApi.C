@@ -169,7 +169,7 @@ int Initialize_GIS_data(const char* GISDbase, const char* location, const char* 
     
     clear_gis_grid();
     
-    if(gis_format == GDAL)
+    if(gis_format == GIS_GDAL)
     {
         strcpy(gisPath, mapdata);
 #if HAVE_GDAL
@@ -348,7 +348,7 @@ int load_GIS_data()
     char* fullGISDataFilePath = gis_grid.ghead.datafile;
     
 #if HAVE_GDAL
-    if (gis_grid.ghead.Format == GDAL )
+    if (gis_grid.ghead.Format == GIS_GDAL )
     return (load_GDAL_data());
 #endif
     

@@ -293,6 +293,13 @@ HAdapt::HAdapt(ElementsHashTable* _ElemTable, NodeHashTable* _NodeTable, Element
         create_node_ielm[i].resize(0);
         create_node_iwhich[i].resize(0);
     }
+#ifdef USE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+#else
+    myid = 0;
+    numprocs = 1;
+#endif
 }
 
 void HAdapt::initialRefineToCenters(const vector<array<double,2> > &centers)
@@ -406,6 +413,8 @@ void HAdapt::adapt(int h_count, double target)
     TIMING3_DEFINE(t_start3);
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    ElemTable->updateLocalElements();
+    ElemTable->updateNeighboursIndexes();
     
     Element* Curr_El = nullptr;
     int k, i, j;
@@ -438,6 +447,8 @@ void HAdapt::adapt(int h_count, double target)
     
     // must be included to make sure that elements share same side/S_C_CON nodes with neighbors
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    ElemTable->updateLocalElements();
+    ElemTable->updateNeighboursIndexes();
     
     PROFILING3_STOPADD_RESTART(HAdapt_adapt_prolog,pt_start);
 
@@ -469,6 +480,8 @@ void HAdapt::adapt(int h_count, double target)
     }
     
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    ElemTable->updateLocalElements();
+    ElemTable->updateNeighboursIndexes();
 
     ASSERT2(ElemTable->checkPointersToNeighbours("Prerefinement index check",false)==0);
 
@@ -505,6 +518,8 @@ void HAdapt::adapt(int h_count, double target)
             }
         }
         move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+        ElemTable->updateLocalElements();
+        ElemTable->updateNeighboursIndexes();
 
         PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine_buffer_handling,pt_start);
 
@@ -539,8 +554,10 @@ void HAdapt::adapt(int h_count, double target)
                 #pragma omp barrier
                 for(ti_ndx_t ndx2:loc_SeedRefinement[ithread])
                     adapted[ndx2]=BUFFER;
-            }
+			}
 			move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+            ElemTable->updateLocalElements();
+            ElemTable->updateNeighboursIndexes();
 			PROFILING3_STOPADD_RESTART(HAdapt_adapt_allrefine_buffer_handling,pt_start);
         }
     }
@@ -601,6 +618,8 @@ void HAdapt::adapt(int h_count, double target)
     }
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    ElemTable->updateLocalElements();
+    ElemTable->updateNeighboursIndexes();
 
     PROFILING3_STOPADD_RESTART(HAdapt_adapt_epilog,pt_start);
     TIMING3_STOPADD(refinementsPostProc,t_start3);
@@ -627,12 +646,38 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
     findTriggeredRefinements(seedRefinement, set_for_refinement, allRefinement);
     TIMING3_STOPADD(triggeredRefinementsSearch,t_start3);
 
+    allRefinement.erase(std::remove_if(allRefinement.begin(), allRefinement.end(),
+            [this](const ti_ndx_t ndx)
+            {
+                if((ElemTable->adapted_[ndx] <= TOBEDELETED) || (ElemTable->myprocess_[ndx] != myid))
+                    return true;
+                for(int ineigh = 0; ineigh < 8; ++ineigh)
+                {
+                    const int neigh_proc = ElemTable->neigh_proc_[ineigh][ndx];
+                    if((neigh_proc >= 0) && ti_ndx_negative(ElemTable->lookup_ndx(ElemTable->neighbors_[ineigh][ndx])))
+                        return true;
+                }
+                return false;
+            }),
+            allRefinement.end());
+
+    int localRefinementCount = allRefinement.size();
+    int globalRefinementCount = localRefinementCount;
+#ifdef USE_MPI
+    MPI_Allreduce(&localRefinementCount, &globalRefinementCount, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if(globalRefinementCount == 0)
+        return;
+
     //do refinements
-    TIMING3_START(t_start3);
-    ElemTable->reserve_at_least(ElemTable->size()+4*seedRefinement.size());
-    NodeTable->reserve_at_least(NodeTable->size()+12*seedRefinement.size());
-    refineElements(allRefinement);
-    TIMING3_STOPADD(refineElements,t_start3);
+    if(localRefinementCount > 0)
+    {
+        TIMING3_START(t_start3);
+        ElemTable->reserve_at_least(ElemTable->size()+4*seedRefinement.size());
+        NodeTable->reserve_at_least(NodeTable->size()+12*seedRefinement.size());
+        refineElements(allRefinement);
+        TIMING3_STOPADD(refineElements,t_start3);
+    }
 
     //update neighbours
     TIMING3_START(t_start3);
@@ -641,7 +686,8 @@ void HAdapt::refine2(SeedRefinementsFinder &seedRefinementsFinder)
 
     move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
 
-    if(numprocs>1)ElemTable->update_neighbours_ndx_on_ghosts();
+    ElemTable->updateLocalElements();
+    ElemTable->updateNeighboursIndexes();
 
     //ElemTable->updatePointersToNeighbours();
     ASSERT2(ElemTable->checkPointersToNeighbours("HAdapt::refine",false)==0);
@@ -777,6 +823,8 @@ void initial_H_adapt(ElementsHashTable* HT_Elem_Ptr, NodeHashTable* HT_Node_Ptr,
             apply_initial_pile_heights(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, pileprops_ptr);
         mark_flux_region(HT_Elem_Ptr, HT_Node_Ptr, matprops_ptr, fluxprops_ptr, timeprops_ptr);
         move_data(numprocs, myid, HT_Elem_Ptr, HT_Node_Ptr, timeprops_ptr);
+        HT_Elem_Ptr->updateLocalElements();
+        HT_Elem_Ptr->updateNeighboursIndexes();
 
         hadapt.adapt(h_count, 0.0);
 

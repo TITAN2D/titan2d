@@ -30,14 +30,17 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
 #ifdef USE_MPI
     if(numprocs < 2)
         return;
+
+    delete_ghost_elms(El_Table, myid);
     
 #ifdef PRINT_MOVE
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0) printf("========================================================================================\n");
 #endif
     int ibuck, iproc, inode, ierr, ineigh, ivar, ielem;
-    /* assume that no elements share a neighboring element on another processor */
-    int* num_send_recv = new int[numprocs];
+    /* Counts are directional: after AMR, A->B is not guaranteed to match B->A. */
+    int* num_send = new int[numprocs];
+    int* num_recv = new int[numprocs];
     int* IfSendDone = new int[numprocs]; //initially holds current count of elements
     //packed to send then "morphs" into whether or not the send has completed.
     int* IfRecvDone = new int[numprocs]; //says whether or not (1 or 0) the receive
@@ -47,7 +50,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     MPI_Request* RequestRecv = new MPI_Request[numprocs];
     
     for(iproc = 0; iproc < numprocs; iproc++)
-        num_send_recv[iproc] = IfSendDone[iproc] = 0;
+        num_send[iproc] = num_recv[iproc] = IfSendDone[iproc] = 0;
     
     char filename[256];
     sprintf(filename, "move_data_elem.%04d", myid);
@@ -100,7 +103,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
                     
                     if((EmTemp->neigh_proc(ineigh) >= 0) && (EmTemp->neigh_proc(ineigh) != myid))
                     {
-                        num_send_recv[EmTemp->neigh_proc(ineigh)] += 1;
+                        num_send[EmTemp->neigh_proc(ineigh)] += 1;
                         if((EmTemp->neigh_proc(ineigh) == 0) || (EmTemp->neigh_proc(ineigh) == 1))
                             ifprint = 1;
                     }
@@ -133,7 +136,8 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
      fclose(fpelem2);
      }
      */
-    num_send_recv[myid] = 0;  // don't need to send info to myself
+    num_send[myid] = 0;  // don't need to send info to myself
+    MPI_Alltoall(num_send, 1, MPI_INT, num_recv, 1, MPI_INT, MPI_COMM_WORLD);
             
     //printf("myid=%d move_data() %d\n",myid,1); fflush(stdout);
     //MPI_Barrier(MPI_COMM_WORLD);
@@ -149,8 +153,8 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
         fprintf(fpdebug,"myid=%d iter=%d time=%g [secs] num_elem_on_proc=%d num_neighbors=%d\n",
                 myid,timeprops_ptr->iter,timeprops_ptr->timesec(),num_elem_on_proc,num_neighbors);
         for(iproc=0;iproc<numprocs;iproc++)
-        fprintf(fpdebug,"to/from proc %d: #elems=%d\n",
-                iproc, num_send_recv[iproc]);
+        fprintf(fpdebug,"proc %d: #send=%d #recv=%d\n",
+                iproc, num_send[iproc], num_recv[iproc]);
         fclose(fpdebug);
     }
 #endif
@@ -161,15 +165,16 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     
     for(iproc = 0; iproc < numprocs; iproc++)
     {
-        IfRecvDone[iproc] = !num_send_recv[iproc];
-        if(num_send_recv[iproc] > 0)
+        IfRecvDone[iproc] = !num_recv[iproc];
+        if(num_recv[iproc] > 0)
         {
-            send_array[iproc] = new ElemPack[num_send_recv[iproc]];
-            recv_array[iproc] = new ElemPack[num_send_recv[iproc]];
+            recv_array[iproc] = new ElemPack[num_recv[iproc]];
             
-            ierr = MPI_Irecv((void*) recv_array[iproc], num_send_recv[iproc], ELEMTYPE, iproc, send_tag + iproc,
+            ierr = MPI_Irecv((void*) recv_array[iproc], num_recv[iproc], ELEMTYPE, iproc, send_tag + iproc,
                              MPI_COMM_WORLD, &(RequestRecv[iproc]));
-        } //if(num_send_recv[iproc] != 0)
+        } //if(num_recv[iproc] != 0)
+        if(num_send[iproc] > 0)
+            send_array[iproc] = new ElemPack[num_send[iproc]];
     } //for(iproc=0;iproc<numprocs;iproc++)
     
     /* put (GHOST) elements to be moved in the proper arrays */
@@ -189,7 +194,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
                     iproc = EmTemp->neigh_proc(ineigh);
                     if((iproc != myid) && (iproc >= 0))
                     {
-                        assert(IfSendDone[iproc] < num_send_recv[iproc]);
+                        assert(IfSendDone[iproc] < num_send[iproc]);
                         
                         Pack_element(EmTemp, (send_array[iproc] + IfSendDone[iproc]), NodeTable, myid);
                         
@@ -207,16 +212,16 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     {
         
         //better paranoid than dead
-        assert(IfSendDone[iproc] == num_send_recv[iproc]);
+        assert(IfSendDone[iproc] == num_send[iproc]);
         
         IfSendDone[iproc] = !IfSendDone[iproc]; //"It's morphing time!"
         //IfSendDone now holds whether or not (1 or 0) I'm done sending
         //to each processor, if I'm not going to send to a processor then
         //I'm already "done" sending to them.
         
-        if(num_send_recv[iproc] > 0)
+        if(num_send[iproc] > 0)
             //send ghost elements to processor iproc
-            ierr = MPI_Isend((void*) send_array[iproc], num_send_recv[iproc], ELEMTYPE, iproc, send_tag + myid,
+            ierr = MPI_Isend((void*) send_array[iproc], num_send[iproc], ELEMTYPE, iproc, send_tag + myid,
                              MPI_COMM_WORLD, &(RequestSend[iproc]));
     }
     
@@ -226,7 +231,8 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     
 #ifdef PRINT_MOVE
     for(iproc=0;iproc<numprocs;iproc++)
-    printf("proc %d is sending/receiving %d from %d\n", myid, num_send_recv[iproc], iproc);
+    printf("proc %d is sending %d to %d and receiving %d from %d\n",
+           myid, num_send[iproc], iproc, num_recv[iproc], iproc);
 #endif
     
     int NumNotRecvd, IfSentRecvd;
@@ -248,7 +254,7 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
                 if(IfSentRecvd)
                 {
                     
-                    for(ielem = 0; ielem < num_send_recv[iproc]; ielem++)
+                    for(ielem = 0; ielem < num_recv[iproc]; ielem++)
                     {
                         SFC_Key key;
                         SET_NEWKEY(key,recv_array[iproc][ielem].key);
@@ -289,7 +295,8 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
     delete[] recv_array;
     delete[] IfRecvDone;
     delete[] RequestRecv;
-    delete[] num_send_recv;
+    delete[] num_send;
+    delete[] num_recv;
     
     //wait for sends to complete, delete sent arrays as soon as possible
     int NumNotSent;
@@ -319,6 +326,8 @@ void move_data(int numprocs, int myid, ElementsHashTable* El_Table, NodeHashTabl
 #ifdef PRINT_MOVE
     printf("proc %d has added %d  and updated %d ghost elements \n", myid, add_counter, update_counter);
 #endif
+
+    El_Table->updateNeighboursIndexes();
     
     //shouldn't need this Barrier but "better paranoid than dead"
     MPI_Barrier (MPI_COMM_WORLD);

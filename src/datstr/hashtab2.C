@@ -76,7 +76,7 @@ void HashTable<T>::init(double *doublekeyrangein, int size, double XR[], double 
     
     all_elenodes_are_permanent=false;
 
-#ifdef _OPENMP
+#if defined(_OPENMP) || defined(TITAN2D_OPENMP_RUNTIME)
     bucket_lock.resize(NBUCKETS);
     for(i=0;i<NBUCKETS;++i)
         omp_init_lock(&(bucket_lock[i]));
@@ -679,7 +679,7 @@ void HashTable<T>::h5read(const H5::CommonFG *parent, const  string group_name)
 
     //resize and fill buckets
     bucket.resize(NBUCKETS);
-#ifdef _OPENMP
+#if defined(_OPENMP) || defined(TITAN2D_OPENMP_RUNTIME)
     bucket_lock.resize(NBUCKETS);
     for(ti_ndx_t i=0;i<NBUCKETS;++i)
         omp_init_lock(&(bucket_lock[i]));

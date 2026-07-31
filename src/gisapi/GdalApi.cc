@@ -30,8 +30,8 @@ int Initialize_GDAL_data(const char *fullGispath)
     
     // check if the data is in UTM coordinates
     OGRSpatialReference *oSRS = new OGRSpatialReference(NULL);
-    char *pszProjection = (char *) dataset->GetProjectionRef();
-    if(oSRS->importFromWkt(&pszProjection) == CE_None)
+    const char *pszProjection = dataset->GetProjectionRef();
+    if(oSRS->importFromWkt(pszProjection) == CE_None)
     {
         int pbxmax;
         int zone = oSRS->GetUTMZone(&pbxmax);
@@ -82,7 +82,7 @@ int Initialize_GDAL_data(const char *fullGispath)
         gishead.ymax = adfGeoTransform[3];
         gishead.resolution = fabs(adfGeoTransform[5]);
         gishead.ymin = gishead.ymax - gishead.resolution * ny;
-        gishead.Format = GDAL;
+        gishead.Format = GIS_GDAL;
         gishead.compressed = 1; // doesn't mean anything if GDAL is being used
         gis_grid.ghead = gishead;
         gis_grid.ghead.datafile = strdup(fullGispath);

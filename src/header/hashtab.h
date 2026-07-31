@@ -220,7 +220,7 @@ protected:
 
 
     //locks for multithreaded manipulations with tables sizes
-#ifdef _OPENMP
+#if defined(_OPENMP) || defined(TITAN2D_OPENMP_RUNTIME)
     vector<omp_lock_t> bucket_lock;
     omp_lock_t content_table_lock;
 #endif

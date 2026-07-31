@@ -1922,7 +1922,7 @@ void LocalQuants::StoreQuant(MatProps* matprops_ptr, TimeProps* timeprops)
 
 void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
 {
-    H5::Group group(parent->createGroup(group_name));
+    H5::Group group(TiH5_createGroup(parent, group_name));
 
     TiH5_writeIntAttribute(group, no_locations);
     TiH5_writeDoubleVectorAttribute(group, X, X.size());
@@ -1970,7 +1970,7 @@ void LocalQuants::h5write(H5::CommonFG *parent, string group_name) const
 }
 void LocalQuants::h5read(const H5::CommonFG *parent, const  string group_name)
 {
-    H5::Group group(parent->openGroup(group_name));
+    H5::Group group(TiH5_openGroup(parent, group_name));
 
     TiH5_readIntAttribute(group, no_locations);
     TiH5_readDoubleVectorAttribute(group, X, X.size());

@@ -48,6 +48,7 @@ TitanTimings titanTimings;
 TitanTimings titanTimingsAlongSimulation;
 TitanProfiling titanProfiling;
 int threads_number;
+int solver_threads_number;
 
 
 #include <stdio.h>
@@ -61,6 +62,23 @@ int threads_number;
 int NUM_STATE_VARS;
 bool SHORTSPEED;
 double GEOFLOW_TINY;
+
+static void flush_hash_tables_if_needed(ElementsHashTable* ElemTable, NodeHashTable* NodeTable)
+{
+    if(!ElemTable->all_elenodes_are_permanent || !NodeTable->all_elenodes_are_permanent)
+    {
+        NodeTable->flushNodeTable();
+        ElemTable->flushElemTable();
+        ElemTable->updateNeighboursIndexes();
+    }
+}
+
+static void move_data_and_flush(int numprocs, int myid, ElementsHashTable* ElemTable, NodeHashTable* NodeTable,
+                                TimeProps* timeprops_ptr)
+{
+    move_data(numprocs, myid, ElemTable, NodeTable, timeprops_ptr);
+    flush_hash_tables_if_needed(ElemTable, NodeTable);
+}
 
 
 cxxTitanSimulation::cxxTitanSimulation() :
@@ -816,7 +834,7 @@ void cxxTitanSimulation::save_vizoutput_file(const int mode)
     int savefileflag=1;
     if(mode!=XDMF_ONLYCLOSE)
     {
-        move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+        move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
         output_discharge(matprops, &timeprops, &discharge_planes, myid);
 
@@ -933,7 +951,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
     {
         setup_geoflow(ElemTable, NodeTable, myid, numprocs, matprops_ptr, &timeprops);
 
-        move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+        move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
         AssertMeshErrorFree(ElemTable, NodeTable, numprocs, myid, -1.0);
 
@@ -980,7 +998,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
 
     output_discharge(matprops_ptr, &timeprops, &discharge_planes, myid);
 
-    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
     save_vizoutput_file(XDMF_NEW);
 
     /*
@@ -1062,7 +1080,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
             Unrefine.unrefine(UNREFINE_TARGET);
 
             //this move_data() here for debug... to make AssertMeshErrorFree() Work
-            move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+            move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
             TIMING1_STOPADD(unrefinementTime, t_start2);
 
             if((numprocs > 1) && (timeprops.iter % 10 == 9))
@@ -1070,7 +1088,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
                 repartition2(ElemTable, NodeTable, &timeprops);
 
                 //this move_data() here for debug... to make AssertMeshErrorFree() Work
-                move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+                move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
 
                 ElemTable->updateLocalElements();
                 ElemTable->updateNeighboursIndexes();
@@ -1198,7 +1216,7 @@ void cxxTitanSimulation::run(bool start_from_restart)
 //        output_localquants(&timeprops, &localquants, myid);
     }
 
-    move_data(numprocs, myid, ElemTable, NodeTable, &timeprops);
+    move_data_and_flush(numprocs, myid, ElemTable, NodeTable, &timeprops);
     PROFILING1_STOP(tsim_iter,pt_start0);
 
     /*

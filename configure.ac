@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(titan2d, 4.1.0)
+AC_INIT(titan2d, 4.2.0)
 AM_INIT_AUTOMAKE
 
 ## Check is portable package is made
@@ -62,23 +62,31 @@ case $host in
     dnl better remove -w
     test_CFLAGS=${CFLAGS+set}
     if test "$test_CFLAGS" != set; then
-    	CFLAGS="-g -w -O2"
+      CFLAGS="-g -w -O2"
     fi
-    
+
     test_CXXFLAGS=${CXXFLAGS+set}
     if test "$test_CXXFLAGS" != set; then
-    	if test "x$enable_portable" != xno; then
-    		CXXFLAGS="-g -w -O3 -mtune=generic -std=c++11"
-    	else
-    		CXXFLAGS="-g -w -O2 -std=c++11"
-    	fi
+      if test "x$enable_portable" != xno; then
+        CXXFLAGS="-g -w -O3 -mtune=generic -std=c++11"
+      else
+        CXXFLAGS="-g -w -O2 -std=c++11"
+      fi
     else
-    	CXXFLAGS="-std=c++11 $CXXFLAGS"
+      CXXFLAGS="-std=c++11 $CXXFLAGS"
     fi
-    
+
     test_LDFLAGS=${LDFLAGS+set}
     if test "$test_LDFLAGS" != set; then
-    	LDFLAGS="-g -w -O2"
+      LDFLAGS="-g -w -O2"
+    fi
+    ;;
+  *-*-darwin*)
+    test_CXXFLAGS=${CXXFLAGS+set}
+    if test "$test_CXXFLAGS" != set; then
+      CXXFLAGS="-g -O2 -std=c++11"
+    else
+      CXXFLAGS="-std=c++11 $CXXFLAGS"
     fi
     ;;
 esac
@@ -149,8 +157,31 @@ AC_ARG_ENABLE(openmp,
 AS_IF([test "x$enable_openmp" != xno],
 	[
 		AC_OPENMP
+		AS_IF([test "x$ac_cv_prog_cxx_openmp" = xunsupported],
+			[
+				for titan_libomp_prefix in /opt/homebrew/opt/libomp /usr/local/opt/libomp; do
+					AS_IF([test -f "$titan_libomp_prefix/include/omp.h" && test -f "$titan_libomp_prefix/lib/libomp.dylib"],
+						[
+							AC_MSG_NOTICE([using Homebrew libomp at $titan_libomp_prefix])
+							OPENMP_CXXFLAGS="-Xpreprocessor -fopenmp"
+							CPPFLAGS="$CPPFLAGS -I$titan_libomp_prefix/include"
+							LDFLAGS="$LDFLAGS -L$titan_libomp_prefix/lib -Wl,-rpath,$titan_libomp_prefix/lib"
+							LIBS="$LIBS -lomp"
+							ac_cv_prog_cxx_openmp="$OPENMP_CXXFLAGS"
+							break
+						]
+					)
+				done
+			]
+		)
+		AS_IF([test "x$ac_cv_prog_cxx_openmp" = xunsupported],
+			[AC_MSG_FAILURE([Can not find OpenMP support for $CXX. On macOS install Homebrew libomp or use a compiler/runtime pair that provides OpenMP.])]
+		)
+		CPPFLAGS="$CPPFLAGS -DTITAN2D_OPENMP_RUNTIME=1"
+		titan_save_CXXFLAGS="$CXXFLAGS"
 		CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 		AC_CHECK_FUNCS([omp_get_num_threads],,AC_MSG_FAILURE([Can not compile simple OpenMP program]))
+		CXXFLAGS="$titan_save_CXXFLAGS"
 	]
 )
 
@@ -195,6 +226,19 @@ AC_CHECK_LIB([hdf5],[H5open],,
 AC_CHECK_LIB([hdf5_cpp],[H5open],,
               AC_MSG_FAILURE([HDF5 should be compiled with c++ support.Re-run configure --with-hdf5=/path/to/hdf5.])
 )
+AC_MSG_CHECKING([whether HDF5 C++ API links with $CXX])
+AC_LINK_IFELSE(
+	[AC_LANG_PROGRAM(
+		[[#include <H5Cpp.h>
+#include <string>]],
+		[[std::string name("Titan2DConfigureCheck");
+H5::Exception::dontPrint();
+H5::H5File file(name, H5F_ACC_TRUNC);
+file.createGroup(std::string("group"));]]
+	)],
+	[AC_MSG_RESULT([yes])],
+	[AC_MSG_FAILURE([HDF5 C++ API does not link with $CXX. Use an HDF5 C++ library built with the same C++ ABI/compiler, or use Apple clang with Homebrew HDF5 on macOS.])]
+)
 AC_SUBST([HDF5_PATH],[$with_hdf5])
 
 ## checks for GDAL
@@ -208,35 +252,92 @@ AC_ARG_WITH(gdal,
 )
 
 AS_IF([test "x$with_gdal" != xno],
+	[titan_gdal_requested=yes],
+	[titan_gdal_requested=no]
+)
+
+GDAL_CONFIG=no
+GDAL_CFLAGS=
+GDAL_LIBS=
+GDAL_PATH=
+titan_gdal_found=no
+titan_gdal_required=no
+
+AS_IF([test "x$titan_gdal_requested" = xyes],
 	[
-		#check for gdal-config
-		AC_PATH_PROG([GDAL_CONFIG],[gdal-config],[no],[$with_gdal/bin:$with_titan2d_dep/bin:$PATH])
-		with_gdal=`dirname $GDAL_CONFIG`
-		with_gdal=`readlink -f $with_gdal/..`
+		titan_gdal_search_path="$PATH"
+		AS_IF([test "x$with_gdal" != xtry_to_find],
+			[
+				titan_gdal_required=yes
+				AS_IF([test ! -d "$with_gdal"],
+					[AC_MSG_FAILURE([Requested GDAL prefix does not exist: $with_gdal])]
+				)
+				titan_gdal_search_path="$with_gdal/bin:$titan_gdal_search_path"
+			]
+		)
+		AS_IF([test "x$with_titan2d_dep" != xno],
+			[titan_gdal_search_path="$with_titan2d_dep/bin:$titan_gdal_search_path"]
+		)
+
+		# Prefer gdal-config when it is available.
+		AC_PATH_PROG([GDAL_CONFIG], [gdal-config], [no], [$titan_gdal_search_path])
+		AS_IF([test "x$GDAL_CONFIG" != xno],
+			[
+				GDAL_CFLAGS=`$GDAL_CONFIG --cflags`
+				GDAL_LIBS=`$GDAL_CONFIG --libs`
+				titan_gdal_bindir=`dirname "$GDAL_CONFIG"`
+				GDAL_PATH=`cd "$titan_gdal_bindir/.." && pwd -P`
+				titan_gdal_found=yes
+			],
+			[
+				# Some modern packages only publish pkg-config metadata.
+				AC_PATH_PROG([PKG_CONFIG], [pkg-config], [no])
+				AS_IF([test "x$PKG_CONFIG" != xno],
+					[
+						titan_gdal_pkg_path="$PKG_CONFIG_PATH"
+						AS_IF([test "x$with_gdal" != xtry_to_find],
+							[titan_gdal_pkg_path="$with_gdal/lib/pkgconfig:$with_gdal/share/pkgconfig:$titan_gdal_pkg_path"]
+						)
+						AS_IF([PKG_CONFIG_PATH="$titan_gdal_pkg_path" $PKG_CONFIG --exists gdal],
+							[
+								GDAL_CFLAGS=`PKG_CONFIG_PATH="$titan_gdal_pkg_path" $PKG_CONFIG --cflags gdal`
+								GDAL_LIBS=`PKG_CONFIG_PATH="$titan_gdal_pkg_path" $PKG_CONFIG --libs gdal`
+								GDAL_PATH=`PKG_CONFIG_PATH="$titan_gdal_pkg_path" $PKG_CONFIG --variable=prefix gdal`
+								titan_gdal_found=yes
+							]
+						)
+					]
+				)
+			]
+		)
 	]
 )
+
 AC_MSG_CHECKING([for GDAL availability])
-AS_IF([test "x$GDAL_CONFIG" != xno],
+AS_IF([test "x$titan_gdal_found" = xyes],
 	[
-	    GDAL_CFLAGS=`$GDAL_CONFIG --cflags`
-        GDAL_LIBS=`$GDAL_CONFIG --libs`
-        GDAL_PATH=with_gdal
-        CPPFLAGS="$CPPFLAGS $GDAL_CFLAGS" 
-        LIBS="$GDAL_LIBS $LIBS"
-        AC_DEFINE([HAVE_GDAL], [1], [If Gdal is available])
-    	AC_MSG_RESULT([yes])
+		with_gdal="$GDAL_PATH"
+		CPPFLAGS="$CPPFLAGS $GDAL_CFLAGS"
+		LIBS="$GDAL_LIBS $LIBS"
+		AC_DEFINE([HAVE_GDAL], [1], [If Gdal is available])
+		AC_MSG_RESULT([yes])
 	],
 	[
-        GDAL_LIBS=
-        GDAL_PATH=
-        with_gdal=no
-        AC_DEFINE([HAVE_GDAL], [0], [If Gdal is available])
-        AC_MSG_RESULT([no])
+		GDAL_CFLAGS=
+		GDAL_LIBS=
+		GDAL_PATH=
+		with_gdal=no
+		AC_DEFINE([HAVE_GDAL], [0], [If Gdal is available])
+		AC_MSG_RESULT([no])
+		AS_IF([test "x$titan_gdal_required" = xyes],
+			[AC_MSG_FAILURE([GDAL was requested but neither gdal-config nor gdal.pc was found])]
+		)
 	]
 )
 AC_SUBST([GDAL_PATH],[$GDAL_PATH])
+AC_SUBST([GDAL_CFLAGS],[$GDAL_CFLAGS])
 AC_SUBST([GDAL_LIBS],[$GDAL_LIBS])
-AM_CONDITIONAL([WITH_GDAL], test "x$with_gdal" != "xno")
+AM_CONDITIONAL([WITH_GDAL], test "x$titan_gdal_found" = "xyes")
 
 
 #SWIG
